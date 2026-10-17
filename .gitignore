@@ -1,27 +1,65 @@
-# Python
+# ---------------------------------------------------------------
+# AI Workbench monorepo — ignored files
+# ---------------------------------------------------------------
+
+# Python bytecode, caches, tooling
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
 .venv/
 venv/
+env/
+ENV/
 
-# Build outputs
+# Build outputs (installers and APKs are published as GitHub Release assets)
 dist/
 build/
 out/
+*.spec
 *.tar.gz
 
 # Android / Gradle
 .gradle/
 **/build/
 local.properties
-*.keystore
-*.jks
-!apps/mobile/android/app/debug.keystore
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Signing material and private keys — NEVER commit (kept in GitHub environment secrets)
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.pem
+*.key
+secrets/
+
+# Local application state, settings and credentials
+.workbench/
+.workbench-restore-backups/
+settings.local.json
+settings.local.yaml
+settings.local.yml
+.env
+.env.*
+!.env.example
+.dev.vars
+
+# Logs and temporary files
+logs/
+*.log
+*.tmp
+*.temp
+~$*
 
 # Editors / OS
 .vscode/*
@@ -29,15 +67,4 @@ captures/
 .idea/
 .DS_Store
 Thumbs.db
-
-# Secrets and local runtime data
-.env
-.env.*
-.dev.vars
-*.pem
-secrets/
-.workbench/
-
-# Logs
-logs/
-*.log
+Desktop.ini
