@@ -24,6 +24,14 @@ def main() -> None:
         root.update_idletasks()
         root.update()
 
+        # On Windows, Menu.tk_popup enters the native modal menu loop (TrackPopupMenu)
+        # and only returns after a real user dismisses the menu, which never happens
+        # on an unattended runner. The menu contents/commands are what this smoke
+        # verifies, so on Windows posting is replaced by a recorder.
+        posted: list[tuple[int, int]] = []
+        if os.name == "nt":
+            root._aiwb_edit_context_menu.tk_popup = lambda x, y, *a, **k: posted.append((x, y))
+
         # Right-click in an editable text widget must build a standard context menu.
         app.task_text.delete("1.0", "end")
         app.task_text.insert("1.0", "select me")
@@ -33,6 +41,7 @@ def main() -> None:
         root.update_idletasks()
         root.update()
         menu = root._aiwb_edit_context_menu
+        assert os.name != "nt" or posted, "context menu was not posted"
         labels = [menu.entrycget(index, "label") for index in range(menu.index("end") + 1) if menu.type(index) == "command"]
         assert {"Cut", "Copy", "Paste", "Delete", "Select all", "Undo", "Redo"}.issubset(set(labels)), labels
         copy_index = next(index for index in range(menu.index("end") + 1) if menu.type(index) == "command" and menu.entrycget(index, "label") == "Copy")
