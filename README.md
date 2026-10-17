@@ -13,24 +13,37 @@ Git/GitHub for the project. A companion Android app is starting in `apps/mobile`
 ## Repository layout
 
 ```
-apps/desktop/        Desktop app source (AI_Workbench.py + aiwb/ package), installer scripts, tests
-apps/mobile/         Android app (Kotlin, Gradle) + version.properties (single version source)
-packages/contracts/  (planned) shared JSON schemas between desktop and mobile
-tools/               Reproducible installer builder, installer/manifest gate, GUI smoke tests
-docs/handoff/        Original product specs and roadmaps (FA)
-docs/audit/          Implementation audit: which specs are done and how far
-docs/adr/            Architecture decision records
-docs/release/        Historical release evidence (hashes, test reports)
-.github/workflows/   CI and release pipelines
+ROADMAP.md                  Master roadmap — single source of truth for order, status and gates
+apps/desktop/
+  src/                      Application: AI_Workbench.py, *_store/service modules, aiwb/ package
+  tests/                    Unit/regression tests (python -m unittest discover -s tests -t .)
+  tests/gui/                GUI smoke scripts + run_all.py (needs a display / Xvfb)
+  installer/                install.ps1, uninstall.bat, bootstrap.ps1 (self-extracting Setup.bat)
+  examples/                 Sample model responses for manual testing
+  release_manifest.json     Version + payload map (repo source -> installed flat path)
+  CHANGELOG.md, README*.md, ARCHITECTURE.md
+apps/mobile/                Android app (Kotlin, Gradle) + version.properties
+packages/contracts/         (planned, roadmap 1.14.10/11) shared JSON schemas
+tools/                      Reproducible installer builder, manifest gate, installed-app smoke
+tools/legacy/               Original 1.14.4 builder + independent packaging verifier
+docs/specs/                 Product specs and roadmaps (FA) — detail behind ROADMAP.md
+docs/adr/                   Architecture decision records (ADR-001 … ADR-004)
+docs/audit/                 Implementation audit of the specs
+docs/release/vX.Y.Z/        Per-release evidence: test reports, Windows checklists, hashes
+.github/workflows/          CI and tag-driven release pipelines
 ```
+
+The installed program folder is **flat** (unchanged since 1.14.4); `release_manifest.json`
+maps every repository file to its installed path, so the repo layout can evolve without
+breaking upgrades.
 
 ## Releasing
 
 Both apps are released by **pushing a tag**; GitHub Actions builds, tests and publishes.
 
 ### Desktop (Windows)
-1. Bump `APP_VERSION` in `apps/desktop/AI_Workbench.py` and `version` in `apps/desktop/release_manifest.json`; add a `## [X.Y.Z]` section to `apps/desktop/CHANGELOG.md`.
-2. If you add a file, list it in `install.ps1` **and** `release_manifest.json` (CI gate enforces this).
+1. Bump `APP_VERSION` in `apps/desktop/src/AI_Workbench.py` and `version` in `apps/desktop/release_manifest.json`; add a `## [X.Y.Z]` section to `apps/desktop/CHANGELOG.md`.
+2. If you add a file, list it in `apps/desktop/installer/install.ps1` **and** `release_manifest.json` (CI gate enforces this). Put the release checklist in `docs/release/vX.Y.Z/`.
 3. `git tag desktop-vX.Y.Z && git push origin desktop-vX.Y.Z`
 4. `release-desktop.yml` runs tests on Windows, builds `AI_Workbench_X.Y.Z_Setup.bat`, installs it on a clean runner, GUI-smokes the installed copy and publishes the release with SHA-256 sums.
 
@@ -50,14 +63,18 @@ Re-publish an existing tag: *Actions → Release … → Run workflow*.
 ## Local development
 
 ```bash
-cd apps/desktop && python -m unittest discover -p "test_*.py"   # desktop tests
-python tools/build_desktop_installer.py --out dist                # build Setup.bat
-xvfb-run -a python tools/gui_smoke.py                             # GUI smoke (Linux)
+cd apps/desktop && python -m unittest discover -s tests -t .      # unit/regression tests
+python src/AI_Workbench.py                                         # run the app
+xvfb-run -a python tests/gui/run_all.py                            # all GUI smokes (Linux)
+cd ../.. && python tools/check_installer_manifest.py               # installer/manifest gate
+python tools/build_desktop_installer.py --out dist                 # build Setup.bat
 cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 ```
 
 ## Status / roadmap
 
-See [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
-Done: roadmap 1.14.1–1.14.5, mobile proof-of-build (1.14.11), monorepo + CI/CD.
-Next: 1.14.6 Build Center → 1.14.7 Sync & Build → 1.14.8 Artifact Manager → 1.14.12 shared contracts.
+**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: 1.14.1–1.14.5, Android proof-of-build,
+monorepo + CI/CD. **Next: 1.14.6 Build Center** → 1.14.7 Dispatch & safe Artifact download →
+1.14.8 Sync & Build → 1.14.13 RC → 1.15.0. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
+
+See also [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).

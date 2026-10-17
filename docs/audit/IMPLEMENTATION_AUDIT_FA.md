@@ -13,7 +13,7 @@
 |---|---|---|
 | `AI_Workbench_v1.11.0_Development_Roadmap_FA.md` | پایداری پاسخ، Repair، Diagnostics، Transaction | **≈ 85٪** |
 | `AI_Workbench_GitHub_Monorepo_Integration_Spec_v1.13_FA.md` | GitHub Hub، Binding، Build Center، Artifact، Monorepo محصول | **≈ 40٪** (+ زیرساخت Monorepo/CI که اکنون ساخته شد) |
-| `AI_Workbench_GitHub_Monorepo_Roadmap_v1.14_to_v1.15.md` | مسیر 1.14.1 → 1.15.0 | **1.14.1 تا 1.14.5 انجام** (5 از 14 گام) + بخش‌هایی از 1.14.10/1.14.11 |
+| `AI_Workbench_GitHub_Monorepo_Roadmap_v1.14_to_v1.15.md` | مسیر 1.14.1 → 1.15.0 | **1.14.1 تا 1.14.5 انجام** (5 از 14 گام) + بخش‌هایی از 1.14.9 تا 1.14.12 |
 | `AI_Workbench_New_Developer_Handoff_v1.14_FA.md` | Response Inbox، Context Request، V2 چند Agent | **≈ 15٪** (فاز A شروع نشده؛ فقط پایه‌ها) |
 | `AI_Workbench_Future_Roadmap_v1.14_FA.md` | راهبرد بلندمدت، V2، Release Gates | **≈ 10٪** (فقط Release Gate و CI) |
 | `ADR-004` | Binding v2 و Scope در Monorepo | **✅ کامل** |
@@ -24,19 +24,19 @@
 
 | نسخه | هدف | وضعیت | شواهد در کد |
 |---|---|---|---|
-| 1.14.1 | استخراج سرویس Git از UI | ✅ | `aiwb/git/service.py`, `models.py`, `test_git_service.py` |
+| 1.14.1 | استخراج سرویس Git از UI | ✅ | `src/aiwb/git/service.py`, `models.py`, `tests/test_git_service.py` |
 | 1.14.2 | حساب GitHub + Credential Manager ویندوز | ✅ | `aiwb/github/accounts.py`, `credential_store.py` — تست بومی ویندوز اکنون در CI **سبز** است |
 | 1.14.3 | مرورگر Repository | ✅ | `aiwb/github/api_client.py`, `test_github_repository_browser.py` |
 | 1.14.4 | Binding v2 و Scope در Monorepo | ✅ | `repository_binding.py`, ADR-004 |
 | **1.14.5** | **Safe Git Review & Sync Plan** | **✅ (این نسخه)** | `aiwb/git/sync.py`, `aiwb/git/review_dialog.py`, `test_git_sync.py` (17 تست روی Repo واقعی) |
-| 1.14.6 | Build Center: Workflow و Run | ❌ | — |
-| 1.14.7 | Sync & Build با ref/SHA دقیق | ❌ | — |
-| 1.14.8 | Artifact Manager و دانلود امن | ❌ | — (فقط ZIP خروجی محلی موجود است) |
-| 1.14.9 | Release Center | 🟡 | سمت **مخزن** انجام شد (Workflowهای release)؛ سمت **اپ** (مشاهدهٔ Release داخل Workbench) انجام نشده |
-| 1.14.10 | تثبیت Monorepo محصول | 🟡 ≈ 70٪ | `apps/desktop`, `apps/mobile`, `tools/`, `docs/`, CI مسیرمحور؛ `packages/contracts` هنوز خالی |
-| 1.14.11 | Mobile proof-of-build | ✅ | `apps/mobile/android` — Release امضاشدهٔ `mobile-v0.1.0` منتشر شد |
-| 1.14.12 | Capability Contract مشترک | ❌ | `build_capability_manifest` فقط داخل دسکتاپ است؛ Schema مشترک وجود ندارد |
-| 1.14.13 | RC و Hardening | ❌ | — |
+| 1.14.6 | Build Center: Workflow & Run Monitoring | ❌ | — |
+| 1.14.7 | Workflow Dispatch & Safe Artifact Download | ❌ | — (فقط ZIP خروجی محلی موجود است) |
+| 1.14.8 | One-click Sync & Build Orchestrator | ❌ | — |
+| 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 | ریپو، CI لینوکس/ویندوز، Actionsهای pin‌شده، permissions حداقلی انجام شد؛ ADR سیاست branch/tag مانده |
+| 1.14.10 | Staged Monorepo Migration | 🟡 | `apps/desktop/{src,tests,installer}` با نصاب بایت‌به‌بایت یکسان؛ `packages/contracts` مانده |
+| 1.14.11 | Android Proof-of-Build & Capability Contracts | 🟡 | اپ و APK از CI ✅؛ قرارداد مشترک و `capabilities.yml` مانده |
+| 1.14.12 | Versioned Releases & Protected Signing | 🟡 | تگ‌ها و workflowهای release ✅؛ Environment محافظت‌شده برای Secret امضا مانده |
+| 1.14.13 | Release Candidate & Native Windows Validation | ❌ | — |
 | 1.15.0 | Stable | ❌ | — |
 
 ### جزئیات 1.14.5 در برابر معیارهای پذیرش سند
@@ -105,7 +105,6 @@
 
 ## ۷. اولویت پیشنهادی بعدی
 
-1. **1.14.6 Build Center** (فهرست Workflowها، Runها با تفکیک SHA، dispatch فقط وقتی `workflow_dispatch` دارد).
-2. **1.14.7–1.14.8** Sync & Build و Artifact Manager امن (هش، محدودیت حجم، مسیر امن).
-3. **1.14.12** قراردادهای مشترک در `packages/contracts` (پیش‌نیاز Companion موبایل).
-4. فاز A Handoff: Response Inbox و `response_id/attempt_id`.
+ترتیب اجرایی مرجع در [`ROADMAP.md`](../../ROADMAP.md) است: 1.14.6 Build Center → 1.14.7 Dispatch و Artifact امن → 1.14.8 Sync & Build → بستن باقی‌ماندهٔ 1.14.9–1.14.12 → 1.14.13 RC → 1.15.0؛ سپس فاز اول (Response Inbox) و V2.
+
+> اصلاحیه 2026-10-17: نسخهٔ قبلی این ممیزی شماره‌های 1.14.7 تا 1.14.12 را با عنوان‌های نادرست آورده بود؛ جدول بخش ۲ اکنون دقیقاً مطابق سند مرجع است.
