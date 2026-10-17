@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Workbench</string>
+    <string name="subtitle">Mobile proof-of-build · releases &amp; build provenance</string>
+    <string name="build_info_template">version  %1$s (code %2$d)\nchannel  %3$s\ncommit   %4$s\nref      %5$s</string>
+    <string name="check_updates">Check latest releases</string>
+    <string name="open_repository">Open GitHub repository</string>
+    <string name="checking">Checking GitHub Releases…</string>
+    <string name="check_failed">Could not check releases: %1$s</string>
+    <string name="rate_limited">GitHub rate limit reached; try again later.</string>
+    <string name="no_releases">No published releases yet.</string>
+    <string name="mobile_update_available">A newer mobile version (%1$s) is available.</string>
+    <string name="mobile_up_to_date">This mobile app is up to date.</string>
+    <string name="desktop_label">Desktop (Windows)</string>
+    <string name="mobile_label">Mobile (Android)</string>
+    <string name="release_row">%1$s — %2$s · %3$s</string>
+    <string name="download_asset">Download %1$s (%2$s)</string>
+    <string name="open_release_page">Open release page</string>
+    <string name="untrusted_link">Blocked a link that is not a GitHub https URL.</string>
+    <string name="no_browser">No browser is available to open the link.</string>
+    <string name="scope_note">This early mobile build verifies the Android build/release pipeline. Companion features (pairing with the desktop app, tasks, prompts) are planned and not yet available.</string>
+</resources>
