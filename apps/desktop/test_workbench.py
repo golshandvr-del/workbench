@@ -1422,7 +1422,8 @@ class ProjectManagerCoreTests(unittest.TestCase):
         root = self.parent / "metadata-project"
         root.mkdir()
         path = wb.write_project_manifest(root, {"name": "metadata-project", "profile": {"languages": "Python"}})
-        self.assertEqual(path, root / wb.PROJECT_MANIFEST_RELATIVE)
+        # The writer returns the resolved path (Windows temp dirs may use 8.3 short names).
+        self.assertEqual(path, root.resolve() / wb.PROJECT_MANIFEST_RELATIVE)
         self.assertEqual(wb.read_project_manifest(root)["profile"]["languages"], "Python")
         path.write_text("not json", encoding="utf-8")
         self.assertEqual(wb.read_project_manifest(root), {})
