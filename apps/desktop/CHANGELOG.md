@@ -1,3 +1,19 @@
+## [1.14.6] - 2026-10-17
+### Build Center: Workflow & Run Monitoring (roadmap v1.14.6)
+- New **Build Center…** window in the GitHub panel (`aiwb/github/actions.py` service + `aiwb/github/build_center.py` window; no Tk in the service).
+- Discovers `.github/workflows/*.yml|*.yaml` via the Actions API and reads each file to list its real triggers. "Manual run" is `yes` only when the file declares `workflow_dispatch`; unreadable files show `unknown`, never `yes`. Dynamic (Dependabot) workflows are excluded.
+- The project's main Build workflow can be selected from the list and is saved in the binding; a renamed/deleted file is reported as a stale binding, a disabled workflow as disabled.
+- Runs show status/result (success / failure / cancelled / skipped / timed out / … kept distinct), branch, commit SHA, run ID, attempt, created/updated times and a GitHub link.
+- **Commit correlation:** the local HEAD is matched to a run only by exact 40-character SHA; if the newest run belongs to another commit, the window says so explicitly instead of showing it as the result of the latest changes.
+- Jobs and their failed steps for the selected run; double-click opens the job log on GitHub (the short-lived raw-log URL is never copied).
+- Non-blocking polling (worker thread + queue polled on the Tk thread) with a 5 s cache window, 10 s while runs are active, 60 s idle, exponential backoff on errors, `Retry-After`/rate-limit reset respected, and polling stopped on HTTP 401.
+- **Cancel run…** only for unfinished runs, after confirmation; 403/404 → "needs Actions: write", 409 → already finishing.
+- `RepositoryOperationGuard` prevents two Sync/Build operations on the same repository/ref (used by 1.14.8).
+- No dispatch, Artifact download or push in this release.
+
+### Validation
+- 17 new unit tests (`tests/test_github_actions.py`), 259 in total; new GUI smoke `gui_build_center_smoke.py` (16 GUI smokes); verified read-only against the live GitHub API.
+
 ## [1.14.5] - 2026-10-17
 ### Safe Git Review & Sync Plan (roadmap v1.14.5)
 - New **Review & Sync…** window in the Git / GitHub tab, backed by the UI-independent `aiwb/git/sync.py` service.
