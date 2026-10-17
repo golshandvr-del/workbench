@@ -1,0 +1,131 @@
+name: Release Desktop (Windows)
+
+# Publishing: push a tag `desktop-vX.Y.Z` whose version equals
+# apps/desktop/release_manifest.json and APP_VERSION in AI_Workbench.py.
+# Or run manually with an existing tag.
+
+on:
+  push:
+    tags: ["desktop-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)publish, e.g. desktop-v1.14.5"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-desktop-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build + test installer on Windows
+    runs-on: windows-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - id: v
+        shell: bash
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          case "$tag" in desktop-v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "invalid desktop tag: $tag"; exit 1;; esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#desktop-v}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ steps.v.outputs.tag }}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Tests
+        working-directory: apps/desktop
+        run: python -m unittest discover -p "test_*.py"
+      - name: Build installer (version must match tag)
+        run: |
+          python tools/check_installer_manifest.py
+          python tools/build_desktop_installer.py --out dist --check-version ${{ steps.v.outputs.version }}
+      - name: Install on clean runner + GUI smoke
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist -Filter 'AI_Workbench_*_Setup.bat' | Select-Object -First 1
+          $p = Start-Process -FilePath $env:ComSpec -ArgumentList @('/c', "`"$($setup.FullName)`"") -NoNewWindow -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Installer exited with $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*AI_Workbench.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          python tools/gui_smoke.py (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
+          if ($LASTEXITCODE -ne 0) { throw 'GUI smoke failed' }
+      - name: Add commit/tag metadata to manifest
+        shell: bash
+        run: |
+          python - <<'EOF'
+          import json, os
+          p = "dist/release-manifest.json"
+          m = json.load(open(p))
+          m["tag"] = "${{ steps.v.outputs.tag }}"
+          m["commit_sha"] = os.environ["GITHUB_SHA"]
+          m["repository"] = os.environ["GITHUB_REPOSITORY"]
+          m["build_run_id"] = os.environ["GITHUB_RUN_ID"]
+          json.dump(m, open(p, "w"), indent=2)
+          open(p, "a").write("\n")
+          EOF
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-release-${{ steps.v.outputs.version }}
+          path: dist/
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ needs.build.outputs.tag }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: desktop-release-${{ needs.build.outputs.version }}
+          path: dist
+      - name: Release notes from CHANGELOG
+        shell: bash
+        run: |
+          v="${{ needs.build.outputs.version }}"
+          awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {f=1; next} f && /^## \[/ {exit} f' apps/desktop/CHANGELOG.md > notes.md
+          {
+            echo ""
+            echo "### Install (Windows 10/11)"
+            echo "Download \`AI_Workbench_${v}_Setup.bat\` and double-click it. Python 3.10+ with Tkinter is detected or installed per-user via winget."
+            echo ""
+            echo "### SHA-256"
+            echo '```'
+            cat dist/AI_Workbench_v${v}_SHA256SUMS.txt
+            echo '```'
+          } >> notes.md
+          cat notes.md
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="${{ needs.build.outputs.tag }}"
+          v="${{ needs.build.outputs.version }}"
+          pre=""
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then pre="--prerelease"; fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --notes-file notes.md --title "AI Workbench Desktop $v"
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --title "AI Workbench Desktop $v" --notes-file notes.md --verify-tag $pre
+          fi
