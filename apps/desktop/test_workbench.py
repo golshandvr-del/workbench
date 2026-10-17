@@ -1218,7 +1218,14 @@ class ProjectFileRunnerTests(unittest.TestCase):
         self.assertIn("timed out", result["error"].casefold())
         self.assertIn("started", result["stdout"])
 
-    def _make_fake_ltspice_runner(self, body: str) -> Path:
+    def _make_fake_ltspice_runner(self, body: str, windows_body: str | None = None) -> Path:
+        # Real LTspice is a native executable invoked as: exe -b <schematic>.
+        # POSIX uses a shell script; Windows uses a batch file (CreateProcess
+        # runs .bat files through cmd.exe when given the full path).
+        if os.name == "nt":
+            fake = self.root / "ltspice_fake.bat"
+            fake.write_text("@echo off\r\n" + (windows_body or body) + "\r\n", encoding="utf-8")
+            return fake
         fake = self.root / "ltspice_fake.sh"
         fake.write_text("#!/bin/sh\n" + body + "\n", encoding="utf-8")
         fake.chmod(0o755)
@@ -1227,7 +1234,7 @@ class ProjectFileRunnerTests(unittest.TestCase):
     def test_ltspice_runner_marks_missing_new_log_as_unverified_failure(self) -> None:
         schematic = self.root / "test.asc"
         schematic.write_text("Version 4\nSHEET 1 100 100\n", encoding="utf-8")
-        fake = self._make_fake_ltspice_runner("exit 0")
+        fake = self._make_fake_ltspice_runner("exit 0", "exit /b 0")
         spec = wb.build_project_file_run_spec(self.root, "test.asc", ltspice_executable=fake)
         result = wb.execute_project_file_run(self.root, spec)
         self.assertEqual(result["status"], "Failed")
@@ -1236,7 +1243,10 @@ class ProjectFileRunnerTests(unittest.TestCase):
     def test_ltspice_runner_collects_simulator_log_errors(self) -> None:
         schematic = self.root / "test.asc"
         schematic.write_text("Version 4\nSHEET 1 100 100\n", encoding="utf-8")
-        fake = self._make_fake_ltspice_runner('printf "Fatal Error: simulated failure\\n" > "${2%.*}.log"\nexit 0')
+        fake = self._make_fake_ltspice_runner(
+            'printf "Fatal Error: simulated failure\\n" > "${2%.*}.log"\nexit 0',
+            'echo Fatal Error: simulated failure> "%~dpn2.log"\r\nexit /b 0',
+        )
         spec = wb.build_project_file_run_spec(self.root, "test.asc", ltspice_executable=fake)
         result = wb.execute_project_file_run(self.root, spec)
         self.assertEqual(result["status"], "Failed", result)
