@@ -64,7 +64,7 @@
 | 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 زیرساخت زودتر ساخته شد | ✅ ریپو، CI روی Linux+Windows، Actionsهای pin‌شده به SHA، permissions حداقلی، `CI summary`، Artifact نصاب CI. ⬜ ADR سیاست branch/tag |
 | 1.14.10 | Staged Monorepo Migration | 🟡 | ✅ `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت یکسان (PR #1). ⬜ `packages/contracts/` |
 | 1.14.11 | Android Proof-of-Build & Capability Contracts | 🟡 | ✅ `apps/mobile/android`، APK از CI. ⬜ `packages/contracts` (JSON Schema + fixtures)، `capabilities.yml`، job اعتبارسنجی قرارداد |
-| 1.14.12 | Versioned Releases & Protected Signing | 🟡 | ✅ تگ‌های `desktop-v*`/`mobile-v*`، workflowهای release، SHA-256 و manifest. ⬜ انتقال Secretهای امضا به Environment محافظت‌شدهٔ `release` |
+| 1.14.12 | Versioned Releases & Protected Signing | 🟡 | ✅ تگ‌های `desktop-v*`/`mobile-v*`، workflowهای release، SHA-256 و manifest، Secretهای امضا فقط در Environment محافظت‌شدهٔ `release` (فقط تگ `mobile-v*`). ⬜ approval انسانی پیش از انتشار پایدار؛ اولین Release موبایل با Environment جدید |
 | 1.14.13 | Release Candidate & Native Windows Validation | ⬜ | — |
 | 1.15.0 | Integrated GitHub & Monorepo Stable | ⬜ | — |
 
@@ -111,7 +111,8 @@
 - [ ] **1.14.10/11:** `packages/contracts/` با JSON Schema و fixture فقط برای موجودیت‌های واقعاً مشترک (Build metadata، Release manifest، Capability)
 - [ ] **1.14.11:** `capabilities.yml` (`planned/in_progress/implemented/partial/not_applicable/blocked`)؛ فقط گزارش، بدون feature gating
 - [ ] **1.14.11:** تغییر قرارداد → اعتبارسنجی + تست هر دو پلتفرم (job `contracts` در `ci.yml` آماده است)
-- [ ] **1.14.12:** Environment محافظت‌شدهٔ `release` (فقط تگ‌های `mobile-v*`) برای Secretهای امضای Android؛ PR عادی به آن دسترسی ندارد
+- [x] **1.14.12:** Environment محافظت‌شدهٔ `release` (فقط تگ‌های `mobile-v*`) برای Secretهای امضای Android؛ Secretهای سطح ریپو حذف شدند
+- [ ] **1.14.12:** Required reviewer روی Environment `release` پیش از انتشار پایدار (در 1.14.13 فعال شود)
 
 ### v1.14.13 — Release Candidate & Native Windows Validation
 
