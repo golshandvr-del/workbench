@@ -44,6 +44,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ steps.v.outputs.tag }}
+      - name: Use current release tooling if the tag predates tools/
+        shell: bash
+        run: |
+          # Historical tags (e.g. desktop-v1.14.4 = original imported source) may
+          # not contain tools/. The app source always comes from the tag.
+          if [ ! -f tools/build_desktop_installer.py ]; then
+            git fetch --depth=1 origin "${{ github.sha }}"
+            git checkout FETCH_HEAD -- tools
+            git reset -q
+          fi
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
@@ -96,10 +106,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: refs/tags/${{ needs.build.outputs.tag }}
+      - name: Optional pinned hash for historical releases
+        id: pin
+        shell: bash
+        run: |
+          f="docs/release/v${{ needs.build.outputs.version }}/EXPECTED_SETUP_SHA256"
+          git fetch -q --depth=1 origin "${{ github.sha }}" && git show "FETCH_HEAD:$f" > expected.txt 2>/dev/null || true
+          echo "sha=$(tr -d '[:space:]' < expected.txt 2>/dev/null)" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: desktop-release-${{ needs.build.outputs.version }}
           path: dist
+      - name: Verify historical byte-for-byte reproduction
+        if: steps.pin.outputs.sha != ''
+        shell: bash
+        run: |
+          actual=$(sha256sum dist/AI_Workbench_${{ needs.build.outputs.version }}_Setup.bat | cut -d' ' -f1)
+          echo "expected ${{ steps.pin.outputs.sha }}"; echo "actual   $actual"
+          [ "$actual" = "${{ steps.pin.outputs.sha }}" ]
       - name: Release notes from CHANGELOG
         shell: bash
         run: |
