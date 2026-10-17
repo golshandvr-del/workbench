@@ -1,33 +1,43 @@
-# prod
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# Build outputs
 dist/
+build/
+out/
+*.tar.gz
 
-# dev
-.yarn/
-!.yarn/releases
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.keystore
+*.jks
+!apps/mobile/android/app/debug.keystore
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Editors / OS
 .vscode/*
-!.vscode/launch.json
-!.vscode/*.code-snippets
-.idea/workspace.xml
-.idea/usage.statistics.xml
-.idea/shelf
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
 
-# deps
-node_modules/
-.wrangler
-
-# env
+# Secrets and local runtime data
 .env
-.env.production
+.env.*
 .dev.vars
+*.pem
+secrets/
+.workbench/
 
-# logs
+# Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# misc
-.DS_Store
