@@ -6,6 +6,7 @@ Long operations run on a worker thread and report back via ``after``.
 """
 from __future__ import annotations
 
+import queue
 import threading
 import tkinter as tk
 from pathlib import Path
@@ -132,17 +133,32 @@ class GitReviewDialog:
         self._set_buttons()
         self.plan_var.set(label)
 
+        # Tk is not thread-safe: the worker only puts its result on a queue and
+        # the Tk thread polls it with after() (same pattern as the main window).
+        results: queue.Queue = queue.Queue(maxsize=1)
+
         def runner() -> None:
             try:
-                result, error = work(), None
+                results.put((work(), None))
             except Exception as exc:  # surfaced to the user below
-                result, error = None, exc
+                results.put((None, exc))
+
+        def poll() -> None:
             try:
-                self.win.after(0, lambda: self._finish(done, result, error))
+                result, error = results.get_nowait()
+            except queue.Empty:
+                try:
+                    self.win.after(50, poll)
+                except tk.TclError:
+                    pass
+                return
+            try:
+                self._finish(done, result, error)
             except tk.TclError:
-                pass
+                pass  # window closed while the operation was running
 
         threading.Thread(target=runner, name="AIWorkbenchGitReview", daemon=True).start()
+        self.win.after(50, poll)
 
     def _finish(self, done: Callable[[Any], None], result: Any, error: Exception | None) -> None:
         self.busy = False
