@@ -82,6 +82,8 @@ jobs:
           python tools/check_installer_manifest.py
       - name: GUI startup smoke (Xvfb)
         run: xvfb-run -a python tools/gui_smoke.py apps/desktop
+      - name: Git Review & Sync window smoke (Xvfb)
+        run: xvfb-run -a python tools/gui_git_review_smoke.py
 
   desktop-windows:
     name: Desktop tests + installer (Windows)
@@ -123,6 +125,8 @@ jobs:
       - name: GUI smoke of the installed copy
         shell: pwsh
         run: python tools/gui_smoke.py (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
+      - name: Git Review & Sync window smoke (Windows)
+        run: python tools/gui_git_review_smoke.py
       - name: Upload CI installer (test build, not a release)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
