@@ -25,7 +25,7 @@
     "test_github_repository_binding_v144.py",
     "test_windows_credential_store.py",
     "test_git_sync.py",
-    "WINDOWS_RELEASE_CHECKLIST_v1.14.4.md",
+    "WINDOWS_RELEASE_CHECKLIST_v1.14.5.md",
     "install.ps1",
     "uninstall.bat",
     "aiwb/__init__.py",
