@@ -318,7 +318,7 @@ def _read_response_snapshot(root: Path, record_id: str) -> tuple[str, str]:
             return "", "Response snapshot was not a JSON object."
     except (UnicodeError, json.JSONDecodeError):
         return "", "Response snapshot was not valid UTF-8 JSON."
-    _project, base, _records = _safe_paths(root, create=True)
+    project, base, _records = _safe_paths(root, create=True)
     snapshot_dir = base / "responses"
     if snapshot_dir.is_symlink():
         return "", "Response snapshot directory is a symbolic link."
@@ -327,7 +327,10 @@ def _read_response_snapshot(root: Path, record_id: str) -> tuple[str, str]:
     if target.is_symlink():
         return "", "Response snapshot target is a symbolic link."
     _atomic_write(target, data)
-    return target.relative_to(root).as_posix(), hashlib.sha256(data).hexdigest()
+    # `target` is built from the resolved project path; relate it to that same
+    # resolved path (Windows 8.3 short names, junctions and subst drives make
+    # the caller's unresolved `root` differ textually).
+    return target.relative_to(project).as_posix(), hashlib.sha256(data).hexdigest()
 
 
 def _save_record(root: Path, record: dict[str, Any], *, append: bool) -> None:
