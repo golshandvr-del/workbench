@@ -183,6 +183,7 @@
 |---|---|---|
 | 0.1.0 | Proof-of-build: provenance، بررسی Releaseها، FA/EN، APK/AAB امضاشده | ✅ `mobile-v0.1.0` |
 | 0.2.x | مصرف `packages/contracts` (Release manifest، Capability) پس از 1.14.11 | ⬜ |
+| 0.2.x-tooling | مهاجرت آگاهانهٔ AGP 9 / Kotlin 2.4 (PR #2 و #5 Dependabot بستند چون Build را می‌شکستند) | ⬜ |
 | Companion | Pairing امن، مشاهدهٔ Task/Build، ورود پاسخ از موبایل (Integration Spec P3) | ⏭ پس از 2.0.0 |
 
 اثرانگشت گواهی امضای Release اندروید (برای تأیید هر APK):
