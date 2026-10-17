@@ -11,3 +11,13 @@ updates:
     directory: /apps/mobile/android
     schedule:
       interval: monthly
+    groups:
+      android-minor-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Major AGP / Kotlin / Gradle upgrades are migrations, not routine bumps:
+      # they are done deliberately as a ROADMAP mobile-track task.
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "org.jetbrains.kotlin.android"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
