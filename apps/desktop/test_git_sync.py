@@ -147,7 +147,7 @@ class RealRepositorySyncTests(unittest.TestCase):
         self.assertEqual(labels["new file.txt"], ("untracked",))
         self.assertEqual(labels["staged.txt"], ("staged",))
         self.assertIn("changed", self.svc.file_diff(self.a, next(e for e in snap.entries if e.path == "base.txt")))
-        _git(self.a, "rm", "-q", "base.txt")
+        _git(self.a, "rm", "-q", "-f", "base.txt")
         self.assertIn("deleted", {e.path: e.labels() for e in self.svc.review_snapshot(self.a).entries}["base.txt"])
 
     def test_remote_ahead_fast_forward_only_when_clean(self) -> None:
