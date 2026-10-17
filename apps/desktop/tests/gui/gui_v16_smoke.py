@@ -74,7 +74,8 @@ def main() -> None:
         app.run_file_var.set("hello.py")
         spec = wb.build_project_file_run_spec(project, app.run_file_var.get())
         assert spec["kind"] == "python"
-        assert str(project / "hello.py") in spec["argv"]
+        # The app canonicalises paths (Windows temp dirs may be 8.3 short names such as RUNNER~1).
+        assert str((project / "hello.py").resolve()) in spec["argv"], spec["argv"]
 
         # The actual runner is already covered by unit tests; ensure UI lifecycle remains clean.
         app.on_close()
