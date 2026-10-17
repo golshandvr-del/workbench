@@ -10299,7 +10299,7 @@ class WorkbenchApp:
             "summary": "workbench: " + (str(state.get("task_text", "") or "save reviewed project changes").strip().splitlines() or [""])[0][:72],
         }
 
-        def secret_check(root: Path, paths: Sequence[str]) -> list[str]:
+        def secret_check(root: Path, paths: Iterable[str]) -> list[str]:
             return inspect_candidate_paths(root, paths)
 
         GitReviewDialog(
