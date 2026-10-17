@@ -38,6 +38,8 @@ from aiwb import semantic_diff as semantic_diff_service
 from aiwb import task_playbooks as task_playbooks_service
 from aiwb.git import GitCommandError, GitService, GitSyncService
 from aiwb.git.review_dialog import GitReviewDialog
+from aiwb.github.actions import GitHubActionsService
+from aiwb.github.build_center import BuildCenterWindow
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -52,7 +54,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "1.14.5"
+APP_VERSION = "1.14.6"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -6824,6 +6826,8 @@ class WorkbenchApp:
         self.github_repository_binding_settings_button.pack(side="left", padx=(6, 0))
         self.github_repository_metadata_button = ttk.Button(advanced, text="Refresh Binding Metadata", command=self._refresh_active_binding_metadata)
         self.github_repository_metadata_button.pack(side="right")
+        self.github_build_center_button = ttk.Button(advanced, text="Build Center…", command=self.open_build_center)
+        self.github_build_center_button.pack(side="right", padx=(0, 6))
         self._refresh_github_repository_account_choices()
         self._render_github_repository_binding_status()
         if os.name != "nt":
@@ -7126,7 +7130,7 @@ class WorkbenchApp:
         channel_row = 8
         ttk.Label(frame, text="Release channel").grid(row=channel_row, column=0, sticky="w", pady=(8, 0))
         ttk.Combobox(frame, textvariable=channel_var, state="readonly", values=("dev", "beta", "stable"), width=18).grid(row=channel_row, column=1, sticky="w", pady=(8, 0))
-        ttk.Label(frame, text="These values configure the project binding only; this release does not dispatch Workflows or download Artifacts.", foreground="#667085", wraplength=670).grid(row=9, column=0, columnspan=2, sticky="w", pady=(10, 5))
+        ttk.Label(frame, text="These values configure the project binding. Build Center (1.14.6) shows Workflows and Runs; it does not dispatch Workflows or download Artifacts yet.", foreground="#667085", wraplength=670).grid(row=9, column=0, columnspan=2, sticky="w", pady=(10, 5))
         frame.columnconfigure(1, weight=1)
 
         def save() -> None:
@@ -10306,6 +10310,53 @@ class WorkbenchApp:
             self.root, git_root, project_subpath, GitSyncService(_git_service, secret_check=secret_check),
             in_scope=lambda path: bool(repository_binding_service.classify_scoped_paths(project_subpath, [path])[0]),
             context_ids=ids, on_changed=lambda: self.refresh_git(silent=True), redact=redact,
+        )
+
+    def open_build_center(self) -> None:
+        """v1.14.6 Build Center: GitHub Actions workflows, runs and failed steps (observe only)."""
+        binding = self._binding_for_active_project()
+        if binding is None:
+            messagebox.showinfo("Build Center", "Link the active project to a GitHub Repository first.")
+            return
+        account = next((item for item in self.github_account_service.list_accounts() if item.account_id == binding.account_id), None)
+        if account is None:
+            messagebox.showerror("Build Center", "The GitHub account linked to this project is no longer configured. Add it again or relink the project.")
+            return
+        existing = getattr(self, "_build_center_window", None)
+        if existing is not None and not existing.closed:
+            try:
+                existing.win.lift()
+                return
+            except tk.TclError:
+                pass
+        git_root = Path(binding.local_git_root)
+
+        def local_head_sha() -> str | None:
+            try:
+                result = git_run(git_root, ["rev-parse", "HEAD"], timeout=10)
+            except Exception:
+                return None
+            value = result.stdout.strip() if result.returncode == 0 else ""
+            return value if len(value) == 40 else None
+
+        def select_workflow(path: str) -> None:
+            current = self._binding_for_active_project() or binding
+            updated = repository_binding_service.update_binding_preferences(
+                current, working_branch=current.working_branch, workflow_file=path,
+                artifact_pattern=current.artifact_pattern, release_channel=current.release_channel,
+            )
+            rows = repository_binding_service.upsert_binding(self.settings_data.get("github_repository_bindings", []), updated)
+            if not self._save_github_repository_binding_metadata(rows):
+                raise repository_binding_service.RepositoryBindingError("Settings could not be written. The Build workflow was not saved.")
+            self._render_github_repository_binding_status()
+            self.set_status(f"Main Build workflow for {updated.full_name}: {path}")
+
+        self._build_center_window = BuildCenterWindow(
+            self.root, owner=binding.owner, repo=binding.name, branch=binding.working_branch or binding.default_branch,
+            get_token=lambda: self.github_account_service.get_api_token(binding.account_id),
+            service=GitHubActionsService(self.github_account_service.api_client),
+            workflow_file=binding.workflow_file, local_head_sha=local_head_sha,
+            on_select_workflow=select_workflow, redact=redact_github_text,
         )
 
     def _git_action_finished(self, result: Any, label: str) -> None:
