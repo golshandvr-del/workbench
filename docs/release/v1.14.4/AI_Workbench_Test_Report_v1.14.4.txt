@@ -1,0 +1,31 @@
+AI Workbench 1.14.4 — Test Report
+Date: 2026-10-17
+
+Release scope
+- Versioned GitHub RepositoryBinding schema v2 and idempotent schema-v1 migration with settings backup.
+- Per-project workflow-file, artifact-pattern, release-channel and synchronization metadata.
+- Clone and Initialize & Link flows with explicit confirmation and no implicit stage/commit/push.
+- Non-mutating Initial Push Review with active-subpath/outside-scope classification, suspicious path/secret-signature and large-file warnings, plus explicit .gitignore suggestion application.
+- Monorepo-aware Git status and Commit staging limited to the active project subpath.
+- Fixed placement of .workbench/ in the actual Git root's private info/exclude, including a project opened from a subdirectory.
+
+Validation performed in this environment
+1. Python compileall: PASS.
+2. Full unit/regression suite (`python -m unittest discover -v`): 225 tests, all PASS.
+3. GUI smoke suite under Linux/Xvfb: 14 scripts, all PASS.
+4. v1.14.4 GUI/local-Git regression: PASS. It migrated v1 bindings and produced a timestamped byte-identical settings backup; showed outside-scope changes; verified Initial Push Review did not stage files; committed only apps/desktop/new-file.py from a Monorepo subproject; confirmed outside.txt remained outside the commit; and confirmed pre-staged outside-scope changes block Workbench Commit without altering the user's index.
+5. Initialize & Link integration on a new local project: PASS. It created the configured non-main initial-sync branch, configured a credential-free origin, left source files untracked/unstaged and created no commit; .workbench metadata was correctly excluded after Git initialization.
+6. Installer packaging regression (`test_installer_packaging.py`): PASS. The self-extracting .bat contains the exact payload ZIP bytes; required files and module-copy entries are present.
+7. Clean extracted installer-payload test: PASS. Python compileall and imports of AI_Workbench, aiwb.git and aiwb.github.repository_binding passed; 30 focused Git/repository-binding tests passed in the extracted layout.
+8. Payload: 38 files, 325,077 bytes. Setup installer: 449,415 bytes.
+
+Not run / residual limits
+- Native Windows 10/11 installation, upgrade, double-click execution and PowerShell behavior: NOT RUN.
+- Real Windows Credential Manager behavior: NOT RUN in this build environment.
+- Live GitHub PAT validation, private repository clone and network authentication: NOT RUN; automated API tests use injected transport and synthetic credentials.
+- Full file-by-file Stage/Diff selection, Fetch/Sync Plan, divergence handling, GitHub Actions Build Center and artifact downloads are outside v1.14.4 scope and remain scheduled for later versions.
+- Initial Push Review and secret-signature checks are best-effort warnings, not proof that all secrets or unsafe artifacts have been detected.
+
+Release decision
+- Code, automated regression suite, GUI smoke suite, installer payload identity and clean payload-layout import/tests passed in the available Linux environment.
+- Do not label the release Windows-native verified until `WINDOWS_RELEASE_CHECKLIST_v1.14.4.md` has been completed on a real Windows 10/11 target.
