@@ -1,0 +1,43 @@
+AI Workbench 1.13.0 — Test and Release Verification Report
+Date: 2026-10-17
+
+Scope
+-----
+Selective Apply, immutable before/after-hash transaction manifests, hash-guarded Restore Manager and undoable Restore transactions, project validation profiles, binary ZIP artifacts, ignore-aware context recommendations, and reviewed local redacted diagnostics export.
+
+Verified checks in this environment
+-----------------------------------
+1. Python compilation: PASS (`python -m compileall -q .` on application, modules, tests and smoke scripts).
+2. Unit/regression suite: PASS — 156 tests (`python -m unittest -q`).
+3. GUI smoke flows: PASS — 10 flows under Linux/Xvfb:
+   - gui_smoke.py
+   - gui_v110_smoke.py
+   - gui_v15_smoke.py
+   - gui_v16_smoke.py
+   - gui_v18_smoke.py
+   - gui_v19_smoke.py
+   - gui_wizard_smoke.py
+   - gui_action_smoke.py
+   - gui_context_plan_smoke.py
+   - gui_v113_smoke.py
+4. Selective Apply integration: PASS — two of three proposed files were applied; unselected file remained unchanged; the transaction manifest and history event contain only the selected paths.
+5. Restore service: PASS — restores overwritten files, removes unchanged newly created files, refuses hash conflicts and corrupt backups, records a new reversible Restore transaction, and retains the original Apply record.
+6. Validation profiles: PASS — schema, persistence, argv validation, timeout bounds, path checks, unknown-field rejection, and strict boolean typing covered by unit tests. GUI smoke verifies profile persistence; a full native Windows toolchain profile was not run.
+7. Binary ZIP: PASS — binary-only and mixed-artifact handling covered; exact bytes survive Apply; no fabricated text diff; ZIP import remains preview-only.
+8. Installer packaging: PASS — self-extracting BAT wrapper, one-line encoded bootstrap, payload markers and embedded payload byte identity checked with `test_installer_packaging.py`.
+9. Extracted installer-payload suite: PASS — payload extracted to a clean verification folder, Python compilation passed, and all 156 unit/regression tests passed.
+
+Platform limits / NOT RUN
+-------------------------
+- Native Windows 10/11 double-click clean install: NOT RUN.
+- Native Windows upgrade/reinstall and permissions/cancel paths: NOT RUN.
+- Installed pythonw launch and real Windows argv/child-process/timeout matrix: NOT RUN.
+- Real LTspice simulator integration: NOT RUN.
+- No claim of Windows release verification is made. See `WINDOWS_RELEASE_CHECKLIST_v1.13.0.md` for the native test gate.
+
+Important limitations
+---------------------
+- Context ignore handling is a conservative subset, not full Git-ignore compatibility.
+- A successful process exit is process evidence, not domain correctness; manual validation steps remain Not run.
+- Diagnostics export is local-only and omits source, prompts, responses, command text, process output and full project paths by default, but redaction is not a mathematical guarantee that all sensitive values are absent.
+- The roadmap items not implemented in this release are explicitly listed in CHANGELOG.md: typed Delete/Rename/Move, full architecture-plan round-trip UI, multi-candidate response comparison, task playbooks, change-impact analysis, semantic structured-file diff, and static dependency adapters beyond the current conservative context heuristics.
