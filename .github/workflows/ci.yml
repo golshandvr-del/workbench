@@ -74,16 +74,18 @@ jobs:
         run: python -m compileall -q apps/desktop tools
       - name: Unit and regression tests
         working-directory: apps/desktop
-        run: python -m unittest discover -p "test_*.py" -v 2>&1 | tail -n 60; exit ${PIPESTATUS[0]}
+        run: python -m unittest discover -s tests -t . -v 2>&1 | tail -n 60; exit ${PIPESTATUS[0]}
         shell: bash
       - name: Builder tests and installer/manifest gate
         run: |
           python -m unittest tools/test_build_desktop_installer.py
           python tools/check_installer_manifest.py
+          python tools/build_desktop_installer.py --out dist
+          python tools/legacy/test_installer_packaging.py dist/AI_Workbench_*_Setup.bat dist/AI_Workbench_v*_Windows_Payload.zip
       - name: GUI startup smoke (Xvfb)
-        run: xvfb-run -a python tools/gui_smoke.py apps/desktop
-      - name: Git Review & Sync window smoke (Xvfb)
-        run: xvfb-run -a python tools/gui_git_review_smoke.py
+        run: xvfb-run -a python tools/smoke_installed_app.py
+      - name: All GUI smoke scripts (Xvfb)
+        run: xvfb-run -a python apps/desktop/tests/gui/run_all.py
 
   desktop-windows:
     name: Desktop tests + installer (Windows)
@@ -97,10 +99,12 @@ jobs:
           python-version: "3.13"
       - name: Unit and regression tests
         working-directory: apps/desktop
-        run: python -m unittest discover -p "test_*.py"
+        run: python -m unittest discover -s tests -t .
       - name: Native Windows Credential Manager round-trip
         working-directory: apps/desktop
-        run: python test_windows_credential_store.py
+        env:
+          PYTHONPATH: src
+        run: python tests/test_windows_credential_store.py
       - name: Build installer
         run: |
           python tools/check_installer_manifest.py
@@ -124,9 +128,10 @@ jobs:
           Write-Host "Installed OK at $dir"
       - name: GUI smoke of the installed copy
         shell: pwsh
-        run: python tools/gui_smoke.py (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
-      - name: Git Review & Sync window smoke (Windows)
-        run: python tools/gui_git_review_smoke.py
+        run: python tools/smoke_installed_app.py (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
+      - name: All GUI smoke scripts against the installed copy (Windows)
+        shell: pwsh
+        run: python apps/desktop/tests/gui/run_all.py --app-dir (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
       - name: Upload CI installer (test build, not a release)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
