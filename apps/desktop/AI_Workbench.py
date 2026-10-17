@@ -36,7 +36,8 @@ from aiwb import candidate_store as candidate_store_service
 from aiwb import dependency_analysis as dependency_analysis_service
 from aiwb import semantic_diff as semantic_diff_service
 from aiwb import task_playbooks as task_playbooks_service
-from aiwb.git import GitCommandError, GitService
+from aiwb.git import GitCommandError, GitService, GitSyncService
+from aiwb.git.review_dialog import GitReviewDialog
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -51,7 +52,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "1.14.4"
+APP_VERSION = "1.14.5"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -6580,6 +6581,7 @@ class WorkbenchApp:
         ttk.Button(actions, text="Create work branch", command=self.create_workbench_branch).pack(side="left", padx=(6, 0))
         ttk.Button(actions, text="Commit changes…", command=self.commit_changes).pack(side="left", padx=(6, 0))
         ttk.Button(actions, text="Push to GitHub…", command=self.push_changes).pack(side="left", padx=(6, 0))
+        ttk.Button(actions, text="Review & Sync…", command=self.open_git_review_sync).pack(side="left", padx=(18, 0))
         ttk.Label(tab, text="Local changes (sensitive paths or detected secrets are blocked from commit)").pack(anchor="w", pady=(3, 4))
         status_frame = ttk.Frame(tab)
         status_frame.pack(fill="both", expand=True)
@@ -10278,6 +10280,33 @@ class WorkbenchApp:
             return redact((result.stdout + "\n" + result.stderr).strip() or "Push succeeded.")
 
         self._start_worker("Pushing to GitHub…", work, lambda result: self._git_action_finished(result, "Push completed"))
+
+    def open_git_review_sync(self) -> None:
+        """v1.14.5 Safe Git Review & Sync Plan window (selected commit, ff-only, guarded push)."""
+        try:
+            git_root, project_subpath = self._resolve_project_git_scope()
+        except Exception as exc:
+            messagebox.showerror("Git is unavailable", str(exc))
+            return
+        state = load_task_state(self.workspace) if self.workspace else {}
+        history = read_execution_history(self.workspace) if self.workspace else []
+        last_apply = next((e for e in reversed(history) if str(e.get("type", "")).startswith("files_") and e.get("transaction_id")), {})
+        last_run = next((e for e in reversed(history) if e.get("type") == "file_run_finished"), {})
+        ids = {
+            "task_id": str(state.get("task_id", "") or ""),
+            "apply_id": str(last_apply.get("transaction_id", "") or "")[:40],
+            "run_id": str(last_run.get("run_id", "") or last_run.get("timestamp", "") or "").replace(" ", "T")[:40],
+            "summary": "workbench: " + (str(state.get("task_text", "") or "save reviewed project changes").strip().splitlines() or [""])[0][:72],
+        }
+
+        def secret_check(root: Path, paths: Sequence[str]) -> list[str]:
+            return inspect_candidate_paths(root, paths)
+
+        GitReviewDialog(
+            self.root, git_root, project_subpath, GitSyncService(_git_service, secret_check=secret_check),
+            in_scope=lambda path: bool(repository_binding_service.classify_scoped_paths(project_subpath, [path])[0]),
+            context_ids=ids, on_changed=lambda: self.refresh_git(silent=True), redact=redact,
+        )
 
     def _git_action_finished(self, result: Any, label: str) -> None:
         self.refresh_git(silent=True)
