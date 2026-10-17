@@ -117,12 +117,12 @@ class MainActivity : Activity() {
     }
 
     private fun addReleaseRow(label: String, release: Release, preferredAsset: ReleaseAsset?) {
-        val text = TextView(this).apply {
+        val row = TextView(this).apply {
             textSize = 15f
             setPadding(0, 24, 0, 8)
             text = getString(R.string.release_row, label, release.version.toString(), release.publishedAt.take(10))
         }
-        results.addView(text)
+        results.addView(row)
         if (preferredAsset != null) {
             results.addView(Button(this).apply {
                 text = getString(R.string.download_asset, preferredAsset.name, ReleaseInfo.humanSize(preferredAsset.size))
