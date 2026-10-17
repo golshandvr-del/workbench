@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      desktop: ${{ steps.f.outputs.desktop }}
+      mobile: ${{ steps.f.outputs.mobile }}
+      contracts: ${{ steps.f.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: f
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+          else
+            base="${{ github.event.before }}"
+          fi
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null || [ "$base" = "0000000000000000000000000000000000000000" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "desktop=true" >> "$GITHUB_OUTPUT"; echo "mobile=true" >> "$GITHUB_OUTPUT"; echo "contracts=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          changed=$(git diff --name-only "$base" HEAD)
+          echo "$changed"
+          has() { echo "$changed" | grep -Eq "$1" && echo true || echo false; }
+          # Contract changes re-test every consumer.
+          contracts=$(has '^(packages/contracts/|tools/validate_contracts\.py)')
+          ci=$(has '^\.github/workflows/ci\.yml$')
+          desktop=$(has '^(apps/desktop/|tools/)')
+          mobile=$(has '^apps/mobile/')
+          [ "$contracts" = true ] && { desktop=true; mobile=true; }
+          [ "$ci" = true ] && { desktop=true; mobile=true; contracts=true; }
+          echo "desktop=$desktop" >> "$GITHUB_OUTPUT"
+          echo "mobile=$mobile" >> "$GITHUB_OUTPUT"
+          echo "contracts=$contracts" >> "$GITHUB_OUTPUT"
+
+  desktop-linux:
+    name: Desktop tests (Linux, Python ${{ matrix.python }})
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Tk + Xvfb
+        run: sudo apt-get update -q && sudo apt-get install -y -q python3-tk xvfb
+      - name: Compile all sources
+        run: python -m compileall -q apps/desktop tools
+      - name: Unit and regression tests
+        working-directory: apps/desktop
+        run: python -m unittest discover -p "test_*.py" -v 2>&1 | tail -n 60; exit ${PIPESTATUS[0]}
+        shell: bash
+      - name: Builder tests and installer/manifest gate
+        run: |
+          python -m unittest tools/test_build_desktop_installer.py
+          python tools/check_installer_manifest.py
+      - name: GUI startup smoke (Xvfb)
+        run: xvfb-run -a python tools/gui_smoke.py apps/desktop
+
+  desktop-windows:
+    name: Desktop tests + installer (Windows)
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - name: Unit and regression tests
+        working-directory: apps/desktop
+        run: python -m unittest discover -p "test_*.py"
+      - name: Native Windows Credential Manager round-trip
+        working-directory: apps/desktop
+        run: python test_windows_credential_store.py
+      - name: Build installer
+        run: |
+          python tools/check_installer_manifest.py
+          python tools/build_desktop_installer.py --out dist
+      - name: Install from Setup.bat on a clean runner
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem dist -Filter 'AI_Workbench_*_Setup.bat' | Select-Object -First 1
+          # The installer launches the app at the end; stop it so the job can continue.
+          $p = Start-Process -FilePath $env:ComSpec -ArgumentList @('/c', "`"$($setup.FullName)`"") -NoNewWindow -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Installer exited with $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*AI_Workbench.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench'
+          foreach ($f in @('AI_Workbench.py','launch.vbs','uninstall.bat','aiwb\__init__.py','aiwb\git\service.py')) {
+            if (-not (Test-Path (Join-Path $dir $f))) { throw "missing installed file: $f" }
+          }
+          if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('Desktop')) 'AI Workbench.lnk'))) { throw 'desktop shortcut missing' }
+          Write-Host "Installed OK at $dir"
+      - name: GUI smoke of the installed copy
+        shell: pwsh
+        run: python tools/gui_smoke.py (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
+      - name: Upload CI installer (test build, not a release)
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-installer-ci-${{ github.sha }}
+          path: dist/
+          retention-days: 14
+
+  contracts:
+    name: Shared contracts
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true' && hashFiles('tools/validate_contracts.py') != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install "jsonschema>=4.20" "pyyaml>=6"
+      - run: python tools/validate_contracts.py
+
+  mobile:
+    name: Mobile (Android debug build + tests)
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true' && hashFiles('apps/mobile/android/settings.gradle.kts') != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile/android
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Unit tests, lint, debug APK
+        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug
+        env:
+          AIWB_COMMIT_SHA: ${{ github.sha }}
+          AIWB_BUILD_REF: ${{ github.ref_name }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mobile-debug-apk-${{ github.sha }}
+          path: apps/mobile/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 14
+
+  summary:
+    name: CI summary
+    if: always()
+    needs: [changes, desktop-linux, desktop-windows, contracts, mobile]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate results
+        shell: bash
+        run: |
+          echo "changes=${{ needs.changes.result }} desktop-linux=${{ needs.desktop-linux.result }} desktop-windows=${{ needs.desktop-windows.result }} contracts=${{ needs.contracts.result }} mobile=${{ needs.mobile.result }}"
+          for r in "${{ needs.changes.result }}" "${{ needs.desktop-linux.result }}" "${{ needs.desktop-windows.result }}" "${{ needs.contracts.result }}" "${{ needs.mobile.result }}"; do
+            if [ "$r" = "failure" ] || [ "$r" = "cancelled" ]; then echo "CI FAILED"; exit 1; fi
+          done
+          echo "CI OK (skipped jobs had no relevant changes)"
