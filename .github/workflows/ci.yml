@@ -108,7 +108,9 @@ jobs:
         run: |
           $setup = Get-ChildItem dist -Filter 'AI_Workbench_*_Setup.bat' | Select-Object -First 1
           # The installer launches the app at the end; stop it so the job can continue.
-          $p = Start-Process -FilePath $env:ComSpec -ArgumentList @('/c', "`"$($setup.FullName)`"") -NoNewWindow -PassThru -Wait
+          # Wait for cmd.exe only: Start-Process -Wait would also wait for the GUI the installer launches.
+          $p = Start-Process -FilePath $env:ComSpec -ArgumentList @('/c', "`"$($setup.FullName)`"") -NoNewWindow -PassThru
+          if (-not $p.WaitForExit(600000)) { $p.Kill(); throw 'Installer timed out' }
           if ($p.ExitCode -ne 0) { throw "Installer exited with $($p.ExitCode)" }
           Start-Sleep -Seconds 3
           Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*AI_Workbench.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
