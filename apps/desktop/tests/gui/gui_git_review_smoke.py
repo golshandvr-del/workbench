@@ -13,8 +13,8 @@ import tempfile
 import time
 from pathlib import Path
 
-APP = Path(__file__).resolve().parent.parent / "apps" / "desktop"
-sys.path.insert(0, str(APP))
+SRC = Path(__file__).resolve().parents[2] / "src"
+sys.path.insert(0, str(SRC))
 
 import tkinter as tk  # noqa: E402
 

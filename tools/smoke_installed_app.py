@@ -5,7 +5,7 @@ Launches the real Tk application from a given directory (source tree or an
 installed program folder) in an isolated LOCALAPPDATA, verifies the main
 window builds its tabs without exceptions, then closes it.
 
-Usage: python tools/gui_smoke.py [APP_DIR]   (default: apps/desktop)
+Usage: python tools/smoke_installed_app.py [APP_DIR]   (default: apps/desktop/src)
 Needs a display (Windows desktop session or Xvfb on Linux).
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ from pathlib import Path
 
 
 def main(argv: list[str]) -> int:
-    app_dir = Path(argv[1]).resolve() if len(argv) > 1 else Path(__file__).resolve().parent.parent / "apps" / "desktop"
+    app_dir = Path(argv[1]).resolve() if len(argv) > 1 else Path(__file__).resolve().parent.parent / "apps" / "desktop" / "src"
     entry = app_dir / "AI_Workbench.py"
     if not entry.is_file():
         print(f"FAIL: {entry} not found")

@@ -1,0 +1,45 @@
+AI Workbench 1.12.0 — Test and Release Verification Report
+Date: 2026-10-17
+
+Scope
+-----
+Root-cause repair for context-plan protocol disagreement between generated prompts and the importer, backward-compatible migration of older context-plan schemas, improved diagnostics/input identity, and persistence of rejected context-plan attempts to local project history.
+
+Verified checks
+---------------
+1. Python compilation: PASS (`python -m compileall -q` on application, stores, tests, and GUI smoke scripts).
+2. Unit/regression suite: PASS — 144 tests (`python -m unittest -q`).
+3. GUI smoke flows: PASS — 9 flows under Linux/Xvfb:
+   - gui_smoke.py
+   - gui_v110_smoke.py
+   - gui_v15_smoke.py
+   - gui_v16_smoke.py
+   - gui_v18_smoke.py
+   - gui_v19_smoke.py
+   - gui_wizard_smoke.py
+   - gui_action_smoke.py
+   - gui_context_plan_smoke.py
+4. User-reproduction flow: PASS — a `workbench-plan-v1` response with legacy `requests` and `manual_attachments` is migrated; all 13 requested project paths are selected; the plan and normalized request metadata are saved; a follow-up invalid plan is rejected, fingerprinted, and preserved as a failed response attempt in project history.
+5. Schema security: PASS — legacy aliases are normalized before the same path/range/sensitive-file/symlink checks; unknown fields and malformed value types are rejected; no plan can directly write files or execute commands.
+6. Installer packaging test: PASS — PASS: installer wrapper, markers, encoded bootstrap and payload identity (183,053 bytes).
+7. Extracted installer-payload suite: PASS — ----------------------------------------------------------------------
+Ran 144 tests in 5.453s
+
+OK.
+8. ZIP integrity: PASS — source release archive and payload archive are tested after creation; the embedded ZIP bytes match the payload ZIP byte-for-byte.
+
+Root-cause findings addressed
+----------------------------
+- Prompt-level: earlier prompt branches used inconsistent/partly conflicting plan schemas. All prompt-stage paths now share the canonical `workbench-plan-v2` context-plan contract, which explicitly overrides implementation JSON/ZIP/Gemini transport when existing source context is missing.
+- Parser/importer: the old validator allowed only canonical `requested_*` fields while the model response used legacy `requests`, `manual_attachments`, and metadata keys. A constrained migration adapter now accepts known aliases and normalizes known modes before strict validation.
+- Error observability: the pasted JSON and quoted error named different keys (`requests`/`manual_attachments` versus `request`/`manual_attechent`). The previous validator echoed keys from the input object, so those texts likely came from different text or an error transcription typo. Diagnostics now include the current raw-response SHA-256 and actual parsed top-level keys. The diagnostic journal stores only structured metadata and the hash, not raw response text.
+- Workflow/history: a rejected `Import context plan` attempt used to return before saving the failed reply. It is now attached to the active prompt-history step as a rejected response attempt when persistence succeeds, with an execution-journal event recording the fingerprint and validation error.
+- Type safety: malformed JSON protocol/status/action/scope/list types now produce Workbench validation errors rather than uncaught internal type exceptions.
+
+Important interpretation
+-----------------------
+In the user sample, the prompt inventory showed the file tree but no source file contents. The model was right to ask for the existing source files rather than fabricate an installer rewrite. The failure was that Workbench rejected the legitimate legacy plan structure. After importing the plan, the user must review the selected paths, generate the follow-up implementation prompt (which includes file contents under Workbench's normal safety/size checks), and manually send that prompt to the same model chat. No source implementation is claimed by this release report.
+
+Platform limits
+---------------
+All tests ran in the available Linux/Python environment; GUI flows used Xvfb. The installer wrapper and embedded ZIP were verified at the byte/string/ZIP level, and the extracted payload's Python suite passed. A native Windows 10/11 double-click install/update was not executed in this environment and remains unverified. The installer must still be smoke-tested on a target Windows machine.

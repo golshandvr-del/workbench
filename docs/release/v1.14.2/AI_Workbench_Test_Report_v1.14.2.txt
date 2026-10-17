@@ -1,0 +1,29 @@
+AI Workbench 1.14.2 — final build/test report
+Build date: 2026-10-17
+Target: Windows desktop release, built and validated in Linux with Xvfb
+
+Delivered scope
+- UI-independent aiwb.github service package for PAT shape validation, structural redaction, GitHub REST transport, authenticated-user verification, safe metadata and account lifecycle.
+- Persistent Windows Credential Manager adapter. Production factory has no plaintext-file or in-memory fallback; the in-memory store is injectable test infrastructure only.
+- Git / GitHub tab includes GitHub Accounts panel with masked PAT entry, add, test, replace, refresh and disconnect operations.
+- API calls run through background workers; UI is updated through the existing main-thread job queue.
+- GitHub account metadata persistence is separate from Tk-dependent settings serialization, guarded by a shared lock and atomic file replacement. The GUI smoke test creates an account from a worker thread.
+- Live-network requests carrying PATs are restricted to https://api.github.com. A custom HTTPS base URL can only be used with an explicitly injected transport (test seam), not the production urllib transport.
+- GET /user identity validation uses X-GitHub-Api-Version: 2026-03-10; this confirms identity only, not repository/Actions/write permissions.
+- API response length and timeout are bounded, redirects are not followed, and errors are categorized without including raw response bodies or transport exception messages.
+- API credentials are stored separately from local Git transport credentials. No credential is put into remote URLs, subprocess arguments, project files, or account settings JSON.
+
+Automated checks executed
+- `python -m compileall -q .` — PASS.
+- `python -m unittest discover -v` — 205 tests, PASS.
+- GUI smoke scripts under Xvfb — 12/12 PASS (legacy regression flows plus the v1.14.2 GitHub Accounts flow).
+- `python test_github_accounts.py` — 23 tests, PASS, including 401/403/rate-limit/network/timeout and malicious-host validation.
+- `python test_installer_packaging.py /mnt/data/AI_Workbench_1.14.2_Setup.bat /mnt/data/AI_Workbench_v1.14.2_Windows_Payload.zip` — PASS; byte-for-byte embedded payload match verified (288,535-byte ZIP inside a 399,721-byte `.bat`).
+- Native Windows credential test is intentionally not represented as a pass in this report until run on Windows.
+
+Security and validation boundaries
+- Unit/API tests use synthetic token-shaped fixture strings and an injected HTTP transport. No real user PAT was supplied, and no live authenticated GitHub API call was performed in the build environment.
+- GET /user succeeds only as proof of account identity. Repository visibility/write access, Git remote authentication, Actions permissions, dispatch, artifact download and Release permissions remain not_checked until endpoint-specific features exist.
+- Account settings store `credential_ref` and non-secret metadata only. Windows native Credential Manager round-trip is provided by test_windows_credential_store.py.
+- Native Windows Credential Manager, actual .bat double-click install/upgrade, revoked-token behavior against live GitHub, and inspection of a real user's settings/logs remain NOT RUN.
+- Linux/Xvfb GUI checks are not equivalent to native Windows execution.

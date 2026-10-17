@@ -1,0 +1,22 @@
+<<<AIWB_FILE path="main.py" action="write" body="raw">>>
+"""Example application entry point."""
+
+
+def main() -> None:
+    print("Hello from AI Workbench")
+
+
+if __name__ == "__main__":
+    main()
+<<<AIWB_END_FILE>>>
+
+<<<AIWB_FILE path="README.md" action="write" body="raw">>>
+# Example project
+
+The application entry point is `main.py`.
+<<<AIWB_END_FILE>>>
+
+<<<AIWB_COMMAND id="smoke-run" timeout_seconds="30" working_directory="." body="raw">>>
+Purpose: Run the new entry point and observe its output
+python main.py
+<<<AIWB_END_COMMAND>>>

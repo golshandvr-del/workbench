@@ -32,8 +32,8 @@ class BuilderTests(unittest.TestCase):
         with zipfile.ZipFile(io.BytesIO(payload)) as zf:
             self.assertEqual(zf.namelist(), self.manifest["payload_files"])
             self.assertIsNone(zf.testzip())
-            for name in zf.namelist():
-                self.assertEqual(zf.read(name), (b.DESKTOP / name).read_bytes())
+            for name, src in self.manifest["payload"]:
+                self.assertEqual(zf.read(name), (b.REPO / src).read_bytes())
 
     def test_bat_structure(self) -> None:
         payload = b.build_payload(self.manifest)
@@ -47,6 +47,24 @@ class BuilderTests(unittest.TestCase):
         script = base64.b64decode(encoded).decode("utf-16le")
         self.assertIn("###AIWB_PAYLOAD_BEGIN###", script)
         self.assertIn("install.ps1", script)
+
+    def test_unsafe_or_duplicate_payload_rejected(self) -> None:
+        import json as _json
+        original = b.MANIFEST.read_text(encoding="utf-8")
+        cases = [
+            {"path": "../evil.py", "source": "apps/desktop/src/AI_Workbench.py"},
+            {"path": "x.py", "source": "../../etc/passwd"},
+            {"path": "ai_workbench.PY", "source": "apps/desktop/src/AI_Workbench.py"},
+        ]
+        try:
+            for bad in cases:
+                data = _json.loads(original)
+                data["payload"].append(bad)
+                b.MANIFEST.write_text(_json.dumps(data), encoding="utf-8")
+                with self.assertRaises(b.BuildError, msg=str(bad)):
+                    b.load_manifest()
+        finally:
+            b.MANIFEST.write_text(original, encoding="utf-8")
 
     def test_corrupted_bat_detected(self) -> None:
         payload = b.build_payload(self.manifest)

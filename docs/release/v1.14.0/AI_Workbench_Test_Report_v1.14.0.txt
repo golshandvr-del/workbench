@@ -1,0 +1,57 @@
+AI Workbench v1.14.0 — Test and Release Evidence
+Date: 2026-10-17
+
+Scope
+-----
+Release candidate assembled from the v1.13.0 source archive with typed file operations,
+architecture-plan round-trip, per-file response candidate selection, task playbooks,
+static dependency impact analysis, structured semantic diffs, and incremental modularization.
+
+Automated checks executed in this environment
+---------------------------------------------
+1. Python compilation: PASS
+   Command: python -m compileall -q .
+
+2. Unit and regression tests: PASS — 171 tests
+   Command: python -m unittest discover -v
+   Includes legacy-protocol compatibility, typed Write/Delete/Rename/Move validation,
+   duplicate-operation-ID rejection, no-overwrite behavior, Delete/Move Restore, architecture
+   plan schema/persistence, bounded candidate storage/merge, playbooks, dependency analysis,
+   Python AST semantic diffs, JSON path diffs, CSV keyed row/cell diffs, prior history/versioning,
+   command guardrails, ZIP safety, and binary artifact handling.
+
+3. GUI smoke tests: PASS — 11 flows under Linux/Xvfb
+   gui_smoke.py
+   gui_action_smoke.py
+   gui_context_plan_smoke.py
+   gui_wizard_smoke.py
+   gui_v113_smoke.py
+   gui_v110_smoke.py
+   gui_v19_smoke.py
+   gui_v18_smoke.py
+   gui_v16_smoke.py
+   gui_v15_smoke.py
+   gui_v114_smoke.py
+
+4. Windows self-extracting installer packaging: PASS
+   The package test decoded the installer bootstrap, verified payload markers and Base64,
+   and confirmed that the embedded ZIP bytes exactly match the supplied payload ZIP.
+   It also verified required runtime modules, including all files under aiwb/ and their
+   corresponding copy rules in install.ps1.
+
+Not performed / release limits
+------------------------------
+- Native Windows 10/11 double-click installation, upgrade, uninstall, shortcut and pythonw launch: NOT RUN.
+- Real LTspice simulation: NOT RUN.
+- Static dependency and non-Python source-language semantic analysis are heuristic, bounded,
+  advisory analyses; they do not replace a compiler, linker, runtime test, or simulator.
+- YAML-aware semantic parsing is not included. JSON structural parsing and CSV keyed-row/cell
+  comparison are included. Regex-based source-language diffs may miss body-level changes.
+- The application remains a modular monolith at the UI/orchestration boundary: AI_Workbench.py
+  is still the stable entry point, while new domain services are in aiwb/.
+
+Release status
+--------------
+Automated checks are green in this Linux environment. Do not describe the installer as
+Windows-verified until the NOT RUN rows in WINDOWS_RELEASE_CHECKLIST_v1.14.0.md have actual
+Windows target-machine evidence.

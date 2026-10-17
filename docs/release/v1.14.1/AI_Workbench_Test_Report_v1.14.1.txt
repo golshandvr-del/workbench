@@ -1,0 +1,28 @@
+AI Workbench 1.14.1 — Test and Release Evidence
+Date: 2026-10-17
+
+Scope
+- Extracted local Git command, discovery, status parsing, version and changed-path handling into the UI-independent aiwb.git package.
+- Added immutable GitStatusEntry and GitStatusSnapshot models with legacy compatibility adapters.
+- Introduced an injectable GitCommandRunner. Commands use argv with shell=False, disable GIT_TERMINAL_PROMPT, have bounded timeouts and route user-facing error text through redaction.
+- Routed project git init through the shared service boundary.
+- Updated Windows install packaging for aiwb/git nested modules.
+
+Results observed in this environment
+- Python compile check: PASS (`python -m compileall -q AI_Workbench.py aiwb test_git_service.py`).
+- Unit/regression suite: PASS, 182 tests (`python -m unittest discover -v`).
+- New Git service tests: 11 PASS, including a local-Git integration test using a temporary repository with paths containing spaces, Unicode and a newline.
+- GUI smoke suite: 11 PASS under Linux/Xvfb: gui_smoke.py, gui_action_smoke.py, gui_context_plan_smoke.py, gui_v110_smoke.py, gui_v113_smoke.py, gui_v114_smoke.py, gui_v15_smoke.py, gui_v16_smoke.py, gui_v18_smoke.py, gui_v19_smoke.py and gui_wizard_smoke.py.
+- Installer package structure/embedded payload identity: PASS in a separate packaging test; the ZIP bytes decoded from the `.bat` match the source payload byte-for-byte, and the nested `aiwb/git/` paths are present in the copy manifest. This is an offline byte/structure check, not a native installation.
+- Installer-copy-layout import simulation: PASS; a clean temporary installation layout containing the files listed by `install.ps1` imports `AI_Workbench` and `aiwb.git` and reports version `1.14.1`. This is not a substitute for running PowerShell on Windows.
+
+Native Windows checks — NOT RUN
+- Explorer double-click installer and upgrade from v1.14.0.
+- Runtime imports from the installed `aiwb\\git\\` package.
+- Native Git for Windows / Windows Credential Manager interaction and a real branch push.
+- Windows-specific project paths and file-system behavior.
+
+Important scope boundary
+- v1.14.1 does not add GitHub REST API authentication, PAT storage, GitHub Accounts, Repository Browser, Actions monitoring, artifact downloads, Monorepo migration, Android build or release automation. Those remain later roadmap items.
+- Git-over-HTTPS authentication continues to use the user's configured Git credential helper. This release neither reads nor stores a GitHub PAT.
+- Linux/Xvfb, mock/unit tests, and payload-integrity tests do not substitute for evidence from an actual Windows 10/11 target machine.

@@ -218,6 +218,10 @@ AI-Workbench/
 - Remote متفاوت باعث توقف و نمایش گزینه‌های صریح شود.
 - Migration داده‌های نسخهٔ قبلی idempotent باشد و در شکست، backup/گزارش فراهم کند.
 
+### یادداشت پیاده‌سازی نسخهٔ 1.14.4
+
+موارد این مرحله در `v1.14.4` پیاده‌سازی شده‌اند: schema نسخهٔ ۲ برای binding، تنظیمات workflow/artifact/channel، گزینه‌های Clone و Initialize & Link، بررسی غیرتغییردهندهٔ Initial Push، نمایش تغییرات بیرون از subpath و Stage/Commit محدود به Scope پروژه. `.workbench/` نیز در `info/exclude` مربوط به Git root واقعی قرار می‌گیرد. Commit از Workbench در صورت وجود Index از قبل Stage‌شده متوقف می‌شود؛ انتخاب دقیق Stage/Unstage و Sync Plan کامل به `v1.14.5` منتقل شده است. آزمون Native Windows و اتصال زندهٔ GitHub هنوز باید طبق چک‌لیست انتشار اجرا شود.
+
 ---
 
 ## `v1.14.5` — Safe Git Review & Sync Plan

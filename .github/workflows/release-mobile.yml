@@ -3,8 +3,11 @@ name: Release Mobile (Android)
 # Publishing: bump apps/mobile/version.properties (versionName + versionCode),
 # commit, then push a tag `mobile-vX.Y.Z` equal to versionName.
 # Or run manually with an existing tag.
-# Signing material comes only from repository secrets:
+# Signing material lives only in the protected GitHub environment `release`
+# (deployment policy: tags `mobile-v*` only), so branch/PR workflows cannot read it:
 #   AIWB_KEYSTORE_B64, AIWB_KEYSTORE_PASSWORD, AIWB_KEY_ALIAS, AIWB_KEY_PASSWORD
+# Manual re-run: Actions -> Release Mobile -> Run workflow, and choose the TAG
+# (not a branch) in "Use workflow from"; otherwise the environment refuses the job.
 
 on:
   push:
@@ -32,6 +35,7 @@ jobs:
   build:
     name: Build signed APK + AAB
     runs-on: ubuntu-latest
+    environment: release
     outputs:
       version: ${{ steps.v.outputs.version }}
       tag: ${{ steps.v.outputs.tag }}

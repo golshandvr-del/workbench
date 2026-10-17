@@ -1,50 +1,174 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "app": "ai-workbench-desktop",
   "version": "1.14.5",
   "channel": "stable",
-  "payload_files": [
-    "AI_Workbench.py",
-    "conversation_store.py",
-    "project_version_store.py",
-    "restore_service.py",
-    "validation_profiles.py",
-    "README.md",
-    "README_FA.md",
-    "ARCHITECTURE.md",
-    "CHANGELOG.md",
-    "test_workbench.py",
-    "test_conversation_history.py",
-    "test_project_version_store.py",
-    "test_restore_service.py",
-    "test_validation_profiles.py",
-    "test_v114_features.py",
-    "test_git_service.py",
-    "test_github_accounts.py",
-    "test_github_repository_browser.py",
-    "test_github_repository_binding_v144.py",
-    "test_windows_credential_store.py",
-    "test_git_sync.py",
-    "WINDOWS_RELEASE_CHECKLIST_v1.14.5.md",
-    "install.ps1",
-    "uninstall.bat",
-    "aiwb/__init__.py",
-    "aiwb/architecture_plan.py",
-    "aiwb/candidate_store.py",
-    "aiwb/dependency_analysis.py",
-    "aiwb/semantic_diff.py",
-    "aiwb/task_playbooks.py",
-    "aiwb/git/__init__.py",
-    "aiwb/git/models.py",
-    "aiwb/git/service.py",
-    "aiwb/git/sync.py",
-    "aiwb/git/review_dialog.py",
-    "aiwb/github/__init__.py",
-    "aiwb/github/redaction.py",
-    "aiwb/github/credential_store.py",
-    "aiwb/github/api_client.py",
-    "aiwb/github/accounts.py",
-    "aiwb/github/repository_binding.py"
+  "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
+  "payload": [
+    {
+      "path": "AI_Workbench.py",
+      "source": "apps/desktop/src/AI_Workbench.py"
+    },
+    {
+      "path": "conversation_store.py",
+      "source": "apps/desktop/src/conversation_store.py"
+    },
+    {
+      "path": "project_version_store.py",
+      "source": "apps/desktop/src/project_version_store.py"
+    },
+    {
+      "path": "restore_service.py",
+      "source": "apps/desktop/src/restore_service.py"
+    },
+    {
+      "path": "validation_profiles.py",
+      "source": "apps/desktop/src/validation_profiles.py"
+    },
+    {
+      "path": "README.md",
+      "source": "apps/desktop/README.md"
+    },
+    {
+      "path": "README_FA.md",
+      "source": "apps/desktop/README_FA.md"
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "source": "apps/desktop/ARCHITECTURE.md"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "source": "apps/desktop/CHANGELOG.md"
+    },
+    {
+      "path": "test_workbench.py",
+      "source": "apps/desktop/tests/test_workbench.py"
+    },
+    {
+      "path": "test_conversation_history.py",
+      "source": "apps/desktop/tests/test_conversation_history.py"
+    },
+    {
+      "path": "test_project_version_store.py",
+      "source": "apps/desktop/tests/test_project_version_store.py"
+    },
+    {
+      "path": "test_restore_service.py",
+      "source": "apps/desktop/tests/test_restore_service.py"
+    },
+    {
+      "path": "test_validation_profiles.py",
+      "source": "apps/desktop/tests/test_validation_profiles.py"
+    },
+    {
+      "path": "test_v114_features.py",
+      "source": "apps/desktop/tests/test_v114_features.py"
+    },
+    {
+      "path": "test_git_service.py",
+      "source": "apps/desktop/tests/test_git_service.py"
+    },
+    {
+      "path": "test_github_accounts.py",
+      "source": "apps/desktop/tests/test_github_accounts.py"
+    },
+    {
+      "path": "test_github_repository_browser.py",
+      "source": "apps/desktop/tests/test_github_repository_browser.py"
+    },
+    {
+      "path": "test_github_repository_binding_v144.py",
+      "source": "apps/desktop/tests/test_github_repository_binding_v144.py"
+    },
+    {
+      "path": "test_windows_credential_store.py",
+      "source": "apps/desktop/tests/test_windows_credential_store.py"
+    },
+    {
+      "path": "test_git_sync.py",
+      "source": "apps/desktop/tests/test_git_sync.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v1.14.5.md",
+      "source": "docs/release/v1.14.5/WINDOWS_RELEASE_CHECKLIST_v1.14.5.md"
+    },
+    {
+      "path": "install.ps1",
+      "source": "apps/desktop/installer/install.ps1"
+    },
+    {
+      "path": "uninstall.bat",
+      "source": "apps/desktop/installer/uninstall.bat"
+    },
+    {
+      "path": "aiwb/__init__.py",
+      "source": "apps/desktop/src/aiwb/__init__.py"
+    },
+    {
+      "path": "aiwb/architecture_plan.py",
+      "source": "apps/desktop/src/aiwb/architecture_plan.py"
+    },
+    {
+      "path": "aiwb/candidate_store.py",
+      "source": "apps/desktop/src/aiwb/candidate_store.py"
+    },
+    {
+      "path": "aiwb/dependency_analysis.py",
+      "source": "apps/desktop/src/aiwb/dependency_analysis.py"
+    },
+    {
+      "path": "aiwb/semantic_diff.py",
+      "source": "apps/desktop/src/aiwb/semantic_diff.py"
+    },
+    {
+      "path": "aiwb/task_playbooks.py",
+      "source": "apps/desktop/src/aiwb/task_playbooks.py"
+    },
+    {
+      "path": "aiwb/git/__init__.py",
+      "source": "apps/desktop/src/aiwb/git/__init__.py"
+    },
+    {
+      "path": "aiwb/git/models.py",
+      "source": "apps/desktop/src/aiwb/git/models.py"
+    },
+    {
+      "path": "aiwb/git/service.py",
+      "source": "apps/desktop/src/aiwb/git/service.py"
+    },
+    {
+      "path": "aiwb/git/sync.py",
+      "source": "apps/desktop/src/aiwb/git/sync.py"
+    },
+    {
+      "path": "aiwb/git/review_dialog.py",
+      "source": "apps/desktop/src/aiwb/git/review_dialog.py"
+    },
+    {
+      "path": "aiwb/github/__init__.py",
+      "source": "apps/desktop/src/aiwb/github/__init__.py"
+    },
+    {
+      "path": "aiwb/github/redaction.py",
+      "source": "apps/desktop/src/aiwb/github/redaction.py"
+    },
+    {
+      "path": "aiwb/github/credential_store.py",
+      "source": "apps/desktop/src/aiwb/github/credential_store.py"
+    },
+    {
+      "path": "aiwb/github/api_client.py",
+      "source": "apps/desktop/src/aiwb/github/api_client.py"
+    },
+    {
+      "path": "aiwb/github/accounts.py",
+      "source": "apps/desktop/src/aiwb/github/accounts.py"
+    },
+    {
+      "path": "aiwb/github/repository_binding.py",
+      "source": "apps/desktop/src/aiwb/github/repository_binding.py"
+    }
   ],
   "zip_timestamp": [
     2026,

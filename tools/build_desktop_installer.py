@@ -2,9 +2,12 @@
 """Reproducible builder for the AI Workbench Windows self-extracting installer.
 
 Inputs (all inside the repository):
-  apps/desktop/release_manifest.json   version, payload file list, timestamps
-  apps/desktop/<payload files>         application source + install.ps1/uninstall.bat
-  tools/installer_bootstrap.ps1        PowerShell bootstrap embedded via -EncodedCommand
+  apps/desktop/release_manifest.json   version, payload (ZIP path -> repo source), timestamps
+  apps/desktop/src, tests, installer   application source, tests, install.ps1/uninstall.bat
+  apps/desktop/installer/bootstrap.ps1 PowerShell bootstrap embedded via -EncodedCommand
+
+The repository layout (src/, tests/, installer/) is mapped onto the flat program
+folder install.ps1 has always produced, so existing installs stay compatible.
 
 Outputs (in --out, default ./dist):
   AI_Workbench_<ver>_Setup.bat                self-extracting installer (CRLF)
@@ -34,7 +37,8 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 DESKTOP = REPO / "apps" / "desktop"
-BOOTSTRAP = REPO / "tools" / "installer_bootstrap.ps1"
+BOOTSTRAP = DESKTOP / "installer" / "bootstrap.ps1"
+LEGACY_BOOTSTRAP = REPO / "tools" / "installer_bootstrap.ps1"  # layout of tags <= desktop-v1.14.5
 MANIFEST = DESKTOP / "release_manifest.json"
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
 APP_VERSION_RE = re.compile(r'^APP_VERSION\s*=\s*"([^"]+)"', re.M)
@@ -46,48 +50,83 @@ class BuildError(Exception):
     pass
 
 
+def _safe_rel(rel: str, what: str) -> None:
+    p = Path(rel)
+    if not rel or p.is_absolute() or ".." in p.parts or "\\" in rel:
+        raise BuildError(f"release_manifest.json: unsafe {what} {rel!r}")
+
+
+def _timestamp(value: object, what: str) -> tuple:
+    if not (isinstance(value, list) and len(value) == 6 and all(isinstance(x, int) for x in value)):
+        raise BuildError(f"release_manifest.json: {what} must be [Y,M,D,h,m,s]")
+    return tuple(value)
+
+
 def load_manifest() -> dict:
+    """Load and validate the manifest; ``payload`` becomes [(zip_path, repo_source)].
+
+    schema 2: ``payload: [{"path": ..., "source": ...}]`` (repository layout since 1.14.6).
+    schema 1: ``payload_files: [...]`` read from ``apps/desktop/<path>`` (historical tags).
+    """
     try:
         data = json.loads(MANIFEST.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise BuildError(f"cannot read {MANIFEST}: {exc}") from exc
-    if data.get("schema_version") != 1:
+    schema = data.get("schema_version")
+    if schema == 2:
+        raw = data.get("payload")
+        if not isinstance(raw, list) or not raw:
+            raise BuildError("release_manifest.json: 'payload' must be a non-empty list")
+        pairs = []
+        for item in raw:
+            if not (isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("source"), str)):
+                raise BuildError(f"release_manifest.json: invalid payload entry {item!r}")
+            pairs.append((item["path"], item["source"]))
+    elif schema == 1:
+        files = data.get("payload_files")
+        if not isinstance(files, list) or not files or not all(isinstance(f, str) for f in files):
+            raise BuildError("release_manifest.json: 'payload_files' must be a non-empty list of strings")
+        pairs = [(f, f"apps/desktop/{f}") for f in files]
+    else:
         raise BuildError("release_manifest.json: unsupported schema_version")
     version = data.get("version", "")
     if not VERSION_RE.match(str(version)):
         raise BuildError(f"release_manifest.json: invalid version {version!r}")
-    files = data.get("payload_files")
-    if not isinstance(files, list) or not files or not all(isinstance(f, str) for f in files):
-        raise BuildError("release_manifest.json: 'payload_files' must be a non-empty list of strings")
-    if len(set(files)) != len(files):
-        raise BuildError("release_manifest.json: duplicate payload file entries")
-    for rel in files:
-        p = Path(rel)
-        if p.is_absolute() or ".." in p.parts or "\\" in rel:
-            raise BuildError(f"release_manifest.json: unsafe payload path {rel!r}")
-        if not (DESKTOP / rel).is_file():
-            raise BuildError(f"payload file missing: apps/desktop/{rel}")
+    paths = [p for p, _ in pairs]
+    if len({p.lower() for p in paths}) != len(paths):
+        raise BuildError("release_manifest.json: duplicate (or case-colliding) payload paths")
+    for rel, src in pairs:
+        _safe_rel(rel, "payload path")
+        _safe_rel(src, "payload source")
+        if not (REPO / src).is_file():
+            raise BuildError(f"payload source missing: {src}")
     for required in ("install.ps1", "uninstall.bat", "AI_Workbench.py"):
-        if required not in files:
+        if required not in paths:
             raise BuildError(f"release_manifest.json: payload must include {required}")
-    ts = data.get("zip_timestamp")
-    if not (isinstance(ts, list) and len(ts) == 6 and all(isinstance(x, int) for x in ts)):
-        raise BuildError("release_manifest.json: 'zip_timestamp' must be [Y,M,D,h,m,s]")
-    data["zip_timestamp"] = tuple(ts)
+    data["payload"] = pairs
+    data["payload_files"] = paths
+    data["zip_timestamp"] = _timestamp(data.get("zip_timestamp"), "'zip_timestamp'")
     overrides = data.get("zip_timestamps_override", {}) or {}
     if not isinstance(overrides, dict):
         raise BuildError("release_manifest.json: 'zip_timestamps_override' must be an object")
     clean = {}
     for key, value in overrides.items():
-        if key not in files or not (isinstance(value, list) and len(value) == 6 and all(isinstance(x, int) for x in value)):
-            raise BuildError(f"release_manifest.json: invalid timestamp override for {key!r}")
-        clean[key] = tuple(value)
+        if key not in paths:
+            raise BuildError(f"release_manifest.json: timestamp override for unknown path {key!r}")
+        clean[key] = _timestamp(value, f"timestamp override for {key!r}")
     data["zip_timestamps_override"] = clean
     return data
 
 
+def app_entry() -> Path:
+    for candidate in (DESKTOP / "src" / "AI_Workbench.py", DESKTOP / "AI_Workbench.py"):
+        if candidate.is_file():
+            return candidate
+    raise BuildError("AI_Workbench.py not found under apps/desktop/src")
+
+
 def check_app_version(version: str) -> None:
-    text = (DESKTOP / "AI_Workbench.py").read_text(encoding="utf-8")
+    text = app_entry().read_text(encoding="utf-8")
     m = APP_VERSION_RE.search(text)
     if not m:
         raise BuildError("APP_VERSION not found in AI_Workbench.py")
@@ -98,19 +137,19 @@ def check_app_version(version: str) -> None:
 def build_payload(manifest: dict) -> bytes:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for rel in manifest["payload_files"]:
+        for rel, src in manifest["payload"]:
             info = zipfile.ZipInfo(rel, manifest["zip_timestamps_override"].get(rel, manifest["zip_timestamp"]))
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = ZIP_ATTR
             info.create_system = 3
-            zf.writestr(info, (DESKTOP / rel).read_bytes(), compresslevel=9)
+            zf.writestr(info, (REPO / src).read_bytes(), compresslevel=9)
     return buf.getvalue()
 
 
 def build_source_zip(manifest: dict) -> bytes:
     """Full apps/desktop tree (tracked-style: skips caches) for source releases."""
     buf = io.BytesIO()
-    skip_dirs = {"__pycache__", ".pytest_cache", ".workbench"}
+    skip_dirs = {"__pycache__", ".pytest_cache", ".workbench", "dist", "build"}
     files = sorted(
         p for p in DESKTOP.rglob("*")
         if p.is_file() and not (set(p.relative_to(DESKTOP).parts) & skip_dirs) and p.suffix != ".pyc"
@@ -127,7 +166,7 @@ def build_source_zip(manifest: dict) -> bytes:
 
 
 def build_bat(payload: bytes) -> bytes:
-    script = BOOTSTRAP.read_bytes().decode("utf-8")
+    script = (BOOTSTRAP if BOOTSTRAP.is_file() else LEGACY_BOOTSTRAP).read_bytes().decode("utf-8")
     if script.startswith("\ufeff"):
         script = script[1:]
     encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
