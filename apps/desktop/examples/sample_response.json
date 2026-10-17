@@ -1,0 +1,23 @@
+{
+  "protocol": "workbench-v2",
+  "task_id": "DEMO-002",
+  "summary": "Add a small demo module and propose a reviewed smoke test. The command has not run yet.",
+  "files": [
+    {
+      "path": "demo.py",
+      "action": "write",
+      "content": "\"\"\"Minimal demo module for AI Workbench.\"\"\"\n\ndef main():\n    print('Hello from AI Workbench')\n\n\nif __name__ == '__main__':\n    main()\n"
+    }
+  ],
+  "actions": [
+    {
+      "id": "smoke-demo",
+      "purpose": "Run the demo module and confirm its observable output.",
+      "command": "python demo.py",
+      "working_directory": ".",
+      "timeout_seconds": 30
+    }
+  ],
+  "next_steps": ["Review the output and exit code from Workbench before claiming the demo passed."],
+  "completion_status": "in_progress"
+}
