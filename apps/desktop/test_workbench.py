@@ -899,7 +899,8 @@ python -m unittest
 
     def test_continuation_handoff_contains_actual_output_and_optional_exact_contents(self) -> None:
         content = "print('known-state')\n"
-        (self.root / "main.py").write_text(content, encoding="utf-8")
+        # Write exact bytes as Workbench's Apply does; write_text would turn \n into \r\n on Windows.
+        (self.root / "main.py").write_bytes(content.encode("utf-8"))
         payload = {
             "protocol": wb.PROTOCOL_V2, "task_id": "HANDOFF-1", "summary": "Create main.py",
             "files": [{"path": "main.py", "action": "write", "content": content}],
