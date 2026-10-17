@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AI Workbench</string>
+    <string name="subtitle">نسخهٔ آزمایشی موبایل · انتشارها و مشخصات Build</string>
+    <string name="build_info_template">version  %1$s (code %2$d)\nchannel  %3$s\ncommit   %4$s\nref      %5$s</string>
+    <string name="check_updates">بررسی آخرین انتشارها</string>
+    <string name="open_repository">باز کردن مخزن GitHub</string>
+    <string name="checking">در حال بررسی GitHub Releases…</string>
+    <string name="check_failed">بررسی انتشارها ممکن نشد: %1$s</string>
+    <string name="rate_limited">محدودیت درخواست GitHub پر شده است؛ کمی بعد دوباره امتحان کنید.</string>
+    <string name="no_releases">هنوز انتشاری منتشر نشده است.</string>
+    <string name="mobile_update_available">نسخهٔ جدیدتر موبایل (%1$s) موجود است.</string>
+    <string name="mobile_up_to_date">این اپ موبایل به‌روز است.</string>
+    <string name="desktop_label">دسکتاپ (ویندوز)</string>
+    <string name="mobile_label">موبایل (اندروید)</string>
+    <string name="release_row">%1$s — %2$s · %3$s</string>
+    <string name="download_asset">دانلود %1$s (%2$s)</string>
+    <string name="open_release_page">باز کردن صفحهٔ انتشار</string>
+    <string name="untrusted_link">لینکی که آدرس https گیت‌هاب نبود مسدود شد.</string>
+    <string name="no_browser">مرورگری برای باز کردن لینک در دسترس نیست.</string>
+    <string name="scope_note">این نسخهٔ اولیهٔ موبایل برای اثبات چرخهٔ Build و انتشار اندروید است. قابلیت‌های Companion (اتصال به نسخهٔ دسکتاپ، Task، Prompt) در برنامه هستند و هنوز در دسترس نیستند.</string>
+</resources>
