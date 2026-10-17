@@ -485,7 +485,8 @@ class PollPolicy:
     def record_error(self, error: BaseException) -> None:
         self._failures += 1
         self._last_fetch = self.clock()
-        wait = min(self.max_backoff, self.active_interval * (2 ** min(self._failures, 6)))
+        base = self.active_interval if self._active else self.idle_interval
+        wait = min(self.max_backoff, base * (2 ** min(self._failures, 6)))
         retry_after = getattr(error, "retry_after_seconds", None)
         if getattr(error, "category", "") == "rate_limit" and isinstance(retry_after, int):
             wait = max(wait, float(retry_after))
