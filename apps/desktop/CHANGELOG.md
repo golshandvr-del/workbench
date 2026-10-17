@@ -1,3 +1,27 @@
+## [1.14.5] - 2026-10-17
+### Safe Git Review & Sync Plan (roadmap v1.14.5)
+- New **Review & Sync…** window in the Git / GitHub tab, backed by the UI-independent `aiwb/git/sync.py` service.
+- Status is read with `git status --porcelain=v2 --branch -z`; each path is shown as staged / unstaged / untracked / deleted / renamed (with original path) / conflict, with its in/OUT active-project scope and a per-file diff (staged and unstaged shown separately, binary and outside-repo paths refused).
+- File-by-file selection for commit. In-scope files are pre-selected; selecting outside-scope files requires an extra confirmation.
+- Pre-existing staged changes that were not selected **block** the commit (nothing is mixed in). After `git add`, the index is re-read and any unexpected path aborts before committing.
+- `Fetch + build Sync Plan` classifies: clean / local ahead / remote ahead / diverged / local changes / conflict / no upstream / detached, with explicit manual options for diverged and conflict states.
+- Only a `merge --ff-only` is ever performed, and only when the remote is strictly ahead, the tree is clean and HEAD/branch still match the plan.
+- Before push the live remote branch SHA is re-read with `ls-remote`; if it changed since the plan, nothing is pushed and a new plan is required. No force push exists. Push to `main`/`master` remains blocked.
+- Editable commit message with `Workbench-Task` / `Workbench-Run` / `Workbench-Apply` trailers prefilled from local task/run/apply metadata. The prompt is never stored in the commit.
+- Results distinguish "commit failed" from "local commit WAS created, but push failed".
+- Secret scanning stays a best-effort auxiliary check and is reported as such.
+
+### Windows portability fixes (found by the new native Windows CI)
+- Fixed a crash recording an applied project version when the project path is a Windows 8.3 short path / junction (`relative_to` on unresolved root).
+- Fixed four tests that assumed POSIX (shell-script fake LTspice runner, text-mode newline translation, unresolved temp path).
+
+### Release engineering
+- The app now lives in the `golshandvr-del/workbench` monorepo (`apps/desktop`). The installer is built reproducibly by `tools/build_desktop_installer.py` (it rebuilds the published 1.14.4 installer byte-for-byte from tag `desktop-v1.14.4`).
+- CI runs the full suite on Linux (Python 3.10/3.13) and natively on Windows, installs from `Setup.bat` on a clean runner, checks shortcuts, and runs GUI smokes of the installed copy and of the new review window.
+
+### Validation
+- 242 unit/regression tests (17 new real-repository sync tests using a local bare remote: ff-only, dirty-tree block, stale plan, divergence, concurrent remote update before push, commit-created-but-push-failed, pre-staged files, main/master block, first push without upstream).
+
 ## [1.14.4] - 2026-10-17
 ### Project binding v2 and Monorepo-aware Git scope
 - Extended `RepositoryBinding` to schema v2 with validated Workflow path, Artifact-name pattern, release channel, last-known remote SHA and sync/metadata timestamps. Schema-v1 bindings migrate idempotently with a timestamped settings backup before persistence.
