@@ -87,7 +87,7 @@ android {
 dependencies {
     testImplementation("junit:junit:4.13.2")
     // Real org.json on the JVM test classpath (android.jar only ships stubs).
-    testImplementation("org.json:json:20240303")
+    testImplementation("org.json:json:20260814")
 }
 
 // Fail fast if a release build is requested without signing material.
