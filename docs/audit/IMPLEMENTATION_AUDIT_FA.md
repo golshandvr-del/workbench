@@ -1,6 +1,6 @@
 # ممیزی پیاده‌سازی: کدام اسناد توسعه عملی شده‌اند و چقدر؟
 
-**تاریخ:** 2026-10-17 · **مبنا:** سورس واقعی `apps/desktop` (نسخهٔ 1.14.4 وارد‌شده و 1.14.5 فعلی)، نه ادعای اسناد.
+**تاریخ:** 2026-10-17 · **مبنا:** سورس واقعی `apps/desktop` (نسخهٔ 1.14.4 وارد‌شده تا 1.14.6 فعلی)، نه ادعای اسناد.
 **روش:** جست‌وجوی کد، اجرای تست‌ها روی Linux و Windows واقعی (GitHub Actions)، و مقایسه با معیارهای پذیرش هر سند.
 
 راهنمای وضعیت: ✅ کامل · 🟡 بخشی · ❌ انجام‌نشده · ⏭ عمداً به بعد موکول
@@ -13,7 +13,7 @@
 |---|---|---|
 | `AI_Workbench_v1.11.0_Development_Roadmap_FA.md` | پایداری پاسخ، Repair، Diagnostics، Transaction | **≈ 85٪** |
 | `AI_Workbench_GitHub_Monorepo_Integration_Spec_v1.13_FA.md` | GitHub Hub، Binding، Build Center، Artifact، Monorepo محصول | **≈ 40٪** (+ زیرساخت Monorepo/CI که اکنون ساخته شد) |
-| `AI_Workbench_GitHub_Monorepo_Roadmap_v1.14_to_v1.15.md` | مسیر 1.14.1 → 1.15.0 | **1.14.1 تا 1.14.5 انجام** (5 از 14 گام) + بخش‌هایی از 1.14.9 تا 1.14.12 |
+| `AI_Workbench_GitHub_Monorepo_Roadmap_v1.14_to_v1.15.md` | مسیر 1.14.1 → 1.15.0 | **1.14.1 تا 1.14.6 انجام** (6 از 14 گام) + بخش‌هایی از 1.14.9 تا 1.14.12 |
 | `AI_Workbench_New_Developer_Handoff_v1.14_FA.md` | Response Inbox، Context Request، V2 چند Agent | **≈ 15٪** (فاز A شروع نشده؛ فقط پایه‌ها) |
 | `AI_Workbench_Future_Roadmap_v1.14_FA.md` | راهبرد بلندمدت، V2، Release Gates | **≈ 10٪** (فقط Release Gate و CI) |
 | `ADR-004` | Binding v2 و Scope در Monorepo | **✅ کامل** |
@@ -28,8 +28,8 @@
 | 1.14.2 | حساب GitHub + Credential Manager ویندوز | ✅ | `aiwb/github/accounts.py`, `credential_store.py` — تست بومی ویندوز اکنون در CI **سبز** است |
 | 1.14.3 | مرورگر Repository | ✅ | `aiwb/github/api_client.py`, `test_github_repository_browser.py` |
 | 1.14.4 | Binding v2 و Scope در Monorepo | ✅ | `repository_binding.py`, ADR-004 |
-| **1.14.5** | **Safe Git Review & Sync Plan** | **✅ (این نسخه)** | `aiwb/git/sync.py`, `aiwb/git/review_dialog.py`, `test_git_sync.py` (17 تست روی Repo واقعی) |
-| 1.14.6 | Build Center: Workflow & Run Monitoring | ❌ | — |
+| 1.14.5 | Safe Git Review & Sync Plan | ✅ | `aiwb/git/sync.py`, `aiwb/git/review_dialog.py`, `test_git_sync.py` (17 تست روی Repo واقعی) |
+| **1.14.6** | **Build Center: Workflow & Run Monitoring** | **✅** | `aiwb/github/actions.py`, `build_center.py`, `test_github_actions.py` (17 تست)، GUI smoke |
 | 1.14.7 | Workflow Dispatch & Safe Artifact Download | ❌ | — (فقط ZIP خروجی محلی موجود است) |
 | 1.14.8 | One-click Sync & Build Orchestrator | ❌ | — |
 | 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 | ریپو، CI لینوکس/ویندوز، Actionsهای pin‌شده، permissions حداقلی انجام شد؛ ADR سیاست branch/tag مانده |

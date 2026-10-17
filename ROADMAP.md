@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-17 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.5` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
-**گام فعال بعدی:** [`v1.14.6` — Build Center](#v1146--build-center-workflow--run-monitoring)
+**آخرین به‌روزرسانی:** 2026-10-17 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.6` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
+**گام فعال بعدی:** [`v1.14.7` — Workflow Dispatch & Safe Artifact Download](#v1147--workflow-dispatch--safe-artifact-download)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -58,8 +58,8 @@
 | 1.14.3 | Repository Browser & API Capability Checks | ✅ | `aiwb/github/api_client.py`, `tests/test_github_repository_browser.py` |
 | 1.14.4 | Project Binding & Monorepo-aware Paths | ✅ | `repository_binding.py`, ADR-004 |
 | 1.14.5 | Safe Git Review & Sync Plan | ✅ | `aiwb/git/sync.py`, `review_dialog.py`, ۱۷ تست روی Repo واقعی؛ Release `desktop-v1.14.5` |
-| **1.14.6** | **Build Center: Workflow & Run Monitoring** | ⬜ **گام فعال** | — |
-| 1.14.7 | Workflow Dispatch & Safe Artifact Download | ⬜ | — |
+| 1.14.6 | Build Center: Workflow & Run Monitoring | ✅ | `aiwb/github/actions.py`, `build_center.py`, `tests/test_github_actions.py`, `tests/gui/gui_build_center_smoke.py`؛ Release `desktop-v1.14.6` |
+| **1.14.7** | **Workflow Dispatch & Safe Artifact Download** | ⬜ **گام فعال** | — |
 | 1.14.8 | One-click Sync & Build Orchestrator | ⬜ | — |
 | 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 زیرساخت زودتر ساخته شد | ✅ ریپو، CI روی Linux+Windows، Actionsهای pin‌شده به SHA، permissions حداقلی، `CI summary`، Artifact نصاب CI. ⬜ ADR سیاست branch/tag |
 | 1.14.10 | Staged Monorepo Migration | 🟡 | ✅ `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت یکسان (PR #1). ⬜ `packages/contracts/` |
@@ -68,21 +68,21 @@
 | 1.14.13 | Release Candidate & Native Windows Validation | ⬜ | — |
 | 1.15.0 | Integrated GitHub & Monorepo Stable | ⬜ | — |
 
-> زیرساخت ریپو (1.14.9 تا 1.14.12) برای نگهداری و انتشار امن زودتر ساخته شد. این **ترتیب قابلیت‌های داخل اپ را تغییر نمی‌دهد**: گام فعال همچنان 1.14.6 است و موارد ⬜ این ردیف‌ها در نوبت خودشان بسته می‌شوند.
+> زیرساخت ریپو (1.14.9 تا 1.14.12) برای نگهداری و انتشار امن زودتر ساخته شد. این **ترتیب قابلیت‌های داخل اپ را تغییر نمی‌دهد**: گام فعال همچنان طبق جدول بالاست و موارد ⬜ این ردیف‌ها در نوبت خودشان بسته می‌شوند.
 
 ### v1.14.6 — Build Center: Workflow & Run Monitoring
 
 **هدف:** مشاهده و پیگیری GitHub Actions از داخل اپ، هنوز بدون ترکیب با Push.
 
-- [ ] کشف `.github/workflows/*.yml|*.yaml` از Repository contents؛ نمایش نام، فایل، triggerها و وجود `workflow_dispatch`
-- [ ] انتخاب Workflow اصلی Build در binding پروژه؛ تغییرنام/حذف فایل → stale binding واضح
-- [ ] Build Center: آخرین Runها با status/conclusion، branch/ref، commit SHA، run ID، زمان‌ها و لینک GitHub
-- [ ] نمایش Jobs/Steps ناموفق و لینک Log
-- [ ] polling غیرمسدودکننده با cache، backoff و رعایت rate-limit headers
-- [ ] Cancel Run فقط با Permission و تأیید
-- [ ] جلوگیری از دو Sync/Build متعارض روی همان Repository/ref
+- [x] کشف `.github/workflows/*.yml|*.yaml` از Repository contents؛ نمایش نام، فایل، triggerها و وجود `workflow_dispatch`
+- [x] انتخاب Workflow اصلی Build در binding پروژه؛ تغییرنام/حذف فایل → stale binding واضح
+- [x] Build Center: آخرین Runها با status/conclusion، branch/ref، commit SHA، run ID، زمان‌ها و لینک GitHub
+- [x] نمایش Jobs/Steps ناموفق و لینک Log
+- [x] polling غیرمسدودکننده با cache، backoff و رعایت rate-limit headers
+- [x] Cancel Run فقط با Permission و تأیید
+- [x] جلوگیری از دو Sync/Build متعارض روی همان Repository/ref
 
-**دروازه:** چند Run با branch/SHA متفاوت درست تفکیک شوند · Run قدیمی نتیجهٔ Push جدید نشان داده نشود · Workflow بدون `workflow_dispatch` قابل اجرای دستی نشان داده نشود · 401/403/rate-limit/timeout و `cancelled/skipped/failure/success` تفکیک شوند · UI حین polling فعال بماند.
+**دروازه (پاس شد — تست‌های واحد + GUI smoke + بررسی روی API واقعی):** چند Run با branch/SHA متفاوت درست تفکیک شوند · Run قدیمی نتیجهٔ Push جدید نشان داده نشود · Workflow بدون `workflow_dispatch` قابل اجرای دستی نشان داده نشود · 401/403/rate-limit/timeout و `cancelled/skipped/failure/success` تفکیک شوند · UI حین polling فعال بماند.
 
 ### v1.14.7 — Workflow Dispatch & Safe Artifact Download
 
