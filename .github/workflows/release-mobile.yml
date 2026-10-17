@@ -1,0 +1,145 @@
+name: Release Mobile (Android)
+
+# Publishing: bump apps/mobile/version.properties (versionName + versionCode),
+# commit, then push a tag `mobile-vX.Y.Z` equal to versionName.
+# Or run manually with an existing tag.
+# Signing material comes only from repository secrets:
+#   AIWB_KEYSTORE_B64, AIWB_KEYSTORE_PASSWORD, AIWB_KEY_ALIAS, AIWB_KEY_PASSWORD
+
+on:
+  push:
+    tags: ["mobile-v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to (re)publish, e.g. mobile-v0.1.0"
+        required: true
+        type: string
+      prerelease:
+        description: "Mark as pre-release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-mobile-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build signed APK + AAB
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      tag: ${{ steps.v.outputs.tag }}
+    steps:
+      - id: v
+        shell: bash
+        run: |
+          tag="${{ github.event.inputs.tag || github.ref_name }}"
+          case "$tag" in mobile-v[0-9]*.[0-9]*.[0-9]*) ;; *) echo "invalid mobile tag: $tag"; exit 1;; esac
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "version=${tag#mobile-v}" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ steps.v.outputs.tag }}
+      - name: Tag must equal versionName
+        shell: bash
+        run: |
+          vn=$(grep '^versionName=' apps/mobile/version.properties | cut -d= -f2 | tr -d '[:space:]')
+          vc=$(grep '^versionCode=' apps/mobile/version.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "versionName=$vn versionCode=$vc"
+          [ "$vn" = "${{ steps.v.outputs.version }}" ] || { echo "tag version != versionName ($vn)"; exit 1; }
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - name: Decode keystore
+        shell: bash
+        env:
+          KS: ${{ secrets.AIWB_KEYSTORE_B64 }}
+        run: |
+          [ -n "$KS" ] || { echo "AIWB_KEYSTORE_B64 secret missing"; exit 1; }
+          echo "$KS" | base64 -d > "$RUNNER_TEMP/aiwb-release.keystore"
+          echo "AIWB_KEYSTORE_PATH=$RUNNER_TEMP/aiwb-release.keystore" >> "$GITHUB_ENV"
+      - name: Tests + signed release build
+        working-directory: apps/mobile/android
+        env:
+          AIWB_KEYSTORE_PASSWORD: ${{ secrets.AIWB_KEYSTORE_PASSWORD }}
+          AIWB_KEY_ALIAS: ${{ secrets.AIWB_KEY_ALIAS }}
+          AIWB_KEY_PASSWORD: ${{ secrets.AIWB_KEY_PASSWORD }}
+          AIWB_COMMIT_SHA: ${{ github.sha }}
+          AIWB_BUILD_REF: ${{ steps.v.outputs.tag }}
+          AIWB_CHANNEL: ${{ github.event.inputs.prerelease == 'true' && 'beta' || 'stable' }}
+        run: ./gradlew --no-daemon testReleaseUnitTest assembleRelease bundleRelease
+      - name: Verify signature and collect assets
+        shell: bash
+        run: |
+          v="${{ steps.v.outputs.version }}"
+          bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          apk=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          aab=apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          "$bt/apksigner" verify --print-certs "$apk" | tee signature.txt
+          mkdir -p dist
+          cp "$apk" "dist/AIWorkbench-mobile-$v.apk"
+          cp "$aab" "dist/AIWorkbench-mobile-$v.aab"
+          cp signature.txt "dist/AIWorkbench-mobile-$v-signature.txt"
+          (cd dist && sha256sum AIWorkbench-mobile-$v.apk AIWorkbench-mobile-$v.aab > AIWorkbench-mobile-${v}_SHA256SUMS.txt)
+          rm -f "$AIWB_KEYSTORE_PATH"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mobile-release-${{ steps.v.outputs.version }}
+          path: dist/
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ needs.build.outputs.tag }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: mobile-release-${{ needs.build.outputs.version }}
+          path: dist
+      - name: Release notes
+        shell: bash
+        run: |
+          v="${{ needs.build.outputs.version }}"
+          f=apps/mobile/CHANGELOG.md
+          if [ -f "$f" ]; then awk -v v="$v" '$0 ~ "^## \\[" v "\\]" {f=1; next} f && /^## \[/ {exit} f' "$f" > notes.md; fi
+          {
+            echo ""
+            echo "### Install (Android 7.0+)"
+            echo "Download \`AIWorkbench-mobile-$v.apk\` on the phone and open it (allow installing from this source)."
+            echo ""
+            echo "### SHA-256"
+            echo '```'
+            cat dist/AIWorkbench-mobile-${v}_SHA256SUMS.txt
+            echo '```'
+          } >> notes.md
+          cat notes.md
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="${{ needs.build.outputs.tag }}"
+          v="${{ needs.build.outputs.version }}"
+          pre=""
+          if [ "${{ github.event.inputs.prerelease }}" = "true" ]; then pre="--prerelease"; fi
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --notes-file notes.md --title "AI Workbench Mobile $v"
+            gh release upload "$tag" dist/* --clobber
+          else
+            # Desktop stays the repository's "Latest" release.
+            gh release create "$tag" dist/* --title "AI Workbench Mobile $v" --notes-file notes.md --verify-tag --latest=false $pre
+          fi
