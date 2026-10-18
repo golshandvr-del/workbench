@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -138,8 +138,12 @@
       "source": "apps/desktop/tests/test_i18n.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v2.1.2.md",
-      "source": "docs/release/v2.1.2/WINDOWS_RELEASE_CHECKLIST_v2.1.2.md"
+      "path": "test_companion.py",
+      "source": "apps/desktop/tests/test_companion.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v2.2.0.md",
+      "source": "docs/release/v2.2.0/WINDOWS_RELEASE_CHECKLIST_v2.2.0.md"
     },
     {
       "path": "install.ps1",
@@ -348,6 +352,26 @@
     {
       "path": "aiwb/i18n.py",
       "source": "apps/desktop/src/aiwb/i18n.py"
+    },
+    {
+      "path": "aiwb/companion/__init__.py",
+      "source": "apps/desktop/src/aiwb/companion/__init__.py"
+    },
+    {
+      "path": "aiwb/companion/crypto.py",
+      "source": "apps/desktop/src/aiwb/companion/crypto.py"
+    },
+    {
+      "path": "aiwb/companion/service.py",
+      "source": "apps/desktop/src/aiwb/companion/service.py"
+    },
+    {
+      "path": "aiwb/companion/server.py",
+      "source": "apps/desktop/src/aiwb/companion/server.py"
+    },
+    {
+      "path": "aiwb/companion/window.py",
+      "source": "apps/desktop/src/aiwb/companion/window.py"
     }
   ],
   "zip_timestamp": [
