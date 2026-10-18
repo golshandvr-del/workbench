@@ -82,6 +82,15 @@ class ProjectsWindow:
         ttk.Button(ab, text="Review proposal…", command=self.do_proposal).pack(side="left", padx=4)
         self.result_var = tk.StringVar()
         ttk.Label(right, textvariable=self.result_var, wraplength=520).pack(anchor="w")
+        # Advanced-only panels: read-only projections of the same state (spec §19)
+        self.adv = ttk.Notebook(self.win)
+        self.adv_text: dict[str, tk.Text] = {}
+        for name in ("Agents", "Decisions", "Evidence", "Attempts", "Proposals", "Publish"):
+            frame = ttk.Frame(self.adv)
+            t = tk.Text(frame, height=8, wrap="none")
+            t.pack(fill="both", expand=True)
+            self.adv.add(frame, text=name)
+            self.adv_text[name] = t
         self.refresh()
 
     # -- view
@@ -91,6 +100,16 @@ class ProjectsWindow:
 
     def refresh(self) -> None:
         self.next_var.set(self.ctl.next_action_text())
+        nv = self.ctl.next_action_view()
+        if nv and self.ctl.mode == "advanced" and nv.get("queue"):
+            self.next_var.set(self.next_var.get() + "\nThen: " + " · ".join(nv["queue"]))
+        if self.ctl.mode == "advanced":
+            if not self.adv.winfo_ismapped():
+                self.adv.pack(fill="both", expand=False, padx=10, pady=(0, 8))
+            for name, text in self.ctl.advanced_panels().items():
+                self._set(self.adv_text[name], text)
+        elif self.adv.winfo_manager():
+            self.adv.pack_forget()
         w = self.ctl.warnings()
         self.warn_var.set("\n".join("⚠ " + x for x in w[:6]))
         keep = self.selected_task()
