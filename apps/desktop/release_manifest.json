@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -106,8 +106,12 @@
       "source": "apps/desktop/tests/test_rc_hardening.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v1.15.0.md",
-      "source": "docs/release/v1.15.0/WINDOWS_RELEASE_CHECKLIST_v1.15.0.md"
+      "path": "test_inbox.py",
+      "source": "apps/desktop/tests/test_inbox.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v1.16.0.md",
+      "source": "docs/release/v1.16.0/WINDOWS_RELEASE_CHECKLIST_v1.16.0.md"
     },
     {
       "path": "install.ps1",
@@ -208,6 +212,38 @@
     {
       "path": "aiwb/github/sync_build_window.py",
       "source": "apps/desktop/src/aiwb/github/sync_build_window.py"
+    },
+    {
+      "path": "aiwb/inbox/__init__.py",
+      "source": "apps/desktop/src/aiwb/inbox/__init__.py"
+    },
+    {
+      "path": "aiwb/inbox/store.py",
+      "source": "apps/desktop/src/aiwb/inbox/store.py"
+    },
+    {
+      "path": "aiwb/inbox/attempts.py",
+      "source": "apps/desktop/src/aiwb/inbox/attempts.py"
+    },
+    {
+      "path": "aiwb/inbox/classify.py",
+      "source": "apps/desktop/src/aiwb/inbox/classify.py"
+    },
+    {
+      "path": "aiwb/inbox/errors.py",
+      "source": "apps/desktop/src/aiwb/inbox/errors.py"
+    },
+    {
+      "path": "aiwb/inbox/salvage.py",
+      "source": "apps/desktop/src/aiwb/inbox/salvage.py"
+    },
+    {
+      "path": "aiwb/inbox/pipeline.py",
+      "source": "apps/desktop/src/aiwb/inbox/pipeline.py"
+    },
+    {
+      "path": "aiwb/inbox/inbox_window.py",
+      "source": "apps/desktop/src/aiwb/inbox/inbox_window.py"
     }
   ],
   "zip_timestamp": [
