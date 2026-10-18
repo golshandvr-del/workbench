@@ -1,0 +1,2 @@
+{"schema_version": "1.0", "proposal_type": "team_plan", "base_state_revision": 1,
+ "operations": [{"operation": "assign_account", "agent_id": "agent-implementer"}]}

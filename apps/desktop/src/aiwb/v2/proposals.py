@@ -19,12 +19,13 @@ from typing import Any
 
 from .models import SCHEMA_VERSION, ModelError, check_transition, normalize_task, now_utc
 from .store import ProjectStore, emit, next_id, require
+from .team import check_team
 from .tasks import TaskService, readiness, validate_graph
 
 BLOCK_RE = re.compile(r"(?s)<<<AIWB_MANAGER_PROPOSAL>>>\s*(.*?)\s*<<<AIWB_END_MANAGER_PROPOSAL>>>")
 OPERATIONS = ("create_task", "update_task", "add_dependency", "remove_dependency", "assign_agent", "propose_decision",
               "reorder_priority", "split_task", "close_or_cancel_task", "request_more_evidence", "change_scope",
-              "report_risk")
+              "report_risk", "create_agent", "assign_account")  # last two: Team Proposal (2.4.0, spec §7.3)
 INFO_ONLY = ("request_more_evidence", "report_risk")
 MAX_OPS = 60
 
@@ -99,6 +100,11 @@ class ProposalService:
                 if r not in state["tasks"]:
                     entry.update(valid=False, problem=f"unknown task {r}")
             normalized.append(entry)
+        team = check_team(data, ops, state)
+        for idx, msg in team["op_errors"].items():
+            e = normalized[idx]
+            if e["valid"]:
+                e.update(valid=False, problem=msg.split(": ", 1)[-1])
         changed = []
         for e in normalized:
             for r in _op_task_refs(e["raw"]):
@@ -115,6 +121,9 @@ class ProposalService:
                  "questions_for_user": [str(q)[:500] for q in data.get("questions_for_user", []) or []][:30],
                  "operations": normalized, "problems": problems, "stale": stale,
                  "stale_task_ids": sorted(set(changed)), "status": "pending", "source_response_id": response_id,
+                 "assumptions": [str(a)[:500] for a in data.get("assumptions", []) or []][:30],
+                 "team": team["team"], "team_issues": team["issues"], "team_counts": team["counts"],
+                 "is_team": team["is_team"],
                  "created_at": now_utc(), "updated_at": now_utc(), "result": {}}
             s["proposals"][pid] = p
             emit(s, "proposal_imported", proposal_id=pid, operations=len(normalized), stale=stale)
@@ -158,7 +167,10 @@ class ProposalService:
     def _apply(self, s: dict[str, Any], p: dict[str, Any], accept: list[int], *, dry_run: bool) -> dict[str, Any]:
         ops = {o["index"]: o for o in p["operations"]}
         errors, applied, created, notes = [], [], {}, []
-        selected = [ops[i] for i in sorted(set(accept)) if i in ops]
+        # team operations first, so tasks may name agents created in the same proposal
+        order = {"create_agent": 0, "assign_account": 1}
+        selected = sorted([ops[i] for i in sorted(set(accept)) if i in ops],
+                          key=lambda o: (order.get(o["operation"], 2), o["index"]))
         selected_refs = {o.get("temporary_ref") for o in selected if o.get("temporary_ref")}
         ts = TaskService(self.store)
         resolve = lambda ref: created.get(ref, ref)  # noqa: E731
@@ -189,7 +201,11 @@ class ProposalService:
                             "task_type": raw.get("task_type"), "origin": "manager_proposal",
                             "acceptance_policy": raw.get("acceptance_policy"),
                             "required_approvals": raw.get("required_approvals")}
+                    if raw.get("reviewer_agent_id"):
+                        data["reviewer_agent_ids"] = [raw["reviewer_agent_id"]]
                     task = ts._create_in(s, data, status="draft")
+                    if raw.get("parallel_group"):
+                        task["parallel_group"] = str(raw["parallel_group"])[:20]
                     task["proposal_id"] = p["proposal_id"]
                     created[op["temporary_ref"]] = task["task_id"]
                     if name == "split_task" and raw.get("task_id") in s["tasks"]:
@@ -250,6 +266,29 @@ class ProposalService:
                                            "supersedes": "", "superseded_by": "", "previously_rejected": [],
                                            "created_at": now_utc(), "updated_at": now_utc()}
                     notes.append(f"{did} proposed (needs your decision)")
+                elif name == "create_agent":
+                    from .models import normalize_agent
+                    aid = raw.get("agent_id")
+                    if aid in s["agents"]:
+                        raise ModelError(f"agent {aid} already exists")
+                    s["agents"][aid] = normalize_agent({"agent_id": aid, "role": raw.get("role"),
+                                                        "name": raw.get("name") or aid, "purpose": raw.get("purpose", ""),
+                                                        "instructions": raw.get("instructions", []),
+                                                        "template_id": ""})
+                    emit(s, "agent_created", agent_id=aid, proposal_id=p["proposal_id"])
+                elif name == "assign_account":
+                    aid, acc = raw.get("agent_id"), raw.get("account_profile_id")
+                    require(s, "agents", aid)
+                    a = require(s, "account_profiles", acc)
+                    if not a.get("enabled", True):
+                        raise ModelError(f"account profile {acc} is disabled")
+                    bid = next_id(s, "chat_binding")
+                    s["chat_bindings"][bid] = {"schema_version": SCHEMA_VERSION, "chat_binding_id": bid, "agent_id": aid,
+                                               "account_profile_id": acc, "chat_name": "", "link": "",
+                                               "note": f"from proposal {p['proposal_id']} (choose the chat yourself)",
+                                               "enabled": True, "confirmed_at": "", "created_at": now_utc(),
+                                               "updated_at": now_utc()}
+                    emit(s, "chat_binding_added", chat_binding_id=bid, agent_id=aid, account_profile_id=acc)
                 elif name in INFO_ONLY:
                     notes.append(f"{name}: {str(raw.get('reason') or raw.get('description') or '')[:300]}")
                 applied.append(op["index"])

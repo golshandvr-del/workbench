@@ -1,0 +1,11 @@
+{"schema_version": "1.0", "proposal_type": "team_plan", "base_state_revision": 7, "summary": "Two workers",
+ "assumptions": ["web app"],
+ "team": {"pm_counted": true, "total_agents": 3, "additional_workers": 2, "size_rationale": "API and UI are independent",
+          "simpler_alternative": "one implementer", "confidence": "medium"},
+ "operations": [
+  {"operation": "create_agent", "agent_id": "agent-implementer-2", "role": "implementer", "name": "Implementer 2"},
+  {"operation": "assign_account", "agent_id": "agent-implementer-2", "account_profile_id": "ACC-0002"},
+  {"operation": "create_task", "temporary_ref": "new-1", "title": "API", "objective": "api", "owner_agent_id": "agent-implementer",
+   "reviewer_agent_id": "agent-reviewer", "parallel_group": "A", "scope": {"include": ["src/api/**"], "exclude": []},
+   "acceptance_criteria": ["tests pass"], "depends_on_refs": []}],
+ "risks": ["merge conflicts"], "questions_for_user": ["Which database?"]}

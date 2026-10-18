@@ -367,8 +367,174 @@ class WorkspaceWindow:
             state = "" if a.get("enabled", True) else " (off)"
             self.acc_list.insert("end", f"{a['account_profile_id']} · {a['display_name']} · {a['provider']} · "
                                         f"{a['plan']} (self-declared) · {a['bindings']} chat(s){state}")
+        side = "right" if self.wc.rtl else "left"
         ttk.Button(acc, text=self.wc.tr(("Add account profile…", "افزودن پروفایل اکانت…")), command=self.dialog_add_account).pack(
-            side="right" if self.wc.rtl else "left", pady=4)
+            side=side, pady=4)
+        ttk.Button(acc, text=self.wc.tr(("Enable / disable selected", "فعال / غیرفعال کردن انتخاب‌شده")),
+                   command=self.toggle_selected_account).pack(side=side, pady=4, padx=4)
+        self._team_planner(f, 3)
+        self._proposal_review(f, 4)
+
+    # -- team planner (2.4.0)
+    def _team_planner(self, f: ttk.Frame, row: int) -> None:
+        side = "right" if self.wc.rtl else "left"
+        box = ttk.LabelFrame(f, text=self.wc.tr(("Team planning", "برنامه‌ریزی تیم")), padding=6)
+        box.grid(row=row, column=0, sticky="ew", pady=4)
+        ts = self.wc.team_settings()
+        ttk.Label(box, text=self.wc.tr(("Chats you will follow at the same time:", "تعداد چتی که هم‌زمان پیگیری می‌کنید:"))).pack(side=side)
+        self.parallel_var = tk.StringVar(value=str(ts["max_parallel_chats"]))
+        ttk.Spinbox(box, from_=1, to=12, width=4, textvariable=self.parallel_var,
+                    command=self.save_team_settings).pack(side=side, padx=4)
+        ttk.Label(box, text=self.wc.tr(("Project manager:", "مدیر پروژه:"))).pack(side=side, padx=(8, 0))
+        self.pm_var = tk.StringVar(value=ts["pm_agent_id"])
+        ttk.Combobox(box, textvariable=self.pm_var, values=[a for a, _ in self.wc.pm_choices()], width=24,
+                     state="readonly").pack(side=side, padx=4)
+        ttk.Button(box, text=self.wc.tr(("Save", "ذخیره")), command=self.save_team_settings).pack(side=side)
+        ttk.Button(box, text=self.wc.tr(("Plan team & tasks…", "برنامه‌ریزی تیم و Taskها…")), style="WS.Primary.TButton",
+                   command=self.dialog_plan_team).pack(side=side, padx=8)
+
+    def save_team_settings(self, **override: Any) -> Any:
+        changes = {"max_parallel_chats": override.get("max_parallel_chats", self.parallel_var.get()),
+                   "pm_agent_id": override.get("pm_agent_id", self.pm_var.get())}
+        out = self._guard(lambda: self.wc.set_team_settings(**changes))
+        if out:
+            self.status_var.set(self.wc.tr(("Team settings saved.", "تنظیمات تیم ذخیره شد.")))
+        return out
+
+    def dialog_plan_team(self, project: dict[str, Any] | None = None) -> str:
+        """Short form (goal required, the rest optional) → team planning prompt to copy (spec §7.2, Gate A)."""
+        if project is None:
+            project = self._ask_project_brief()
+            if not project:
+                return ""
+        prompt = self._guard(lambda: self.wc.plan_team(project))
+        if not prompt:
+            return ""
+        self.last_prompt, self.last_handoff_id = prompt, ""
+        self.status_var.set(self.wc.tr(("Team planning prompt ready. Copy it to your project-manager chat (not sent yet).",
+                                        "پرامپت برنامه‌ریزی تیم آماده است. آن را در چت مدیر پروژه کپی کنید (هنوز ارسال نشده).")))
+        self.show("tasks")
+        return prompt
+
+    def _ask_project_brief(self) -> dict[str, Any]:
+        dlg = tk.Toplevel(self.win)
+        dlg.title(self.wc.tr(("Plan team & tasks", "برنامه‌ریزی تیم و Taskها")))
+        dlg.transient(self.win)
+        fields = (("goal", ("Goal (required)", "هدف (الزامی)")), ("non_goals", ("Not in scope", "خارج از دامنه")),
+                  ("success", ("Success criteria", "معیار موفقیت")), ("platform", ("Platform / technology", "پلتفرم / فناوری")),
+                  ("constraints", ("Constraints", "محدودیت‌ها")), ("limits", ("Time / cost limits", "محدودیت زمان / هزینه")))
+        vars_: dict[str, tk.StringVar] = {}
+        for i, (k, pair) in enumerate(fields):
+            ttk.Label(dlg, text=self.wc.tr(pair)).grid(row=i, column=0, sticky="w", padx=6, pady=2)
+            vars_[k] = tk.StringVar(value=str(self.wc.ctl.state()["settings"].get("goal", "")) if k == "goal" else "")
+            ttk.Entry(dlg, textvariable=vars_[k], width=60).grid(row=i, column=1, sticky="ew", padx=6, pady=2)
+        out: dict[str, Any] = {}
+
+        def ok() -> None:
+            out.update({k: v.get().strip() for k, v in vars_.items() if v.get().strip()})
+            dlg.destroy()
+        ttk.Button(dlg, text="OK", command=ok).grid(row=len(fields), column=1, sticky="e", padx=6, pady=6)
+        dlg.grab_set()
+        self.win.wait_window(dlg)
+        return out
+
+    def toggle_selected_account(self) -> Any:
+        sel = self.acc_list.curselection() if hasattr(self, "acc_list") else ()
+        if not sel:
+            self.status_var.set(self.wc.tr(("Select an account profile first.", "ابتدا یک پروفایل اکانت انتخاب کنید.")))
+            return None
+        acc = self.wc.account_rows()[sel[0]]
+        out = self._guard(lambda: self.wc.set_account_enabled(acc["account_profile_id"], not acc.get("enabled", True)))
+        self.show("team")
+        return out
+
+    # -- proposal review (2.4.0, spec §7.5)
+    def _proposal_review(self, f: ttk.Frame, row: int) -> None:
+        pending = self.wc.pending_proposals()
+        self.review_pid = ""
+        if not pending:
+            return
+        pid = pending[-1]["proposal_id"]
+        self.review_pid = pid
+        v = self.wc.proposal_review(pid)
+        box = ttk.LabelFrame(f, text=self.wc.tr(("Proposal to review: ", "پیشنهاد برای بازبینی: ")) + pid, padding=6)
+        box.grid(row=row, column=0, sticky="nsew", pady=4)
+        f.rowconfigure(row, weight=1)
+        anchor = "e" if self.wc.rtl else "w"
+        for line in ([v["summary"]] if v["summary"] else []) + v["head"]:
+            ttk.Label(box, text=line, wraplength=760, anchor=anchor).pack(fill="x")
+        for i in v["issues"]:
+            sym = {"error": "✕", "warning": "⚠", "info": "ℹ"}.get(i["level"], "•")
+            ttk.Label(box, text=f"{sym} {i['message']}", wraplength=760, anchor=anchor).pack(fill="x")
+        self.review_tree = ttk.Treeview(box, columns=("op", "detail", "check"), show="tree headings",
+                                        style="WS.Treeview", height=6, selectmode="extended")
+        for c, pair, wdt in (("#0", ("Item", "مورد"), 220), ("op", ("Operation", "عملیات"), 120),
+                             ("detail", ("Owner · scope · criteria", "مالک · Scope · معیار"), 300), ("check", ("Check", "بررسی"), 200)):
+            self.review_tree.heading(c, text=self.wc.tr(pair))
+            self.review_tree.column(c, width=wdt, stretch=c in ("#0", "detail"))
+        for r in v["rows"]:
+            self.review_tree.insert("", "end", iid=str(r["index"]), text=f"#{r['index'] + 1} {r['label']}",
+                                    values=(r["operation"], r["detail"], "✓" if r["valid"] else "✕ " + r["problem"]))
+        self.review_tree.selection_set([str(i) for i in v["valid_indices"]])
+        self.review_tree.pack(fill="both", expand=True, pady=4)
+        bb = ttk.Frame(box, style="WS.TFrame")
+        bb.pack(fill="x")
+        side = "right" if self.wc.rtl else "left"
+        ttk.Button(bb, text=self.wc.tr(("Accept selected", "پذیرش موارد انتخاب‌شده")), style="WS.Primary.TButton",
+                   command=lambda: self.review_accept()).pack(side=side)
+        ttk.Button(bb, text=self.wc.tr(("Reject all", "رد همه")), command=lambda: self.review_reject()).pack(side=side, padx=4)
+        ttk.Button(bb, text=self.wc.tr(("Request changes (prompt)", "درخواست اصلاح (پرامپت)")),
+                   command=lambda: self.review_request_changes()).pack(side=side)
+
+    def _review_selection(self) -> list[int]:
+        return sorted(int(i) for i in self.review_tree.selection()) if hasattr(self, "review_tree") else []
+
+    def review_accept(self, indices: list[int] | None = None, confirm_stale: bool | None = None) -> Any:
+        pid = self.review_pid
+        if not pid:
+            return None
+        idx = indices if indices is not None else self._review_selection()
+        if not idx:
+            self.status_var.set(self.wc.tr(("Select at least one item, or use Reject all.", "حداقل یک مورد انتخاب کنید یا «رد همه» را بزنید.")))
+            return None
+        v = self.wc.proposal_review(pid)
+        if v["stale"] and confirm_stale is None:
+            confirm_stale = messagebox.askyesno("AI Workbench", self.wc.tr((
+                "This proposal was written for an older project state. Apply the selected items anyway?",
+                "این پیشنهاد برای وضعیت قدیمی‌تر پروژه نوشته شده است. موارد انتخاب‌شده با این حال اعمال شوند؟")), parent=self.win)
+            if not confirm_stale:
+                return None
+        pre = self._guard(lambda: self.wc.preview_proposal(pid, idx))
+        if pre is None:
+            return None
+        if pre["errors"]:
+            self.status_var.set("; ".join(pre["errors"])[:400])
+            return None
+        out = self._guard(lambda: self.wc.accept_proposal(pid, idx, confirm_stale=bool(confirm_stale)))
+        if out:
+            self.status_var.set(f"{pid}: {out['status']} · " + ", ".join(out["result"].get("created", {}).values()))
+            self.show("team")
+        return out
+
+    def review_reject(self) -> Any:
+        if not self.review_pid:
+            return None
+        out = self._guard(lambda: self.wc.reject_proposal(self.review_pid))
+        if out:
+            self.status_var.set(f"{out['proposal_id']}: {out['status']}")
+            self.show("team")
+        return out
+
+    def review_request_changes(self, note: str = "") -> str:
+        if not self.review_pid:
+            return ""
+        prompt = self._guard(lambda: self.wc.proposal_revision_prompt(self.review_pid, note)) or ""
+        if prompt:
+            self.last_prompt, self.last_handoff_id = prompt, ""
+            self.status_var.set(self.wc.tr(("Revision request ready to copy; nothing was applied.",
+                                            "درخواست اصلاح آمادهٔ کپی است؛ چیزی اعمال نشد.")))
+            self.show("tasks")
+        return prompt
 
     def _view_timeline(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("timeline"))
@@ -470,7 +636,7 @@ class WorkspaceWindow:
         raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
-        self.show(self.wc.section)
+        self.show("team" if r.kind == "proposal" else self.wc.section)  # proposals are reviewed in the Team view
         return r
 
     def dialog_add_account(self, data: dict[str, Any] | None = None) -> Any:

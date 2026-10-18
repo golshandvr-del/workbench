@@ -21,6 +21,7 @@ from .handoff import BLOCK_RE as HANDOFF_RE
 from .models import ModelError
 from .proposals import BLOCK_RE as PROPOSAL_RE, manager_update_prompt, planning_prompt
 from .snapshot import fallback_summary, render_status_md
+from .team import normalize_team_settings, revision_request_prompt, team_planning_prompt, team_settings
 
 # Plain-language labels come from the single FA/EN glossary (aiwb.i18n); English kept as module constants
 # for callers that predate the language setting.
@@ -274,6 +275,37 @@ class ProjectsController:
         with self.project.store.transaction("project goal") as s:
             s["settings"]["goal"] = goal.strip()[:2000]
         return planning_prompt({"goal": goal, "constraints": constraints or []}, self.project.agents.list())
+
+    # -- team planner (2.4.0, spec §7)
+    def team_settings(self) -> dict[str, Any]:
+        return team_settings(self.state())
+
+    def set_team_settings(self, **changes: Any) -> dict[str, Any]:
+        with self.project.store.transaction("team settings") as s:
+            new = normalize_team_settings(s, changes)
+            if s["settings"].get("team") != new:
+                s["settings"]["team"] = new
+                from .store import emit
+                emit(s, "team_settings_changed", **{k: str(v) for k, v in new.items()})
+        return new
+
+    def team_planning_prompt(self, project: dict[str, Any]) -> str:
+        """Planning prompt with registered resources + explicit team-size question. Saves goal only."""
+        goal = str(project.get("goal", "")).strip()
+        if not goal:
+            raise ModelError("describe the project goal first (one or two sentences are enough)")
+        with self.project.store.transaction("project goal") as s:
+            s["settings"]["goal"] = goal[:2000]
+            for k in ("non_goals", "success", "platform", "constraints", "limits"):
+                if project.get(k):
+                    s["settings"].setdefault("brief", {})[k] = str(project[k]).strip()[:2000]
+        return team_planning_prompt({**project, "goal": goal}, self.state())
+
+    def proposal_revision_prompt(self, proposal_id: str, note: str = "") -> str:
+        p = self.project.proposals.get(proposal_id)
+        if p is None:
+            raise ModelError(f"proposal {proposal_id} does not exist")
+        return revision_request_prompt(p, note)
 
     def start_task(self, task_id: str, agent_id: str = "") -> dict[str, Any]:
         t = self.project.tasks.get(task_id)
