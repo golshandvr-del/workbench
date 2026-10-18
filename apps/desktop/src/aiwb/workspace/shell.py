@@ -218,9 +218,18 @@ class WorkspaceWindow:
         for key, label in data["actions"]:
             ttk.Button(self.insp_actions, text=label, command=lambda k=key: self.inspector_action(k)).pack(fill="x", pady=1)
 
-    def inspector_action(self, key: str) -> Any:
+    def inspector_action(self, key: str, confirm: bool | None = None) -> Any:
         if key == "bind_chat":
             return self.dialog_bind_chat(self.wc.selection[1])
+        if key == "start_task":
+            warn = self.wc.start_warning(self.wc.selection[1])
+            if warn:
+                if confirm is None:
+                    confirm = messagebox.askyesno("AI Workbench", warn, parent=self.win)
+                if not confirm:
+                    self.status_var.set(self.wc.tr(("Kept the existing attempt; nothing changed.",
+                                                    "تلاش قبلی حفظ شد؛ چیزی تغییر نکرد.")))
+                    return None
         out = self._guard(lambda: self.wc.run_action(key))
         if key == "start_task" and isinstance(out, dict):
             self.last_handoff_id = out["handoff_id"]
@@ -229,6 +238,10 @@ class WorkspaceWindow:
                                             "پرامپت آماده است — از بخش Tasks کپی کنید. هنوز ارسال نشده.")))
             self.show("tasks")
         elif key == "open_task":
+            self.show("tasks")
+        elif key == "confirm_sent" and isinstance(out, dict):
+            self.status_var.set(self.wc.tr(("Recorded: you sent the prompt (your confirmation time). Paste the answer when you have it.",
+                                            "ثبت شد: پرامپت را ارسال کردید (زمان تأیید شما). وقتی پاسخ را گرفتید Paste کنید.")))
             self.show("tasks")
         else:
             self.refresh()
@@ -282,6 +295,10 @@ class WorkspaceWindow:
         ttk.Label(f, textvariable=self.progress_var, style="WS.TLabel", anchor=anchor).grid(row=2, column=0, sticky="ew", pady=4)
         bar = ttk.Progressbar(f, maximum=max(ov["progress"]["total"], 1), value=ov["progress"]["done"])
         bar.grid(row=3, column=0, sticky="ew")
+        self.progress_details = self.wc.progress_details(ov["progress"])
+        for i, line in enumerate(self.progress_details):
+            ttk.Label(f, text=line, style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(
+                row=3, column=0, sticky="sew", pady=(24 + 18 * i, 0))
         counts = " · ".join(f"{i18n.status(k, self.wc.lang)[0]} {i18n.status(k, self.wc.lang)[1]}: {v}"
                             for k, v in sorted(ov["counts"].items()))
         ttk.Label(f, text=counts or "—", style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(row=4, column=0, sticky="ew", pady=4)
@@ -303,8 +320,10 @@ class WorkspaceWindow:
     def _view_tasks(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("tasks"))
         f.rowconfigure(1, weight=1)
-        cols = ("status", "owner")
+        cols = ("status", "stage", "owner")
         self.task_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=10)
+        self.task_tree.heading("stage", text=self.wc.tr(("Workflow", "گردش کار")))
+        self.task_tree.column("stage", width=240, stretch=True)
         self.task_tree.heading("#0", text=self.wc.tr(("Task", "Task")))
         self.task_tree.heading("status", text=self.wc.tr(("Status", "وضعیت")))
         self.task_tree.heading("owner", text=self.wc.tr(("Agent", "Agent")))
@@ -317,7 +336,7 @@ class WorkspaceWindow:
         sb.grid(row=1, column=1, sticky="ns")
         for r in self.wc.task_rows():
             self.task_tree.insert("", "end", iid=r["task_id"], text=f"{r['task_id']} {r['title']}",
-                                  values=(f"{r['symbol']} {r['status_text']}", r["owner"]))
+                                  values=(f"{r['symbol']} {r['status_text']}", r.get("stage_text", ""), r["owner"]))
         kind, ref = self.wc.selection
         if kind == "task" and self.task_tree.exists(ref):
             self.task_tree.selection_set(ref)
