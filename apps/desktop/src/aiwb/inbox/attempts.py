@@ -102,6 +102,17 @@ class AttemptRegistry:
                     return a
         return None
 
+    def assign_task(self, attempt_id: str, task_id: str) -> Attempt | None:
+        """Set the task ID once (a prompt for a brand-new task gets its ID after the attempt)."""
+        with self._lock:
+            items = self._load()
+            for a in items:
+                if a.attempt_id == attempt_id and not a.task_id:
+                    a.task_id = task_id
+                    self._save(items)
+                    return a
+        return None
+
     def list(self) -> list[Attempt]:
         with self._lock:
             return list(reversed(self._load()))

@@ -43,6 +43,8 @@ from aiwb.github.build_center import BuildCenterWindow
 from aiwb.github import orchestrator as sync_build_orchestrator
 from aiwb.github.artifacts import GitHubDispatchService
 from aiwb.github.sync_build_window import SyncBuildWindow
+from aiwb import inbox as inbox_service
+from aiwb.inbox.inbox_window import InboxWindow
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -173,6 +175,40 @@ def app_data_dir() -> Path:
     if base:
         return Path(base) / "AIWorkbench"
     return Path.home() / ".ai_workbench"
+
+
+def project_base_revision(files: Iterable[tuple[str, int]]) -> str:
+    """Cheap fingerprint of the visible project tree (paths + sizes) used for stale-answer detection."""
+    h = hashlib.sha256()
+    for rel, size in sorted(files):
+        h.update(f"{rel}\0{size}\n".encode("utf-8", errors="replace"))
+    return h.hexdigest()
+
+
+def make_inbox_pipeline(root: Path) -> "inbox_service.ImportPipeline":
+    """Response Inbox pipeline bound to this project and the app's strict validators."""
+    def path_problem(p: str) -> str:
+        try:
+            validate_relative_path(root, p)
+            return ""
+        except WorkbenchError as exc:
+            return redact(str(exc))
+
+    def current_task() -> str:
+        try:
+            return str(load_task_state(root).get("task_id", ""))
+        except Exception:
+            return ""
+
+    return inbox_service.ImportPipeline(
+        inbox_service.InboxStore(root), inbox_service.AttemptRegistry(root),
+        lambda text: validate_any_model_response(text, root),
+        current_task_id=current_task,
+        current_base_revision=lambda: project_base_revision(iter_project_files(root)),
+        redact=redact, path_problem=path_problem,
+        parse_block=parse_aiwb_file_blocks,
+        validate_payload=lambda payload: validate_model_response(json.dumps(payload, ensure_ascii=False), root),
+    )
 
 
 def load_settings_with_recovery(path: Path) -> dict[str, Any]:
@@ -5278,6 +5314,7 @@ class WorkbenchApp:
         ttk.Button(controls, text="Analyze / preview files…", style="Primary.TButton", command=self.preview_response).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Import context plan / select requested files", command=self.import_context_plan).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
         candidate_controls = ttk.Frame(tab)
         candidate_controls.pack(fill="x", pady=(0, 5))
         ttk.Button(candidate_controls, text="Save response candidate…", command=self.save_response_candidate).pack(side="left")
@@ -8236,6 +8273,22 @@ class WorkbenchApp:
             requested_user_uploads=[item for item in pending_uploads if isinstance(item, dict)],
             project_history_context=project_history_context,
         )
+        attempt_note = ""
+        try:
+            state_for_attempt = load_task_state(root)
+            attempt_task_id = str(state_for_attempt.get("task_id", ""))
+            if str(state_for_attempt.get("task_text", "")).strip() != task.strip():
+                attempt_task_id = ""  # assigned below; reconciled by task text revision
+            attempt = inbox_service.AttemptRegistry(root).new(
+                task_id=attempt_task_id, task_revision=hashlib.sha256(task.encode("utf-8")).hexdigest()[:16],
+                base_revision=project_base_revision(self.project_files),
+                kind="context" if stage == "Request exact context files" else "implementation",
+            )
+            prompt = inbox_service.prompt_identity_block(attempt) + "\n\n" + prompt
+            attempt_note = f" · attempt {attempt.attempt_id}"
+        except Exception as attempt_exc:
+            attempt = None
+            log_exception(type(attempt_exc), attempt_exc, attempt_exc.__traceback__)
         try:
             state = load_task_state(root)
             previous_task = str(state.get("task_text", ""))
@@ -8289,6 +8342,11 @@ class WorkbenchApp:
                 history_requests=pending_history_requests,
             )
             state["active_prompt_entry_id"] = new_entry["id"]
+            if attempt is not None and not attempt.task_id:
+                try:
+                    inbox_service.AttemptRegistry(root).assign_task(attempt.attempt_id, str(state.get("task_id", "")))
+                except Exception as assign_exc:
+                    log_exception(type(assign_exc), assign_exc, assign_exc.__traceback__)
             # Consume imported context requests only after the generated prompt is durably stored.
             state.pop("requested_context_ranges", None)
             state.pop("requested_user_uploads", None)
@@ -8314,7 +8372,7 @@ class WorkbenchApp:
             self._refresh_history_view(select_id=str(new_entry["id"]))
         self.notebook.select(self.project_tab)
         format_note = self.output_format_var.get() if stage == "Implementation / build" else "Planning JSON"
-        self.set_status(f"Prompt ready · history={'saved' if new_entry else 'not saved'} · stage: {stage} · format: {format_note} · {len(self.project_files)} visible files · {len(context_files)} context item(s) · {total:,} bytes of context.")
+        self.set_status(f"Prompt ready · history={'saved' if new_entry else 'not saved'} · stage: {stage} · format: {format_note} · {len(self.project_files)} visible files · {len(context_files)} context item(s) · {total:,} bytes of context{attempt_note}.")
 
     def copy_prompt(self) -> None:
         value = self.prompt_output.get("1.0", "end-1c")
@@ -8632,6 +8690,13 @@ class WorkbenchApp:
             self.response_input.edit_modified(False)
         except tk.TclError:
             pass
+        inbox_response_id = ""
+        if not archive_selected and raw.strip():
+            try:
+                captured = make_inbox_pipeline(root).capture_text(raw, source="analyze")
+                inbox_response_id = captured.response.response_id if captured.response else ""
+            except Exception as inbox_exc:
+                log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
         try:
             if archive_selected and self.loaded_zip_path is not None:
                 payload, changes, archive_source_info = parse_model_zip_archive(self.loaded_zip_path, root)
@@ -8661,10 +8726,28 @@ class WorkbenchApp:
                 transition_task_state(root, "Import Failed", "Response validation failed: " + str(exc)[:800])
             except Exception as log_exc:
                 log_exception(type(log_exc), log_exc, log_exc.__traceback__)
-            self.set_status("Response rejected; diagnostics are available and no project files were applied.")
+            inbox_note = ""
+            if inbox_response_id:
+                try:
+                    outcome = make_inbox_pipeline(root).process(inbox_response_id)
+                    codes = ", ".join(i.code for i in outcome.issues) or "unknown"
+                    inbox_note = f" Raw response kept in the Inbox ({inbox_response_id}; {codes})."
+                    if outcome.status == "partial":
+                        inbox_note += f" {len(outcome.salvage_paths)} complete file(s) can be recovered: open Response Inbox."
+                except Exception as inbox_exc:
+                    log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
+            self.set_status("Response rejected; diagnostics are available and no project files were applied." + inbox_note)
             self.refresh_workflow_status()
             self.show_import_diagnostics(error_override=str(exc))
             return
+        if inbox_response_id:
+            try:
+                inbox_service.InboxStore(root).add_parse_result(inbox_response_id, {
+                    "pipeline_version": 1, "status": "parsed", "format": format_name,
+                    "stages": {"capture": "ok", "parse": "ok", "validate": "ok"},
+                    "issues": [], "file_paths": sorted(change.path for change in changes), "salvaged": []})
+            except Exception as inbox_exc:
+                log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
         self.pending_payload = payload
         self.pending_changes = changes
         self.pending_apply_paths = {change.path for change in changes}
@@ -8687,6 +8770,20 @@ class WorkbenchApp:
             messagebox.showwarning("Response history not saved", f"The response parsed successfully, but its exact snapshot/history could not be saved. Workbench will block applying this response until it can record it reliably. Resolve the storage problem and analyze the response again.\n\n{exc}")
         self.refresh_workflow_status()
         self._show_diff_window(payload, changes, format_name)
+
+    def open_response_inbox(self) -> None:
+        root = self.require_workspace()
+        if root is None:
+            return
+        def load_text(text: str) -> None:
+            self._set_text(self.response_input, text)
+            self.set_status("Response loaded from the Inbox; press Analyze / preview files to review it.")
+        def task_text() -> str:
+            try:
+                return str(load_task_state(root).get("task_text", ""))
+            except Exception:
+                return ""
+        self.inbox_window = InboxWindow(self.root, make_inbox_pipeline(root), load_text=load_text, task_text=task_text)
 
     def show_import_diagnostics(self, error_override: str = "") -> None:
         root = self.require_workspace()
