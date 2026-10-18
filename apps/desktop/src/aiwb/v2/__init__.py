@@ -16,6 +16,7 @@ from .ledger import DecisionLedger, EvidenceService
 from .models import ModelError, SCHEMA_VERSION
 from .next_action import compute_next_actions
 from .proposals import ProposalService
+from .resources import ResourceRegistry
 from .snapshot import build_snapshot, render_status_md
 from .store import ProjectStore, StoreError
 from .tasks import TaskService, validate_graph
@@ -33,6 +34,7 @@ class V2Project:
         self.decisions = DecisionLedger(self.store)
         self.evidence = EvidenceService(self.store)
         self.proposals = ProposalService(self.store)
+        self.resources = ResourceRegistry(self.store)
 
     def open(self, legacy: dict[str, Any] | None = None) -> list[str]:
         """Create/migrate the store (idempotent) and install base agents once."""
@@ -46,5 +48,5 @@ class V2Project:
 
 
 __all__ = ["AgentRegistry", "AttemptService", "DecisionLedger", "EvidenceService", "HandoffService", "ModelError",
-           "ProjectStore", "ProposalService", "SCHEMA_VERSION", "StoreError", "TaskService", "V2Project",
+           "ProjectStore", "ProposalService", "ResourceRegistry", "SCHEMA_VERSION", "StoreError", "TaskService", "V2Project",
            "build_snapshot", "compute_next_actions", "render_status_md", "validate_graph"]

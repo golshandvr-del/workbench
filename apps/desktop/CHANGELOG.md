@@ -1,3 +1,22 @@
+## [2.3.0] - 2026-10-18
+
+### Project Workbench foundation (Workspace Roadmap stages 0–3)
+- **Project Workbench…** (menu + primary button): one workspace with Project Bar, Sidebar (Overview, Tasks,
+  Team, Timeline, Settings), Next Action strip, collapsible Inspector and Status footer; responsive layout
+  (side/stacked inspector, compact sidebar) at 960–1920 px; RTL Persian / LTR English; light/dark tokens.
+  Existing tools (classic prompt/response, Inbox, Context Request, Build Center, Sync & Build, Companion,
+  classic Projects window) are linked, not re-implemented. Layout preferences live in app data, never in
+  project state.
+- **Event Ledger** `.workbench/v2/events.jsonl` (`event-ledger.v1`, ADR-008): append-only, idempotent,
+  allow-list redaction (no raw prompts/responses), legacy events imported once with `time_source: unknown`.
+- **Account Profiles / Chat Bindings** data (ADR-008): local labels only; values that look like passwords,
+  tokens or keys are refused; old projects open unchanged.
+- ADR-007 (keep Tkinter/ttk, spike evidence), stage-0 audit and `tools/measure_baseline.py` baseline.
+
+### Validation
+- `test_workspace.py` (16); `gui_workspace_smoke.py` (4 sizes, RTL/LTR, light/dark, no state writes);
+  `event-ledger.v1` checked against real ledger output in `validate_contracts.py`.
+
 ## [2.2.0] - 2026-10-18
 
 ### Mobile Companion (Integration Spec §11, P3.1–P3.3)

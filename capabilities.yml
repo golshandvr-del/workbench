@@ -32,3 +32,6 @@ capabilities:
   - {id: ui.i18n, title: "Single FA/EN glossary and prioritised warnings", roadmap: "2.1.1", desktop: implemented, mobile: planned, evidence: "aiwb/i18n.py"}
   - {id: ui.phase3_gate, title: "Phase-3 gate: publish status, both-view GUI tests", roadmap: "2.1.2", desktop: implemented, mobile: planned, evidence: "gui_phase3_gate_smoke.py"}
   - {id: companion.pairing, title: "Mobile Companion: LAN pairing, view, tasks and answers", roadmap: "2.2.0", desktop: implemented, mobile: implemented, evidence: "aiwb/companion/, CompanionActivity.kt, vectors/companion-envelope.v1.json"}
+  - {id: workspace.shell, title: "Project Workbench responsive workspace shell", roadmap: "2.3.0", desktop: implemented, mobile: not_applicable, evidence: "aiwb/workspace/, gui_workspace_smoke.py"}
+  - {id: v2.event_ledger, title: "Append-only Event Ledger (event-ledger.v1)", roadmap: "2.3.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/events.py, packages/contracts/schemas/event-ledger.v1.schema.json"}
+  - {id: v2.account_chat, title: "Account Profiles and manual Chat Bindings (no credentials)", roadmap: "2.3.0", desktop: partial, mobile: not_applicable, evidence: "aiwb/v2/resources.py"}

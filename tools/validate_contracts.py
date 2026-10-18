@@ -91,6 +91,9 @@ def main() -> int:
                    "attempt_id": h["attempt_id"], "outcome": "complete", "summary": "s"}
         errors += [f"v2 handoff manifest: {e.message}" for e in schemas["handoff.v1"].iter_errors(
             find_manifest("<<<AIWB_HANDOFF>>>\n" + json.dumps(example) + "\n<<<AIWB_END_HANDOFF>>>"))]
+        led = schemas["event-ledger.v1"]
+        for rec in p.store.ledger.all():
+            errors += [f"v2 event ledger {rec.get('event_id')}: {e.message}" for e in led.iter_errors(rec)]
     r = subprocess.run([sys.executable, str(REPO / "tools/gen_v2_contracts.py"), "--check"], capture_output=True, text=True)
     if r.returncode != 0:
         errors.append(r.stdout.strip())

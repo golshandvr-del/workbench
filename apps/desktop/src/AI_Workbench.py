@@ -66,7 +66,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.3.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4551,6 +4551,7 @@ class WorkbenchApp:
         file_menu.add_command(label="New project…", command=self.new_project)
         file_menu.add_command(label="Add existing project folder…", command=self.add_existing_project)
         file_menu.add_command(label="Projects dashboard", command=lambda: self.notebook.select(self.manager_tab))
+        file_menu.add_command(label="Project Workbench (workspace)…", command=self.open_project_workbench)
         file_menu.add_separator()
         file_menu.add_command(label="Open active project folder", command=self.open_workspace)
         file_menu.add_command(label="Restore Manager…", command=self.open_restore_manager)
@@ -5336,6 +5337,7 @@ class WorkbenchApp:
         ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Context request…", command=self.open_context_request).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Project Workbench…", style="Primary.TButton", command=self.open_project_workbench).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Projects (multi-agent)…", command=self.open_projects).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Mobile Companion…", command=self.open_companion).pack(side="left", padx=(6, 0))
         candidate_controls = ttk.Frame(tab)
@@ -8855,6 +8857,35 @@ class WorkbenchApp:
             return
         self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
         self.set_status("Projects (multi-agent): " + ctl.next_action_text())
+
+    def open_project_workbench(self) -> None:
+        """Project Workbench shell (roadmap 2.3.0, ADR-007): one workspace over the same ProjectsController;
+        existing tools (classic prompt/response, Inbox, Context Request, Build Center, Companion) are linked,
+        never re-implemented."""
+        from aiwb.workspace.controller import WorkspaceController
+        from aiwb.workspace.shell import WorkspaceWindow
+        root = self.require_workspace()
+        if root is None:
+            return
+        try:
+            ctl = self.make_projects_controller(root)
+        except Exception as exc:  # noqa: BLE001 - store errors are shown, never silently overwritten
+            messagebox.showerror("Project Workbench", redact(str(exc)))
+            return
+
+        def classic_response() -> None:
+            self.root.lift()
+            self.notebook.select(self.response_tab)
+
+        def classic_projects() -> None:
+            self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
+
+        tools = {"response": classic_response, "inbox": self.open_response_inbox,
+                 "context_request": self.open_context_request, "build_center": self.open_build_center,
+                 "sync_build": self.open_sync_build, "companion": self.open_companion, "classic": classic_projects}
+        self.workspace_window = WorkspaceWindow(self.root, WorkspaceController(ctl, tools=tools),
+                                                clipboard=self._copy_text_to_clipboard)
+        self.set_status("Project Workbench: " + ctl.next_action_text())
 
     def _companion_builds(self) -> list[dict[str, Any]]:
         """Recent Sync & Build results of the open project in the shared build-metadata.v1 shape."""

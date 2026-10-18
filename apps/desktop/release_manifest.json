@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -142,8 +142,12 @@
       "source": "apps/desktop/tests/test_companion.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v2.2.0.md",
-      "source": "docs/release/v2.2.0/WINDOWS_RELEASE_CHECKLIST_v2.2.0.md"
+      "path": "test_workspace.py",
+      "source": "apps/desktop/tests/test_workspace.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v2.3.0.md",
+      "source": "docs/release/v2.3.0/WINDOWS_RELEASE_CHECKLIST_v2.3.0.md"
     },
     {
       "path": "install.ps1",
@@ -372,6 +376,30 @@
     {
       "path": "aiwb/companion/window.py",
       "source": "apps/desktop/src/aiwb/companion/window.py"
+    },
+    {
+      "path": "aiwb/workspace/__init__.py",
+      "source": "apps/desktop/src/aiwb/workspace/__init__.py"
+    },
+    {
+      "path": "aiwb/workspace/theme.py",
+      "source": "apps/desktop/src/aiwb/workspace/theme.py"
+    },
+    {
+      "path": "aiwb/workspace/controller.py",
+      "source": "apps/desktop/src/aiwb/workspace/controller.py"
+    },
+    {
+      "path": "aiwb/workspace/shell.py",
+      "source": "apps/desktop/src/aiwb/workspace/shell.py"
+    },
+    {
+      "path": "aiwb/v2/events.py",
+      "source": "apps/desktop/src/aiwb/v2/events.py"
+    },
+    {
+      "path": "aiwb/v2/resources.py",
+      "source": "apps/desktop/src/aiwb/v2/resources.py"
     }
   ],
   "zip_timestamp": [

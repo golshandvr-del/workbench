@@ -7,7 +7,7 @@ Git/GitHub for the project. The Android companion app in `apps/mobile` pairs wit
 
 | App | Path | Current | Download |
 |---|---|---|---|
-| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **2.2.0** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **2.3.0** (Project Workbench) | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
 | Mobile (Android 7.0+) | `apps/mobile` | **0.3.0** (Companion) | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
 
 ## Repository layout
@@ -73,7 +73,7 @@ cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Status / roadmap
 
-**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: desktop 1.14.1–2.2.0, mobile 0.1.0–0.3.0
-(Mobile Companion), monorepo + CI/CD. All roadmap sections are complete. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
+**[`ROADMAP.md`](ROADMAP.md)** is the master plan (Project Workbench & multi-agent team, 2.3.0–2.6.0).
+Previous roadmap (desktop 1.14.1–2.2.0, mobile 0.1.0–0.3.0) is archived in `docs/roadmap/archive/`. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
 
 See also [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).

@@ -81,9 +81,14 @@ ID_PATTERNS = {
     "evidence": re.compile(r"^EV-\d{4,}$"),
     "proposal": re.compile(r"^PROP-\d{4,}$"),
     "artifact": re.compile(r"^ART-\d{4,}$"),
+    "account_profile": re.compile(r"^ACC-\d{4,}$"),
+    "chat_binding": re.compile(r"^CHAT-\d{4,}$"),
+    "milestone": re.compile(r"^MS-\d{4,}$"),
+    "version": re.compile(r"^VER-\d{4,}$"),
     "attempt": re.compile(r"^att-\d{8}-\d{6}-[0-9a-f]{8}$|^legacy-[A-Za-z0-9_.-]{1,80}$"),
 }
-PREFIX = {"task": "TASK", "handoff": "HO", "decision": "DEC", "evidence": "EV", "proposal": "PROP", "artifact": "ART"}
+PREFIX = {"task": "TASK", "handoff": "HO", "decision": "DEC", "evidence": "EV", "proposal": "PROP", "artifact": "ART",
+          "account_profile": "ACC", "chat_binding": "CHAT", "milestone": "MS", "version": "VER"}
 
 
 class ModelError(ValueError):
