@@ -21,11 +21,13 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable, Iterator
 
+from .events import EventLedger
 from .models import PREFIX, SCHEMA_VERSION, ModelError, now_utc
 
 DB_VERSION = 1
 MAX_EVENTS = 2000
-COLLECTIONS = ("agents", "tasks", "attempts", "handoffs", "decisions", "evidence", "proposals", "artifacts")
+COLLECTIONS = ("agents", "tasks", "attempts", "handoffs", "decisions", "evidence", "proposals", "artifacts",
+               "account_profiles", "chat_bindings", "milestones", "versions")
 DEFAULT_SETTINGS = {
     "repair_round_limit": 3,
     "publish": {"enabled": False, "branch": "aiwb-state", "path": ".aiwb", "interval_minutes": 15,
@@ -68,6 +70,7 @@ class ProjectStore:
         self.path = self.dir / "state.json"
         self.project_id = project_id or self._default_project_id()
         self._lock = _lock_for(self.path)
+        self.ledger = EventLedger(self.dir, self.project_id)
 
     def _default_project_id(self) -> str:
         name = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in self.root.name.lower()).strip("-")
@@ -148,7 +151,17 @@ class ProjectStore:
                     self.backup("pre-migration")
                 state["migrations"].append({"at": now_utc(), "notes": notes, "db_version": DB_VERSION})
                 self._write(state)
+            self.sync_ledger(state)
             return notes
+
+    def sync_ledger(self, state: dict[str, Any] | None = None) -> int:
+        """Append in-state events newer than the ledger (ADR-008). Never raises: state is authoritative."""
+        try:
+            st = state if state is not None else self.load()
+            first = not self.ledger.path.exists()
+            return self.ledger.append_events(st.get("events", []), legacy_import=first and bool(st.get("events")))
+        except (OSError, ValueError):
+            return 0
 
     @contextmanager
     def transaction(self, reason: str) -> Iterator[dict[str, Any]]:
@@ -172,6 +185,10 @@ class ProjectStore:
                 work["events"].append(e)
             work["events"] = work["events"][-MAX_EVENTS:]
             self._write(work)
+            try:
+                self.ledger.append_events(events or work["events"][-1:])
+            except (OSError, ValueError):
+                pass  # re-synced from the in-state events on next open
 
 
 def emit(state: dict[str, Any], event_type: str, **fields: Any) -> None:
