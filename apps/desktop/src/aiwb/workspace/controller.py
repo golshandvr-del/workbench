@@ -421,6 +421,8 @@ class WorkspaceController:
             if t.get("status") in ("in_review", "validation_pending"):
                 acts += [("approve_review", self.tr(("Approve review", "تأیید بازبینی"))),
                          ("reject_review", self.tr(("Reject review", "رد بازبینی")))]
+            if t.get("status") not in ("cancelled", "superseded"):
+                acts.append(("change_request", self.tr(("Request a change…", "درخواست تغییر…"))))
             ts = task_stage(self.ctl.state(), ref)
             text += "\n\n" + self.tr(("Workflow: ", "گردش کار: ")) + stage_label(ts["stage"], self.lang) + f" ({ts['why']})"
             if ts["stage"] in ("prompt_prepared", "prompt_copied") and ts["handoff_id"]:
@@ -453,6 +455,19 @@ class WorkspaceController:
                 "text": self.tr(("Select a task, agent or event to see details and the actions that apply to it.",
                                  "یک Task، Agent یا رویداد را انتخاب کنید تا جزئیات و اقدام‌های مجاز آن نمایش داده شود.")),
                 "actions": []}
+
+    ROUTE_LABELS = {"revise": ("Change this task (new revision)", "اصلاح همین Task (Revision جدید)"),
+                    "new_task": ("New task", "Task جدید"),
+                    "replan": ("Ask the project manager to re-plan", "درخواست Re-plan از مدیر پروژه")}
+
+    def suggest_change(self, task_id: str, request: str) -> dict[str, Any]:
+        sug = self.ctl.suggest_change_route(task_id, request)
+        sug["label"] = self.tr(self.ROUTE_LABELS[sug["route"]])
+        sug["choices"] = [(k, self.tr(v)) for k, v in self.ROUTE_LABELS.items()]
+        return sug
+
+    def apply_change(self, task_id: str, route: str, request: str, title: str = "") -> dict[str, Any]:
+        return self.ctl.apply_change_route(task_id, route, request, title)
 
     def start_warning(self, task_id: str) -> str:
         return self.ctl.start_warning(task_id)
