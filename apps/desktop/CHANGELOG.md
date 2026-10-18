@@ -1,3 +1,29 @@
+## [2.5.0] - 2026-10-18
+
+### Workflow tracking, Timeline and Progress (Workspace Roadmap stages 5, 6; Gate B, D)
+
+- **Workflow stage per task** (projection, no new central status): planned · ready · prompt prepared · copied (not
+  confirmed sent) · you confirmed sending · answer received · parse failed / repair ready · partial · needs review ·
+  context requested / prepared · blocked · needs decision · stale · validation pending · done. Shown in the Tasks list
+  and the Inspector with the reason. Workbench never says a model is "working".
+- **"I sent this prompt"**: a separate user confirmation (timestamp = confirmation time, `time_source: user_confirmed`);
+  copying is recorded as `prompt_copied` and never means sent. The attempt freezes the agent's account profile / chat
+  binding at copy/send time; later binding changes do not rewrite history.
+- **Duplicate start warning**: preparing a new prompt while an attempt may still receive an answer asks first; declining
+  changes nothing.
+- **Timeline**: list with family filter plus **lanes by agent** (a lane is a work stream, not a git branch); legacy
+  events keep the "time unknown" label.
+- **Milestones** (task set + criteria; acceptance refused while tasks are open unless explicitly forced, recorded) and
+  **Versions** (`proposed → local → tagged → released`): local/tagged need a commit SHA (and tag), released needs a real
+  run id or artifact; adding tasks never creates a version.
+- **Progress**: "n of m tasks verified" with cancelled/superseded excluded and shown separately; separate counts for
+  waiting for test/build, review, blocked, needs decision, in progress; weighted progress only from user-set weights and
+  always labelled *estimated*.
+
+### Validation
+
+- `test_workflow_timeline.py` (19); `gui_workflow_timeline_smoke.py`.
+
 ## [2.4.0] - 2026-10-18
 
 ### Team Planner (Workspace Roadmap stage 4, Gate A)
