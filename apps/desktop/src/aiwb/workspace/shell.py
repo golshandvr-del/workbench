@@ -636,7 +636,7 @@ class WorkspaceWindow:
         raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
-        self.show(self.wc.section)
+        self.show("team" if r.kind == "proposal" else self.wc.section)  # proposals are reviewed in the Team view
         return r
 
     def dialog_add_account(self, data: dict[str, Any] | None = None) -> Any:
