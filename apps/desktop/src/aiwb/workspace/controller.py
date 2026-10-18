@@ -184,6 +184,98 @@ class WorkspaceController:
     def bind_chat(self, agent_id: str, account_id: str, chat_name: str = "", link: str = "", note: str = "") -> dict[str, Any]:
         return self.ctl.project.resources.bind_chat(agent_id, account_id, chat_name=chat_name, link=link, note=note)
 
+    def update_account(self, account_id: str, changes: dict[str, Any]) -> dict[str, Any]:
+        return self.ctl.project.resources.update_account(account_id, changes)
+
+    def update_binding(self, binding_id: str, changes: dict[str, Any]) -> dict[str, Any]:
+        return self.ctl.project.resources.update_binding(binding_id, changes)
+
+    # -- team planner (2.4.0, spec §7, Gate A)
+    def team_settings(self) -> dict[str, Any]:
+        return self.ctl.team_settings()
+
+    def set_team_settings(self, **changes: Any) -> dict[str, Any]:
+        return self.ctl.set_team_settings(**changes)
+
+    def pm_choices(self) -> list[tuple[str, str]]:
+        st = self.ctl.state()
+        return [(a["agent_id"], a["name"]) for a in sorted(st["agents"].values(), key=lambda a: a["agent_id"])
+                if a["role"] == "project_manager" and a.get("enabled", True)]
+
+    def plan_team(self, project: dict[str, Any]) -> str:
+        return self.ctl.team_planning_prompt(project)
+
+    def pending_proposals(self) -> list[dict[str, Any]]:
+        return self.ctl.project.proposals.list("pending")
+
+    def proposal_review(self, proposal_id: str) -> dict[str, Any]:
+        """Preview model for Team/Plan Proposal review (spec §7.5). Pure read."""
+        p = self.ctl.project.proposals.get(proposal_id)
+        if p is None:
+            raise ModelError(f"proposal {proposal_id} does not exist")
+        st = self.ctl.state()
+        c = p.get("team_counts") or {}
+        team = p.get("team") or {}
+        pm_txt = {True: self.tr(("manager counted", "مدیر پروژه شمرده شده")),
+                  False: self.tr(("manager not counted", "مدیر پروژه شمرده نشده")),
+                  None: self.tr(("manager count not stated", "شمارش مدیر پروژه نامشخص"))}[team.get("pm_counted")]
+        head = []
+        if p.get("is_team"):
+            head.append(self.tr(("Team: ", "تیم: ")) + f"{c.get('agents_now', 0)} → {c.get('agents_after', 0)} "
+                        + self.tr(("agents", "Agent")) + f" ({pm_txt})")
+            if c.get("declared_total") is not None:
+                head.append(self.tr(("Manager says: ", "ادعای مدیر: ")) + f"{c['declared_total']} "
+                            + self.tr(("in total", "کل")) + (f", {c['declared_workers']} " + self.tr(("extra workers", "کارگر اضافه"))
+                                                             if c.get("declared_workers") is not None else ""))
+            head.append(self.tr(("Registered accounts: ", "اکانت‌های ثبت‌شده: ")) + str(c.get("accounts", 0)) + " · "
+                        + self.tr(("parallel chats you follow: ", "چت هم‌زمان: ")) + str(c.get("max_parallel_chats", 1)))
+            if team.get("size_rationale"):
+                head.append(self.tr(("Why this size: ", "دلیل اندازه: ")) + team["size_rationale"])
+            if team.get("simpler_alternative"):
+                head.append(self.tr(("Simpler option: ", "گزینهٔ ساده‌تر: ")) + team["simpler_alternative"])
+        rows = []
+        for op in p["operations"]:
+            raw = op.get("raw", {})
+            label = raw.get("title") or raw.get("name") or raw.get("agent_id") or raw.get("task_id") or raw.get("description", "")
+            detail = []
+            if op["operation"] in ("create_task", "split_task"):
+                detail = [f"owner {raw.get('owner_agent_id') or raw.get('owner_role') or '?'}",
+                          f"scope {', '.join((raw.get('scope') or {}).get('include', []) or []) or '?'}",
+                          f"{len(raw.get('acceptance_criteria') or [])} criteria"]
+                if raw.get("parallel_group"):
+                    detail.append(f"group {raw['parallel_group']}")
+                if raw.get("depends_on_refs"):
+                    detail.append("after " + ", ".join(raw["depends_on_refs"]))
+            if op["operation"] == "assign_account":
+                acc = st["account_profiles"].get(raw.get("account_profile_id", ""), {})
+                detail = [f"→ {acc.get('display_name') or raw.get('account_profile_id')}"]
+            rows.append({"index": op["index"], "operation": op["operation"], "label": str(label)[:120],
+                         "detail": " · ".join(detail), "valid": op["valid"], "problem": op.get("problem", ""),
+                         "decision": op.get("decision", "pending")})
+        issues = list(p.get("team_issues") or [])
+        if p.get("stale"):
+            issues.insert(0, {"level": "warning", "code": "stale", "op_index": None,
+                              "message": "written for an older state; tasks changed: " + ", ".join(p["stale_task_ids"])})
+        return {"proposal_id": proposal_id, "summary": p.get("summary", ""), "head": head, "rows": rows,
+                "issues": issues, "risks": p.get("risks", []), "questions": p.get("questions_for_user", []),
+                "assumptions": p.get("assumptions", []), "stale": p.get("stale", False), "status": p["status"],
+                "valid_indices": [r["index"] for r in rows if r["valid"]]}
+
+    def preview_proposal(self, proposal_id: str, indices: list[int]) -> dict[str, Any]:
+        return self.ctl.project.proposals.preview(proposal_id, indices)
+
+    def accept_proposal(self, proposal_id: str, indices: list[int], confirm_stale: bool = False) -> dict[str, Any]:
+        return self.ctl.accept_proposal(proposal_id, indices, confirm_stale=confirm_stale)
+
+    def reject_proposal(self, proposal_id: str) -> dict[str, Any]:
+        return self.ctl.accept_proposal(proposal_id, [])
+
+    def proposal_revision_prompt(self, proposal_id: str, note: str = "") -> str:
+        return self.ctl.proposal_revision_prompt(proposal_id, note)
+
+    def route_answer(self, text: str) -> Any:
+        return self.ctl.route_answer(text)
+
     # -- timeline (2.3.0: ledger list; lanes/milestones in 2.5.0)
     def timeline_page(self, page: int = 0, **filters: Any) -> dict[str, Any]:
         return self.ctl.project.store.ledger.query(page=page, **filters)
