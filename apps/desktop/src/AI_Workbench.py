@@ -57,7 +57,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "1.14.9"
+APP_VERSION = "1.14.13"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -173,6 +173,33 @@ def app_data_dir() -> Path:
     if base:
         return Path(base) / "AIWorkbench"
     return Path.home() / ".ai_workbench"
+
+
+def load_settings_with_recovery(path: Path) -> dict[str, Any]:
+    """Read settings.json; a corrupt file is preserved as ``settings.json.corrupt-<ts>``.
+
+    Without the backup the next save would silently overwrite the user's data.
+    Accepts a UTF-8 BOM (files edited with Notepad / PowerShell 5).
+    """
+    try:
+        if not path.exists():
+            return {}
+        raw = path.read_text(encoding="utf-8-sig")
+    except OSError:
+        return {}
+    try:
+        loaded = json.loads(raw)
+        if isinstance(loaded, dict):
+            return loaded
+    except ValueError:
+        pass
+    try:
+        backup = path.with_name(path.name + ".corrupt-" + time.strftime("%Y%m%d-%H%M%S"))
+        if not backup.exists():
+            path.replace(backup)
+    except OSError:
+        pass
+    return {}
 
 
 def program_dir() -> Path:
@@ -4320,14 +4347,7 @@ class WorkbenchApp:
         style.configure("TLabelframe.Label", background="#F3F6FB", foreground="#344054", font=("Segoe UI", 9, "bold"))
 
     def _load_settings(self) -> dict[str, Any]:
-        try:
-            if self.settings_path.exists():
-                loaded = json.loads(self.settings_path.read_text(encoding="utf-8"))
-                if isinstance(loaded, dict):
-                    return loaded
-        except Exception:
-            pass
-        return {}
+        return load_settings_with_recovery(self.settings_path)
 
     def _current_profile(self) -> dict[str, str]:
         result = dict(DEFAULT_PROJECT_PROFILE)

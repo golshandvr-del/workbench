@@ -111,7 +111,30 @@ jobs:
         run: |
           python tools/check_installer_manifest.py
           python tools/build_desktop_installer.py --out dist
-      - name: Install from Setup.bat on a clean runner
+      - name: Install the previous published release (upgrade baseline)
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = gh release list --repo $env:GITHUB_REPOSITORY --limit 30 --json tagName,isPrerelease --jq '[.[] | select(.tagName|startswith("desktop-v")) | select(.isPrerelease|not)][0].tagName'
+          Write-Host "Upgrade baseline: $tag"
+          gh release download $tag --repo $env:GITHUB_REPOSITORY --pattern 'AI_Workbench_*_Setup.bat' --dir prev
+          $setup = Get-ChildItem prev -Filter '*_Setup.bat' | Select-Object -First 1
+          $p = Start-Process -FilePath $env:ComSpec -ArgumentList @('/c', "`"$($setup.FullName)`"") -NoNewWindow -PassThru
+          if (-not $p.WaitForExit(600000)) { $p.Kill(); throw 'Previous installer timed out' }
+          if ($p.ExitCode -ne 0) { throw "Previous installer exited with $($p.ExitCode)" }
+          Start-Sleep -Seconds 3
+          Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*AI_Workbench.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          $data = Join-Path $env:LOCALAPPDATA 'AIWorkbench'
+          New-Item -ItemType Directory -Force $data | Out-Null
+          $settings = Join-Path $data 'settings.json'
+          $obj = @{}
+          if (Test-Path $settings) { $obj = Get-Content $settings -Raw | ConvertFrom-Json -AsHashtable }
+          $obj['aiwb_upgrade_sentinel'] = 'keep-me-' + $env:GITHUB_RUN_ID
+          $obj | ConvertTo-Json -Depth 20 | Set-Content -Encoding utf8 $settings
+          Set-Content -Encoding utf8 (Join-Path $data 'upgrade_sentinel_project.txt') ('project-data-' + $env:GITHUB_RUN_ID)
+          Write-Host "Baseline $tag installed; sentinels written"
+      - name: Upgrade install from this build's Setup.bat
         shell: pwsh
         run: |
           $setup = Get-ChildItem dist -Filter 'AI_Workbench_*_Setup.bat' | Select-Object -First 1
@@ -128,6 +151,21 @@ jobs:
           }
           if (-not (Test-Path (Join-Path ([Environment]::GetFolderPath('Desktop')) 'AI Workbench.lnk'))) { throw 'desktop shortcut missing' }
           Write-Host "Installed OK at $dir"
+          $data = Join-Path $env:LOCALAPPDATA 'AIWorkbench'
+          $obj = Get-Content (Join-Path $data 'settings.json') -Raw | ConvertFrom-Json -AsHashtable
+          if ($obj['aiwb_upgrade_sentinel'] -ne ('keep-me-' + $env:GITHUB_RUN_ID)) { throw 'upgrade lost settings.json data' }
+          if ((Get-Content (Join-Path $data 'upgrade_sentinel_project.txt') -Raw).Trim() -ne ('project-data-' + $env:GITHUB_RUN_ID)) { throw 'upgrade lost app data' }
+          $ver = (Select-String -Path (Join-Path $dir 'aiwb\__init__.py') -Pattern '__version__\s*=\s*"([^"]+)"').Matches[0].Groups[1].Value
+          Write-Host "Upgrade preserved settings and data; installed version $ver"
+      - name: Run a copy of the installed app from a Unicode path with spaces
+        shell: pwsh
+        run: |
+          $src = Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench'
+          $dst = Join-Path $env:RUNNER_TEMP 'AI Wörkbench تست ü'
+          Copy-Item -Recurse -Force $src $dst
+          $env:PYTHONIOENCODING = 'utf-8'
+          python tools/smoke_installed_app.py $dst
+          if ($LASTEXITCODE -ne 0) { throw 'smoke from Unicode path failed' }
       - name: GUI smoke of the installed copy
         shell: pwsh
         run: python tools/smoke_installed_app.py (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
