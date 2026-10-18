@@ -237,7 +237,10 @@ class TaskService:
             if t["status"] == "blocked" and not str(t.get("blocked_reason", "")).startswith(("waiting for", "prerequisite")):
                 continue
             state, why = readiness(t, s["tasks"])
-            if state != t["status"]:
+            if state == t["status"] == "blocked" and why != t.get("blocked_reason"):
+                t["blocked_reason"] = why
+                emit(s, "task_status", task_id=t["task_id"], old="blocked", new="blocked", why=why)
+            elif state != t["status"]:
                 old = t["status"]
                 t["status"] = state
                 t["blocked_reason"] = why if state == "blocked" else ""
