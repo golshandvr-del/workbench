@@ -301,11 +301,28 @@ class WorkspaceWindow:
         ttk.Label(f, text="\n".join(self.progress_details + [counts or "—"]), style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(row=4, column=0, sticky="ew", pady=4)
         att = ttk.LabelFrame(f, text=self.wc.tr(("Needs your attention", "نیازمند توجه شما")), padding=6)
         att.grid(row=5, column=0, sticky="ew", pady=6)
-        if not ov["warnings"]:
+        self.attention_items = self.wc.attention(hide_seen=True)
+        if not self.attention_items:
             ttk.Label(att, text=self.wc.tr(("Nothing needs your attention.", "موردی نیازمند توجه نیست."))).pack(anchor=anchor)
-        for wi in ov["warnings"]:
-            ttk.Label(att, text=f"{i18n.SEVERITY[wi['severity']][0]} {i18n.severity_label(wi['severity'], self.wc.lang).split(' ', 1)[1]}: {wi['text']}",
-                      wraplength=700).pack(anchor=anchor)
+        else:
+            self.att_tree = ttk.Treeview(att, columns=("item",), show="tree headings", style="WS.Treeview",
+                                         height=min(8, len(self.attention_items) + 2))
+            self.att_tree.heading("#0", text=self.wc.tr(("Group", "گروه")))
+            self.att_tree.heading("item", text=self.wc.tr(("What and why", "چه چیزی و چرا")))
+            self.att_tree.column("#0", width=220, stretch=False)
+            self.att_tree.column("item", width=520, stretch=True)
+            for item in self.attention_items:
+                self.att_tree.insert("", "end", iid=item["key"], text=f"{item['rank']}. {item['rank_text']}",
+                                     values=(self.wc.attention_text(item),))
+            self.att_tree.pack(fill="x")
+            self.att_tree.bind("<Double-1>", lambda _e: self.open_attention_selected())
+            ab = ttk.Frame(att, style="WS.TFrame")
+            ab.pack(fill="x", pady=(4, 0))
+            side = "right" if self.wc.rtl else "left"
+            ttk.Button(ab, text=self.wc.tr(("Open", "باز کردن")), command=self.open_attention_selected).pack(side=side)
+            ttk.Button(ab, text=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen).pack(side=side, padx=4)
+            ttk.Button(ab, text=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
+                       command=lambda: (self.wc.clear_seen(), self.show("overview"))).pack(side=side)
         act = ttk.LabelFrame(f, text=self.wc.tr(("Recent activity", "فعالیت اخیر")), padding=6)
         act.grid(row=6, column=0, sticky="ew")
         for rec in ov["recent"]:
@@ -313,6 +330,33 @@ class WorkspaceWindow:
         b = ttk.Frame(f, style="WS.TFrame")
         b.grid(row=7, column=0, sticky="ew", pady=6)
         ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(side="right" if self.wc.rtl else "left")
+
+    def _attention_by_key(self, key: str) -> dict[str, Any] | None:
+        return next((i for i in getattr(self, "attention_items", []) if i["key"] == key), None)
+
+    def open_attention_selected(self, key: str = "") -> Any:
+        key = key or next(iter(self.att_tree.selection()), "") if hasattr(self, "att_tree") else key
+        item = self._attention_by_key(key)
+        if not item:
+            self.status_var.set(self.wc.tr(("Select an item first.", "ابتدا یک مورد انتخاب کنید.")))
+            return None
+        if item["kind"] == "more":
+            self.attention_items = [i for i in self.attention_items if i["key"] != key] + item["hidden"]
+            self.att_tree.delete(key)
+            for h in item["hidden"]:
+                self.att_tree.insert("", "end", iid=h["key"], text=f"{h['rank']}. {h['rank_text']}",
+                                     values=(self.wc.attention_text(h),))
+            return item["hidden"]
+        section, ref = self.wc.open_attention(item)
+        self.show(section)
+        self.status_var.set(f"{item['ref']}: {item['ask']}")
+        return section, ref
+
+    def mark_attention_seen(self, keys: list[str] | None = None) -> set[str]:
+        keys = keys if keys is not None else list(self.att_tree.selection()) if hasattr(self, "att_tree") else []
+        out = self.wc.mark_seen([k for k in keys if not k.startswith("more:")])
+        self.show("overview")
+        return out
 
     def _view_tasks(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("tasks"))
