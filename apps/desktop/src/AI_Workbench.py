@@ -40,6 +40,9 @@ from aiwb.git import GitCommandError, GitService, GitSyncService
 from aiwb.git.review_dialog import GitReviewDialog
 from aiwb.github.actions import GitHubActionsService
 from aiwb.github.build_center import BuildCenterWindow
+from aiwb.github import orchestrator as sync_build_orchestrator
+from aiwb.github.artifacts import GitHubDispatchService
+from aiwb.github.sync_build_window import SyncBuildWindow
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -54,7 +57,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "1.14.7"
+APP_VERSION = "1.14.8"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -6828,6 +6831,8 @@ class WorkbenchApp:
         self.github_repository_metadata_button.pack(side="right")
         self.github_build_center_button = ttk.Button(advanced, text="Build Center…", command=self.open_build_center)
         self.github_build_center_button.pack(side="right", padx=(0, 6))
+        self.github_sync_build_button = ttk.Button(advanced, text="Sync & Build…", command=self.open_sync_build)
+        self.github_sync_build_button.pack(side="right", padx=(0, 6))
         self._refresh_github_repository_account_choices()
         self._render_github_repository_binding_status()
         if os.name != "nt":
@@ -7073,7 +7078,7 @@ class WorkbenchApp:
                         rollback_attempted = True
                         rolled_back = repository_binding_service.rollback_origin(git_service, context) if origin_changed else True
                         detail = " The previous origin was restored." if rolled_back and origin_changed else (" WARNING: the origin configuration could not be restored; inspect Git remotes manually." if origin_changed else "")
-                        raise RepositoryBindingError("Could not save repository binding metadata." + detail)
+                        raise repository_binding_service.RepositoryBindingError("Could not save repository binding metadata." + detail)
                     return True, binding
                 except Exception as exc:
                     if origin_changed and not rollback_attempted:
@@ -10357,6 +10362,68 @@ class WorkbenchApp:
             service=GitHubActionsService(self.github_account_service.api_client),
             workflow_file=binding.workflow_file, local_head_sha=local_head_sha,
             on_select_workflow=select_workflow, redact=redact_github_text,
+        )
+
+    def open_sync_build(self) -> None:
+        """v1.14.8 One-click Sync & Build: review → commit → push → exact CI run → verified artifacts."""
+        binding = self._binding_for_active_project()
+        if binding is None:
+            messagebox.showinfo("Sync & Build", "Link the active project to a GitHub Repository first.")
+            return
+        if not binding.workflow_file:
+            messagebox.showinfo("Sync & Build", "Select the main Build workflow in Build Center first.")
+            return
+        account = next((item for item in self.github_account_service.list_accounts() if item.account_id == binding.account_id), None)
+        if account is None:
+            messagebox.showerror("Sync & Build", "The GitHub account linked to this project is no longer configured.")
+            return
+        existing = getattr(self, "_sync_build_window", None)
+        if existing is not None and not existing.closed:
+            try:
+                existing.win.lift()
+                return
+            except tk.TclError:
+                pass
+        try:
+            git_root, project_subpath = self._resolve_project_git_scope()
+            store_path = project_metadata_file(Path(self.workspace), "sync_build_operations.json")
+        except Exception as exc:
+            messagebox.showerror("Sync & Build", str(exc))
+            return
+        store = sync_build_orchestrator.RecordStore(store_path)
+        resume_id = None
+        for item in reversed(store.history()):
+            g = item.get("git") or {}
+            if g.get("repository") == binding.full_name and g.get("branch") == (binding.working_branch or binding.default_branch) \
+                    and g.get("commit_sha") and g.get("state") not in (sync_build_orchestrator.CANCELLED, sync_build_orchestrator.BUILD_FAILED,
+                                                                       sync_build_orchestrator.ARTIFACT_VERIFIED, sync_build_orchestrator.ARTIFACT_DOWNLOADED):
+                if messagebox.askyesno("Sync & Build", f"Resume unfinished operation {g.get('operation_id')} (commit {str(g.get('commit_sha'))[:12]}, state {g.get('state')})?"):
+                    resume_id = g.get("operation_id")
+                break
+        state = load_task_state(self.workspace) if self.workspace else {}
+        api = self.github_account_service.api_client
+        actions_service = GitHubActionsService(api)
+
+        def secret_check(root: Path, paths: Iterable[str]) -> list[str]:
+            return inspect_candidate_paths(root, paths)
+
+        try:
+            orchestrator = sync_build_orchestrator.SyncBuildOrchestrator(
+                sync=GitSyncService(_git_service, secret_check=secret_check), actions=actions_service,
+                dispatch=GitHubDispatchService(actions_service), git_root=git_root, project_subpath=project_subpath,
+                owner=binding.owner, repo=binding.name, repository_id=binding.repository_id,
+                branch=binding.working_branch or binding.default_branch, workflow_file=binding.workflow_file,
+                artifact_pattern=binding.artifact_pattern, get_token=lambda: self.github_account_service.get_api_token(binding.account_id),
+                store=store, in_scope=lambda path: bool(repository_binding_service.classify_scoped_paths(project_subpath, [path])[0]),
+                is_sensitive=is_sensitive_path, operation_id=resume_id, task_id=str(state.get("task_id", "") or "")[:40],
+            )
+        except Exception as exc:
+            messagebox.showerror("Sync & Build", redact_github_text(exc))
+            return
+        summary = (str(state.get("task_text", "") or "update project").strip().splitlines() or ["update project"])[0][:72]
+        self._sync_build_window = SyncBuildWindow(
+            self.root, orchestrator, default_message="workbench: " + summary, redact=redact_github_text,
+            on_finished=lambda _o: self.refresh_git(silent=True),
         )
 
     def _git_action_finished(self, result: Any, label: str) -> None:

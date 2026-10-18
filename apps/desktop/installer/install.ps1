@@ -280,7 +280,7 @@ try {
     New-Item -ItemType Directory -Path (Join-Path $dataDir 'backups') -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $dataDir 'logs') -Force | Out-Null
 
-    foreach ($fileName in @('AI_Workbench.py', 'conversation_store.py', 'project_version_store.py', 'restore_service.py', 'validation_profiles.py', 'README.md', 'README_FA.md', 'ARCHITECTURE.md', 'CHANGELOG.md', 'test_workbench.py', 'test_conversation_history.py', 'test_project_version_store.py', 'test_restore_service.py', 'test_validation_profiles.py', 'test_v114_features.py', 'test_git_service.py', 'test_github_accounts.py', 'test_github_repository_browser.py', 'test_github_repository_binding_v144.py', 'test_windows_credential_store.py', 'test_git_sync.py', 'test_github_actions.py', 'WINDOWS_RELEASE_CHECKLIST_v1.14.7.md', 'test_github_artifacts.py')) {
+    foreach ($fileName in @('AI_Workbench.py', 'conversation_store.py', 'project_version_store.py', 'restore_service.py', 'validation_profiles.py', 'README.md', 'README_FA.md', 'ARCHITECTURE.md', 'CHANGELOG.md', 'test_workbench.py', 'test_conversation_history.py', 'test_project_version_store.py', 'test_restore_service.py', 'test_validation_profiles.py', 'test_v114_features.py', 'test_git_service.py', 'test_github_accounts.py', 'test_github_repository_browser.py', 'test_github_repository_binding_v144.py', 'test_windows_credential_store.py', 'test_git_sync.py', 'test_github_actions.py', 'WINDOWS_RELEASE_CHECKLIST_v1.14.8.md', 'test_github_artifacts.py', 'test_orchestrator.py')) {
         $source = Join-Path $payloadDir $fileName
         if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
             throw "Installer payload is incomplete; missing $fileName"
@@ -295,7 +295,7 @@ try {
         throw 'Installer payload is incomplete; missing aiwb module package'
     }
     New-Item -ItemType Directory -Path $aiwbDestination -Force | Out-Null
-    foreach ($moduleName in @('__init__.py', 'architecture_plan.py', 'candidate_store.py', 'dependency_analysis.py', 'semantic_diff.py', 'task_playbooks.py', 'git/__init__.py', 'git/models.py', 'git/service.py', 'git/sync.py', 'git/review_dialog.py', 'github/__init__.py', 'github/actions.py', 'github/build_center.py', 'github/redaction.py', 'github/credential_store.py', 'github/api_client.py', 'github/accounts.py', 'github/repository_binding.py', 'github/artifacts.py', 'github/build_center_dialogs.py')) {
+    foreach ($moduleName in @('__init__.py', 'architecture_plan.py', 'candidate_store.py', 'dependency_analysis.py', 'semantic_diff.py', 'task_playbooks.py', 'git/__init__.py', 'git/models.py', 'git/service.py', 'git/sync.py', 'git/review_dialog.py', 'github/__init__.py', 'github/actions.py', 'github/build_center.py', 'github/redaction.py', 'github/credential_store.py', 'github/api_client.py', 'github/accounts.py', 'github/repository_binding.py', 'github/artifacts.py', 'github/build_center_dialogs.py', 'github/orchestrator.py', 'github/sync_build_window.py')) {
         $relativeModule = $moduleName.Replace('/', [System.IO.Path]::DirectorySeparatorChar)
         $moduleSource = Join-Path $aiwbSource $relativeModule
         if (-not (Test-Path -LiteralPath $moduleSource -PathType Leaf)) {
