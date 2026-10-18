@@ -38,9 +38,7 @@ def main() -> None:
             w = app.workspace_window
             ctl = w.wc.ctl
             # build the synthetic team inside the opened project
-            d = fx.build(project) if False else None  # noqa: F841 (fixture writes through a new controller)
-            fx_data = fx.build_into(ctl) if hasattr(fx, "build_into") else None
-            assert fx_data, "fixture build_into missing"
+            fx_data = fx.build_into(ctl)
             sp = fx_data["special"]
             for size in ("1366x768+0+0", "1280x720+0+0"):
                 w.win.geometry(size)
