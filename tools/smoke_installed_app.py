@@ -19,6 +19,11 @@ from pathlib import Path
 
 
 def main(argv: list[str]) -> int:
+    for stream in (sys.stdout, sys.stderr):  # Windows console codepages cannot print Unicode paths
+        try:
+            stream.reconfigure(errors="backslashreplace")  # type: ignore[attr-defined]
+        except (AttributeError, ValueError):
+            pass
     app_dir = Path(argv[1]).resolve() if len(argv) > 1 else Path(__file__).resolve().parent.parent / "apps" / "desktop" / "src"
     entry = app_dir / "AI_Workbench.py"
     if not entry.is_file():

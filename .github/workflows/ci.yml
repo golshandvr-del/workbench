@@ -163,6 +163,7 @@ jobs:
           $src = Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench'
           $dst = Join-Path $env:RUNNER_TEMP 'AI Wörkbench تست ü'
           Copy-Item -Recurse -Force $src $dst
+          $env:PYTHONIOENCODING = 'utf-8'
           python tools/smoke_installed_app.py $dst
           if ($LASTEXITCODE -ne 0) { throw 'smoke from Unicode path failed' }
       - name: GUI smoke of the installed copy
