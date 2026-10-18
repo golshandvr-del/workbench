@@ -86,7 +86,7 @@ def render_status_md(snap: dict[str, Any], state: dict[str, Any]) -> str:
     if snap["project"]["goal"]:
         lines += [f"- **Goal:** {snap['project']['goal']}"]
     lines += ["", "## Summary", "",
-              f"| Active | Blocked | Needs decision | In review | Validation pending | Done (verified) | Total |",
+              "| Active | Blocked | Needs decision | In review | Validation pending | Done (verified) | Total |",
               "|---|---|---|---|---|---|---|",
               f"| {s['active_tasks']} | {s['blocked_tasks']} | {s['needs_decision']} | {s['awaiting_review']} | "
               f"{s['validation_pending']} | {s['verified_complete']} | {s['total_tasks']} |"]

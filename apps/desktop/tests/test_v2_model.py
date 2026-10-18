@@ -10,7 +10,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from aiwb.v2 import ModelError, ProjectStore, StoreError, V2Project, validate_graph  # noqa: E402
+from aiwb.v2 import ModelError, StoreError, V2Project, validate_graph  # noqa: E402
 from aiwb.v2.models import MACHINES, check_transition  # noqa: E402
 from aiwb.v2.store import DB_VERSION, migrate_state  # noqa: E402
 from aiwb.v2.tasks import find_cycle, scopes_overlap  # noqa: E402

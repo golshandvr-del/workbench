@@ -329,7 +329,7 @@ def manager_update_prompt(snapshot: dict[str, Any], *, state_url: str = "", fall
                      else "No newer state since your last report.")
     if state_url:
         lines += ["", "## Published state", f"- Read: {state_url}",
-                  f"- First, quote the exact `state_revision` you see there. If you cannot open it, say \"CANNOT READ STATE\" "
+                  "- First, quote the exact `state_revision` you see there. If you cannot open it, say \"CANNOT READ STATE\" "
                   "and use only the summary below — never claim you read it."]
     else:
         lines += ["", "## Published state", "- Not published. Use ONLY the summary below; do not claim you read GitHub."]

@@ -22,7 +22,6 @@ import urllib.error
 import urllib.request
 import uuid
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Callable, Mapping
 
 from .models import now_utc
