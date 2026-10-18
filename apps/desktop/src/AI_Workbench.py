@@ -49,6 +49,9 @@ from aiwb.inbox import repair as inbox_repair
 from aiwb import diagnostics as diagnostics_service
 from aiwb import context_request as context_request_service
 from aiwb.context_request_window import ContextRequestWindow
+from aiwb.v2.controller import ProjectsController
+from aiwb.v2.projects_window import ProjectsWindow
+from aiwb.v2.publisher import GitHubStateClient, StatePublisher
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -5333,6 +5336,7 @@ class WorkbenchApp:
         ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Context request…", command=self.open_context_request).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Projects (multi-agent)…", command=self.open_projects).pack(side="left", padx=(6, 0))
         candidate_controls = ttk.Frame(tab)
         candidate_controls.pack(fill="x", pady=(0, 5))
         ttk.Button(candidate_controls, text="Save response candidate…", command=self.save_response_candidate).pack(side="left")
@@ -8801,6 +8805,55 @@ class WorkbenchApp:
             messagebox.showwarning("Response history not saved", f"The response parsed successfully, but its exact snapshot/history could not be saved. Workbench will block applying this response until it can record it reliably. Resolve the storage problem and analyze the response again.\n\n{exc}")
         self.refresh_workflow_status()
         self._show_diff_window(payload, changes, format_name)
+
+    def make_projects_controller(self, root: Path) -> ProjectsController:
+        """V2 controller for this project; the state publisher is bound only when a GitHub binding exists."""
+        publisher = None
+        state_url = ""
+        binding = None
+        try:
+            binding = self._binding_for_active_project()
+        except Exception as exc:  # noqa: BLE001 - publishing is optional
+            log_exception(type(exc), exc, exc.__traceback__)
+        def head() -> str:
+            try:
+                r = _git_service.run(root, ["rev-parse", "HEAD"], timeout=10)
+                out = (r.stdout or "").strip()
+                return out[:40] if r.returncode == 0 and len(out) == 40 else ""
+            except Exception:  # noqa: BLE001
+                return ""
+        ctl = ProjectsController(root, make_pipeline=make_inbox_pipeline, base_commit=head,
+                                 state_url=lambda: state_url)
+        if binding is not None:
+            branch = str(ctl.state()["settings"]["publish"].get("branch") or "aiwb-state")
+            state_url = f"https://github.com/{binding.full_name}/blob/{branch}/.aiwb/project-state.json"
+            account_id = binding.account_id
+
+            def client() -> GitHubStateClient | None:
+                token = self.github_account_service.get_api_token(account_id)
+                return GitHubStateClient(token, binding.owner, binding.name) if token else None
+
+            def source() -> dict[str, Any]:
+                return {"repository": binding.full_name, "branch": binding.working_branch or binding.default_branch,
+                        "commit_sha": head(), "local_changes_pending": False, "local_changes_count": 0}
+
+            publisher = StatePublisher(ctl.project.store, client_factory=client, source_info=source,
+                                       goal=lambda: str(ctl.state()["settings"].get("goal", "")))
+            ctl.publisher = publisher
+            ctl.state_url = lambda: state_url
+        return ctl
+
+    def open_projects(self) -> None:
+        root = self.require_workspace()
+        if root is None:
+            return
+        try:
+            ctl = self.make_projects_controller(root)
+        except Exception as exc:  # noqa: BLE001 - store errors are shown, never silently overwritten
+            messagebox.showerror("Projects", redact(str(exc)))
+            return
+        self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
+        self.set_status("Projects (multi-agent): " + ctl.next_action_text())
 
     def open_context_request(self, raw: str | None = None) -> None:
         root = self.require_workspace()
