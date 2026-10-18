@@ -50,7 +50,8 @@ def main() -> None:
                 w.team_attention_only.set(False)
                 assert len(w.fill_team()) >= 10
                 assert "needs action" in w.team_status_var.get()
-                assert w.win.winfo_width() <= w.win.winfo_screenwidth()
+                # the team view must not force the window wider than requested (a virtual screen may be smaller)
+                assert w.win.winfo_width() <= int(size.split("x")[0]) + 2, (size, w.win.winfo_width())
             rev = ctl.state()["state_revision"]
             events = ctl.project.store.ledger.count()
             w.show("overview")
