@@ -300,6 +300,41 @@ class WorkspaceController:
     def timeline_page(self, page: int = 0, **filters: Any) -> dict[str, Any]:
         return self.ctl.project.store.ledger.query(page=page, **filters)
 
+    def timeline_lanes(self, limit: int = 400) -> dict[str, list[dict[str, Any]]]:
+        """Per-agent lanes, oldest first (spec §5.4). A lane is a work stream, not a git branch."""
+        recs = self.ctl.project.store.ledger.all()[-limit:]
+        return lanes(recs, self.ctl.state())
+
+    def planned(self) -> list[dict[str, Any]]:
+        return planned_items(self.ctl.state())
+
+    def milestone_rows(self) -> list[dict[str, Any]]:
+        st = self.ctl.state()
+        out = []
+        for m in self.ctl.project.timeline.milestones():
+            pr = progress(st, task_ids=m["task_ids"])
+            out.append({**m, "progress_text": f"{pr['done']}/{pr['total']}"})
+        return out
+
+    def version_rows(self) -> list[dict[str, Any]]:
+        labels = {"proposed": ("proposed", "پیشنهادی"), "local": ("local (commit)", "محلی (Commit)"),
+                  "tagged": ("tag created", "Tag ساخته شد"), "released": ("released", "منتشرشده"),
+                  "withdrawn": ("withdrawn", "کنار گذاشته شد")}
+        return [{**v, "status_text": self.tr(labels.get(v["status"], (v["status"], v["status"])))}
+                for v in self.ctl.project.timeline.versions()]
+
+    def create_milestone(self, data: dict[str, Any]) -> dict[str, Any]:
+        return self.ctl.project.timeline.create_milestone(data)
+
+    def accept_milestone(self, milestone_id: str, force: bool = False) -> dict[str, Any]:
+        return self.ctl.project.timeline.accept_milestone(milestone_id, force=force)
+
+    def propose_version(self, data: dict[str, Any]) -> dict[str, Any]:
+        return self.ctl.project.timeline.propose_version(data)
+
+    def advance_version(self, version_id: str, status: str, **facts: Any) -> dict[str, Any]:
+        return self.ctl.project.timeline.advance_version(version_id, status, **facts)
+
     def event_text(self, rec: dict[str, Any]) -> str:
         refs = rec.get("refs", {})
         ref = refs.get("task_id") or refs.get("handoff_id") or refs.get("proposal_id") or refs.get("decision_id") \
@@ -328,6 +363,10 @@ class WorkspaceController:
             if t.get("status") in ("in_review", "validation_pending"):
                 acts += [("approve_review", self.tr(("Approve review", "تأیید بازبینی"))),
                          ("reject_review", self.tr(("Reject review", "رد بازبینی")))]
+            ts = task_stage(self.ctl.state(), ref)
+            text += "\n\n" + self.tr(("Workflow: ", "گردش کار: ")) + stage_label(ts["stage"], self.lang) + f" ({ts['why']})"
+            if ts["stage"] in ("prompt_prepared", "prompt_copied") and ts["handoff_id"]:
+                acts.append(("confirm_sent", self.tr(("I sent this prompt", "این پرامپت را ارسال کردم"))))
             owner = t.get("owner_agent_id", "")
             if owner:
                 r = binding_readiness(self.ctl.state(), owner)
@@ -357,12 +396,20 @@ class WorkspaceController:
                                  "یک Task، Agent یا رویداد را انتخاب کنید تا جزئیات و اقدام‌های مجاز آن نمایش داده شود.")),
                 "actions": []}
 
+    def start_warning(self, task_id: str) -> str:
+        return self.ctl.start_warning(task_id)
+
     def run_action(self, action: str, ref: str = "") -> Any:
         """Inspector / next-action buttons; every one delegates to the existing controller."""
         kind, sel = self.selection
         ref = ref or sel
         if action == "start_task":
             return self.ctl.start_task(ref)
+        if action == "confirm_sent":
+            ts = task_stage(self.ctl.state(), ref)
+            if not ts["handoff_id"]:
+                raise ModelError("there is no prepared prompt for this task")
+            return self.ctl.confirm_sent(ts["handoff_id"])
         if action == "approve_review":
             return self.ctl.review_task(ref, True)
         if action == "reject_review":
