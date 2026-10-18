@@ -93,7 +93,7 @@ def main() -> None:
             w.show("team")
             root.update()
             out = w.review_accept()
-            assert out and out["status"] == "partially_accepted", out
+            assert out and out["status"] == "accepted", out  # all valid items accepted; the invalid one is rejected
             st = ctl.state()
             assert "agent-implementer-2" in st["agents"] and len(st["tasks"]) == 3
             assert validate_graph(st["tasks"]) == []
