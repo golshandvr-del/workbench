@@ -5,8 +5,8 @@
 > Roadmap قبلی (1.14.1 → 2.2.0، کامل‌شده) در [`docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md) بایگانی شده است.
 > تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.5.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** 2.6.0 — Team Dashboard، یکپارچه‌سازی و Release Gate (مراحل 7، 8، 9)
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.6.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال بعدی:** — Roadmap از نظر کد و تست خودکار کامل است؛ موارد NOT RUN (E2E با دو چت واقعی، Windows فیزیکی با DPI متفاوت، Companion روی گوشی) منتظر اجرای مالک محصول هستند.
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
 
@@ -86,9 +86,9 @@
 
 | گام | عنوان | وضعیت | شواهد / باقی‌مانده |
 |---|---|---|---|
-| 7 | Team Dashboard و صف Needs Attention (اولویت قطعی و توضیح‌پذیر) | ⬜ | |
-| 8 | یکپارچه‌سازی ورودی‌ها (اصلاح همین Task / Task جدید / Re-plan)، Polish، Light/Dark | ⬜ | |
-| 9 | Release Gate: Dataset ده Agent، Performance در برابر Baseline، Installer upgrade، NOT RUNها | ⬜ | |
+| 7 | Team Dashboard و صف Needs Attention (اولویت قطعی و توضیح‌پذیر) | ✅ | `v2/dashboard.py`، `test_dashboard.py`، `gui_dashboard_smoke.py` |
+| 8 | یکپارچه‌سازی ورودی‌ها (اصلاح همین Task / Task جدید / Re-plan)، Polish، Light/Dark | ✅ | `v2/changes.py`، تشخیص Context Request در Inbox، smoke Light/Dark |
+| 9 | Release Gate: Dataset ده Agent، Performance در برابر Baseline، Installer upgrade، NOT RUNها | ✅ | `docs/release/v2.6.0/RELEASE_GATE_WORKSPACE_v2.6.0.md` (NOT RUNها صریح) |
 
 ---
 
