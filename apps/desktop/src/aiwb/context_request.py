@@ -175,6 +175,11 @@ def python_symbol_lines(source: str, symbol: str) -> tuple[int, int] | None:
     return start, getattr(found, "end_lineno", found.lineno)
 
 
+def _structurally_unsafe(p: str) -> bool:
+    parts = p.split("/")
+    return (not p or p.startswith("/") or ":" in p or ".." in parts or "\x00" in p)
+
+
 def resolve(req: ContextRequest, root: Path, *, path_problem: Callable[[str], str],
             is_sensitive: Callable[[str], bool], allow_sensitive: set[str] | None = None) -> list[ResolvedItem]:
     allow_sensitive = allow_sensitive or set()
@@ -182,12 +187,24 @@ def resolve(req: ContextRequest, root: Path, *, path_problem: Callable[[str], st
     for it in req.items:
         r = ResolvedItem(it.path, it.mode, "ready", required=it.required, reason=it.reason)
         out.append(r)
-        problem = path_problem(it.path)
-        if problem:
-            r.status, r.detail = "refused_unsafe", problem
+        if _structurally_unsafe(it.path):
+            r.status, r.detail = "refused_unsafe", "path must be relative, inside the project, without '..'"
             continue
-        if is_sensitive(it.path) and it.path not in allow_sensitive:
-            r.status, r.detail = "refused_sensitive", "sensitive file (secrets/keys/.env); needs an explicit separate decision"
+        if is_sensitive(it.path):
+            if it.path not in allow_sensitive:
+                r.status, r.detail = "refused_sensitive", "sensitive file (secrets/keys/.env); needs an explicit separate decision"
+                continue
+        else:
+            problem = path_problem(it.path)
+            if problem:
+                r.status, r.detail = "refused_unsafe", problem
+                continue
+        try:
+            if not (root / it.path).resolve().is_relative_to(root.resolve()):
+                r.status, r.detail = "refused_unsafe", "path resolves outside the project"
+                continue
+        except OSError:
+            r.status, r.detail = "refused_unsafe", "path cannot be resolved"
             continue
         target = root / it.path
         if not target.is_file():

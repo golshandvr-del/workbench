@@ -8710,7 +8710,10 @@ class WorkbenchApp:
             pass
         if not archive_selected and context_request_service.find_request(raw) is not None:
             try:
-                make_inbox_pipeline(root).capture_text(raw, source="context-request")
+                pipe = make_inbox_pipeline(root)
+                captured = pipe.capture_text(raw, source="context-request")
+                if captured.response is not None:
+                    pipe.process(captured.response.response_id)
             except Exception as inbox_exc:
                 log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
             self.open_context_request(raw)
