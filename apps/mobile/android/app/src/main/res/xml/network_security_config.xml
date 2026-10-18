@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Companion (Integration Spec §11.2) talks to the paired desktop over the local network by IP address.
+  Android cannot scope cleartext to private IP ranges, so cleartext is permitted at the platform level and
+  restricted in code: CompanionClient only connects to private-LAN/loopback IPv4 hosts (PairingCode.isPrivateLan)
+  and every message is end-to-end encrypted and authenticated (envelope v1). GitHub/Internet traffic is only
+  ever opened as https://github.com / https://api.github.com (ReleaseInfo.isTrustedReleaseUrl).
+  Only the system CA store is trusted (no user-installed CAs).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
