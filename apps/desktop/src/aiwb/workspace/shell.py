@@ -1,0 +1,513 @@
+"""Project Workbench window (roadmap 2.3.0 stage 3, ADR-007).
+
+Frame: Project Bar · Sidebar · Next Action Strip · Workspace view · collapsible
+Inspector · Status Footer. Grid weights + breakpoints (no fixed-only geometry);
+the window is clamped to the screen work area. All data comes from
+:class:`WorkspaceController`; buttons only call controller methods.
+"""
+from __future__ import annotations
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog, ttk
+from typing import Any, Callable
+
+from .. import i18n
+from ..v2.models import ModelError
+from . import theme
+from .controller import SECTIONS, WorkspaceController
+
+
+class WorkspaceWindow:
+    def __init__(self, parent: tk.Misc, wc: WorkspaceController, *, clipboard: Callable[[str], None],
+                 geometry: str = "") -> None:
+        self.wc = wc
+        self.clipboard = clipboard
+        self.last_prompt = ""
+        self.last_handoff_id = ""
+        self.win = tk.Toplevel(parent)
+        self.win.title(f"{wc.ctl.root.name} — AI Workbench")
+        self.win.minsize(*theme.MIN_SIZE)
+        self.style = ttk.Style(self.win)
+        self.pal = theme.apply(self.style, wc.theme)
+        self.win.configure(background=self.pal["bg"])
+        self._place(geometry)
+        self.layout = theme.layout_for(theme.DEFAULT_SIZE[0])
+        self._build()
+        self.win.bind("<Configure>", self._on_configure, add="+")
+        self.win.bind("<Control-i>", lambda _e: self.toggle_inspector())
+        self.win.bind("<Control-b>", lambda _e: self.toggle_sidebar())
+        for i, key in enumerate(SECTIONS, start=1):
+            self.win.bind(f"<Alt-Key-{i}>", lambda _e, k=key: self.show(k))
+        self.win.protocol("WM_DELETE_WINDOW", self.close)
+        self.show(wc.section)
+
+    # -- geometry
+    def _work_area(self) -> tuple[int, int, int, int]:
+        try:
+            return 0, 0, self.win.winfo_screenwidth(), self.win.winfo_screenheight() - 48  # leave room for the taskbar
+        except tk.TclError:
+            return 0, 0, *theme.DEFAULT_SIZE
+
+    def _place(self, geometry: str) -> None:
+        if geometry:
+            self.win.geometry(geometry)
+            return
+        area = self._work_area()
+        w, h = theme.DEFAULT_SIZE
+        x, y, w, h = theme.clamp_to_work_area((area[2] - w) // 2, (area[3] - h) // 2, w, h, area)
+        self.win.geometry(f"{w}x{h}+{x}+{y}")
+
+    def _on_configure(self, event: Any) -> None:
+        if event.widget is not self.win:
+            return
+        new = theme.layout_for(event.width)
+        if new != self.layout:
+            self.layout = new
+            self._arrange()
+
+    # -- structure
+    def _build(self) -> None:
+        w = self.win
+        w.columnconfigure(0, weight=1)
+        w.rowconfigure(2, weight=1)
+        # Project bar
+        self.bar = ttk.Frame(w, style="WS.TFrame", padding=(theme.SPACING["l"], theme.SPACING["m"]))
+        self.bar.grid(row=0, column=0, sticky="ew")
+        self.bar.columnconfigure(1, weight=1)
+        self.sidebar_btn = ttk.Button(self.bar, text="☰", width=3, command=self.toggle_sidebar)
+        self.sidebar_btn.grid(row=0, column=0, padx=(0, 8))
+        self.title_var = tk.StringVar()
+        ttk.Label(self.bar, textvariable=self.title_var, style="WS.Title.TLabel").grid(row=0, column=1, sticky="w")
+        self.pub_var = tk.StringVar()
+        ttk.Label(self.bar, textvariable=self.pub_var, style="WS.Muted.TLabel").grid(row=1, column=1, sticky="w")
+        ctl = ttk.Frame(self.bar, style="WS.TFrame")
+        ctl.grid(row=0, column=2, rowspan=2, sticky="e")
+        self.mode_var = tk.StringVar(value=self.wc.ctl.mode)
+        self.mode_box = ttk.Combobox(ctl, textvariable=self.mode_var, values=["simple", "advanced"], width=9, state="readonly")
+        self.mode_box.pack(side="left", padx=4)
+        self.mode_box.bind("<<ComboboxSelected>>", lambda _e: self._set_mode())
+        self.lang_var = tk.StringVar(value=self.wc.lang)
+        self.lang_box = ttk.Combobox(ctl, textvariable=self.lang_var, values=list(i18n.LANGUAGES), width=4, state="readonly")
+        self.lang_box.pack(side="left", padx=4)
+        self.lang_box.bind("<<ComboboxSelected>>", lambda _e: self._set_lang())
+        self.theme_var = tk.StringVar(value=self.wc.theme)
+        self.theme_box = ttk.Combobox(ctl, textvariable=self.theme_var, values=list(theme.THEMES), width=6, state="readonly")
+        self.theme_box.pack(side="left", padx=4)
+        self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._set_theme())
+        self.inspector_btn = ttk.Button(ctl, text="ⓘ", width=3, command=self.toggle_inspector)
+        self.inspector_btn.pack(side="left", padx=4)
+        # Next action strip
+        self.next_frame = ttk.Frame(w, style="WS.Surface.TFrame", padding=(theme.SPACING["l"], theme.SPACING["m"]))
+        self.next_frame.grid(row=1, column=0, sticky="ew", padx=theme.SPACING["l"])
+        self.next_frame.columnconfigure(0, weight=1)
+        self.next_var = tk.StringVar()
+        self.next_label = ttk.Label(self.next_frame, textvariable=self.next_var, style="WS.Next.TLabel", wraplength=900)
+        self.next_label.grid(row=0, column=0, sticky="w")
+        self.next_btn = ttk.Button(self.next_frame, text="", style="WS.Primary.TButton", command=self.do_next)
+        self.next_btn.grid(row=0, column=1, sticky="e", padx=(8, 0))
+        # Body: sidebar | center | inspector
+        self.body = ttk.Frame(w, style="WS.TFrame")
+        self.body.grid(row=2, column=0, sticky="nsew", padx=theme.SPACING["l"], pady=theme.SPACING["m"])
+        self.body.rowconfigure(0, weight=1)
+        self.sidebar = ttk.Frame(self.body, style="WS.Sidebar.TFrame", padding=theme.SPACING["s"])
+        self.nav: dict[str, ttk.Button] = {}
+        for key in SECTIONS:
+            b = ttk.Button(self.sidebar, style="WS.Nav.TButton", command=lambda k=key: self.show(k))
+            b.pack(fill="x", pady=1)
+            self.nav[key] = b
+        self.center = ttk.Frame(self.body, style="WS.TFrame")
+        self.center.rowconfigure(0, weight=1)
+        self.center.columnconfigure(0, weight=1)
+        self.inspector = ttk.Frame(self.body, style="WS.Surface.TFrame", padding=theme.SPACING["m"])
+        self.inspector.columnconfigure(0, weight=1)
+        self.insp_title = tk.StringVar()
+        ttk.Label(self.inspector, textvariable=self.insp_title, style="WS.Next.TLabel", wraplength=300).grid(row=0, column=0, sticky="w")
+        self.insp_text = tk.Text(self.inspector, height=12, width=36, wrap="word", relief="flat")
+        self.insp_text.grid(row=1, column=0, sticky="nsew", pady=4)
+        self.inspector.rowconfigure(1, weight=1)
+        self.insp_actions = ttk.Frame(self.inspector, style="WS.Surface.TFrame")
+        self.insp_actions.grid(row=2, column=0, sticky="ew")
+        # Footer
+        self.status_var = tk.StringVar()
+        ttk.Label(w, textvariable=self.status_var, style="WS.Muted.TLabel", padding=(theme.SPACING["l"], 2)).grid(
+            row=3, column=0, sticky="ew")
+        self.views: dict[str, ttk.Frame] = {}
+        self._arrange()
+
+    def _arrange(self) -> None:
+        """Place sidebar / center / inspector for the current width breakpoint and open/closed panels."""
+        for child in (self.sidebar, self.center, self.inspector):
+            child.grid_forget()
+        for c in range(3):
+            self.body.columnconfigure(c, weight=0)
+        self.body.rowconfigure(1, weight=0)
+        col = 0
+        if self.wc.sidebar_open:
+            self.sidebar.grid(row=0, column=0, sticky="ns", padx=(0, theme.SPACING["m"]), rowspan=2)
+            col = 1
+        self.center.grid(row=0, column=col, sticky="nsew")
+        self.body.columnconfigure(col, weight=1)
+        if self.wc.inspector_open:
+            if self.layout["inspector"] == "side":
+                self.inspector.grid(row=0, column=col + 1, sticky="nsew", padx=(theme.SPACING["m"], 0))
+            else:
+                self.inspector.grid(row=1, column=col, sticky="nsew", pady=(theme.SPACING["m"], 0))
+                self.body.rowconfigure(1, weight=0)
+        compact = self.layout["sidebar"] == "compact"
+        for key, b in self.nav.items():
+            b.configure(text=self.wc.section_label(key, compact=compact))
+
+    # -- preferences (ui.json only)
+    def toggle_inspector(self) -> None:
+        self.wc.set_inspector(not self.wc.inspector_open)
+        self._arrange()
+
+    def toggle_sidebar(self) -> None:
+        self.wc.set_sidebar(not self.wc.sidebar_open)
+        self._arrange()
+
+    def _set_mode(self) -> None:
+        self.wc.set_mode(self.mode_var.get())
+        self.refresh()
+
+    def _set_lang(self) -> None:
+        self.wc.set_language(self.lang_var.get())
+        self._arrange()
+        self.show(self.wc.section)
+
+    def _set_theme(self) -> None:
+        self.wc.set_theme(self.theme_var.get())
+        self.pal = theme.apply(self.style, self.wc.theme)
+        self.win.configure(background=self.pal["bg"])
+        self.show(self.wc.section)
+
+    # -- navigation
+    def show(self, key: str) -> None:
+        self.wc.set_section(key)
+        for k, b in self.nav.items():
+            b.configure(style="WS.NavActive.TButton" if k == key else "WS.Nav.TButton")
+        for v in self.views.values():
+            v.destroy()
+        self.views = {}
+        frame = ttk.Frame(self.center, style="WS.TFrame")
+        frame.grid(row=0, column=0, sticky="nsew")
+        frame.columnconfigure(0, weight=1)
+        self.views[key] = frame
+        getattr(self, f"_view_{key}")(frame)
+        self.refresh()
+
+    def refresh(self) -> None:
+        bar = self.wc.project_bar()
+        self.title_var.set(f"{bar['name']}" + (f" — {bar['goal'][:80]}" if bar["goal"] else ""))
+        self.pub_var.set(bar["publish"])
+        ov = self.wc.overview()
+        nxt = ov["next"]
+        self.next_var.set(("← " if self.wc.rtl else "→ ") + nxt["summary"]
+                          + (f" ({nxt['reference_id']})" if nxt.get("reference_id") else ""))
+        self.next_btn.configure(text=self.wc.tr(("Do it", "انجام بده")))
+        self.next_label.configure(anchor="e" if self.wc.rtl else "w", justify="right" if self.wc.rtl else "left")
+        self._render_inspector()
+
+    def _render_inspector(self) -> None:
+        data = self.wc.inspector()
+        self.insp_title.set(data["title"])
+        self.insp_text.delete("1.0", "end")
+        self.insp_text.insert("1.0", data["text"])
+        for c in self.insp_actions.winfo_children():
+            c.destroy()
+        for key, label in data["actions"]:
+            ttk.Button(self.insp_actions, text=label, command=lambda k=key: self.inspector_action(k)).pack(fill="x", pady=1)
+
+    def inspector_action(self, key: str) -> Any:
+        if key == "bind_chat":
+            return self.dialog_bind_chat(self.wc.selection[1])
+        out = self._guard(lambda: self.wc.run_action(key))
+        if key == "start_task" and isinstance(out, dict):
+            self.last_handoff_id = out["handoff_id"]
+            self.last_prompt = out["prompt"]
+            self.status_var.set(self.wc.tr(("Prompt ready — copy it from Tasks → prompt box. Not sent yet.",
+                                            "پرامپت آماده است — از بخش Tasks کپی کنید. هنوز ارسال نشده.")))
+            self.show("tasks")
+        elif key == "open_task":
+            self.show("tasks")
+        else:
+            self.refresh()
+        return out
+
+    def _guard(self, fn: Callable[[], Any]) -> Any:
+        try:
+            return fn()
+        except ModelError as exc:
+            self.status_var.set(str(exc))
+            return None
+
+    def do_next(self) -> None:
+        nxt = self.wc.overview()["next"]
+        t, ref = nxt.get("type"), nxt.get("reference_id", "")
+        if t in ("plan_project",):
+            self.show("overview")
+            self.do_plan()
+        elif t in ("start_task", "prepare_handoff", "review_delivery", "run_validation", "approve_task", "unblock_task",
+                   "review_task"):
+            self.wc.select("task", ref)
+            self.show("tasks")
+        elif t in ("copy_prompt", "import_response", "review_handoff", "review_proposal", "resolve_decision"):
+            self.show("tasks")
+            self.status_var.set(nxt["summary"])
+        else:
+            self.status_var.set(nxt["summary"])
+
+    # -- views
+    def _heading(self, parent: ttk.Frame, text: str) -> None:
+        ttk.Label(parent, text=text, style="WS.Title.TLabel", anchor="e" if self.wc.rtl else "w").grid(
+            row=0, column=0, sticky="ew", pady=(0, 6))
+
+    def _tools(self, parent: ttk.Frame, section: str, row: int) -> None:
+        items = self.wc.tool_items(section)
+        if not items:
+            return
+        box = ttk.Frame(parent, style="WS.TFrame")
+        box.grid(row=row, column=0, sticky="ew", pady=4)
+        for key, label in items:
+            ttk.Button(box, text=label, command=lambda k=key: self._guard(lambda: self.wc.open_tool(k))).pack(
+                side="right" if self.wc.rtl else "left", padx=2)
+
+    def _view_overview(self, f: ttk.Frame) -> None:
+        ov = self.wc.overview()
+        self._heading(f, self.wc.section_label("overview"))
+        anchor = "e" if self.wc.rtl else "w"
+        goal = ov["goal"] or self.wc.tr(("No goal yet. Use “Plan project” to start.", "هنوز هدفی ثبت نشده. با «برنامه‌ریزی پروژه» شروع کنید."))
+        ttk.Label(f, text=goal, style="WS.TLabel", wraplength=700, anchor=anchor).grid(row=1, column=0, sticky="ew")
+        self.progress_var = tk.StringVar(value=self.wc.progress_text(ov["progress"]))
+        ttk.Label(f, textvariable=self.progress_var, style="WS.TLabel", anchor=anchor).grid(row=2, column=0, sticky="ew", pady=4)
+        bar = ttk.Progressbar(f, maximum=max(ov["progress"]["total"], 1), value=ov["progress"]["done"])
+        bar.grid(row=3, column=0, sticky="ew")
+        counts = " · ".join(f"{i18n.status(k, self.wc.lang)[0]} {i18n.status(k, self.wc.lang)[1]}: {v}"
+                            for k, v in sorted(ov["counts"].items()))
+        ttk.Label(f, text=counts or "—", style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(row=4, column=0, sticky="ew", pady=4)
+        att = ttk.LabelFrame(f, text=self.wc.tr(("Needs your attention", "نیازمند توجه شما")), padding=6)
+        att.grid(row=5, column=0, sticky="ew", pady=6)
+        if not ov["warnings"]:
+            ttk.Label(att, text=self.wc.tr(("Nothing needs your attention.", "موردی نیازمند توجه نیست."))).pack(anchor=anchor)
+        for wi in ov["warnings"]:
+            ttk.Label(att, text=f"{i18n.SEVERITY[wi['severity']][0]} {i18n.severity_label(wi['severity'], self.wc.lang).split(' ', 1)[1]}: {wi['text']}",
+                      wraplength=700).pack(anchor=anchor)
+        act = ttk.LabelFrame(f, text=self.wc.tr(("Recent activity", "فعالیت اخیر")), padding=6)
+        act.grid(row=6, column=0, sticky="ew")
+        for rec in ov["recent"]:
+            ttk.Label(act, text=self.wc.event_text(rec), style="TLabel").pack(anchor=anchor)
+        b = ttk.Frame(f, style="WS.TFrame")
+        b.grid(row=7, column=0, sticky="ew", pady=6)
+        ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(side="right" if self.wc.rtl else "left")
+
+    def _view_tasks(self, f: ttk.Frame) -> None:
+        self._heading(f, self.wc.section_label("tasks"))
+        f.rowconfigure(1, weight=1)
+        cols = ("status", "owner")
+        self.task_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=10)
+        self.task_tree.heading("#0", text=self.wc.tr(("Task", "Task")))
+        self.task_tree.heading("status", text=self.wc.tr(("Status", "وضعیت")))
+        self.task_tree.heading("owner", text=self.wc.tr(("Agent", "Agent")))
+        self.task_tree.column("#0", width=320, stretch=True)
+        self.task_tree.column("status", width=200, stretch=False)
+        self.task_tree.column("owner", width=150, stretch=False)
+        sb = ttk.Scrollbar(f, orient="vertical", command=self.task_tree.yview)
+        self.task_tree.configure(yscrollcommand=sb.set)
+        self.task_tree.grid(row=1, column=0, sticky="nsew")
+        sb.grid(row=1, column=1, sticky="ns")
+        for r in self.wc.task_rows():
+            self.task_tree.insert("", "end", iid=r["task_id"], text=f"{r['task_id']} {r['title']}",
+                                  values=(f"{r['symbol']} {r['status_text']}", r["owner"]))
+        kind, ref = self.wc.selection
+        if kind == "task" and self.task_tree.exists(ref):
+            self.task_tree.selection_set(ref)
+        self.task_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.task_tree, "task"))
+        pf = ttk.Frame(f, style="WS.TFrame")
+        pf.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(6, 0))
+        pf.columnconfigure(0, weight=1)
+        pf.columnconfigure(1, weight=1)
+        ttk.Label(pf, text=self.wc.tr(("Prompt to copy (Workbench never sends it)", "پرامپت برای کپی (Workbench آن را ارسال نمی‌کند)"))).grid(row=0, column=0, sticky="w")
+        ttk.Label(pf, text=self.wc.tr(("Paste the model's answer", "پاسخ مدل را Paste کنید"))).grid(row=0, column=1, sticky="w")
+        self.prompt_text = tk.Text(pf, height=7, wrap="word")
+        self.prompt_text.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
+        self.prompt_text.insert("1.0", self.last_prompt)
+        self.answer_text = tk.Text(pf, height=7, wrap="word")
+        self.answer_text.grid(row=1, column=1, sticky="nsew")
+        bb = ttk.Frame(pf, style="WS.TFrame")
+        bb.grid(row=2, column=0, columnspan=2, sticky="ew", pady=4)
+        side = "right" if self.wc.rtl else "left"
+        ttk.Button(bb, text=self.wc.tr(("Copy prompt", "کپی پرامپت")), command=self.do_copy).pack(side=side)
+        ttk.Button(bb, text=self.wc.tr(("Check & import answer", "بررسی و ثبت پاسخ")), style="WS.Primary.TButton",
+                   command=self.do_import).pack(side=side, padx=4)
+
+    def _view_team(self, f: ttk.Frame) -> None:
+        self._heading(f, self.wc.section_label("team"))
+        f.rowconfigure(1, weight=1)
+        cols = ("role", "account", "chat", "tasks", "ready")
+        self.team_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=8)
+        heads = {"#0": ("Agent", "Agent"), "role": ("Role", "نقش"), "account": ("Account profile", "پروفایل اکانت"),
+                 "chat": ("Chat", "چت"), "tasks": ("Open tasks", "Taskهای باز"), "ready": ("Ready?", "آماده؟")}
+        for c, pair in heads.items():
+            self.team_tree.heading(c, text=self.wc.tr(pair))
+        self.team_tree.column("#0", width=180)
+        for c, wdt in (("role", 120), ("account", 150), ("chat", 140), ("tasks", 80), ("ready", 120)):
+            self.team_tree.column(c, width=wdt, stretch=c in ("account", "chat"))
+        self.team_tree.grid(row=1, column=0, sticky="nsew")
+        for r in self.wc.team_rows():
+            ok = {"bound": "✓", "no_binding": "–", "account_disabled": "⚠", "agent_disabled": "✕"}.get(r["readiness"], "?")
+            self.team_tree.insert("", "end", iid=r["agent_id"], text=r["name"],
+                                  values=(r["role"], r["account"] or "—", r["chat"] or "—", r["open_tasks"], f"{ok} {r['readiness']}"))
+        self.team_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.team_tree, "agent"))
+        acc = ttk.LabelFrame(f, text=self.wc.tr(("Your account profiles (labels only — no passwords or keys)",
+                                                   "پروفایل‌های اکانت شما (فقط برچسب — بدون رمز یا کلید)")), padding=6)
+        acc.grid(row=2, column=0, sticky="ew", pady=6)
+        self.acc_list = tk.Listbox(acc, height=4)
+        self.acc_list.pack(fill="x")
+        for a in self.wc.account_rows():
+            state = "" if a.get("enabled", True) else " (off)"
+            self.acc_list.insert("end", f"{a['account_profile_id']} · {a['display_name']} · {a['provider']} · "
+                                        f"{a['plan']} (self-declared) · {a['bindings']} chat(s){state}")
+        ttk.Button(acc, text=self.wc.tr(("Add account profile…", "افزودن پروفایل اکانت…")), command=self.dialog_add_account).pack(
+            side="right" if self.wc.rtl else "left", pady=4)
+
+    def _view_timeline(self, f: ttk.Frame) -> None:
+        self._heading(f, self.wc.section_label("timeline"))
+        f.rowconfigure(2, weight=1)
+        flt = ttk.Frame(f, style="WS.TFrame")
+        flt.grid(row=1, column=0, sticky="ew")
+        self.tl_family = tk.StringVar(value="")
+        from ..v2.events import FAMILIES
+        ttk.Combobox(flt, textvariable=self.tl_family, values=[""] + list(FAMILIES), width=10, state="readonly").pack(side="left")
+        self.tl_text = tk.StringVar()
+        ttk.Entry(flt, textvariable=self.tl_text, width=24).pack(side="left", padx=4)
+        ttk.Button(flt, text=self.wc.tr(("Filter", "فیلتر")), command=lambda: self._fill_timeline(0)).pack(side="left")
+        self.tl_page_var = tk.StringVar()
+        ttk.Label(flt, textvariable=self.tl_page_var, style="WS.Muted.TLabel").pack(side="right")
+        ttk.Button(flt, text="›", width=3, command=lambda: self._fill_timeline(self.tl_page + 1)).pack(side="right")
+        ttk.Button(flt, text="‹", width=3, command=lambda: self._fill_timeline(self.tl_page - 1)).pack(side="right")
+        self.tl_tree = ttk.Treeview(f, columns=("event", "ref", "source"), show="headings", style="WS.Treeview")
+        for c, pair, wdt in (("event", ("Event", "رویداد"), 420), ("ref", ("Reference", "مرجع"), 160), ("source", ("Source", "منبع"), 110)):
+            self.tl_tree.heading(c, text=self.wc.tr(pair))
+            self.tl_tree.column(c, width=wdt, stretch=c == "event")
+        sb = ttk.Scrollbar(f, orient="vertical", command=self.tl_tree.yview)
+        self.tl_tree.configure(yscrollcommand=sb.set)
+        self.tl_tree.grid(row=2, column=0, sticky="nsew")
+        sb.grid(row=2, column=1, sticky="ns")
+        self.tl_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.tl_tree, "event"))
+        self.tl_page = 0
+        self._fill_timeline(0)
+
+    def _fill_timeline(self, page: int) -> dict[str, Any]:
+        page = max(page, 0)
+        fam = self.tl_family.get()
+        res = self.wc.timeline_page(page, families=[fam] if fam else [], text=self.tl_text.get())
+        if res["pages"] and page >= res["pages"]:
+            return self._fill_timeline(res["pages"] - 1)
+        self.tl_page = page
+        self.tl_tree.delete(*self.tl_tree.get_children())
+        for rec in res["items"]:
+            refs = rec.get("refs", {})
+            ref = next(iter(refs.values()), "") if refs else ""
+            self.tl_tree.insert("", "end", iid=rec["event_id"], values=(self.wc.event_text(rec), ref if isinstance(ref, str) else "", rec["source"]))
+        self.tl_page_var.set(f"{page + 1}/{max(res['pages'], 1)} · {res['total']}")
+        return res
+
+    def _view_files(self, f: ttk.Frame) -> None:
+        self._heading(f, self.wc.section_label("files"))
+        ttk.Label(f, text=self.wc.tr(("Answers, repairs and context requests use the existing tools. Prepared context "
+                                     "is NOT sent until you paste it into the chat yourself.",
+                                     "پاسخ‌ها، اصلاح و درخواست زمینه از ابزارهای موجود استفاده می‌کنند. زمینهٔ آماده‌شده تا "
+                                     "وقتی خودتان آن را در چت Paste نکنید ارسال نشده است.")), wraplength=700).grid(row=1, column=0, sticky="w")
+        self._tools(f, "files", 2)
+
+    def _view_versions(self, f: ttk.Frame) -> None:
+        self._heading(f, self.wc.section_label("versions"))
+        ttk.Label(f, text=self.wc.tr(("Builds and releases are recorded only when they really happened.",
+                                     "Build و Release فقط وقتی واقعاً انجام شده باشند ثبت می‌شوند.")), wraplength=700).grid(row=1, column=0, sticky="w")
+        self._tools(f, "versions", 2)
+
+    def _view_settings(self, f: ttk.Frame) -> None:
+        self._heading(f, self.wc.section_label("settings"))
+        ttk.Label(f, text=self.wc.tr(("Ctrl+B sidebar · Ctrl+I inspector · Alt+1…7 sections. View, language and theme "
+                                     "never change project data.",
+                                     "Ctrl+B نوار کناری · Ctrl+I بازرس · Alt+1…7 بخش‌ها. نما، زبان و تم دادهٔ پروژه را تغییر نمی‌دهند.")),
+                  wraplength=700).grid(row=1, column=0, sticky="w")
+        self._tools(f, "settings", 2)
+
+    def _select_from(self, tree: ttk.Treeview, kind: str) -> None:
+        sel = tree.selection()
+        if sel:
+            self.wc.select(kind, sel[0])
+            self._render_inspector()
+
+    # -- actions
+    def do_plan(self, goal: str | None = None) -> str:
+        goal = goal if goal is not None else simpledialog.askstring(
+            self.wc.tr(("Project goal", "هدف پروژه")), self.wc.tr(("What should this project achieve?", "این پروژه باید به چه برسد؟")),
+            parent=self.win)
+        if not goal:
+            return ""
+        self.last_prompt = self.wc.ctl.planning_prompt(goal)
+        self.last_handoff_id = ""
+        self.status_var.set(self.wc.tr(("Planning prompt ready. Copy it to your project-manager chat (not sent yet).",
+                                        "پرامپت برنامه‌ریزی آماده است. آن را در چت مدیر پروژه کپی کنید (هنوز ارسال نشده).")))
+        self.show("tasks")
+        return self.last_prompt
+
+    def do_copy(self) -> str:
+        text = self.prompt_text.get("1.0", "end-1c") if hasattr(self, "prompt_text") else self.last_prompt
+        if not text.strip():
+            self.status_var.set(self.wc.tr(("There is no prompt to copy yet.", "هنوز پرامپتی برای کپی وجود ندارد.")))
+            return ""
+        self.clipboard(text)
+        if self.last_handoff_id:
+            self._guard(lambda: self.wc.ctl.mark_copied(self.last_handoff_id))
+        self.status_var.set(self.wc.tr(("Copied to the clipboard — this does not mean it was sent.",
+                                        "در کلیپ‌بورد کپی شد — این به معنی ارسال نیست.")))
+        return text
+
+    def do_import(self, text: str | None = None) -> Any:
+        raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
+        r = self.wc.ctl.route_answer(raw)
+        self.status_var.set(r.message)
+        self.show(self.wc.section)
+        return r
+
+    def dialog_add_account(self, data: dict[str, Any] | None = None) -> Any:
+        if data is None:
+            name = simpledialog.askstring(self.wc.tr(("Account profile", "پروفایل اکانت")),
+                                          self.wc.tr(("Name for this account (a label, e.g. “GPT paid — work”). "
+                                                      "Never enter a password or key.",
+                                                      "نام این اکانت (فقط برچسب، مثل «GPT پولی — کار»). هرگز رمز یا کلید وارد نکنید.")),
+                                          parent=self.win)
+            if not name:
+                return None
+            data = {"display_name": name, "provider": "Other", "plan": "unknown"}
+        out = self._guard(lambda: self.wc.add_account(data))
+        if out:
+            self.status_var.set(f"{out['account_profile_id']} · {out['display_name']}")
+            self.show("team")
+        return out
+
+    def dialog_bind_chat(self, agent_id: str, account_id: str | None = None, chat_name: str | None = None) -> Any:
+        accounts = [a for a in self.wc.account_rows() if a.get("enabled", True)]
+        if not accounts:
+            messagebox.showinfo("AI Workbench", self.wc.tr(("Add an account profile first.", "ابتدا یک پروفایل اکانت اضافه کنید.")),
+                                parent=self.win)
+            return None
+        if account_id is None:
+            names = ", ".join(f"{a['account_profile_id']}={a['display_name']}" for a in accounts)
+            account_id = simpledialog.askstring("AI Workbench", f"{names}\nID:", parent=self.win) or ""
+        if chat_name is None:
+            chat_name = simpledialog.askstring("AI Workbench", self.wc.tr(("Chat name (optional note)", "نام چت (یادداشت اختیاری)")),
+                                               parent=self.win) or ""
+        out = self._guard(lambda: self.wc.bind_chat(agent_id, account_id.strip(), chat_name))
+        if out:
+            self.show("team")
+        return out
+
+    def close(self) -> None:
+        try:
+            self.win.destroy()
+        except tk.TclError:
+            pass
