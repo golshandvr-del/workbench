@@ -19,4 +19,27 @@
     <string name="untrusted_link">لینکی که آدرس https گیت‌هاب نبود مسدود شد.</string>
     <string name="no_browser">مرورگری برای باز کردن لینک در دسترس نیست.</string>
     <string name="scope_note">این نسخهٔ اولیهٔ موبایل برای اثبات چرخهٔ Build و انتشار اندروید است. قابلیت‌های Companion (اتصال به نسخهٔ دسکتاپ، Task، Prompt) در برنامه هستند و هنوز در دسترس نیستند.</string>
+    <string name="companion_open">همراه موبایل (اتصال به دسکتاپ)</string>
+    <string name="companion_title">همراه موبایل</string>
+    <string name="pair_code_hint">کد یک‌بارمصرف از دسکتاپ (aiwb1:…)</string>
+    <string name="pair_button">اتصال به دسکتاپ</string>
+    <string name="pairing_wait">کد ارسال شد. این گوشی را در Workbench روی دسکتاپ تأیید کنید…</string>
+    <string name="pairing_timeout">در ۵ دقیقه روی دسکتاپ تأیید نشد.</string>
+    <string name="pairing_expired">کد اتصال منقضی یا قبلاً استفاده شده است. روی دسکتاپ کد جدید بسازید.</string>
+    <string name="bad_pair_code">این کد اتصال شبکهٔ محلی معتبر نیست.</string>
+    <string name="paired_with">متصل به دسکتاپ %1$s:%2$d</string>
+    <string name="refresh_state">به‌روزرسانی پروژه و Buildها</string>
+    <string name="task_title_hint">عنوان Task جدید</string>
+    <string name="task_objective_hint">چه چیزی باید انجام شود؟</string>
+    <string name="create_task">ساخت Task روی دسکتاپ</string>
+    <string name="task_fields_required">عنوان و هدف لازم است.</string>
+    <string name="task_created">Task %1$s روی دسکتاپ ساخته شد.</string>
+    <string name="answer_hint">پاسخ مدل را Paste کنید (پیشنهاد مدیر پروژه یا Handoff)</string>
+    <string name="submit_answer">ارسال پاسخ به Inbox دسکتاپ</string>
+    <string name="unpair">فراموش کردن این اتصال</string>
+    <string name="unpaired">اتصال از این گوشی حذف شد. روی دسکتاپ هم آن را لغو کنید.</string>
+    <string name="device_revoked">این گوشی روی دسکتاپ لغو شده است. برای ادامه دوباره متصل شوید.</string>
+    <string name="not_allowed">دسکتاپ اجازه نداده است: %1$s</string>
+    <string name="companion_error">خطای همراه موبایل: %1$s</string>
+    <string name="companion_note">فقط در همان شبکهٔ محلی دسکتاپ کار می‌کند. پیام‌ها سرتاسر رمزنگاری می‌شوند؛ Tokenهای GitHub هرگز از دسکتاپ خارج نمی‌شوند. Preview، Apply و اجرای فرمان روی دسکتاپ می‌ماند.</string>
 </resources>

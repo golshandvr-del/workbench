@@ -19,4 +19,27 @@
     <string name="untrusted_link">Blocked a link that is not a GitHub https URL.</string>
     <string name="no_browser">No browser is available to open the link.</string>
     <string name="scope_note">This early mobile build verifies the Android build/release pipeline. Companion features (pairing with the desktop app, tasks, prompts) are planned and not yet available.</string>
+    <string name="companion_open">Mobile Companion (pair with desktop)</string>
+    <string name="companion_title">Mobile Companion</string>
+    <string name="pair_code_hint">One-time code from the desktop (aiwb1:…)</string>
+    <string name="pair_button">Pair with desktop</string>
+    <string name="pairing_wait">Code sent. Approve this phone in Workbench on the desktop…</string>
+    <string name="pairing_timeout">No approval on the desktop within 5 minutes.</string>
+    <string name="pairing_expired">The pairing code expired or was already used. Create a new one on the desktop.</string>
+    <string name="bad_pair_code">This is not a valid local-network pairing code.</string>
+    <string name="paired_with">Paired with desktop %1$s:%2$d</string>
+    <string name="refresh_state">Refresh project and builds</string>
+    <string name="task_title_hint">New task title</string>
+    <string name="task_objective_hint">What should be achieved?</string>
+    <string name="create_task">Create task on desktop</string>
+    <string name="task_fields_required">Title and objective are required.</string>
+    <string name="task_created">Task %1$s created on the desktop.</string>
+    <string name="answer_hint">Paste a model answer (manager proposal or handoff)</string>
+    <string name="submit_answer">Submit answer to the desktop Inbox</string>
+    <string name="unpair">Forget this pairing</string>
+    <string name="unpaired">Pairing removed from this phone. Also revoke it on the desktop.</string>
+    <string name="device_revoked">This phone was revoked on the desktop. Pair again to continue.</string>
+    <string name="not_allowed">Not allowed by the desktop: %1$s</string>
+    <string name="companion_error">Companion error: %1$s</string>
+    <string name="companion_note">Works only on the same local network as the desktop. Messages are end-to-end encrypted; GitHub tokens never leave the desktop. Preview, Apply and commands stay on the desktop.</string>
 </resources>
