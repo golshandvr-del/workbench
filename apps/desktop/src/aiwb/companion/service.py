@@ -102,11 +102,24 @@ class CompanionService:
         self.controller = controller
         self.builds = builds
         self.clock = clock
-        self.on_change = on_change
+        self._on_change = on_change
         self._lock = threading.RLock()
         self.pairing: dict[str, Any] | None = None
         self.pending: dict[str, dict[str, Any]] = {}   # pairing_id -> request awaiting desktop approval
         self._seen: dict[str, float] = {}               # nonce -> ts (replay protection)
+
+    @property
+    def on_change(self) -> Callable[[], None]:
+        def safe() -> None:
+            try:
+                self._on_change()
+            except Exception:  # noqa: BLE001 - a UI notification never breaks a request
+                pass
+        return safe
+
+    @on_change.setter
+    def on_change(self, fn: Callable[[], None]) -> None:
+        self._on_change = fn
 
     # -- pairing (desktop side)
     def start_pairing(self, host: str, port: int) -> str:
