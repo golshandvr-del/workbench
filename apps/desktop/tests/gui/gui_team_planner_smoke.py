@@ -50,6 +50,7 @@ def main() -> None:
             assert "not sent yet" in w.status_var.get()
             assert "Team planning" in w.prompt_text.get("1.0", "end")
             rev = ctl.state()["state_revision"]
+            before = (sorted(ctl.state()["agents"]), len(ctl.state()["tasks"]), len(ctl.state()["chat_bindings"]))
             ops = [{"operation": "create_agent", "agent_id": "agent-implementer-2", "role": "implementer", "name": "Impl 2"},
                    {"operation": "assign_account", "agent_id": "agent-implementer-2", "account_profile_id": "ACC-0002"},
                    {"operation": "assign_account", "agent_id": "agent-reviewer", "account_profile_id": "ACC-0077"},
@@ -73,7 +74,9 @@ def main() -> None:
             assert len(kids) == 6
             assert "ACC-0077" in str(w.review_tree.item("2")["values"])
             assert "2" not in w.review_tree.selection(), "invalid item must not be preselected"
-            assert ctl.state()["state_revision"] == rev, "import alone changed state"
+            snap = lambda: (sorted(ctl.state()["agents"]), len(ctl.state()["tasks"]), len(ctl.state()["chat_bindings"]))  # noqa: E731
+            assert snap() == before, "import alone changed agents/tasks/bindings"
+            rev = ctl.state()["state_revision"]  # the stored proposal itself is one revision
             # request changes: prompt only
             p = w.review_request_changes()
             assert "ACC-0077" in p and ctl.state()["state_revision"] == rev
