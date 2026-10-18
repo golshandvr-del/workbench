@@ -137,7 +137,7 @@ class GitHubApiClient:
         transport: Transport | None = None,
         base_url: str = "https://api.github.com",
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-        user_agent: str = "AI-Workbench/1.14.13",
+        user_agent: str = "AI-Workbench/1.15.0",
         api_version: str = GITHUB_API_VERSION,
     ) -> None:
         parts = urlsplit(base_url)
