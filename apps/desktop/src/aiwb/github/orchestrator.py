@@ -549,3 +549,24 @@ class SyncBuildOrchestrator:
             return "stopped_tracking"
         finally:
             self.release()
+
+
+def build_metadata(record: dict[str, Any], *, repository_id: int | None = None) -> dict[str, Any] | None:
+    """Convert one stored Sync & Build record to the shared ``build-metadata.v1`` contract.
+
+    Returns ``None`` until the record has a pushed commit and a run ID. Local
+    paths and sizes are not part of the contract.
+    """
+    g, b = record.get("git") or {}, record.get("build") or {}
+    if not (g.get("pushed") and g.get("commit_sha") and b.get("run_id")):
+        return None
+    outcome = b.get("outcome") or "completed_unknown"
+    if outcome in ("waiting", "requested", "pending"):
+        outcome = "queued"
+    return {
+        "schema_version": 1, "repository": g.get("repository", ""), "repository_id": repository_id,
+        "branch": g.get("branch", ""), "commit_sha": str(g["commit_sha"]).lower(), "workflow_file": b.get("workflow_file", ""),
+        "run_id": int(b["run_id"]), "run_attempt": None, "outcome": outcome,
+        "artifacts": [{"artifact_id": int(a["artifact_id"]), "name": a["name"], "sha256": a["sha256"], "verification": a["verification"]}
+                      for a in b.get("artifacts", []) if a.get("verification") in ("matched", "computed_only")],
+    }

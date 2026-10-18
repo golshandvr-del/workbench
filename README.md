@@ -7,7 +7,7 @@ Git/GitHub for the project. A companion Android app is starting in `apps/mobile`
 
 | App | Path | Current | Download |
 |---|---|---|---|
-| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **1.14.8** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **1.14.9** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
 | Mobile (Android 7.0+) | `apps/mobile` | **0.1.0** proof-of-build | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
 
 ## Repository layout
@@ -23,7 +23,7 @@ apps/desktop/
   release_manifest.json     Version + payload map (repo source -> installed flat path)
   CHANGELOG.md, README*.md, ARCHITECTURE.md
 apps/mobile/                Android app (Kotlin, Gradle) + version.properties
-packages/contracts/         (planned, roadmap 1.14.10/11) shared JSON schemas
+packages/contracts/         shared JSON schemas + fixtures (ADR-005)
 tools/                      Reproducible installer builder, manifest gate, installed-app smoke
 tools/legacy/               Original 1.14.4 builder + independent packaging verifier
 docs/specs/                 Product specs and roadmaps (FA) — detail behind ROADMAP.md
@@ -73,8 +73,8 @@ cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Status / roadmap
 
-**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: 1.14.1–1.14.8, Android proof-of-build,
-monorepo + CI/CD. **Next: 1.14.9 Self-hosting Repository & Desktop CI Baseline** →
+**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: 1.14.1–1.14.11, Android proof-of-build,
+monorepo + CI/CD. **Next: 1.14.13 Release Candidate** →
 1.14.13 RC → 1.15.0 → 1.16 → 2.0. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
 
 See also [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).

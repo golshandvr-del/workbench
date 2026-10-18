@@ -1,0 +1,18 @@
+# Capability status per app (reporting only — never used for feature gating).
+# Schema: packages/contracts/schemas/capabilities.v1.schema.json
+# Status: planned | in_progress | implemented | partial | not_applicable | blocked
+schema_version: 1
+capabilities:
+  - {id: git.service, title: "Git service foundation", roadmap: "1.14.1", desktop: implemented, mobile: not_applicable, evidence: "aiwb/git/service.py"}
+  - {id: github.account, title: "Secure GitHub account (PAT)", roadmap: "1.14.2", desktop: implemented, mobile: planned, evidence: "aiwb/github/accounts.py"}
+  - {id: github.repository_browser, title: "Repository browser", roadmap: "1.14.3", desktop: implemented, mobile: planned}
+  - {id: github.binding, title: "Project binding (monorepo subpath)", roadmap: "1.14.4", desktop: implemented, mobile: not_applicable}
+  - {id: git.review_sync, title: "Safe review & sync plan", roadmap: "1.14.5", desktop: implemented, mobile: not_applicable}
+  - {id: build.center, title: "Build Center (workflows/runs)", roadmap: "1.14.6", desktop: implemented, mobile: planned}
+  - {id: build.dispatch_artifacts, title: "Dispatch & safe artifact download", roadmap: "1.14.7", desktop: implemented, mobile: planned}
+  - {id: build.sync_and_build, title: "One-click Sync & Build", roadmap: "1.14.8", desktop: implemented, mobile: not_applicable}
+  - {id: release.browser, title: "Release list & provenance", roadmap: "mobile 0.1.0", desktop: partial, mobile: implemented, evidence: "ReleaseInfo.kt"}
+  - {id: contracts.release_manifest, title: "Release manifest contract", roadmap: "1.14.11", desktop: implemented, mobile: implemented, evidence: "packages/contracts"}
+  - {id: release.signed_mobile, title: "Protected signing of Android releases", roadmap: "1.14.12", desktop: not_applicable, mobile: implemented}
+  - {id: inbox.response, title: "Response Inbox", roadmap: "1.16.0", desktop: planned, mobile: planned}
+  - {id: agents.v2, title: "Multi-agent project management", roadmap: "2.0.0", desktop: planned, mobile: planned}

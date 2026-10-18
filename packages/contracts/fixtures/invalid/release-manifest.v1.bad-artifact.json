@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "app": "ai-workbench-mobile",
+  "platform": "android",
+  "version": "0.1.0",
+  "channel": "stable",
+  "tag": "mobile-v0.1.0",
+  "artifacts": [
+    {
+      "name": "../x.apk",
+      "size": 0,
+      "sha256": "XYZ"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "repository": "golshandvr-del/workbench",
+  "repository_id": 1,
+  "branch": "work",
+  "commit_sha": "abc1234",
+  "workflow_file": ".github/workflows/ci.yml",
+  "run_id": 501,
+  "run_attempt": 1,
+  "outcome": "success",
+  "artifacts": [
+    {
+      "artifact_id": 9,
+      "name": "app",
+      "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "verification": "matched"
+    }
+  ]
+}

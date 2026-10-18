@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/golshandvr-del/workbench/packages/contracts/build-metadata.v1",
+  "title": "Build metadata v1 (one CI run of one exact commit)",
+  "type": "object",
+  "required": ["schema_version", "repository", "branch", "commit_sha", "workflow_file", "run_id", "outcome"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+    "repository_id": {"type": ["integer", "null"], "minimum": 1},
+    "branch": {"type": "string", "minLength": 1, "maxLength": 255},
+    "commit_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "workflow_file": {"type": "string", "pattern": "^\\.github/workflows/[^/]+\\.ya?ml$"},
+    "run_id": {"type": "integer", "minimum": 1},
+    "run_attempt": {"type": ["integer", "null"], "minimum": 1},
+    "outcome": {"enum": ["queued", "running", "success", "failure", "cancelled", "skipped", "timed_out", "neutral", "action_required", "stale", "startup_failure", "completed_unknown"]},
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["artifact_id", "name", "sha256", "verification"],
+        "properties": {
+          "artifact_id": {"type": "integer", "minimum": 1},
+          "name": {"type": "string", "minLength": 1, "maxLength": 256},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "verification": {"enum": ["matched", "computed_only"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

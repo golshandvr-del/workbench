@@ -1,3 +1,13 @@
+## [1.14.9] - 2026-10-18
+
+### Repository policy & shared contracts (roadmap v1.14.9 – v1.14.11)
+- ADR-005: monorepo layout, protected `main`, work-branch naming, independent `desktop-v*` / `mobile-v*` tags created only on green merge commits.
+- `packages/contracts/`: JSON Schemas `release-manifest.v1`, `build-metadata.v1`, `capabilities.v1` with valid/invalid fixtures.
+- `capabilities.yml` (reporting only, no feature gating).
+- `tools/validate_contracts.py` (CI job `contracts`) validates schemas, fixtures, `capabilities.yml`, the real desktop `release-manifest.json` produced by the builder and the Sync & Build record conversion.
+- `aiwb.github.orchestrator.build_metadata()` converts a Sync & Build record to the shared `build-metadata.v1` contract (no local paths).
+- Android consumes the release-manifest contract (`ReleaseManifest.kt`, tested on the shared fixtures); the mobile release now publishes a contract `release-manifest.json`.
+
 ## [1.14.8] - 2026-10-18
 
 ### One-click Sync & Build Orchestrator (roadmap v1.14.8)
