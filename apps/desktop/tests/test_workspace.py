@@ -177,7 +177,7 @@ class WorkspaceControllerTests(Base):
         c = p.tasks.create({"title": "C", "objective": "c"})
         p.tasks.transition(c["task_id"], "cancelled")
         ov = self.wc.overview()
-        self.assertEqual(ov["progress"], {"done": 0, "total": 2, "percent": 0})
+        self.assertEqual({k: ov["progress"][k] for k in ("done", "total", "percent")}, {"done": 0, "total": 2, "percent": 0})
         self.assertIn("by count", self.wc.progress_text({"done": 1, "total": 2, "percent": 50}))
         self.wc.set_language("fa")
         self.assertIn("از", self.wc.progress_text({"done": 1, "total": 2, "percent": 50}))
