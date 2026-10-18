@@ -167,7 +167,10 @@ class ProposalService:
     def _apply(self, s: dict[str, Any], p: dict[str, Any], accept: list[int], *, dry_run: bool) -> dict[str, Any]:
         ops = {o["index"]: o for o in p["operations"]}
         errors, applied, created, notes = [], [], {}, []
-        selected = [ops[i] for i in sorted(set(accept)) if i in ops]
+        # team operations first, so tasks may name agents created in the same proposal
+        order = {"create_agent": 0, "assign_account": 1}
+        selected = sorted([ops[i] for i in sorted(set(accept)) if i in ops],
+                          key=lambda o: (order.get(o["operation"], 2), o["index"]))
         selected_refs = {o.get("temporary_ref") for o in selected if o.get("temporary_ref")}
         ts = TaskService(self.store)
         resolve = lambda ref: created.get(ref, ref)  # noqa: E731
