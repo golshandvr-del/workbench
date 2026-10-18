@@ -296,12 +296,9 @@ class WorkspaceWindow:
         bar = ttk.Progressbar(f, maximum=max(ov["progress"]["total"], 1), value=ov["progress"]["done"])
         bar.grid(row=3, column=0, sticky="ew")
         self.progress_details = self.wc.progress_details(ov["progress"])
-        for i, line in enumerate(self.progress_details):
-            ttk.Label(f, text=line, style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(
-                row=3, column=0, sticky="sew", pady=(24 + 18 * i, 0))
         counts = " · ".join(f"{i18n.status(k, self.wc.lang)[0]} {i18n.status(k, self.wc.lang)[1]}: {v}"
                             for k, v in sorted(ov["counts"].items()))
-        ttk.Label(f, text=counts or "—", style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(row=4, column=0, sticky="ew", pady=4)
+        ttk.Label(f, text="\n".join(self.progress_details + [counts or "—"]), style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(row=4, column=0, sticky="ew", pady=4)
         att = ttk.LabelFrame(f, text=self.wc.tr(("Needs your attention", "نیازمند توجه شما")), padding=6)
         att.grid(row=5, column=0, sticky="ew", pady=6)
         if not ov["warnings"]:
