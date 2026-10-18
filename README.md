@@ -3,12 +3,12 @@
 AI Workbench is a desktop "project studio" for AI-assisted development: it builds
 prompts from your real project, validates and applies AI responses safely
 (transactions, restore, semantic diff), runs/validates the result, and manages
-Git/GitHub for the project. A companion Android app is starting in `apps/mobile`.
+Git/GitHub for the project. The Android companion app in `apps/mobile` pairs with the desktop over the local network.
 
 | App | Path | Current | Download |
 |---|---|---|---|
-| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **2.1.2** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
-| Mobile (Android 7.0+) | `apps/mobile` | **0.1.0** proof-of-build | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **2.2.0** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Mobile (Android 7.0+) | `apps/mobile` | **0.3.0** (Companion) | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
 
 ## Repository layout
 
@@ -73,8 +73,7 @@ cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Status / roadmap
 
-**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: 1.14.1–2.1.2, Android proof-of-build,
-monorepo + CI/CD. **Next: mobile 0.2.x tooling, then Companion** →
-1.14.13 RC → 1.15.0 → 1.16 → 2.0. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
+**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: desktop 1.14.1–2.2.0, mobile 0.1.0–0.3.0
+(Mobile Companion), monorepo + CI/CD. All roadmap sections are complete. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
 
 See also [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).

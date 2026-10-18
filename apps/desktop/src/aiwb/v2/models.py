@@ -198,7 +198,7 @@ def normalize_task(data: dict[str, Any]) -> dict[str, Any]:
         "priority": pr,
         "risk_level": risk,
         "required_approvals": _strs(data.get("required_approvals") or list(DEFAULT_APPROVALS), "required_approvals", 5, 30),
-        "origin": data.get("origin") if data.get("origin") in ("manual", "manager_proposal", "playbook", "migration") else "manual",
+        "origin": data.get("origin") if data.get("origin") in ("manual", "manager_proposal", "playbook", "migration", "companion") else "manual",
     }
 
 

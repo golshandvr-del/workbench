@@ -1,3 +1,21 @@
+## [2.2.0] - 2026-10-18
+
+### Mobile Companion (Integration Spec §11, P3.1–P3.3)
+- **Mobile Companion…** window: start/stop a local-network endpoint (single `POST /aiwb/v1`, size-limited,
+  no request logging, stopped on exit), one-time pairing code (10 minutes, single use), **desktop approval**
+  of each phone, paired-device list, per-device permissions (`view_project` default; `create_task`,
+  `submit_response` opt-in) and immediate **revoke**.
+- Envelope v1 (`aiwb/companion/crypto.py`, standard library only): HMAC-SHA256 CTR + encrypt-then-MAC,
+  timestamp window and nonce replay protection; shared vectors in
+  `packages/contracts/vectors/companion-envelope.v1.json` checked by desktop and Android tests.
+- Every phone request goes through the same `ProjectsController` as the desktop UI; Preview/Apply/Run are not
+  exposed; GitHub tokens never leave the PC; device keys live in `companion_devices.json` in app data.
+- Tasks created from the phone carry `origin: "companion"`.
+
+### Validation
+- `test_companion.py` (11, incl. the real LAN endpoint); `gui_companion_smoke.py` (pair, approve, create task,
+  view, revoke).
+
 ## [2.1.2] - 2026-10-18
 
 ### Phase-3 Release Gate (Future Roadmap §28)

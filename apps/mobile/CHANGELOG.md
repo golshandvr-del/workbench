@@ -1,5 +1,16 @@
 # AI Workbench Mobile — Changelog
 
+## [0.3.0] - 2026-10-18
+
+### Mobile Companion (Integration Spec §11, P3.1–P3.3)
+- New **Mobile Companion** screen: pair with AI Workbench Desktop 2.2.0 on the same local network using the
+  one-time code shown on the desktop; the desktop user approves the phone.
+- View project summary, next action, warnings, tasks and recent builds; create a task and submit a model
+  answer to the desktop Inbox when the desktop granted that permission. Preview/Apply/Run stay on the desktop.
+- `CompanionCrypto` implements envelope v1 byte-for-byte like the desktop (shared vectors); the client only
+  connects to private-LAN/loopback IPv4 addresses; the device key stays in app-private storage.
+- Network security config: system CAs only; local cleartext transport carries only sealed envelopes.
+
 ## [0.2.2] - 2026-10-18
 
 ### Release pipeline fix
