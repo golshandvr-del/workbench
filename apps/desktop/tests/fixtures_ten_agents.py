@@ -64,7 +64,6 @@ def build(root: Path, *, n_agents: int = 10, tasks_per_agent: int = 2) -> dict[s
         s["attempts"][h["attempt_id"]]["status"] = "parse_failed"
     special["parse_failed"] = tid
     # open decision
-    d = p.decisions.propose(title="Pick database", options=["sqlite", "postgres"]) \
-        if hasattr(p.decisions, "propose") else None
-    special["decision"] = (d or {}).get("decision_id", "")
+    d = p.decisions.propose("Pick database", "storage choice", options=["sqlite", "postgres"])
+    special["decision"] = d["decision_id"]
     return {"ctl": ctl, "agents": agents, "tasks": tasks, "special": special, "accounts": accs}
