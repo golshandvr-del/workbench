@@ -13,6 +13,8 @@ from typing import Any, Callable
 from .. import i18n
 from ..v2.controller import ProjectsController
 from ..v2.models import ModelError
+from ..v2.timeline import lanes, planned_items, progress
+from ..v2.workflow import stage_label, task_stage
 from ..v2.resources import binding_readiness, current_binding
 
 SECTIONS = ("overview", "timeline", "tasks", "team", "files", "versions", "settings")
@@ -121,13 +123,10 @@ class WorkspaceController:
         counts: dict[str, int] = {}
         for t in tasks:
             counts[t["status"]] = counts.get(t["status"], 0) + 1
-        in_scope = [t for t in tasks if t["status"] not in ("cancelled", "superseded")]
-        done = sum(1 for t in in_scope if t["status"] == "done")
         nv = self.ctl.next_action_view() or {"type": "nothing", "summary": i18n.action("nothing", self.lang),
                                              "reference_id": ""}
         return {"goal": str(st["settings"].get("goal", "")), "next": nv,
-                "progress": {"done": done, "total": len(in_scope),
-                             "percent": round(100 * done / len(in_scope)) if in_scope else 0},
+                "progress": progress(st),
                 "counts": counts, "warnings": self.ctl.warning_items()[:5],
                 "agents": sum(1 for a in st["agents"].values() if a.get("enabled", True)),
                 "accounts": sum(1 for a in st["account_profiles"].values() if a.get("enabled", True)),
@@ -140,9 +139,30 @@ class WorkspaceController:
             return f"{pr['done']} از {pr['total']} Task تأیید شده؛ {pr['percent']}٪ از تعداد Taskها (نه حجم کار)"
         return f"{pr['done']} of {pr['total']} tasks verified; {pr['percent']}% of tasks by count (not of effort)"
 
+    def progress_details(self, pr: dict[str, Any]) -> list[str]:
+        """Separate indicators (spec §6.2); the weighted figure only when weights exist, labelled estimated."""
+        fa = self.lang == "fa"
+        lines = [(f"در انتظار تست/Build: {pr['validation_pending']} · در انتظار بازبینی: {pr['in_review']} · "
+                  f"مسدود: {pr['blocked']} · نیازمند تصمیم: {pr['needs_decision']} · در حال انجام: {pr['in_progress']}")
+                 if fa else
+                 (f"Waiting for test/build: {pr['validation_pending']} · waiting for review: {pr['in_review']} · "
+                  f"blocked: {pr['blocked']} · needs decision: {pr['needs_decision']} · in progress: {pr['in_progress']}")]
+        if pr.get("excluded"):
+            lines.append(f"{pr['excluded']} Task لغو/جایگزین‌شده از مخرج خارج است" if fa
+                         else f"{pr['excluded']} cancelled/superseded task(s) excluded from the count")
+        if pr.get("weighted"):
+            lines.append(f"پیشرفت وزنی (تخمینی، بر اساس وزن‌های شما): {pr['weighted']['percent']}٪" if fa
+                         else f"Weighted progress (estimated, from your task weights): {pr['weighted']['percent']}%")
+        return lines
+
     # -- tasks
     def task_rows(self, *, status: str = "", agent_id: str = "", text: str = "") -> list[dict[str, Any]]:
         rows = self.ctl.task_rows()
+        st = self.ctl.state()
+        for r in rows:
+            if r["task_id"] in st["tasks"]:
+                ts = task_stage(st, r["task_id"])
+                r["stage"], r["stage_text"], r["user_action"] = ts["stage"], stage_label(ts["stage"], self.lang), ts["user_action"]
         needle = text.lower().strip()
         return [r for r in rows if (not status or r["status"] == status) and (not agent_id or r["owner"] == agent_id)
                 and (not needle or needle in (r["task_id"] + " " + r["title"]).lower())]
@@ -280,6 +300,41 @@ class WorkspaceController:
     def timeline_page(self, page: int = 0, **filters: Any) -> dict[str, Any]:
         return self.ctl.project.store.ledger.query(page=page, **filters)
 
+    def timeline_lanes(self, limit: int = 400) -> dict[str, list[dict[str, Any]]]:
+        """Per-agent lanes, oldest first (spec §5.4). A lane is a work stream, not a git branch."""
+        recs = self.ctl.project.store.ledger.all()[-limit:]
+        return lanes(recs, self.ctl.state())
+
+    def planned(self) -> list[dict[str, Any]]:
+        return planned_items(self.ctl.state())
+
+    def milestone_rows(self) -> list[dict[str, Any]]:
+        st = self.ctl.state()
+        out = []
+        for m in self.ctl.project.timeline.milestones():
+            pr = progress(st, task_ids=m["task_ids"])
+            out.append({**m, "progress_text": f"{pr['done']}/{pr['total']}"})
+        return out
+
+    def version_rows(self) -> list[dict[str, Any]]:
+        labels = {"proposed": ("proposed", "پیشنهادی"), "local": ("local (commit)", "محلی (Commit)"),
+                  "tagged": ("tag created", "Tag ساخته شد"), "released": ("released", "منتشرشده"),
+                  "withdrawn": ("withdrawn", "کنار گذاشته شد")}
+        return [{**v, "status_text": self.tr(labels.get(v["status"], (v["status"], v["status"])))}
+                for v in self.ctl.project.timeline.versions()]
+
+    def create_milestone(self, data: dict[str, Any]) -> dict[str, Any]:
+        return self.ctl.project.timeline.create_milestone(data)
+
+    def accept_milestone(self, milestone_id: str, force: bool = False) -> dict[str, Any]:
+        return self.ctl.project.timeline.accept_milestone(milestone_id, force=force)
+
+    def propose_version(self, data: dict[str, Any]) -> dict[str, Any]:
+        return self.ctl.project.timeline.propose_version(data)
+
+    def advance_version(self, version_id: str, status: str, **facts: Any) -> dict[str, Any]:
+        return self.ctl.project.timeline.advance_version(version_id, status, **facts)
+
     def event_text(self, rec: dict[str, Any]) -> str:
         refs = rec.get("refs", {})
         ref = refs.get("task_id") or refs.get("handoff_id") or refs.get("proposal_id") or refs.get("decision_id") \
@@ -308,6 +363,10 @@ class WorkspaceController:
             if t.get("status") in ("in_review", "validation_pending"):
                 acts += [("approve_review", self.tr(("Approve review", "تأیید بازبینی"))),
                          ("reject_review", self.tr(("Reject review", "رد بازبینی")))]
+            ts = task_stage(self.ctl.state(), ref)
+            text += "\n\n" + self.tr(("Workflow: ", "گردش کار: ")) + stage_label(ts["stage"], self.lang) + f" ({ts['why']})"
+            if ts["stage"] in ("prompt_prepared", "prompt_copied") and ts["handoff_id"]:
+                acts.append(("confirm_sent", self.tr(("I sent this prompt", "این پرامپت را ارسال کردم"))))
             owner = t.get("owner_agent_id", "")
             if owner:
                 r = binding_readiness(self.ctl.state(), owner)
@@ -337,12 +396,20 @@ class WorkspaceController:
                                  "یک Task، Agent یا رویداد را انتخاب کنید تا جزئیات و اقدام‌های مجاز آن نمایش داده شود.")),
                 "actions": []}
 
+    def start_warning(self, task_id: str) -> str:
+        return self.ctl.start_warning(task_id)
+
     def run_action(self, action: str, ref: str = "") -> Any:
         """Inspector / next-action buttons; every one delegates to the existing controller."""
         kind, sel = self.selection
         ref = ref or sel
         if action == "start_task":
             return self.ctl.start_task(ref)
+        if action == "confirm_sent":
+            ts = task_stage(self.ctl.state(), ref)
+            if not ts["handoff_id"]:
+                raise ModelError("there is no prepared prompt for this task")
+            return self.ctl.confirm_sent(ts["handoff_id"])
         if action == "approve_review":
             return self.ctl.review_task(ref, True)
         if action == "reject_review":

@@ -5,8 +5,8 @@
 > Roadmap قبلی (1.14.1 → 2.2.0، کامل‌شده) در [`docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md) بایگانی شده است.
 > تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.4.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** 2.5.0 — Workflow tracking، Timeline و Progress (مراحل 5، 6)
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.5.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال بعدی:** 2.6.0 — Team Dashboard، یکپارچه‌سازی و Release Gate (مراحل 7، 8، 9)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
 
@@ -76,11 +76,11 @@
 
 | گام | عنوان | وضعیت | شواهد / باقی‌مانده |
 |---|---|---|---|
-| 5.1 | Workflow projection: prompt_prepared / copied / user_confirmed_sent / waiting / received / parse_failed / partial / stale … | ⬜ | |
-| 5.2 | «I sent this prompt»، هشدار Start تکراری، اتصال Attempt به Account/Chat | ⬜ | |
-| 6.1 | Timeline از Event Ledger با فیلتر، Lane و legacy برچسب‌دار | ⬜ | |
-| 6.2 | Milestone و Version مستقل، اتصال به Commit/Build/Artifact | ⬜ | |
-| 6.3 | Progress: «n از m Task تأییدشده» + شاخص‌های جدا؛ وزن فقط با برچسب «تخمینی» | ⬜ | |
+| 5.1 | Workflow projection: prompt_prepared / copied / user_confirmed_sent / waiting / received / parse_failed / partial / stale … | ✅ | `v2/workflow.py` `task_stage` |
+| 5.2 | «I sent this prompt»، هشدار Start تکراری، اتصال Attempt به Account/Chat | ✅ | `WorkflowService`، `gui_workflow_timeline_smoke.py` |
+| 6.1 | Timeline از Event Ledger با فیلتر، Lane و legacy برچسب‌دار | ✅ | `timeline.lanes`، نمای Timeline |
+| 6.2 | Milestone و Version مستقل، اتصال به Commit/Build/Artifact | ✅ | `TimelineService` |
+| 6.3 | Progress: «n از m Task تأییدشده» + شاخص‌های جدا؛ وزن فقط با برچسب «تخمینی» | ✅ | `timeline.progress` |
 
 ## 2.6.0 — Team Dashboard، یکپارچه‌سازی و Release Gate (مراحل 7، 8، 9؛ Gate C، E، F، G)
 
