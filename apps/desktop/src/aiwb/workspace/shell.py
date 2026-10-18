@@ -578,6 +578,119 @@ class WorkspaceWindow:
         self.tl_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.tl_tree, "event"))
         self.tl_page = 0
         self._fill_timeline(0)
+        side = "right" if self.wc.rtl else "left"
+        ttk.Button(flt, text=self.wc.tr(("Lanes by agent", "Lane بر اساس Agent")), command=self.show_lanes).pack(side="left", padx=4)
+        mv = ttk.LabelFrame(f, text=self.wc.tr(("Milestones and versions", "Milestone و نسخه‌ها")), padding=6)
+        mv.grid(row=3, column=0, columnspan=2, sticky="ew", pady=4)
+        self.mv_tree = ttk.Treeview(mv, columns=("status", "detail"), show="tree headings", style="WS.Treeview", height=4)
+        for c, pair, wdt in (("#0", ("Item", "مورد"), 260), ("status", ("Status", "وضعیت"), 140),
+                             ("detail", ("Tasks / reference", "Taskها / مرجع"), 300)):
+            self.mv_tree.heading(c, text=self.wc.tr(pair))
+            self.mv_tree.column(c, width=wdt, stretch=c != "status")
+        for m in self.wc.milestone_rows():
+            self.mv_tree.insert("", "end", iid=m["milestone_id"], text=f"{m['milestone_id']} {m['title']}",
+                                values=(m["status"], m["progress_text"] + " " + self.wc.tr(("tasks done", "Task انجام‌شده"))))
+        for v in self.wc.version_rows():
+            ref = " · ".join(x for x in (v["commit_sha"][:10], v["tag"], v["run_id"] and f"run {v['run_id']}") if x)
+            self.mv_tree.insert("", "end", iid=v["version_id"], text=f"{v['version_id']} {v['label']}",
+                                values=(v["status_text"], ref or self.wc.tr(("no commit/build yet", "هنوز Commit/Build ندارد"))))
+        for pi in self.wc.planned():
+            if pi["kind"] == "milestone" and pi["date"] and self.mv_tree.exists(pi["ref"]):
+                self.mv_tree.item(pi["ref"], text=self.mv_tree.item(pi["ref"], "text") + self.wc.tr(
+                    ((" (planned ", " (برنامه‌ریزی‌شده ")) ) + pi["date"] + ")")
+        self.mv_tree.pack(fill="x")
+        bb = ttk.Frame(mv, style="WS.TFrame")
+        bb.pack(fill="x", pady=(4, 0))
+        ttk.Button(bb, text=self.wc.tr(("New milestone…", "Milestone جدید…")), command=self.dialog_milestone).pack(side=side)
+        ttk.Button(bb, text=self.wc.tr(("Accept milestone", "پذیرش Milestone")), command=self.accept_selected_milestone).pack(side=side, padx=4)
+        ttk.Button(bb, text=self.wc.tr(("Propose version…", "پیشنهاد نسخه…")), command=self.dialog_version).pack(side=side)
+        ttk.Button(bb, text=self.wc.tr(("Record commit / tag / release…", "ثبت Commit / Tag / انتشار…")),
+                   command=self.dialog_advance_version).pack(side=side, padx=4)
+
+    def show_lanes(self) -> dict[str, list[dict[str, Any]]]:
+        """Replace the list with one parent row per lane (agent); children are that lane's events (oldest first)."""
+        lanes = self.wc.timeline_lanes()
+        self.tl_tree.delete(*self.tl_tree.get_children())
+        for lane, recs in sorted(lanes.items()):
+            self.tl_tree.insert("", "end", iid=f"lane:{lane}", values=(f"▸ {lane} · {len(recs)}", "", ""), open=False)
+            for rec in recs[-50:]:
+                self.tl_tree.insert(f"lane:{lane}", "end", iid=rec["event_id"],
+                                    values=(self.wc.event_text(rec), "", rec["source"]))
+        self.tl_tree.configure(show="tree headings")
+        self.tl_page_var.set(self.wc.tr(("lanes", "Laneها")) + f" · {len(lanes)}")
+        return lanes
+
+    def _ask(self, title: str, prompt: str, initial: str = "") -> str:
+        v = simpledialog.askstring(title, prompt, initialvalue=initial, parent=self.win)
+        return (v or "").strip()
+
+    def dialog_milestone(self, data: dict[str, Any] | None = None) -> Any:
+        if data is None:
+            title = self._ask(self.wc.tr(("Milestone", "Milestone")), self.wc.tr(("Milestone title:", "عنوان Milestone:")))
+            if not title:
+                return None
+            tasks = self._ask(self.wc.tr(("Milestone", "Milestone")),
+                              self.wc.tr(("Task IDs (comma separated):", "شناسهٔ Taskها (با کاما):")))
+            data = {"title": title, "task_ids": [t.strip() for t in tasks.split(",") if t.strip()]}
+        out = self._guard(lambda: self.wc.create_milestone(data))
+        if out:
+            self.status_var.set(f"{out['milestone_id']} · {out['title']}")
+            self.show("timeline")
+        return out
+
+    def accept_selected_milestone(self, milestone_id: str = "", force: bool | None = None) -> Any:
+        sel = milestone_id or next((i for i in self.mv_tree.selection() if i.startswith("MS-")), "")
+        if not sel:
+            self.status_var.set(self.wc.tr(("Select a milestone first.", "ابتدا یک Milestone انتخاب کنید.")))
+            return None
+        try:
+            out = self.wc.accept_milestone(sel)
+        except ModelError as exc:
+            if force is None:
+                force = messagebox.askyesno("AI Workbench", f"{exc}\n\n" + self.wc.tr((
+                    "Accept anyway? This is recorded with the open tasks.", "با این حال پذیرفته شود؟ همراه Taskهای باز ثبت می‌شود.")),
+                    parent=self.win)
+            if not force:
+                self.status_var.set(str(exc))
+                return None
+            out = self._guard(lambda: self.wc.accept_milestone(sel, force=True))
+        if out:
+            self.show("timeline")
+        return out
+
+    def dialog_version(self, data: dict[str, Any] | None = None) -> Any:
+        if data is None:
+            label = self._ask(self.wc.tr(("Version", "نسخه")), self.wc.tr(("Version label (e.g. 1.2.0):", "برچسب نسخه (مثلاً 1.2.0):")))
+            if not label:
+                return None
+            data = {"label": label}
+        out = self._guard(lambda: self.wc.propose_version(data))
+        if out:
+            self.status_var.set(f"{out['version_id']} · {out['label']} · " + self.wc.tr(("proposed (not released)", "پیشنهادی (منتشر نشده)")))
+            self.show("timeline")
+        return out
+
+    def dialog_advance_version(self, version_id: str = "", status: str = "", facts: dict[str, str] | None = None) -> Any:
+        vid = version_id or next((i for i in self.mv_tree.selection() if i.startswith("VER-")), "")
+        if not vid:
+            self.status_var.set(self.wc.tr(("Select a version first.", "ابتدا یک نسخه انتخاب کنید.")))
+            return None
+        if not status:
+            status = self._ask(self.wc.tr(("Version", "نسخه")), self.wc.tr((
+                "New status: local, tagged, released or withdrawn", "وضعیت جدید: local، tagged، released یا withdrawn")))
+            if not status:
+                return None
+        if facts is None:
+            facts = {}
+            need = {"local": ("commit_sha",), "tagged": ("commit_sha", "tag"), "released": ("run_id", "artifact_sha256")}
+            cur = next((v for v in self.wc.version_rows() if v["version_id"] == vid), {})
+            for k in need.get(status, ()):
+                facts[k] = self._ask(vid, f"{k}:", cur.get(k, ""))
+        out = self._guard(lambda: self.wc.advance_version(vid, status, **facts))
+        if out:
+            self.status_var.set(f"{vid} → {out['status']}")
+            self.show("timeline")
+        return out
 
     def _fill_timeline(self, page: int) -> dict[str, Any]:
         page = max(page, 0)
