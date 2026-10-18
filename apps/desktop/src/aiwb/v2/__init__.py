@@ -20,6 +20,7 @@ from .resources import ResourceRegistry
 from .snapshot import build_snapshot, render_status_md
 from .store import ProjectStore, StoreError
 from .tasks import TaskService, validate_graph
+from .workflow import WorkflowService
 
 
 class V2Project:
@@ -35,6 +36,7 @@ class V2Project:
         self.evidence = EvidenceService(self.store)
         self.proposals = ProposalService(self.store)
         self.resources = ResourceRegistry(self.store)
+        self.workflow = WorkflowService(self.store)
 
     def open(self, legacy: dict[str, Any] | None = None) -> list[str]:
         """Create/migrate the store (idempotent) and install base agents once."""
