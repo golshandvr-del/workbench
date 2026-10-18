@@ -5,8 +5,8 @@
 > Roadmap قبلی (1.14.1 → 2.2.0، کامل‌شده) در [`docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md) بایگانی شده است.
 > تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.2.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** 2.3.0 — مرحله 0 تا 3 (ADR، Spike، Event/Account data، پوستهٔ Workspace)
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.3.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال بعدی:** 2.4.0 — Team Planner (مرحله 4)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
 
@@ -44,20 +44,20 @@
 
 | گام | عنوان | وضعیت | شواهد / باقی‌مانده |
 |---|---|---|---|
-| 0 | Discovery، Audit، UX Flow، Baseline و ADR | ⬜ | |
-| 1 | UI Technology Spike و Design System | ⬜ | |
-| 2 | Event Ledger، Account Profile و Chat Binding (داده) | ⬜ | |
-| 3 | پوستهٔ Workspace و Responsive | ⬜ | |
+| 0 | Discovery، Audit، UX Flow، Baseline و ADR | ✅ | `docs/audit/WORKSPACE_STAGE0_AUDIT_FA.md`، `tools/measure_baseline.py` |
+| 1 | UI Technology Spike و Design System | ✅ | ADR-007، `aiwb/workspace/theme.py` |
+| 2 | Event Ledger، Account Profile و Chat Binding (داده) | ✅ | ADR-008، `v2/events.py`، `v2/resources.py`، `event-ledger.v1` |
+| 3 | پوستهٔ Workspace و Responsive | ✅ | `aiwb/workspace/`، `gui_workspace_smoke.py`؛ DPI ویندوز واقعی NOT RUN |
 
 **معیارهای پذیرش (خلاصه):**
-- [ ] ADR فناوری GUI و ADR Event Ledger/Data Model ثبت شده‌اند.
-- [ ] Audit موجود/جدید/حذف‌شدنی UI و نقشهٔ جریان UX با ۵ سناریو.
-- [ ] Baseline عملکرد (start، open project، حافظه، اندازهٔ Payload) با اعداد واقعی ثبت شده.
-- [ ] Event Ledger append-only نسخه‌دار، idempotent، بدون Prompt/Response خام؛ تغییر نما Event نمی‌سازد.
-- [ ] Account Profile / Chat Binding بدون هیچ Credential؛ پروژه‌های قدیمی بدون آن باز می‌شوند؛ `preferred_model_label` حفظ می‌شود.
-- [ ] Workspace: Project Bar، Sidebar، Workspace، Inspector جمع‌شونده، Next Action، Status Footer؛ همهٔ مسیرهای موجود در دسترس.
-- [ ] تنظیم Layout بیرون از State پروژه؛ RTL فارسی/LTR انگلیسی در پوسته.
-- [ ] تست‌های واحد + GUI smoke (اندازه‌های 1280×720، 1366×768، 1920×1080) و Installer ویندوز در CI سبز.
+- [x] ADR فناوری GUI و ADR Event Ledger/Data Model ثبت شده‌اند.
+- [x] Audit موجود/جدید/حذف‌شدنی UI و نقشهٔ جریان UX با ۵ سناریو.
+- [x] Baseline عملکرد (start، open project، حافظه، اندازهٔ Payload) با اعداد واقعی ثبت شده.
+- [x] Event Ledger append-only نسخه‌دار، idempotent، بدون Prompt/Response خام؛ تغییر نما Event نمی‌سازد.
+- [x] Account Profile / Chat Binding بدون هیچ Credential؛ پروژه‌های قدیمی بدون آن باز می‌شوند؛ `preferred_model_label` حفظ می‌شود.
+- [x] Workspace: Project Bar، Sidebar، Workspace، Inspector جمع‌شونده، Next Action، Status Footer؛ همهٔ مسیرهای موجود در دسترس.
+- [x] تنظیم Layout بیرون از State پروژه؛ RTL فارسی/LTR انگلیسی در پوسته.
+- [x] تست‌های واحد + GUI smoke (اندازه‌های 1280×720، 1366×768، 1920×1080) و Installer ویندوز در CI سبز.
 
 ## 2.4.0 — Team Planner (مرحله 4، Gate A)
 
