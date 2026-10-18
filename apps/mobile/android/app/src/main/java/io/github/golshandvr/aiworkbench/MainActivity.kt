@@ -22,7 +22,7 @@ import java.util.concurrent.Executors
  * Deliberately small: shows exact build provenance (version, versionCode,
  * commit SHA, ref, channel) and lists the latest Desktop/Mobile GitHub
  * Releases so the user can download the Windows installer or a newer APK.
- * It does not claim Companion features (pairing, remote control) yet.
+ * Companion (pairing with the desktop, tasks, answers) lives in CompanionActivity.
  */
 class MainActivity : Activity() {
     private val executor = Executors.newSingleThreadExecutor()
@@ -48,6 +48,9 @@ class MainActivity : Activity() {
             BuildConfig.BUILD_REF,
         )
         checkButton.setOnClickListener { checkReleases() }
+        findViewById<Button>(R.id.companion_button).setOnClickListener {
+            startActivity(Intent(this, CompanionActivity::class.java))
+        }
         findViewById<Button>(R.id.open_repo_button).setOnClickListener {
             openUrl("https://github.com/${BuildConfig.GITHUB_REPOSITORY}")
         }
