@@ -8,7 +8,7 @@ Measures, on the machine it runs on (record the machine with the numbers):
 * cold construction of the main window (``WorkbenchApp``) until idle;
 * open-project time of the V2 ProjectsController on a synthetic project
   (N tasks, M events) and the Workspace read models when they exist;
-* peak Python memory (tracemalloc) and max RSS;
+* max RSS of the process;
 * installer payload size from ``release_manifest.json`` sources.
 Numbers are evidence for ADR-008 / the release gate, not guarantees.
 """
@@ -23,7 +23,6 @@ import statistics
 import sys
 import tempfile
 import time
-import tracemalloc
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -77,7 +76,6 @@ def main() -> int:
     a = ap.parse_args()
     out: dict = {"machine": {"platform": platform.platform(), "python": platform.python_version(),
                              "cpu_count": os.cpu_count()}}
-    tracemalloc.start()
     t0 = time.perf_counter()
     import AI_Workbench as wb  # noqa: F401
     out["import_app_ms"] = _ms(t0)
@@ -122,8 +120,6 @@ def main() -> int:
                         ts.append(_ms(t0))
                     reads[name] = statistics.median(ts)
         out["read_models_median_ms"] = reads or "n/a (workspace read models not present)"
-    _, peak = tracemalloc.get_traced_memory()
-    out["python_peak_mib"] = round(peak / 2**20, 1)
     out["max_rss_mib"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
     out.update(payload_size())
     text = json.dumps(out, indent=2, ensure_ascii=False)
