@@ -1,3 +1,13 @@
+## [2.1.2] - 2026-10-18
+
+### Phase-3 Release Gate (Future Roadmap §28)
+- **Last Published vs Local Revision** (`publish_status`) shown in both views (paused / not published yet /
+  up to date); Advanced adds the last error.
+- **Timer trigger** for the state publisher in the Projects window (every 30 s, alongside the event trigger);
+  publishing never blocks local work and stops when the window closes.
+- `gui_phase3_gate_smoke.py` runs every Future Roadmap §22 GUI flow in Simple and Advanced views.
+- Gate evidence: `docs/release/v2.1.2/RELEASE_GATE_PHASE3_v2.1.2.md`.
+
 ## [2.1.1] - 2026-10-18
 
 ### Phase 3 polish (roadmap 2.1.x, Future Roadmap §19.2–§19.4)

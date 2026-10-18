@@ -49,6 +49,8 @@ class ProjectsWindow:
         self.next_frame = nxt
         nxt.pack(fill="x", padx=10)
         ttk.Label(nxt, textvariable=self.next_var, wraplength=1060, font=("Segoe UI", 11, "bold")).pack(anchor="w")
+        self.pub_var = tk.StringVar()
+        ttk.Label(nxt, textvariable=self.pub_var).pack(anchor="w")
         self.warn_var = tk.StringVar()
         ttk.Label(nxt, textvariable=self.warn_var, wraplength=1060, foreground="#8a1c1c").pack(anchor="w", pady=(4, 0))
         body = ttk.Panedwindow(self.win, orient="horizontal")
@@ -104,6 +106,15 @@ class ProjectsWindow:
             self.adv.add(frame, text=name)
             self.adv_text[name] = t
         self.refresh()
+        self._timer = self.win.after(30000, self._tick)
+
+    def _tick(self) -> None:
+        try:
+            if self.ctl.tick_publisher() is not None:
+                self.pub_var.set(self.ctl.publish_status()["text"])
+            self._timer = self.win.after(30000, self._tick)
+        except tk.TclError:
+            pass
 
     # -- view
     def _mode_changed(self) -> None:
@@ -121,6 +132,7 @@ class ProjectsWindow:
 
     def refresh(self) -> None:
         self.next_var.set(self.ctl.next_action_text())
+        self.pub_var.set(self.ctl.publish_status()["text"])
         nv = self.ctl.next_action_view()
         if nv and self.ctl.mode == "advanced" and nv.get("queue"):
             self.next_var.set(self.next_var.get() + f"\n{self.ctl.t('then')}: " + " · ".join(nv["queue"]))
@@ -276,6 +288,10 @@ class ProjectsWindow:
         return r
 
     def close(self) -> None:
+        try:
+            self.win.after_cancel(self._timer)
+        except (tk.TclError, AttributeError, ValueError):
+            pass
         try:
             self.win.destroy()
         except tk.TclError:

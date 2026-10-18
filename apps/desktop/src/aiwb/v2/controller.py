@@ -178,6 +178,32 @@ class ProjectsController:
             rows.append(row)
         return rows
 
+    def publish_status(self) -> dict[str, Any]:
+        """Last Published vs Local Revision (§22.11), in both views."""
+        local = self.project.store.revision
+        if self.publisher is None:
+            return {"state": "local_only", "local_revision": local, "published_revision": 0,
+                    "text": self.t("local_only")}
+        q = self.publisher.queue()
+        pub = int(q.get("last_published_revision") or 0)
+        pending = bool(getattr(self.publisher, "pending", False))
+        state = "paused" if q.get("paused") else ("behind" if pending else "current")
+        word = self.t("publish_paused") if state == "paused" else self.t("published_behind" if pending else "published_current")
+        text = f"{word} · {self.t('local_revision')} {local} · {self.t('last_published')} {pub or '—'}"
+        if self.mode == "advanced" and q.get("last_error"):
+            text += f" · {q['last_error']}"
+        return {"state": state, "local_revision": local, "published_revision": pub, "text": text,
+                "commit": q.get("last_commit", "")}
+
+    def tick_publisher(self) -> dict[str, Any] | None:
+        """Timer trigger used by the window (event + timer, §17 2E); never raises."""
+        if self.publisher is None:
+            return None
+        try:
+            return self.publisher.tick()
+        except Exception as exc:  # noqa: BLE001 - publishing never blocks local work
+            return {"status": "error", "message": str(exc)}
+
     def warning_items(self) -> list[dict[str, str]]:
         """Prioritised, de-duplicated warnings (§19.2): blocking (stop) first, then actions, then info.
         Each item has a severity key, a text in the display language and a reference id."""

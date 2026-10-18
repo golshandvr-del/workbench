@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -138,8 +138,8 @@
       "source": "apps/desktop/tests/test_i18n.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v2.1.1.md",
-      "source": "docs/release/v2.1.1/WINDOWS_RELEASE_CHECKLIST_v2.1.1.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v2.1.2.md",
+      "source": "docs/release/v2.1.2/WINDOWS_RELEASE_CHECKLIST_v2.1.2.md"
     },
     {
       "path": "install.ps1",
