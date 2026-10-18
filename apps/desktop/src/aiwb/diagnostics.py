@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import platform
+import os
 import re
 import sys
 import uuid
@@ -35,13 +36,40 @@ class BundleEntry:
     optional: bool = False
 
 
+def path_variants(path: str | Path) -> set[str]:
+    """Spellings of one path that may appear in logs/JSON: as given, resolved (long form on
+    Windows, e.g. RUNNER~1 → runneradmin), forward/back slashes and JSON-escaped backslashes."""
+    raw = {str(path)}
+    try:
+        raw.add(str(Path(path).resolve()))
+    except OSError:
+        pass
+    if os.name == "nt":
+        try:
+            import ctypes
+            buf = ctypes.create_unicode_buffer(32768)
+            for p in list(raw):
+                if ctypes.windll.kernel32.GetShortPathNameW(p, buf, 32768):  # type: ignore[attr-defined]
+                    raw.add(buf.value)
+                if ctypes.windll.kernel32.GetLongPathNameW(p, buf, 32768):  # type: ignore[attr-defined]
+                    raw.add(buf.value)
+        except Exception:  # noqa: BLE001 - best effort
+            pass
+    out: set[str] = set()
+    for p in raw:
+        for v in (p, p.replace("\\", "/"), p.replace("/", "\\")):
+            out.add(v)
+            out.add(v.replace("\\", "\\\\"))
+    return {v for v in out if len(v) > 3}
+
+
 def _scrub_paths(text: str, replacements: dict[str, str]) -> str:
-    for real, label in sorted(replacements.items(), key=lambda kv: -len(kv[0])):
-        if real and len(real) > 3:
-            text = text.replace(real, label)
-            text = text.replace(real.replace("\\", "/"), label)
-            text = text.replace(real.replace("/", "\\"), label)
-    text = re.sub(r"(?i)\b[A-Z]:\\Users\\[^\\\s\"']+", r"<USER_HOME>", text)
+    variants = [(v, label) for real, label in replacements.items() if real for v in path_variants(real)]
+    for real, label in sorted(variants, key=lambda kv: -len(kv[0])):
+        text = text.replace(real, label)
+        if os.name == "nt":
+            text = re.sub(re.escape(real), label.replace("\\", "\\\\"), text, flags=re.IGNORECASE)
+    text = re.sub(r"(?i)\b[A-Z]:(?:\\{1,2})Users(?:\\{1,2})[^\\\s\"']+", r"<USER_HOME>", text)
     text = re.sub(r"/(?:home|Users)/[^/\s\"']+", "<USER_HOME>", text)
     return text
 

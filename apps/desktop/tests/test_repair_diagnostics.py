@@ -162,5 +162,17 @@ class DiagnosticsBundleTests(unittest.TestCase):
         self.assertEqual([e.name for e in entries], ["report.json", "execution_events_recent.json"])
 
 
+
+class PathScrubTests(unittest.TestCase):
+    def test_json_escaped_and_slash_variants(self) -> None:
+        from aiwb import diagnostics as d
+        win = "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\tmpx\\Secret Project"
+        text = json.dumps({"m": "error in " + win + "\\src.py"}) + " " + win.replace("\\", "/") + "/a.py"
+        out = d._scrub_paths(text, {win: "<PROJECT>"})
+        self.assertNotIn("Secret Project", out)
+        self.assertEqual(out.count("<PROJECT>"), 2)
+        self.assertNotIn("RUNNER~1", d._scrub_paths("see C:\\\\Users\\\\RUNNER~1\\\\x", {}))
+
+
 if __name__ == "__main__":
     unittest.main()
