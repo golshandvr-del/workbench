@@ -31,3 +31,4 @@ capabilities:
   - {id: ui.modes, title: "Simple and Advanced views on one controller", roadmap: "2.1.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/controller.py, projects_window.py"}
   - {id: ui.i18n, title: "Single FA/EN glossary and prioritised warnings", roadmap: "2.1.1", desktop: implemented, mobile: planned, evidence: "aiwb/i18n.py"}
   - {id: ui.phase3_gate, title: "Phase-3 gate: publish status, both-view GUI tests", roadmap: "2.1.2", desktop: implemented, mobile: planned, evidence: "gui_phase3_gate_smoke.py"}
+  - {id: companion.pairing, title: "Mobile Companion: LAN pairing, view, tasks and answers", roadmap: "2.2.0", desktop: implemented, mobile: implemented, evidence: "aiwb/companion/, CompanionActivity.kt, vectors/companion-envelope.v1.json"}
