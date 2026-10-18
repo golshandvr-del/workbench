@@ -14,7 +14,10 @@ ROLES = ["project_manager", "architect", "implementer", "implementer", "implemen
 
 
 def build(root: Path, *, n_agents: int = 10, tasks_per_agent: int = 2) -> dict[str, Any]:
-    ctl = ProjectsController(root)
+    return build_into(ProjectsController(root), n_agents=n_agents, tasks_per_agent=tasks_per_agent)
+
+
+def build_into(ctl: ProjectsController, *, n_agents: int = 10, tasks_per_agent: int = 2) -> dict[str, Any]:
     p = ctl.project
     with p.store.transaction("fixture agents") as s:
         for i, role in enumerate(ROLES[:n_agents]):
