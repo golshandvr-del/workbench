@@ -1,3 +1,13 @@
+## [1.14.13] - 2026-10-18
+
+### Release Candidate & Native Windows Validation (roadmap v1.14.13)
+- **Real E2E** on a separate test repository (`tools/e2e_github_sandbox.py`): Sync & Build from preflight to verified artifact whose content is the pushed commit, idempotent commit/push, stale-plan refusal after a concurrent push, confirmed manual dispatch, no token leak. Report: `docs/release/v1.14.13/E2E_REPORT_v1.14.13.md`.
+- **Windows CI upgrade test:** the previous published release is installed first, sentinels are written to `settings.json` and the data folder, then this build is installed over it and the sentinels must survive. The installed app is also smoke-tested from a Unicode path with spaces.
+- **Settings recovery:** a corrupt `settings.json` is kept as `settings.json.corrupt-<timestamp>` instead of being silently overwritten on the next save; files with a UTF-8 BOM are accepted.
+- **RC hardening tests** (`tests/test_rc_hardening.py`, 13): token redaction across URL/header/assignment forms, network errors never echo the token, rate-limit/401 polling policy, 16-thread operation-lock race, cancel-before-commit, resume after a lost push result without a second commit, records free of tokens, unreadable credential = failed preflight.
+- **Protected signing:** the `release` Environment now requires a reviewer; mobile releases wait for approval.
+- Docs: rollback plan (`docs/release/ROLLBACK_PLAN.md`), release-owner decisions, RC checklist with explicit NOT RUN items, ARCHITECTURE section for 1.14.5–1.14.13.
+
 ## [1.14.9] - 2026-10-18
 
 ### Repository policy & shared contracts (roadmap v1.14.9 – v1.14.11)

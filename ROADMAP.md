@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.9` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** `v1.14.13` — Release Candidate & Native Windows Validation
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.13` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** `v1.15.0` — Integrated GitHub & Monorepo Stable
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -64,9 +64,9 @@
 | 1.14.9 | Self-hosting Repository & Desktop CI Baseline | ✅ | ریپو، CI روی Linux+Windows، Actionsهای pin‌شده، `CI summary`، گیت pyflakes؛ ADR-005 (سیاست Monorepo/branch/tag)؛ Release `desktop-v1.14.9` |
 | 1.14.10 | Staged Monorepo Migration | ✅ | `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت (PR #1)؛ `packages/contracts/` |
 | 1.14.11 | Android Proof-of-Build & Capability Contracts | ✅ | JSON Schema `release-manifest.v1`/`build-metadata.v1`/`capabilities.v1` + fixtures؛ `capabilities.yml`؛ `tools/validate_contracts.py` (job `contracts`)؛ مصرف در Kotlin (`ReleaseManifest.kt` + تست روی fixtureهای مشترک) |
-| 1.14.12 | Versioned Releases & Protected Signing | 🟡 | ✅ تگ‌های جدا، SHA-256 و manifest قراردادی در هر دو release، Secretهای امضا فقط در Environment `release`؛ `mobile-v0.2.0` اولین Release با Environment جدید. ⬜ approval انسانی (در 1.14.13) |
-| **1.14.13** | **Release Candidate & Native Windows Validation** | ⬜ **گام فعال** | — |
-| 1.15.0 | Integrated GitHub & Monorepo Stable | ⬜ | — |
+| 1.14.12 | Versioned Releases & Protected Signing | ✅ | تگ‌های جدا، SHA-256 و manifest قراردادی در هر دو release؛ Secretهای امضا فقط در Environment `release` با **Required reviewer**؛ `mobile-v0.2.0` |
+| 1.14.13 | Release Candidate & Native Windows Validation | ✅ | E2E واقعی روی `aiwb-e2e-sandbox` (`tools/e2e_github_sandbox.py`)، تست ارتقا + مسیر Unicode در CI ویندوز، `test_rc_hardening.py` (13)، بازیابی `settings.json`، rollback plan و تصمیم‌های release owner؛ Release `desktop-v1.14.13` |
+| **1.15.0** | **Integrated GitHub & Monorepo Stable** | ⬜ **گام فعال** | — |
 
 > زیرساخت ریپو (1.14.9 تا 1.14.12) برای نگهداری و انتشار امن زودتر ساخته شد. این **ترتیب قابلیت‌های داخل اپ را تغییر نمی‌دهد**: گام فعال همچنان طبق جدول بالاست و موارد ⬜ این ردیف‌ها در نوبت خودشان بسته می‌شوند.
 
@@ -112,15 +112,15 @@
 - [x] **1.14.11:** `capabilities.yml` (`planned/in_progress/implemented/partial/not_applicable/blocked`)؛ فقط گزارش، بدون feature gating
 - [x] **1.14.11:** تغییر قرارداد → اعتبارسنجی + تست هر دو پلتفرم (job `contracts` در `ci.yml` آماده است)
 - [x] **1.14.12:** Environment محافظت‌شدهٔ `release` (فقط تگ‌های `mobile-v*`) برای Secretهای امضای Android؛ Secretهای سطح ریپو حذف شدند
-- [ ] **1.14.12:** Required reviewer روی Environment `release` پیش از انتشار پایدار (در 1.14.13 فعال شود)
+- [x] **1.14.12:** Required reviewer روی Environment `release` پیش از انتشار پایدار (در 1.14.13 فعال شود)
 
 ### v1.14.13 — Release Candidate & Native Windows Validation
 
-- [ ] E2E روی Repository آزمایشی جدا (نه ریپوی اصلی)
-- [ ] ویندوز واقعی: نصب، ارتقا از 1.14.x، مسیر Unicode/فاصله‌دار، Git Credential Manager، خطای شبکه، rate limit، commit/push، download
-- [ ] عدم افشای Token در log، URL، process args، error و crash report
-- [ ] هم‌زمانی، لغو، retry، stale state، idempotency
-- [ ] مستندات FA/EN، CHANGELOG، ARCHITECTURE، checklist، hashها و rollback plan
+- [x] E2E روی Repository آزمایشی جدا (نه ریپوی اصلی)
+- [x] ویندوز (runner واقعی): نصب، ارتقا از آخرین 1.14.x، مسیر Unicode/فاصله‌دار، Credential Manager، smoke؛ خطای شبکه/rate limit/commit/push/download با تست واحد و E2E. موارد دستی (GCM prompt، قطع شبکه در GUI، SmartScreen) در چک‌لیست **NOT RUN** ماندند
+- [x] عدم افشای Token در log، URL، process args، error و crash report
+- [x] هم‌زمانی، لغو، retry، stale state، idempotency
+- [x] مستندات FA/EN، CHANGELOG، ARCHITECTURE، checklist، hashها و rollback plan
 
 ### v1.15.0 — Definition of Done
 

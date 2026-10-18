@@ -223,3 +223,16 @@ No GitHub API authentication or API client was added in this release. The Git cr
 ### Current boundary and remaining migration work
 
 The existing UI still coordinates Branch creation, staging/commit/push and security review. Subsequent releases should progressively move those orchestration policies into application services only after tests protect each behavior. This release intentionally avoids modifying commit selection, direct-push policy, Git credential handling, remote synchronization semantics or existing GUI labels.
+
+## 18. GitHub chain 1.14.5 – 1.14.13 (boundaries)
+
+| Layer | Module | Rule |
+|---|---|---|
+| Git review/sync | `aiwb/git/sync.py` | pure decision table; no push to `main`/`master`; no force push / hard reset |
+| Actions | `aiwb/github/actions.py` | runs attributed only by full SHA + branch + workflow; `PollPolicy` backoff, 401 stops polling |
+| Dispatch/artifacts | `aiwb/github/artifacts.py` | 204 ≠ confirmed; signed download URL never logged and never given the token; size/time caps; SHA-256 vs GitHub digest; safe ZIP extraction into a new folder only |
+| Orchestrator | `aiwb/github/orchestrator.py` | one lock per repo/branch; records in `.workbench/sync_build_operations.json`; cancel never deletes a commit; `build_metadata()` emits contract `build-metadata.v1` |
+| UI | `build_center*.py`, `sync_build_window.py` | worker threads + Tk `after()` queue; UI never blocks |
+| Contracts | `packages/contracts/` | JSON Schema shared with Android; validated in CI (`tools/validate_contracts.py`) |
+
+Settings: `load_settings_with_recovery()` never discards a corrupt `settings.json`; it is renamed to `settings.json.corrupt-<ts>`. User data lives in `%LOCALAPPDATA%\AIWorkbench` and is never touched by the installer (upgrade test in CI). Rollback: `docs/release/ROLLBACK_PLAN.md`.

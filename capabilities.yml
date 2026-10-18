@@ -13,6 +13,7 @@ capabilities:
   - {id: build.sync_and_build, title: "One-click Sync & Build", roadmap: "1.14.8", desktop: implemented, mobile: not_applicable}
   - {id: release.browser, title: "Release list & provenance", roadmap: "mobile 0.1.0", desktop: partial, mobile: implemented, evidence: "ReleaseInfo.kt"}
   - {id: contracts.release_manifest, title: "Release manifest contract", roadmap: "1.14.11", desktop: implemented, mobile: implemented, evidence: "packages/contracts"}
-  - {id: release.signed_mobile, title: "Protected signing of Android releases", roadmap: "1.14.12", desktop: not_applicable, mobile: implemented}
+  - {id: release.signed_mobile, title: "Protected signing of Android releases (required reviewer)", roadmap: "1.14.12", desktop: not_applicable, mobile: implemented}
+  - {id: release.rc_validation, title: "RC validation: real E2E, upgrade test, rollback plan", roadmap: "1.14.13", desktop: implemented, mobile: partial, evidence: "tools/e2e_github_sandbox.py"}
   - {id: inbox.response, title: "Response Inbox", roadmap: "1.16.0", desktop: planned, mobile: planned}
   - {id: agents.v2, title: "Multi-agent project management", roadmap: "2.0.0", desktop: planned, mobile: planned}
