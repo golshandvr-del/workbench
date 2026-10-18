@@ -62,8 +62,11 @@ def main() -> None:
                     assert inside(w.next_btn, w.win), (wd, ht, s, "next action button out of window")
                     if wc.inspector_open:
                         assert inside(w.inspector, w.win), (wd, ht, s, "inspector out of window")
-                expect = "side" if wd >= 1100 else "stacked"
-                assert w.layout["inspector"] == expect, (wd, w.layout)
+                # The window manager may clamp the requested size to the screen (CI runners are small):
+                # the layout must follow the *actual* width, which is what users see.
+                real = w.win.winfo_width()
+                expect = "side" if real >= 1100 else "stacked"
+                assert w.layout["inspector"] == expect, (wd, real, w.layout)
             # inspector + sidebar collapse
             w.toggle_inspector()
             root.update()
