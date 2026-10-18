@@ -5,9 +5,9 @@ calls run on a worker thread and report through a queue polled on the Tk
 thread (Tk is not thread-safe). Polling follows :class:`PollPolicy`, so the
 window stays responsive and respects GitHub rate limits.
 
-1.14.6 scope: observe only. No dispatch, no artifact download, no push. The
-only write action is *Cancel Run*, which needs Actions write permission and an
-explicit confirmation.
+1.14.6: observe runs; *Cancel Run* needs Actions write and confirmation.
+1.14.7: *Run workflow…* (only when the file declares ``workflow_dispatch``) and
+*Artifacts…* (list, safe download with SHA-256, safe extraction). No push.
 """
 from __future__ import annotations
 
@@ -19,6 +19,8 @@ from tkinter import messagebox, ttk
 from typing import Any, Callable
 
 from . import actions as ga
+from . import artifacts as ar
+from .build_center_dialogs import ArtifactsDialog, DispatchDialog
 
 _OUTCOME_TEXT = {
     "success": "✔ success", "failure": "✖ failure", "cancelled": "⊘ cancelled", "skipped": "↷ skipped",
@@ -56,7 +58,14 @@ class BuildCenterWindow:
         redact: Callable[[object], str] = str,
         policy: ga.PollPolicy | None = None,
         open_url: Callable[[str], Any] = webbrowser.open,
+        dispatch_service: ar.GitHubDispatchService | None = None,
+        on_artifact_downloaded: Callable[[Any, Any], None] | None = None,
     ) -> None:
+        self.dispatch_svc = dispatch_service or ar.GitHubDispatchService(service)
+        self.on_artifact_downloaded = on_artifact_downloaded
+        self.dispatch_dialog: DispatchDialog | None = None
+        self.artifacts_dialog: ArtifactsDialog | None = None
+        self.last_dispatch: ar.DispatchResult | None = None
         self.owner, self.repo, self.branch = owner, repo, branch
         self.get_token = get_token
         self.svc = service
@@ -106,6 +115,10 @@ class BuildCenterWindow:
         self.btn_open.pack(side="right")
         self.btn_cancel = ttk.Button(bar, text="Cancel run…", command=self._cancel_run)
         self.btn_cancel.pack(side="right", padx=(0, 6))
+        self.btn_artifacts = ttk.Button(bar, text="Artifacts…", command=self.open_artifacts)
+        self.btn_artifacts.pack(side="right", padx=(0, 6))
+        self.btn_dispatch = ttk.Button(bar, text="Run workflow…", command=self.open_dispatch)
+        self.btn_dispatch.pack(side="right", padx=(0, 6))
 
         panes = ttk.PanedWindow(self.win, orient="vertical")
         panes.pack(fill="both", expand=True, padx=8, pady=8)
@@ -384,8 +397,37 @@ class BuildCenterWindow:
 
         self._run(f"Cancelling run {run.run_id}", lambda token: self.svc.cancel_run(token, self.owner, self.repo, run, confirmed=True), done)
 
+    def _selected_workflow(self) -> ga.WorkflowInfo | None:
+        wid = self._selected_workflow_id() if hasattr(self, "wf_tree") else None
+        return next((w for w in self.workflows if w.workflow_id == wid), None)
+
+    def open_dispatch(self) -> None:
+        wf = self._selected_workflow()
+        if wf is None or wf.manual_dispatch != "available" or not wf.is_active:
+            messagebox.showinfo("Run workflow", "Select an active workflow whose file declares workflow_dispatch.", parent=self.win)
+            return
+
+        def on_result(res: ar.DispatchResult) -> None:
+            self.last_dispatch = res
+            self.refresh_runs()
+
+        self.dispatch_dialog = DispatchDialog(
+            self.win, svc=self.dispatch_svc, owner=self.owner, repo=self.repo, workflow=wf, ref=self.branch,
+            get_token=self.get_token, known_run_ids=lambda: {r.run_id for r in self.runs}, on_result=on_result, redact=self.redact)
+
+    def open_artifacts(self) -> None:
+        run = self._selected_run()
+        if run is None:
+            return
+        self.artifacts_dialog = ArtifactsDialog(
+            self.win, svc=self.dispatch_svc, owner=self.owner, repo=self.repo, run=run, get_token=self.get_token,
+            redact=self.redact, on_downloaded=self.on_artifact_downloaded)
+
     def _update_buttons(self) -> None:
         run = self._selected_run() if hasattr(self, "run_tree") else None
+        wf = self._selected_workflow()
+        self.btn_dispatch.configure(state="normal" if (wf and wf.manual_dispatch == "available" and wf.is_active and not self.busy) else "disabled")
+        self.btn_artifacts.configure(state="normal" if run else "disabled")
         state = "disabled" if self.busy else "normal"
         self.btn_refresh.configure(state=state)
         self.btn_select.configure(state="normal" if (not self.busy and self.on_select_workflow) else "disabled")

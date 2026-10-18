@@ -1,3 +1,18 @@
+## [1.14.7] - 2026-10-18
+### Workflow Dispatch & Safe Artifact Download (roadmap v1.14.7)
+- New `aiwb/github/artifacts.py` (no Tk) and `aiwb/github/build_center_dialogs.py`; Build Center gets **Run workflow…** and **Artifacts…**.
+- **Run workflow…** is enabled only for active workflows whose file declares `workflow_dispatch`. The form is generated from the file's real `workflow_dispatch.inputs` (string / boolean / choice / number / environment, required, default, options) by a small dependency-free YAML reader; values are validated before sending. The ref (branch/tag) is explicit and validated.
+- Dispatch asks GitHub for run details. A run is reported as *the* dispatched run only if GitHub returned its ID, or if strict matching (same workflow, `workflow_dispatch` event, same ref, created after the request, not seen before) finds exactly one candidate. HTTP 204 without a run is reported as **Not confirmed**, never as success; several candidates are reported as ambiguous.
+- **Artifacts…** lists ID, name, size, expiry, GitHub digest and run/commit. Expired artifacts and artifacts of another run/commit cannot be downloaded as this run's output.
+- Download uses the official `/artifacts/{id}/zip` endpoint without following the redirect automatically; the short-lived URL is fetched **without** the token, only from GitHub/Azure blob hosts, and never appears in logs, errors or the UI. Streaming into a `.part` file with size and time caps, cancel button, size check against GitHub's value and ZIP validation; partial files are removed on any failure. HTTP 410 → "expired".
+- SHA-256 is computed while downloading. The UI distinguishes **"matches the digest GitHub reported"** from **"computed; no reference (not verified)"**; a mismatch deletes the file.
+- **Extract safely…** validates every entry first and extracts into a new folder via a staging directory: path traversal, absolute/drive paths, backslashes, duplicate and case-colliding names, file/folder collisions, Windows reserved/invalid names, symlinks and special files, encrypted entries, entry count, total size, suspicious compression ratio and entries that expand beyond their declared size are all rejected.
+- Release tooling: `tools/bump_desktop_release.py` and `tools/mark_roadmap_step.py`.
+
+### Validation
+- 23 new unit tests (`tests/test_github_artifacts.py`), 282 in total; new GUI smoke `gui_dispatch_artifacts_smoke.py` (17 GUI smokes).
+- Verified against the live GitHub API on this repository: a real `workflow_dispatch` returned a confirmed run ID; a real CI artifact downloaded with SHA-256 **matching** GitHub's digest and extracted safely.
+
 ## [1.14.6] - 2026-10-17
 ### Build Center: Workflow & Run Monitoring (roadmap v1.14.6)
 - New **Build Center…** window in the GitHub panel (`aiwb/github/actions.py` service + `aiwb/github/build_center.py` window; no Tk in the service).

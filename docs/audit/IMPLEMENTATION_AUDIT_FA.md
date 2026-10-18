@@ -29,8 +29,8 @@
 | 1.14.3 | مرورگر Repository | ✅ | `aiwb/github/api_client.py`, `test_github_repository_browser.py` |
 | 1.14.4 | Binding v2 و Scope در Monorepo | ✅ | `repository_binding.py`, ADR-004 |
 | 1.14.5 | Safe Git Review & Sync Plan | ✅ | `aiwb/git/sync.py`, `aiwb/git/review_dialog.py`, `test_git_sync.py` (17 تست روی Repo واقعی) |
-| **1.14.6** | **Build Center: Workflow & Run Monitoring** | **✅** | `aiwb/github/actions.py`, `build_center.py`, `test_github_actions.py` (17 تست)، GUI smoke |
-| 1.14.7 | Workflow Dispatch & Safe Artifact Download | ❌ | — (فقط ZIP خروجی محلی موجود است) |
+| 1.14.6 | Build Center: Workflow & Run Monitoring | ✅ | `aiwb/github/actions.py`, `build_center.py`, `test_github_actions.py` (17 تست)، GUI smoke |
+| 1.14.7 | Workflow Dispatch & Safe Artifact Download | ✅ | `aiwb/github/artifacts.py`, `build_center_dialogs.py`, `tests/test_github_artifacts.py` (23), `gui_dispatch_artifacts_smoke.py`; dispatch و دانلود واقعی روی همین ریپو |
 | 1.14.8 | One-click Sync & Build Orchestrator | ❌ | — |
 | 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 | ریپو، CI لینوکس/ویندوز، Actionsهای pin‌شده، permissions حداقلی انجام شد؛ ADR سیاست branch/tag مانده |
 | 1.14.10 | Staged Monorepo Migration | 🟡 | `apps/desktop/{src,tests,installer}` با نصاب بایت‌به‌بایت یکسان؛ `packages/contracts` مانده |

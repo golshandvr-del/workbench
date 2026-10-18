@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "1.14.6",
+  "version": "1.14.7",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -94,8 +94,12 @@
       "source": "apps/desktop/tests/test_github_actions.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v1.14.6.md",
-      "source": "docs/release/v1.14.6/WINDOWS_RELEASE_CHECKLIST_v1.14.6.md"
+      "path": "test_github_artifacts.py",
+      "source": "apps/desktop/tests/test_github_artifacts.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v1.14.7.md",
+      "source": "docs/release/v1.14.7/WINDOWS_RELEASE_CHECKLIST_v1.14.7.md"
     },
     {
       "path": "install.ps1",
@@ -180,6 +184,14 @@
     {
       "path": "aiwb/github/repository_binding.py",
       "source": "apps/desktop/src/aiwb/github/repository_binding.py"
+    },
+    {
+      "path": "aiwb/github/artifacts.py",
+      "source": "apps/desktop/src/aiwb/github/artifacts.py"
+    },
+    {
+      "path": "aiwb/github/build_center_dialogs.py",
+      "source": "apps/desktop/src/aiwb/github/build_center_dialogs.py"
     }
   ],
   "zip_timestamp": [
