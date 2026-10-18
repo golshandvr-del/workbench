@@ -47,6 +47,8 @@ from aiwb import inbox as inbox_service
 from aiwb.inbox.inbox_window import InboxWindow
 from aiwb.inbox import repair as inbox_repair
 from aiwb import diagnostics as diagnostics_service
+from aiwb import context_request as context_request_service
+from aiwb.context_request_window import ContextRequestWindow
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -3227,6 +3229,8 @@ def build_capability_manifest(root: Path | None = None, output_format: str = OUT
         "- Candidate comparison: validated text/JSON model responses may be saved locally and selected file-by-file into a new workbench-v3 preview. Candidate command actions are not merged implicitly. GPT ZIP binary contents are not stored as response candidates.",
         "- Task playbooks: deterministic workflows cover feature work, bug fixes, refactors, security, performance, docs/release, and engineering simulation.",
         "- Semantic diff and static dependency impact analysis are best-effort advisory tools; Python uses AST for supported source analysis and other languages rely on bounded heuristics. They do not prove build/runtime correctness.",
+        context_request_service.CAPABILITY_LINE,
+        "- Response Inbox: every answer is stored raw before parsing; repeat the AIWB_ATTEMPT_ID line first so Workbench can match it to this task. A partially broken answer is salvaged block by block; only complete, valid blocks are kept.",
         "- Manual diagnostics: users can enter undetected runtime/build/test/simulation errors with affected file and reproduction steps; the report is stored against the selected history entry and included in a repair prompt.",
         f"- Hard importer limits: {MAX_RESPONSE_FILES} proposed files; {MAX_RESPONSE_ACTIONS} proposed actions; {MAX_RESPONSE_BYTES:,} raw response bytes; {MAX_FILE_BYTES:,} bytes per file; {MAX_TOTAL_CONTENT_BYTES:,} bytes total file content; each command timeout at most {MAX_COMMAND_SECONDS} seconds. The generated response contract requests no more than 12 actions for manageable review.",
         "- File changes: JSON v1/v2 and AIWB blocks are write-only UTF-8 text transports; JSON v3 supports typed write/delete/rename/move for regular files. The separate ZIP transport may carry permitted binary artifacts as exact bytes. All paths must be relative to project root; absolute paths, traversal, reserved/sensitive paths and symlink escapes are rejected. Deliverables are not limited to apps or websites: text-native schematics, SPICE netlists, CAD/configuration files and technical documentation are valid when their native formats are text-based.",
@@ -5328,6 +5332,7 @@ class WorkbenchApp:
         ttk.Button(controls, text="Import context plan / select requested files", command=self.import_context_plan).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Context request…", command=self.open_context_request).pack(side="left", padx=(6, 0))
         candidate_controls = ttk.Frame(tab)
         candidate_controls.pack(fill="x", pady=(0, 5))
         ttk.Button(candidate_controls, text="Save response candidate…", command=self.save_response_candidate).pack(side="left")
@@ -8703,6 +8708,13 @@ class WorkbenchApp:
             self.response_input.edit_modified(False)
         except tk.TclError:
             pass
+        if not archive_selected and context_request_service.find_request(raw) is not None:
+            try:
+                make_inbox_pipeline(root).capture_text(raw, source="context-request")
+            except Exception as inbox_exc:
+                log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
+            self.open_context_request(raw)
+            return
         inbox_response_id = ""
         if not archive_selected and raw.strip():
             try:
@@ -8749,6 +8761,9 @@ class WorkbenchApp:
                         inbox_note += f" {len(outcome.salvage_paths)} complete file(s) can be recovered: open Response Inbox."
                 except Exception as inbox_exc:
                     log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
+            hints = context_request_service.free_text_hints(raw) if not archive_selected else []
+            if hints:
+                inbox_note += " The answer seems to ask for: " + ", ".join(hints[:5]) + " (suggestion only; use Context request… to prepare them)."
             self.set_status("Response rejected; diagnostics are available and no project files were applied." + inbox_note)
             self.refresh_workflow_status()
             self.show_import_diagnostics(error_override=str(exc))
@@ -8783,6 +8798,58 @@ class WorkbenchApp:
             messagebox.showwarning("Response history not saved", f"The response parsed successfully, but its exact snapshot/history could not be saved. Workbench will block applying this response until it can record it reliably. Resolve the storage problem and analyze the response again.\n\n{exc}")
         self.refresh_workflow_status()
         self._show_diff_window(payload, changes, format_name)
+
+    def open_context_request(self, raw: str | None = None) -> None:
+        root = self.require_workspace()
+        if root is None:
+            return
+        text = raw if raw is not None else self.response_input.get("1.0", "end-1c")
+        try:
+            req = context_request_service.parse_request(text)
+        except context_request_service.ContextRequestError as exc:
+            hints = context_request_service.free_text_hints(text)
+            extra = ("\n\nThe text seems to ask for: " + ", ".join(hints) +
+                     ". Use 'Import context plan' or select the files manually.") if hints else ""
+            messagebox.showwarning("No structured context request", str(exc) + extra)
+            return
+
+        def path_problem(p: str) -> str:
+            try:
+                validate_relative_path(root, p)
+                return ""
+            except WorkbenchError as exc:
+                return redact(str(exc))
+
+        def attempt_line() -> str:
+            try:
+                state = load_task_state(root)
+                registry = inbox_service.AttemptRegistry(root)
+                att = registry.new(
+                    task_id=str(state.get("task_id", "")), task_revision="",
+                    base_revision=project_base_revision(iter_project_files(root)), kind="context",
+                    parent_attempt_id=req.attempt_id if registry.get(req.attempt_id) else "")
+                return inbox_service.prompt_identity_block(att)
+            except Exception as exc:
+                log_exception(type(exc), exc, exc.__traceback__)
+                return ""
+
+        def on_prepared(result: str, items: list) -> None:
+            try:
+                append_execution_event(root, {
+                    "type": "context_pack_prepared", "delivery": result.split(":", 1)[0],
+                    "request_attempt_id": req.attempt_id,
+                    "items": [{"path": i.path, "mode": i.mode, "status": i.status, "lines": i.lines, "sha256": i.sha256}
+                              for i in items],
+                    "message": "Context prepared for the user to paste/attach; Workbench did not send it.",
+                })
+            except Exception as exc:
+                log_exception(type(exc), exc, exc.__traceback__)
+            self.set_status("Context prepared — paste/attach it in the same chat (Workbench did not send it).")
+
+        self.context_request_window = ContextRequestWindow(
+            self.root, req, root, path_problem=path_problem, is_sensitive=lambda p: is_sensitive_path(p),
+            attempt_line=attempt_line, clipboard=self._copy_text_to_clipboard, on_prepared=on_prepared)
+        self.set_status("The model asked for more context; review the request window.")
 
     def open_response_inbox(self) -> None:
         root = self.require_workspace()

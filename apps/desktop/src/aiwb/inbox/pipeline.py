@@ -94,6 +94,18 @@ class ImportPipeline:
         if not out.suggestions:
             out.issues.append(ImportIssue("unknown_format", "classify"))
 
+        if out.suggestions and out.suggestions[0].parser == "context_request":
+            out.format_name = "AIWB_CONTEXT_REQUEST"
+            out.stages["parse"] = "ok"
+            out.issues.append(ImportIssue("context_request", "parse"))
+            self._reconcile(text, out)
+            out.status = "context_request"
+            self.store.add_parse_result(response_id, {
+                "pipeline_version": PIPELINE_VERSION, "status": out.status, "stages": out.stages,
+                "format": out.format_name, "suggestions": [s.parser for s in out.suggestions],
+                "issues": [i.to_dict() for i in out.issues], "file_paths": [], "salvaged": []})
+            out.response = self.store.get(response_id) or out.response
+            return out
         try:
             out.payload, out.changes, out.format_name = self.validate(text)
             out.stages["parse"] = out.stages["validate"] = "ok"
