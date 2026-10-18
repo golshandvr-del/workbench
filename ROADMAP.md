@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-17 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.6` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
-**گام فعال بعدی:** [`v1.14.7` — Workflow Dispatch & Safe Artifact Download](#v1147--workflow-dispatch--safe-artifact-download)
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.7` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
+**گام فعال بعدی:** [`v1.14.8` — One-click Sync & Build Orchestrator](#v1148--one-click-sync--build-orchestrator)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -59,8 +59,8 @@
 | 1.14.4 | Project Binding & Monorepo-aware Paths | ✅ | `repository_binding.py`, ADR-004 |
 | 1.14.5 | Safe Git Review & Sync Plan | ✅ | `aiwb/git/sync.py`, `review_dialog.py`, ۱۷ تست روی Repo واقعی؛ Release `desktop-v1.14.5` |
 | 1.14.6 | Build Center: Workflow & Run Monitoring | ✅ | `aiwb/github/actions.py`, `build_center.py`, `tests/test_github_actions.py`, `tests/gui/gui_build_center_smoke.py`؛ Release `desktop-v1.14.6` |
-| **1.14.7** | **Workflow Dispatch & Safe Artifact Download** | ⬜ **گام فعال** | — |
-| 1.14.8 | One-click Sync & Build Orchestrator | ⬜ | — |
+| 1.14.7 | Workflow Dispatch & Safe Artifact Download | ✅ | `aiwb/github/artifacts.py`, `build_center_dialogs.py`, `tests/test_github_artifacts.py` (23), `gui_dispatch_artifacts_smoke.py`; dispatch و دانلود واقعی روی همین ریپو؛ Release `desktop-v1.14.7` |
+| **1.14.8** | **One-click Sync & Build Orchestrator** | ⬜ **گام فعال** | — |
 | 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 زیرساخت زودتر ساخته شد | ✅ ریپو، CI روی Linux+Windows، Actionsهای pin‌شده به SHA، permissions حداقلی، `CI summary`، Artifact نصاب CI. ⬜ ADR سیاست branch/tag |
 | 1.14.10 | Staged Monorepo Migration | 🟡 | ✅ `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت یکسان (PR #1). ⬜ `packages/contracts/` |
 | 1.14.11 | Android Proof-of-Build & Capability Contracts | 🟡 | ✅ `apps/mobile/android`، APK از CI. ⬜ `packages/contracts` (JSON Schema + fixtures)، `capabilities.yml`، job اعتبارسنجی قرارداد |
@@ -86,13 +86,13 @@
 
 ### v1.14.7 — Workflow Dispatch & Safe Artifact Download
 
-- [ ] فرم `workflow_dispatch` از inputs واقعی Workflow با validation؛ ref مشخص
-- [ ] اتصال dispatch به Run ID فقط با تطبیق سخت‌گیرانه؛ 204 بدون Run قطعی ≠ موفقیت
-- [ ] فهرست Artifact: ID، نام، اندازه، `expires_at`، digest، Run/Commit
-- [ ] دانلود از endpoint رسمی؛ URL موقت در Log/clipboard نرود
-- [ ] دانلود به فایل موقت با سقف حجم/زمان؛ استخراج امن (traversal، case-collision، فایل ویژه، zip-bomb)
-- [ ] SHA-256؛ تفکیک «Hash محاسبه شد» از «با مرجع تطبیق داشت»
-- [ ] پاک‌سازی فایل ناقص؛ تفسیر درست 410 (منقضی)
+- [x] فرم `workflow_dispatch` از inputs واقعی Workflow با validation؛ ref مشخص
+- [x] اتصال dispatch به Run ID فقط با تطبیق سخت‌گیرانه؛ 204 بدون Run قطعی ≠ موفقیت
+- [x] فهرست Artifact: ID، نام، اندازه، `expires_at`، digest، Run/Commit
+- [x] دانلود از endpoint رسمی؛ URL موقت در Log/clipboard نرود
+- [x] دانلود به فایل موقت با سقف حجم/زمان؛ استخراج امن (traversal، case-collision، فایل ویژه، zip-bomb)
+- [x] SHA-256؛ تفکیک «Hash محاسبه شد» از «با مرجع تطبیق داشت»
+- [x] پاک‌سازی فایل ناقص؛ تفسیر درست 410 (منقضی)
 
 ### v1.14.8 — One-click Sync & Build Orchestrator
 
