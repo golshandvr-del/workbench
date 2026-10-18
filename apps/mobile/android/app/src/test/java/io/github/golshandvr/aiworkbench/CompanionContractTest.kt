@@ -4,7 +4,6 @@ import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -66,7 +65,7 @@ class CompanionContractTest {
         assertNull(Pairing.decode("{\"host\":\"1.2.3.4\",\"port\":1,\"device_id\":\"d\",\"key\":\"$s\"}"))
     }
 
-    private fun assertNull(v: Any?, msg: String) = org.junit.Assert.assertNull(msg, v)
+    private fun assertNull(v: Any?, msg: String = "") = org.junit.Assert.assertNull(msg, v)
 
     /** Simulated desktop implementing the same rules as aiwb/companion/service.py. */
     private class FakeDesktop(val code: PairingCode) {
