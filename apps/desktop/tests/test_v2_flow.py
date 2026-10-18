@@ -160,6 +160,23 @@ class LedgerTests(Base):
         self.assertEqual(self.p.decisions.get(ok["decision_id"])["superseded_by"], new["decision_id"])
 
 
+class BuildEvidenceTests(Base):
+    def test_real_actions_run_becomes_verified_evidence_once(self):
+        from types import SimpleNamespace as NS
+        from aiwb.v2.ledger import record_build_evidence
+        a = self.ready_task("A", acceptance_policy="evidence_required", required_approvals=["validation"])
+        self.p.attempts.create(a["task_id"])
+        self.p.tasks.transition(a["task_id"], "validation_pending")
+        git = NS(commit_sha="f" * 40)
+        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=None, outcome="success")), [])
+        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=5, outcome="in_progress")), [])
+        added = record_build_evidence(self.p, git, NS(run_id=7, outcome="success"))
+        self.assertEqual([(e["source"]["kind"], e["verified"], e["result"]) for e in added],
+                         [("github_actions", True, "passed")])
+        self.assertEqual(self.p.tasks.get(a["task_id"])["status"], "done")
+        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=7, outcome="success")), [], "idempotent")
+
+
 class FakeGitHub:
     def __init__(self):
         self.refs, self.blobs, self.trees, self.commits = {"main": "c0"}, {}, {"t0": {}}, {"c0": {"tree": "t0"}}

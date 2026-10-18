@@ -1,3 +1,14 @@
+## [2.0.0] - 2026-10-18
+
+### Phase-2 Release Gate (Future Roadmap §27)
+- Real GitHub Actions results from **Sync & Build** are recorded automatically as verified
+  `build_run` evidence (`github_actions`, run id + commit SHA) for in-progress / review / validation
+  tasks; idempotent per run; validation-pending tasks are re-evaluated (`aiwb/v2/ledger.record_build_evidence`).
+- ADR-006 (V2 state, contracts, publishing) and gate evidence `docs/release/v2.0.0/RELEASE_GATE_v2.0.0.md`.
+
+### Validation
+- `test_v2_flow.py::BuildEvidenceTests`; all V2 suites, contracts and 22 GUI smokes.
+
 ## [1.20.1] - 2026-10-18
 
 ### Multi-agent project management V2 (roadmap 1.17.0 → 1.20.1, slices 2A–2G)

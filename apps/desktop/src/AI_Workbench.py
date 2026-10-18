@@ -66,7 +66,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "1.20.1"
+APP_VERSION = "2.0.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -10754,8 +10754,25 @@ class WorkbenchApp:
         summary = (str(state.get("task_text", "") or "update project").strip().splitlines() or ["update project"])[0][:72]
         self._sync_build_window = SyncBuildWindow(
             self.root, orchestrator, default_message="workbench: " + summary, redact=redact_github_text,
-            on_finished=lambda _o: self.refresh_git(silent=True),
+            on_finished=self._sync_build_finished,
         )
+
+    def _sync_build_finished(self, orchestrator: Any) -> None:
+        """Refresh Git and turn the real Actions run into V2 build evidence (never from model text)."""
+        self.refresh_git(silent=True)
+        root = self.workspace
+        if root is None or not (Path(root) / ".workbench" / "v2" / "state.json").exists():
+            return
+        try:
+            from aiwb.v2 import V2Project
+            from aiwb.v2.ledger import record_build_evidence
+            project = V2Project(Path(root))
+            project.open()
+            added = record_build_evidence(project, orchestrator.git, orchestrator.build)
+            if added:
+                self.set_status(f"Build result recorded as verified evidence for {len(added)} task(s).")
+        except Exception as exc:  # noqa: BLE001 - evidence recording never breaks Sync & Build
+            log_exception(type(exc), exc, exc.__traceback__)
 
     def _git_action_finished(self, result: Any, label: str) -> None:
         self.refresh_git(silent=True)

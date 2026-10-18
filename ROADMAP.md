@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.20.1` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** `v2.0.0` — Release Gate فاز دوم
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.0.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** `v2.1.0` — Simple/Advanced
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -158,7 +158,7 @@
 | 1.19.0 | 2E | Project State Snapshot و Auto-Publish به GitHub (صف پایدار، no-op، retry، conflict، fallback داخل Prompt) | ✅ `aiwb/v2/{snapshot,publisher}.py`، E2E واقعی؛ Release `desktop-v1.20.1` |
 | 1.20.0 | 2F | Project Manager: Manager Update Prompt و Proposal Review با تشخیص stale | ✅ `aiwb/v2/proposals.py`؛ Release `desktop-v1.20.1` |
 | 1.20.1 | 2G | Next Action و سناریوی مرجع انتها‌به‌انتها (Future Roadmap بخش ۱۸) | ✅ `next_action.py`، `controller.py`، `projects_window.py`، `test_v2_reference_scenario.py`؛ Release `desktop-v1.20.1` |
-| **2.0.0** | — | **Release Gate فاز دوم** (Future Roadmap بخش ۲۷) | ⬜ **گام فعال** |
+| **2.0.0** | — | **Release Gate فاز دوم** (Future Roadmap بخش ۲۷) | ✅ `RELEASE_GATE_v2.0.0.md`، ADR-006، Evidence واقعی از Sync & Build؛ Release `desktop-v2.0.0` |
 
 **دروازهٔ 2.0.0 (خلاصه):** سه قرارداد Agent/Task، Handoff و Project State/Evidence مستند و تست شده · حداقل دو Agent با دو چت/مدل متفاوت روی یک پروژهٔ واقعی · انتقال کار بدون تاریخچهٔ چت قبلی · Evidence جدا از گزارش مدل · Auto-Publish کامل · سناریوی بخش ۱۸ بدون دست‌کاری دستی داده.
 
@@ -170,7 +170,7 @@
 
 | نسخه | محتوا | وضعیت |
 |---|---|---|
-| 2.1.0 | حالت Simple و Advanced روی یک منطق و داده؛ Next Action ثابت در هر دو | ⬜ |
+| 2.1.0 | حالت Simple و Advanced روی یک منطق و داده؛ Next Action ثابت در هر دو | ⬜ **گام فعال** |
 | 2.1.x | خطاهای اولویت‌دار، وضعیت‌ها نه فقط با رنگ، واژگان FA/EN یکپارچه، پالایش بصری | ⬜ |
 
 اصول UI از همین حالا رعایت می‌شوند؛ فقط بازطراحی بصری گسترده به این بخش موکول است.

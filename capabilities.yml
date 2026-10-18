@@ -20,7 +20,7 @@ capabilities:
   - {id: inbox.repair, title: "Smart repair prompt from Inbox evidence", roadmap: "1.16.2", desktop: implemented, mobile: not_applicable, evidence: "aiwb/inbox/repair.py"}
   - {id: diagnostics.bundle, title: "Redacted local diagnostics bundle", roadmap: "1.16.2", desktop: implemented, mobile: not_applicable, evidence: "aiwb/diagnostics.py"}
   - {id: context.request, title: "AIWB_CONTEXT_REQUEST context packs", roadmap: "1.16.3", desktop: implemented, mobile: not_applicable, evidence: "aiwb/context_request.py"}
-  - {id: agents.v2, title: "Multi-agent project management", roadmap: "2.0.0", desktop: planned, mobile: planned}
+  - {id: agents.v2, title: "Multi-agent project management", roadmap: "2.0.0", desktop: implemented, mobile: planned}
   - {id: v2.model, title: "V2 data model, store and migration", roadmap: "1.17.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/models.py, store.py"}
   - {id: v2.agents_tasks, title: "Agent registry and task graph", roadmap: "1.17.1", desktop: implemented, mobile: planned, evidence: "aiwb/v2/agents.py, tasks.py"}
   - {id: v2.handoff, title: "Handoff protocol", roadmap: "1.18.0", desktop: implemented, mobile: not_applicable, evidence: "aiwb/v2/handoff.py"}
