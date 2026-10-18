@@ -19,7 +19,7 @@ from typing import Any
 from .store import SCHEMA_VERSION, atomic_write
 
 ATTEMPT_ID_RE = re.compile(r"\batt-\d{8}-\d{6}-[0-9a-f]{8}\b")
-DECLARED_RE = re.compile(r"(?im)^\W{0,6}AIWB_ATTEMPT_ID\W{0,3}[:=]\s*[`\"']?(att-\d{8}-\d{6}-[0-9a-f]{8})")
+DECLARED_RE = re.compile(r"(?im)^[\W_]{0,6}AIWB_ATTEMPT_ID[*_`\s]{0,4}[:=][*_`\s]{0,4}[\"']?(att-\d{8}-\d{6}-[0-9a-f]{8})")
 MAX_ATTEMPTS = 500
 STATUSES = ("sent", "answered", "applied", "abandoned")
 
