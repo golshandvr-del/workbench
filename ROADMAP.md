@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.15.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** `v1.16.0` — Response Inbox
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.16.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** `v1.16.2` — Repair Prompt هوشمند و Diagnostics Bundle
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -136,9 +136,9 @@
 
 | نسخه | محتوا | وضعیت |
 |---|---|---|
-| **1.16.0** | **Response Inbox:** ذخیرهٔ پاسخ خام پیش از Parse؛ `response_id`/`attempt_id` پایدار؛ Raw و Parse Result جدا؛ `schema_version`؛ Reparse بدون دریافت مجدد | ⬜ **گام فعال** |
-| 1.16.1 | **خطای قابل‌فهم و بازیابی:** کد خطای استاندارد، مرحلهٔ شکست، آنچه سالم مانده، قدم بعدی؛ نجات پاسخ ناقص؛ تشخیص پاسخ قدیمی/متعلق به Task دیگر | ⬜ |
-| 1.16.2 | **Repair Prompt هوشمند** بر اساس خطا و Attempt واقعی؛ Diagnostics Bundle redacted (باقی‌ماندهٔ v1.11 بخش ۷.۴) | ⬜ |
+| 1.16.0 | **Response Inbox:** ذخیرهٔ پاسخ خام پیش از Parse؛ `response_id`/`attempt_id` پایدار؛ Raw و Parse Result جدا؛ `schema_version`؛ Reparse بدون دریافت مجدد | ✅ `aiwb/inbox/{store,attempts,classify,pipeline}.py`، `inbox_window.py`، `test_inbox.py`، `gui_inbox_smoke.py`؛ Release `desktop-v1.16.0` |
+| 1.16.1 | **خطای قابل‌فهم و بازیابی:** کد خطای استاندارد، مرحلهٔ شکست، آنچه سالم مانده، قدم بعدی؛ نجات پاسخ ناقص؛ تشخیص پاسخ قدیمی/متعلق به Task دیگر | ✅ `aiwb/inbox/{errors,salvage}.py` (۱۵ کد پایدار، نجات بلوک‌های کامل، `attempt_mismatch`/`stale_base`)؛ همراه `desktop-v1.16.0` |
+| **1.16.2** | **Repair Prompt هوشمند** بر اساس خطا و Attempt واقعی؛ Diagnostics Bundle redacted (باقی‌ماندهٔ v1.11 بخش ۷.۴) | ⬜ **گام فعال** |
 | 1.16.3 | **Context Request:** Capability Manifest، قرارداد `AIWB_CONTEXT_REQUEST`، استخراج خطوط/Symbol، inline در برابر ZIP، رد مسیر خطرناک/ناموجود | ⬜ |
 
 **دروازهٔ فاز اول:** هیچ پاسخ خامی با شکست Parser از دست نمی‌رود · خطاهای مهم Import کد تشخیصی و مسیر بازیابی دارند · پاسخ ناقص قابل نجات است · Attempt/Response ID پایدار ثبت می‌شوند · Import به‌تنهایی فایل نمی‌نویسد · تست‌های رگرسیون برای JSON ناقص، ZIP مخرب، مسیر نامعتبر، Markdown مبهم، پاسخ تکراری و لغو.

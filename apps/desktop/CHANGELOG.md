@@ -1,3 +1,18 @@
+## [1.16.0] - 2026-10-18
+
+### Response Inbox & understandable import errors (roadmap v1.16.0 + v1.16.1)
+- New package `aiwb/inbox` (UI-independent) and a **Response Inbox…** window on the Response tab.
+- **Raw first:** every analysed text response is stored byte-for-byte in `.workbench/inbox/responses/<response_id>.raw` (SHA-256 checked on read, identical responses deduplicated) *before* any parser runs. Parse results are appended separately (`schema_version`, last 20 kept); a response can be **reparsed** later without asking the model again.
+- **Attempts:** every built prompt gets a stable `attempt_id` (`AIWB_ATTEMPT_ID: att-…` line at the top, linked to task ID, task revision and a fingerprint of the project tree).
+- **Staged pipeline:** Capture → Classify (ranked parser suggestions) → Parse → Validate (the app's existing strict validators) → Reconcile. Each stage reports ok/warn/failed.
+- **Stable error codes** with plain-language explanation (what happened, stage, what is safe, what to do next): `empty_response`, `too_large`, `duplicate_response`, `unknown_format`, `json_invalid`, `truncated`, `duplicate_path`, `context_plan`, `protocol_invalid`, `unsafe_path`, `attempt_unknown`, `attempt_mismatch`, `stale_base`, `partial_parse`, `internal_error`.
+- **Partial salvage:** when AIWB blocks fail as a whole, each block that is complete on its own is re-parsed with the same strict parser and path validator; cut-off, duplicate and unsafe blocks are reported, never guessed. A focused **repair prompt** asks only for the missing files.
+- **Wrong/old answers:** an answer whose attempt belongs to another task is blocked (`attempt_mismatch`); a changed project tree since the prompt is a warning (`stale_base`).
+- Import still never writes project files; the existing preview → diff → approve → apply flow is unchanged.
+
+### Validation
+- 24 unit tests (`tests/test_inbox.py`) using the real Workbench validators; GUI smoke `gui_inbox_smoke.py` through the real app.
+
 ## [1.15.0] - 2026-10-18
 
 ### Integrated GitHub & Monorepo Stable
