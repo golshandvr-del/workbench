@@ -79,7 +79,7 @@ jobs:
           AIWB_COMMIT_SHA: ${{ github.sha }}
           AIWB_BUILD_REF: ${{ steps.v.outputs.tag }}
           AIWB_CHANNEL: ${{ github.event.inputs.prerelease == 'true' && 'beta' || 'stable' }}
-        run: ./gradlew --no-daemon testReleaseUnitTest assembleRelease bundleRelease
+        run: ./gradlew --no-daemon testDebugUnitTest assembleRelease bundleRelease  # AGP 9 creates unit-test tasks for the tested (debug) build type only
       - name: Verify signature and collect assets
         shell: bash
         env:
