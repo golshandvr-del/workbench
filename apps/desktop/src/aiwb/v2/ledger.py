@@ -190,3 +190,28 @@ class EvidenceService:
                                "reported": [e["evidence_id"] for e in reported]}
             return {"status": target, "reasons": reasons, "verified": t["evaluation"]["verified"],
                     "reported": t["evaluation"]["reported"]}
+
+
+def record_build_evidence(project: Any, git: Any, build: Any) -> list[dict[str, Any]]:
+    """Turn a finished Sync & Build operation (real GitHub Actions run) into verified build
+    evidence for every task that is waiting for validation. Model text is never involved;
+    returns the new evidence records."""
+    outcome = str(getattr(build, "outcome", "") or "")
+    run_id = getattr(build, "run_id", None)
+    sha = str(getattr(git, "commit_sha", "") or "")
+    if not run_id or outcome not in ("success", "failure", "cancelled", "timed_out"):
+        return []
+    result = "passed" if outcome == "success" else "failed"
+    out = []
+    for t in project.tasks.list():
+        if t["status"] not in ("validation_pending", "in_review", "in_progress"):
+            continue
+        if any(e["type"] == "build_run" and e["source"].get("run_id") == str(run_id)
+               for e in project.evidence.list(t["task_id"])):
+            continue
+        out.append(project.evidence.record(type="build_run", subject_type="task", subject_id=t["task_id"],
+                                           source_kind="github_actions", result=result, run_id=str(run_id),
+                                           commit_sha=sha, summary=f"GitHub Actions run {run_id}: {outcome}"))
+        if t["status"] == "validation_pending":
+            project.evidence.evaluate_task(t["task_id"], current_commit=sha)
+    return out
