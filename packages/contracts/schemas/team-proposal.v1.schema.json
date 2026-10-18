@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/golshandvr-del/workbench/packages/contracts/schemas/team-proposal.v1.schema.json",
+  "title": "AI Workbench Team Proposal (AIWB_MANAGER_PROPOSAL with proposal_type team_plan, roadmap 2.4.0)",
+  "description": "Backward compatible: a manager proposal without 'team' and without team operations is still valid.",
+  "type": "object",
+  "required": ["schema_version", "base_state_revision", "operations"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "proposal_type": {"type": "string", "maxLength": 60},
+    "base_state_revision": {"type": "integer", "minimum": 0},
+    "summary": {"type": "string"},
+    "assumptions": {"type": "array", "items": {"type": "string"}},
+    "team": {
+      "type": "object",
+      "properties": {
+        "pm_counted": {"type": "boolean"},
+        "total_agents": {"type": "integer", "minimum": 1},
+        "additional_workers": {"type": "integer", "minimum": 0},
+        "size_rationale": {"type": "string"},
+        "simpler_alternative": {"type": "string"},
+        "confidence": {"enum": ["low", "medium", "high"]}
+      }
+    },
+    "operations": {
+      "type": "array", "minItems": 1, "maxItems": 60,
+      "items": {
+        "type": "object", "required": ["operation"],
+        "properties": {
+          "operation": {"enum": ["create_task", "update_task", "add_dependency", "remove_dependency", "assign_agent",
+                                 "propose_decision", "reorder_priority", "split_task", "close_or_cancel_task",
+                                 "request_more_evidence", "change_scope", "report_risk", "create_agent", "assign_account"]},
+          "agent_id": {"type": "string", "pattern": "^agent-[a-z0-9-]{2,60}$"},
+          "account_profile_id": {"type": "string", "pattern": "^ACC-[0-9]{4,}$"},
+          "role": {"enum": ["project_manager", "architect", "implementer", "reviewer", "researcher"]},
+          "owner_agent_id": {"type": "string"},
+          "reviewer_agent_id": {"type": "string"},
+          "parallel_group": {"type": "string", "maxLength": 20},
+          "temporary_ref": {"type": "string"},
+          "depends_on_refs": {"type": "array", "items": {"type": "string"}},
+          "acceptance_criteria": {"type": "array", "items": {"type": "string"}},
+          "scope": {"type": "object", "properties": {"include": {"type": "array", "items": {"type": "string"}},
+                                                     "exclude": {"type": "array", "items": {"type": "string"}}}}
+        },
+        "allOf": [
+          {"if": {"properties": {"operation": {"const": "create_agent"}}}, "then": {"required": ["agent_id", "role"]}},
+          {"if": {"properties": {"operation": {"const": "assign_account"}}}, "then": {"required": ["agent_id", "account_profile_id"]}}
+        ]
+      }
+    },
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "questions_for_user": {"type": "array", "items": {"type": "string"}}
+  }
+}
