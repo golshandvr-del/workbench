@@ -221,6 +221,8 @@ class WorkspaceWindow:
     def inspector_action(self, key: str, confirm: bool | None = None) -> Any:
         if key == "bind_chat":
             return self.dialog_bind_chat(self.wc.selection[1])
+        if key == "change_request":
+            return self.dialog_change_request(self.wc.selection[1])
         if key == "start_task":
             warn = self.wc.start_warning(self.wc.selection[1])
             if warn:
@@ -330,6 +332,35 @@ class WorkspaceWindow:
         b = ttk.Frame(f, style="WS.TFrame")
         b.grid(row=7, column=0, sticky="ew", pady=6)
         ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(side="right" if self.wc.rtl else "left")
+
+    def dialog_change_request(self, task_id: str, request: str | None = None, route: str | None = None) -> Any:
+        """One place for 'fix this task' vs 'new task' vs 're-plan' (spec §12.3). Never edits silently."""
+        if request is None:
+            request = self._ask(self.wc.tr(("Request a change", "درخواست تغییر")),
+                                self.wc.tr(("What should change?", "چه چیزی باید تغییر کند؟")))
+        if not request:
+            return None
+        sug = self._guard(lambda: self.wc.suggest_change(task_id, request))
+        if not sug:
+            return None
+        if route is None:
+            names = " / ".join(f"{k} = {v}" for k, v in sug["choices"])
+            hint = self.wc.tr(("Suggested: ", "پیشنهاد: ")) + f"{sug['route']} — {sug['label']} ({sug['why']})"
+            if sug["ambiguous"]:
+                hint += self.wc.tr((" — not sure, please choose.", " — مطمئن نیستم، لطفاً انتخاب کنید."))
+            route = self._ask(self.wc.tr(("Choose the route", "انتخاب مسیر")), f"{hint}\n{names}", sug["route"])
+            if not route:
+                return None
+        out = self._guard(lambda: self.wc.apply_change(task_id, route, request))
+        if not out:
+            return None
+        self.status_var.set(out["message"])
+        if out.get("prompt"):
+            self.last_prompt, self.last_handoff_id = out["prompt"], ""
+        if out.get("task_id"):
+            self.wc.select("task", out["task_id"])
+        self.show("tasks")
+        return out
 
     def _attention_by_key(self, key: str) -> dict[str, Any] | None:
         return next((i for i in getattr(self, "attention_items", []) if i["key"] == key), None)
@@ -844,7 +875,8 @@ class WorkspaceWindow:
         raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
-        self.show("team" if r.kind == "proposal" else self.wc.section)  # proposals are reviewed in the Team view
+        # proposals are reviewed in the Team view; context requests go to Files & Context (existing tool)
+        self.show({"proposal": "team", "context_request": "files"}.get(r.kind, self.wc.section))
         return r
 
     def dialog_add_account(self, data: dict[str, Any] | None = None) -> Any:
