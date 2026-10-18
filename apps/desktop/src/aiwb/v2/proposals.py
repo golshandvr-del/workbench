@@ -186,7 +186,9 @@ class ProposalService:
                             "acceptance_criteria": raw.get("acceptance_criteria"), "depends_on": deps,
                             "scope": raw.get("scope") or {}, "deliverables": raw.get("deliverables"),
                             "owner_agent_id": owner, "priority": raw.get("priority"), "risk_level": raw.get("risk_level"),
-                            "task_type": raw.get("task_type"), "origin": "manager_proposal"}
+                            "task_type": raw.get("task_type"), "origin": "manager_proposal",
+                            "acceptance_policy": raw.get("acceptance_policy"),
+                            "required_approvals": raw.get("required_approvals")}
                     task = ts._create_in(s, data, status="draft")
                     task["proposal_id"] = p["proposal_id"]
                     created[op["temporary_ref"]] = task["task_id"]
@@ -262,7 +264,14 @@ class ProposalService:
         problems = validate_graph(s["tasks"])
         if problems:
             errors += ["resulting task graph is invalid: " + "; ".join(problems)]
+        new_ids = set(created.values())
         for t in s["tasks"].values():
+            if t["task_id"] in new_ids and t["status"] == "draft" and not problems:
+                # an approved plan makes its tasks actionable: ready, or blocked by prerequisites
+                st, why = readiness(t, s["tasks"])
+                t["status"], t["blocked_reason"] = st, why
+                emit(s, "task_status", task_id=t["task_id"], old="draft", new=st, why=why or "plan approved")
+                continue
             if t["status"] == "ready" and readiness(t, s["tasks"])[0] != "ready":
                 t["status"] = "blocked"
                 t["blocked_reason"] = readiness(t, s["tasks"])[1]
