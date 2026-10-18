@@ -5,8 +5,8 @@
 > Roadmap قبلی (1.14.1 → 2.2.0، کامل‌شده) در [`docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md) بایگانی شده است.
 > تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.3.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** 2.4.0 — Team Planner (مرحله 4)
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.4.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال بعدی:** 2.5.0 — Workflow tracking، Timeline و Progress (مراحل 5، 6)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
 
@@ -63,14 +63,14 @@
 
 | گام | عنوان | وضعیت | شواهد / باقی‌مانده |
 |---|---|---|---|
-| 4.1 | Account Profile manager و Chat Binding UI | ⬜ | |
-| 4.2 | Planning Prompt با منابع، سقف چت هم‌زمان و سؤال اندازهٔ تیم | ⬜ | |
-| 4.3 | قرارداد Team Proposal (نسخه‌دار، سازگار با قبلی) + اعتبارسنجی منابع | ⬜ | |
-| 4.4 | Review UI تیم: پذیرش کل/انتخابی/رد | ⬜ | |
+| 4.1 | Account Profile manager و Chat Binding UI | ✅ | نمای Team در Workspace |
+| 4.2 | Planning Prompt با منابع، سقف چت هم‌زمان و سؤال اندازهٔ تیم | ✅ | `v2/team.py` `team_planning_prompt` |
+| 4.3 | قرارداد Team Proposal (نسخه‌دار، سازگار با قبلی) + اعتبارسنجی منابع | ✅ | `team-proposal.v1`، `check_team` |
+| 4.4 | Review UI تیم: پذیرش کل/انتخابی/رد | ✅ | + Request changes؛ `gui_team_planner_smoke.py`؛ چت واقعی مدل NOT RUN |
 
-- [ ] PM نمی‌تواند Account Profile ناموجود را منبع واقعی معرفی کند؛ شمارش PM داخل/خارج تیم صریح است.
-- [ ] Taskها Owner/Scope/Acceptance/Dependencies دارند یا کمبودها روشن نمایش داده می‌شوند.
-- [ ] محدودیت منابع/هم‌زمانی در اعتبارسنجی لحاظ می‌شود؛ قرارداد قدیمی Proposal کار می‌کند.
+- [x] PM نمی‌تواند Account Profile ناموجود را منبع واقعی معرفی کند؛ شمارش PM داخل/خارج تیم صریح است.
+- [x] Taskها Owner/Scope/Acceptance/Dependencies دارند یا کمبودها روشن نمایش داده می‌شوند.
+- [x] محدودیت منابع/هم‌زمانی در اعتبارسنجی لحاظ می‌شود؛ قرارداد قدیمی Proposal کار می‌کند.
 
 ## 2.5.0 — Workflow tracking، Timeline و Progress (مراحل 5، 6؛ Gate B، D)
 
