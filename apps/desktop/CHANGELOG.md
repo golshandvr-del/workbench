@@ -1,3 +1,16 @@
+## [2.6.0] - 2026-10-18
+
+### Team Dashboard, integration and Release Gate (Workspace Roadmap stages 7, 8, 9; Gate C, E, F, G)
+- **Needs Attention queue** (Overview): deterministic, explainable ranking (decisions, parse failures/repairs, stale or partial answers, context requests, waiting for your paste, blocked work, paused publishing). Every item shows *what* and *why* with a traceable reference; large groups collapse into "… and n more"; **Mark as read** is a UI preference only — history is never removed.
+- **Team Dashboard** (Team view): status counts (verified · working · waiting for your paste · blocked · needs action), current workflow step and "needs you" per agent, text filter, and "needs action only" on by default for 7–10 agents. Workbench never claims a model is working.
+- **Request a change…** (task Inspector): one entry point with three explicit routes — change this task (new revision), new task (depends on the open one), or ask the project manager to re-plan; the suggested route is explained and ambiguous cases ask you.
+- **Context requests** pasted into the Inbox are detected with the existing parser, recorded on the attempt and routed to Files & Context (never sent automatically).
+- `tools/measure_baseline.py` measures the real Workspace read models.
+
+### Validation
+- `test_dashboard.py` (18) with a synthetic 10-agent dataset; `gui_dashboard_smoke.py`. Full suite: 475 tests, 28 GUI smokes.
+- Release Gate: `docs/release/v2.6.0/RELEASE_GATE_WORKSPACE_v2.6.0.md` (perf vs baseline; manual two-chat E2E and physical-Windows DPI remain NOT RUN).
+
 ## [2.5.0] - 2026-10-18
 
 ### Workflow tracking, Timeline and Progress (Workspace Roadmap stages 5, 6; Gate B, D)

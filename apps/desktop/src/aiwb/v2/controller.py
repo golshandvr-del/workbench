@@ -33,7 +33,7 @@ MODES = ("simple", "advanced")
 
 @dataclass
 class RouteResult:
-    kind: str                       # proposal | handoff | inbox_only | rejected
+    kind: str                       # proposal | handoff | context_request | inbox_only | rejected
     response_id: str = ""
     message: str = ""
     reference_id: str = ""
@@ -336,6 +336,17 @@ class ProjectsController:
         self._dirty("user confirmed sent")
         return out
 
+    def suggest_change_route(self, task_id: str, request: str) -> dict[str, Any]:
+        from .changes import suggest_route
+        return suggest_route(self.state(), task_id, request)
+
+    def apply_change_route(self, task_id: str, route: str, request: str, title: str = "") -> dict[str, Any]:
+        from .changes import apply_route
+        out = apply_route(self.project, task_id, route, request, title=title)
+        if route != "replan":
+            self._dirty("change request")
+        return out
+
     def workflow_stages(self) -> list[dict[str, Any]]:
         return self.project.workflow.stages()
 
@@ -377,6 +388,17 @@ class ProjectsController:
                 return RouteResult("handoff", rid, msg, hid, h)
         except ModelError as exc:
             return RouteResult("rejected", rid, f"{exc} The raw answer is kept in the Inbox.")
+        from .changes import detect_context_request, note_context_request
+        cr = detect_context_request(text)
+        if cr is not None:
+            if not cr["ok"]:
+                return RouteResult("rejected", rid, f"Context request could not be read: {cr['error']} Nothing changed.")
+            aid = note_context_request(self.project.store, self.project.workflow, cr)
+            self._dirty("context request")
+            return RouteResult("context_request", rid, "The model asks for more context: "
+                               + ", ".join(cr["files"][:6] or cr["questions"][:3])
+                               + ". Open Files & Context → Context request… to prepare it (it is not sent automatically).",
+                               aid, cr)
         return RouteResult("inbox_only", rid, "No manager proposal or handoff block found. If it contains files, "
                            "use the normal Analyze / preview flow on the Response tab.")
 

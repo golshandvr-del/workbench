@@ -221,6 +221,8 @@ class WorkspaceWindow:
     def inspector_action(self, key: str, confirm: bool | None = None) -> Any:
         if key == "bind_chat":
             return self.dialog_bind_chat(self.wc.selection[1])
+        if key == "change_request":
+            return self.dialog_change_request(self.wc.selection[1])
         if key == "start_task":
             warn = self.wc.start_warning(self.wc.selection[1])
             if warn:
@@ -301,11 +303,28 @@ class WorkspaceWindow:
         ttk.Label(f, text="\n".join(self.progress_details + [counts or "—"]), style="WS.Muted.TLabel", wraplength=700, anchor=anchor).grid(row=4, column=0, sticky="ew", pady=4)
         att = ttk.LabelFrame(f, text=self.wc.tr(("Needs your attention", "نیازمند توجه شما")), padding=6)
         att.grid(row=5, column=0, sticky="ew", pady=6)
-        if not ov["warnings"]:
+        self.attention_items = self.wc.attention(hide_seen=True)
+        if not self.attention_items:
             ttk.Label(att, text=self.wc.tr(("Nothing needs your attention.", "موردی نیازمند توجه نیست."))).pack(anchor=anchor)
-        for wi in ov["warnings"]:
-            ttk.Label(att, text=f"{i18n.SEVERITY[wi['severity']][0]} {i18n.severity_label(wi['severity'], self.wc.lang).split(' ', 1)[1]}: {wi['text']}",
-                      wraplength=700).pack(anchor=anchor)
+        else:
+            self.att_tree = ttk.Treeview(att, columns=("item",), show="tree headings", style="WS.Treeview",
+                                         height=min(8, len(self.attention_items) + 2))
+            self.att_tree.heading("#0", text=self.wc.tr(("Group", "گروه")))
+            self.att_tree.heading("item", text=self.wc.tr(("What and why", "چه چیزی و چرا")))
+            self.att_tree.column("#0", width=220, stretch=False)
+            self.att_tree.column("item", width=520, stretch=True)
+            for item in self.attention_items:
+                self.att_tree.insert("", "end", iid=item["key"], text=f"{item['rank']}. {item['rank_text']}",
+                                     values=(self.wc.attention_text(item),))
+            self.att_tree.pack(fill="x")
+            self.att_tree.bind("<Double-1>", lambda _e: self.open_attention_selected())
+            ab = ttk.Frame(att, style="WS.TFrame")
+            ab.pack(fill="x", pady=(4, 0))
+            side = "right" if self.wc.rtl else "left"
+            ttk.Button(ab, text=self.wc.tr(("Open", "باز کردن")), command=self.open_attention_selected).pack(side=side)
+            ttk.Button(ab, text=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen).pack(side=side, padx=4)
+            ttk.Button(ab, text=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
+                       command=lambda: (self.wc.clear_seen(), self.show("overview"))).pack(side=side)
         act = ttk.LabelFrame(f, text=self.wc.tr(("Recent activity", "فعالیت اخیر")), padding=6)
         act.grid(row=6, column=0, sticky="ew")
         for rec in ov["recent"]:
@@ -313,6 +332,64 @@ class WorkspaceWindow:
         b = ttk.Frame(f, style="WS.TFrame")
         b.grid(row=7, column=0, sticky="ew", pady=6)
         ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(side="right" if self.wc.rtl else "left")
+
+    def dialog_change_request(self, task_id: str, request: str | None = None, route: str | None = None) -> Any:
+        """One place for 'fix this task' vs 'new task' vs 're-plan' (spec §12.3). Never edits silently."""
+        if request is None:
+            request = self._ask(self.wc.tr(("Request a change", "درخواست تغییر")),
+                                self.wc.tr(("What should change?", "چه چیزی باید تغییر کند؟")))
+        if not request:
+            return None
+        sug = self._guard(lambda: self.wc.suggest_change(task_id, request))
+        if not sug:
+            return None
+        if route is None:
+            names = " / ".join(f"{k} = {v}" for k, v in sug["choices"])
+            hint = self.wc.tr(("Suggested: ", "پیشنهاد: ")) + f"{sug['route']} — {sug['label']} ({sug['why']})"
+            if sug["ambiguous"]:
+                hint += self.wc.tr((" — not sure, please choose.", " — مطمئن نیستم، لطفاً انتخاب کنید."))
+            route = self._ask(self.wc.tr(("Choose the route", "انتخاب مسیر")), f"{hint}\n{names}", sug["route"])
+            if not route:
+                return None
+        out = self._guard(lambda: self.wc.apply_change(task_id, route, request))
+        if not out:
+            return None
+        self.status_var.set(out["message"])
+        if out.get("prompt"):
+            self.last_prompt, self.last_handoff_id = out["prompt"], ""
+        if out.get("task_id"):
+            self.wc.select("task", out["task_id"])
+        self.show("tasks")
+        return out
+
+    def _attention_by_key(self, key: str) -> dict[str, Any] | None:
+        return next((i for i in getattr(self, "attention_items", []) if i["key"] == key), None)
+
+    def open_attention_selected(self, key: str = "") -> Any:
+        if not key and hasattr(self, "att_tree"):
+            key = next(iter(self.att_tree.selection()), "")
+        item = self._attention_by_key(key)
+        if not item:
+            self.status_var.set(self.wc.tr(("Select an item first.", "ابتدا یک مورد انتخاب کنید.")))
+            return None
+        if item["kind"] == "more":
+            self.attention_items = [i for i in self.attention_items if i["key"] != key] + item["hidden"]
+            self.att_tree.delete(key)
+            for h in item["hidden"]:
+                self.att_tree.insert("", "end", iid=h["key"], text=f"{h['rank']}. {h['rank_text']}",
+                                     values=(self.wc.attention_text(h),))
+            return item["hidden"]
+        section, ref = self.wc.open_attention(item)
+        self.show(section)
+        self.status_var.set(f"{item['ref']}: {item['ask']}")
+        return section, ref
+
+    def mark_attention_seen(self, keys: list[str] | None = None) -> set[str]:
+        if keys is None:
+            keys = list(self.att_tree.selection()) if hasattr(self, "att_tree") else []
+        out = self.wc.mark_seen([k for k in keys if not k.startswith("more:")])
+        self.show("overview")
+        return out
 
     def _view_tasks(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("tasks"))
@@ -359,20 +436,35 @@ class WorkspaceWindow:
     def _view_team(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("team"))
         f.rowconfigure(1, weight=1)
-        cols = ("role", "account", "chat", "tasks", "ready")
+        dash = self.wc.dashboard()
+        c = dash["counts"]
+        self.team_status_var = tk.StringVar(value=self.wc.tr(("Verified ", "تأییدشده ")) + str(c["verified"]) + " · "
+                                            + self.wc.tr(("working ", "در حال کار ")) + str(c["working"]) + " · "
+                                            + self.wc.tr(("waiting for your paste ", "منتظر Paste شما ")) + str(c["waiting_answer"]) + " · "
+                                            + self.wc.tr(("blocked ", "مسدود ")) + str(c["blocked"]) + " · "
+                                            + self.wc.tr(("needs action ", "نیازمند اقدام ")) + str(c["needs_action"]))
+        bar = ttk.Frame(f, style="WS.TFrame")
+        bar.grid(row=0, column=0, sticky="e" if not self.wc.rtl else "w")
+        ttk.Label(bar, textvariable=self.team_status_var, style="WS.Muted.TLabel").pack(side="left", padx=4)
+        self.team_filter = tk.StringVar()
+        ttk.Entry(bar, textvariable=self.team_filter, width=14).pack(side="left")
+        self.team_attention_only = tk.BooleanVar(value=dash["density"] == "compact")
+        ttk.Checkbutton(bar, text=self.wc.tr(("needs action only", "فقط نیازمند اقدام")), variable=self.team_attention_only,
+                        command=self.fill_team).pack(side="left", padx=4)
+        ttk.Button(bar, text=self.wc.tr(("Filter", "فیلتر")), command=self.fill_team).pack(side="left")
+        cols = ("role", "account", "chat", "tasks", "stage", "attention", "ready")
         self.team_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=8)
         heads = {"#0": ("Agent", "Agent"), "role": ("Role", "نقش"), "account": ("Account profile", "پروفایل اکانت"),
-                 "chat": ("Chat", "چت"), "tasks": ("Open tasks", "Taskهای باز"), "ready": ("Ready?", "آماده؟")}
+                 "chat": ("Chat", "چت"), "tasks": ("Open tasks", "Taskهای باز"), "stage": ("Current step", "گام فعلی"),
+                 "attention": ("Needs you", "نیاز به شما"), "ready": ("Ready?", "آماده؟")}
         for c, pair in heads.items():
             self.team_tree.heading(c, text=self.wc.tr(pair))
         self.team_tree.column("#0", width=180)
-        for c, wdt in (("role", 120), ("account", 150), ("chat", 140), ("tasks", 80), ("ready", 120)):
+        for c, wdt in (("role", 110), ("account", 130), ("chat", 110), ("tasks", 70), ("stage", 200), ("attention", 80),
+                       ("ready", 100)):
             self.team_tree.column(c, width=wdt, stretch=c in ("account", "chat"))
         self.team_tree.grid(row=1, column=0, sticky="nsew")
-        for r in self.wc.team_rows():
-            ok = {"bound": "✓", "no_binding": "–", "account_disabled": "⚠", "agent_disabled": "✕"}.get(r["readiness"], "?")
-            self.team_tree.insert("", "end", iid=r["agent_id"], text=r["name"],
-                                  values=(r["role"], r["account"] or "—", r["chat"] or "—", r["open_tasks"], f"{ok} {r['readiness']}"))
+        self.fill_team()
         self.team_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.team_tree, "agent"))
         acc = ttk.LabelFrame(f, text=self.wc.tr(("Your account profiles (labels only — no passwords or keys)",
                                                    "پروفایل‌های اکانت شما (فقط برچسب — بدون رمز یا کلید)")), padding=6)
@@ -390,6 +482,24 @@ class WorkspaceWindow:
                    command=self.toggle_selected_account).pack(side=side, pady=4, padx=4)
         self._team_planner(f, 3)
         self._proposal_review(f, 4)
+
+    def fill_team(self) -> list[str]:
+        """Team rows (registry + dashboard columns); 7–10 agents start with 'needs action only' (spec §10.4)."""
+        dash = self.wc.dashboard(text=self.team_filter.get(), attention_only=self.team_attention_only.get())
+        by = {a["agent_id"]: a for a in dash["agents"]}
+        self.team_tree.delete(*self.team_tree.get_children())
+        shown = []
+        for r in self.wc.team_rows():
+            d = by.get(r["agent_id"])
+            if d is None:
+                continue
+            ok = {"bound": "✓", "no_binding": "–", "account_disabled": "⚠", "agent_disabled": "✕"}.get(r["readiness"], "?")
+            self.team_tree.insert("", "end", iid=r["agent_id"], text=r["name"],
+                                  values=(r["role"], r["account"] or "—", r["chat"] or "—", r["open_tasks"],
+                                          d["stage_text"] or "—", ("● " + str(d["attention"])) if d["attention"] else "—",
+                                          f"{ok} {r['readiness']}"))
+            shown.append(r["agent_id"])
+        return shown
 
     # -- team planner (2.4.0)
     def _team_planner(self, f: ttk.Frame, row: int) -> None:
@@ -765,7 +875,8 @@ class WorkspaceWindow:
         raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
-        self.show("team" if r.kind == "proposal" else self.wc.section)  # proposals are reviewed in the Team view
+        # proposals are reviewed in the Team view; context requests go to Files & Context (existing tool)
+        self.show({"proposal": "team", "context_request": "files"}.get(r.kind, self.wc.section))
         return r
 
     def dialog_add_account(self, data: dict[str, Any] | None = None) -> Any:
