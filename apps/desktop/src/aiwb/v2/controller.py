@@ -317,8 +317,27 @@ class ProjectsController:
         return h
 
     def mark_copied(self, handoff_id: str) -> None:
-        self.project.handoffs.mark_exported(handoff_id)
+        h = self.project.handoffs.get(handoff_id)
+        if h and h["status"] == "prepared":
+            self.project.handoffs.mark_exported(handoff_id)
+        if h:
+            self.project.workflow.mark_copied(h["attempt_id"])
         self._dirty("prompt copied")
+
+    # -- manual workflow (2.5.0, spec §9)
+    def start_warning(self, task_id: str) -> str:
+        return self.project.workflow.open_attempt_warning(task_id)
+
+    def confirm_sent(self, handoff_id: str, chat_binding_id: str = "") -> dict[str, Any]:
+        h = self.project.handoffs.get(handoff_id)
+        if h is None:
+            raise ModelError(f"handoff {handoff_id} does not exist")
+        out = self.project.workflow.confirm_sent(h["attempt_id"], chat_binding_id=chat_binding_id)
+        self._dirty("user confirmed sent")
+        return out
+
+    def workflow_stages(self) -> list[dict[str, Any]]:
+        return self.project.workflow.stages()
 
     def manager_update(self) -> str:
         st = self.state()
