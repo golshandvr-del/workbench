@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "app": "ai-workbench-desktop",
+  "platform": "windows",
+  "version": "1.14.8",
+  "channel": "stable",
+  "installer": "AI_Workbench_1.14.8_Setup.bat",
+  "artifacts": [
+    {
+      "name": "AI_Workbench_1.14.8_Setup.bat",
+      "size": 549081,
+      "sha256": "e65473ced4b3fa7643a810af8e4b66143981ce9ac1280c3b1bed6360a68e5c5a"
+    },
+    {
+      "name": "AI_Workbench_v1.14.8_Windows_Payload.zip",
+      "size": 398359,
+      "sha256": "09171d4fbf39574e2d35a8a8b40afb7fbc7c5ab81113b78847ffbeb17cb901bc"
+    },
+    {
+      "name": "AI_Workbench_v1.14.8_Source.zip",
+      "size": 442789,
+      "sha256": "c67643c166bc77d390f806e93794f22e006547799666bda1462d06322a0eb147"
+    }
+  ],
+  "tag": "desktop-v1.14.8",
+  "commit_sha": "0000000000000000000000000000000000000000",
+  "repository": "golshandvr-del/workbench",
+  "build_run_id": "1"
+}

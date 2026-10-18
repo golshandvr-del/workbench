@@ -269,5 +269,15 @@ class OrchestratorTests(unittest.TestCase):
             o.matching_artifacts()
 
 
+class BuildMetadataTests(unittest.TestCase):
+    def test_contract_conversion(self) -> None:
+        rec = {"git": {"repository": "o/r", "branch": "w", "commit_sha": "A" * 40, "pushed": True},
+               "build": {"workflow_file": WF, "run_id": 3, "outcome": "success",
+                         "artifacts": [{"artifact_id": 1, "name": "a", "sha256": "e" * 64, "verification": "matched", "path": "/x", "size": 2}]}}
+        meta = orc.build_metadata(rec, repository_id=5)
+        self.assertEqual(meta["commit_sha"], "a" * 40)
+        self.assertNotIn("path", meta["artifacts"][0])
+        self.assertIsNone(orc.build_metadata({"git": {"commit_sha": "a" * 40, "pushed": False}, "build": {"run_id": 3}}))
+
 if __name__ == "__main__":
     unittest.main()

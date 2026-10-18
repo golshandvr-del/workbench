@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.8` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
-**گام فعال بعدی:** `v1.14.9` — Self-hosting Repository & Desktop CI Baseline
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.9` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** `v1.14.13` — Release Candidate & Native Windows Validation
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -61,11 +61,11 @@
 | 1.14.6 | Build Center: Workflow & Run Monitoring | ✅ | `aiwb/github/actions.py`, `build_center.py`, `tests/test_github_actions.py`, `tests/gui/gui_build_center_smoke.py`؛ Release `desktop-v1.14.6` |
 | 1.14.7 | Workflow Dispatch & Safe Artifact Download | ✅ | `aiwb/github/artifacts.py`, `build_center_dialogs.py`, `tests/test_github_artifacts.py` (23), `gui_dispatch_artifacts_smoke.py`; dispatch و دانلود واقعی روی همین ریپو؛ Release `desktop-v1.14.7` |
 | 1.14.8 | One-click Sync & Build Orchestrator | ✅ | `aiwb/github/orchestrator.py`, `sync_build_window.py`, `tests/test_orchestrator.py` (10, Git واقعی + remote محلی), `gui_sync_build_smoke.py`؛ Release `desktop-v1.14.8` |
-| **1.14.9** | **Self-hosting Repository & Desktop CI Baseline** | 🟡 زیرساخت زودتر ساخته شد **گام فعال** | ✅ ریپو، CI روی Linux+Windows، Actionsهای pin‌شده به SHA، permissions حداقلی، `CI summary`، Artifact نصاب CI. ⬜ ADR سیاست branch/tag |
-| 1.14.10 | Staged Monorepo Migration | 🟡 | ✅ `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت یکسان (PR #1). ⬜ `packages/contracts/` |
-| 1.14.11 | Android Proof-of-Build & Capability Contracts | 🟡 | ✅ `apps/mobile/android`، APK از CI. ⬜ `packages/contracts` (JSON Schema + fixtures)، `capabilities.yml`، job اعتبارسنجی قرارداد |
-| 1.14.12 | Versioned Releases & Protected Signing | 🟡 | ✅ تگ‌های `desktop-v*`/`mobile-v*`، workflowهای release، SHA-256 و manifest، Secretهای امضا فقط در Environment محافظت‌شدهٔ `release` (فقط تگ `mobile-v*`). ⬜ approval انسانی پیش از انتشار پایدار؛ اولین Release موبایل با Environment جدید |
-| 1.14.13 | Release Candidate & Native Windows Validation | ⬜ | — |
+| 1.14.9 | Self-hosting Repository & Desktop CI Baseline | ✅ | ریپو، CI روی Linux+Windows، Actionsهای pin‌شده، `CI summary`، گیت pyflakes؛ ADR-005 (سیاست Monorepo/branch/tag)؛ Release `desktop-v1.14.9` |
+| 1.14.10 | Staged Monorepo Migration | ✅ | `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت (PR #1)؛ `packages/contracts/` |
+| 1.14.11 | Android Proof-of-Build & Capability Contracts | ✅ | JSON Schema `release-manifest.v1`/`build-metadata.v1`/`capabilities.v1` + fixtures؛ `capabilities.yml`؛ `tools/validate_contracts.py` (job `contracts`)؛ مصرف در Kotlin (`ReleaseManifest.kt` + تست روی fixtureهای مشترک) |
+| 1.14.12 | Versioned Releases & Protected Signing | 🟡 | ✅ تگ‌های جدا، SHA-256 و manifest قراردادی در هر دو release، Secretهای امضا فقط در Environment `release`؛ `mobile-v0.2.0` اولین Release با Environment جدید. ⬜ approval انسانی (در 1.14.13) |
+| **1.14.13** | **Release Candidate & Native Windows Validation** | ⬜ **گام فعال** | — |
 | 1.15.0 | Integrated GitHub & Monorepo Stable | ⬜ | — |
 
 > زیرساخت ریپو (1.14.9 تا 1.14.12) برای نگهداری و انتشار امن زودتر ساخته شد. این **ترتیب قابلیت‌های داخل اپ را تغییر نمی‌دهد**: گام فعال همچنان طبق جدول بالاست و موارد ⬜ این ردیف‌ها در نوبت خودشان بسته می‌شوند.
@@ -107,10 +107,10 @@
 
 ### v1.14.9 تا v1.14.12 — باقی‌ماندهٔ زیرساخت
 
-- [ ] **1.14.9:** ADR سیاست Monorepo، branch strategy و نام تگ‌ها
-- [ ] **1.14.10/11:** `packages/contracts/` با JSON Schema و fixture فقط برای موجودیت‌های واقعاً مشترک (Build metadata، Release manifest، Capability)
-- [ ] **1.14.11:** `capabilities.yml` (`planned/in_progress/implemented/partial/not_applicable/blocked`)؛ فقط گزارش، بدون feature gating
-- [ ] **1.14.11:** تغییر قرارداد → اعتبارسنجی + تست هر دو پلتفرم (job `contracts` در `ci.yml` آماده است)
+- [x] **1.14.9:** ADR سیاست Monorepo، branch strategy و نام تگ‌ها
+- [x] **1.14.10/11:** `packages/contracts/` با JSON Schema و fixture فقط برای موجودیت‌های واقعاً مشترک (Build metadata، Release manifest، Capability)
+- [x] **1.14.11:** `capabilities.yml` (`planned/in_progress/implemented/partial/not_applicable/blocked`)؛ فقط گزارش، بدون feature gating
+- [x] **1.14.11:** تغییر قرارداد → اعتبارسنجی + تست هر دو پلتفرم (job `contracts` در `ci.yml` آماده است)
 - [x] **1.14.12:** Environment محافظت‌شدهٔ `release` (فقط تگ‌های `mobile-v*`) برای Secretهای امضای Android؛ Secretهای سطح ریپو حذف شدند
 - [ ] **1.14.12:** Required reviewer روی Environment `release` پیش از انتشار پایدار (در 1.14.13 فعال شود)
 
@@ -182,7 +182,7 @@
 | نسخه | محتوا | وضعیت |
 |---|---|---|
 | 0.1.0 | Proof-of-build: provenance، بررسی Releaseها، FA/EN، APK/AAB امضاشده | ✅ `mobile-v0.1.0` |
-| 0.2.x | مصرف `packages/contracts` (Release manifest، Capability) پس از 1.14.11 | ⬜ |
+| 0.2.0 | مصرف `packages/contracts`: `ReleaseManifest.kt` سخت‌گیر + تست روی fixtureهای مشترک؛ `release-manifest.json` قراردادی در Release موبایل | ✅ `mobile-v0.2.0` |
 | 0.2.x-tooling | مهاجرت هماهنگ AGP + Gradle + Kotlin در یک PR (PRهای #2، #5 و #8 Dependabot بسته شدند چون Build را می‌شکستند؛ AGP 8.13 با Gradle 9.8 سازگار نیست) | ⬜ |
 | Companion | Pairing امن، مشاهدهٔ Task/Build، ورود پاسخ از موبایل (Integration Spec P3) | ⏭ پس از 2.0.0 |
 

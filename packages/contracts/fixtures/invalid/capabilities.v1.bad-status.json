@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "capabilities": [
+    {
+      "id": "x",
+      "title": "X",
+      "desktop": "done",
+      "mobile": "planned"
+    }
+  ]
+}

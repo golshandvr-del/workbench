@@ -82,6 +82,8 @@ jobs:
         run: ./gradlew --no-daemon testReleaseUnitTest assembleRelease bundleRelease
       - name: Verify signature and collect assets
         shell: bash
+        env:
+          AIWB_CHANNEL_OUT: ${{ github.event.inputs.prerelease == 'true' && 'beta' || 'stable' }}
         run: |
           v="${{ steps.v.outputs.version }}"
           bt=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
@@ -93,6 +95,18 @@ jobs:
           cp "$aab" "dist/AIWorkbench-mobile-$v.aab"
           cp signature.txt "dist/AIWorkbench-mobile-$v-signature.txt"
           (cd dist && sha256sum AIWorkbench-mobile-$v.apk AIWorkbench-mobile-$v.aab > AIWorkbench-mobile-${v}_SHA256SUMS.txt)
+          python3 - "$v" "${{ steps.v.outputs.tag }}" <<'PY'
+          import hashlib, json, os, sys
+          v, tag = sys.argv[1], sys.argv[2]
+          arts = []
+          for n in (f"AIWorkbench-mobile-{v}.apk", f"AIWorkbench-mobile-{v}.aab"):
+              d = open(os.path.join("dist", n), "rb").read()
+              arts.append({"name": n, "size": len(d), "sha256": hashlib.sha256(d).hexdigest()})
+          m = {"schema_version": 1, "app": "ai-workbench-mobile", "platform": "android", "version": v,
+               "channel": os.environ.get("AIWB_CHANNEL_OUT", "stable"), "tag": tag, "commit_sha": os.environ["GITHUB_SHA"],
+               "repository": os.environ["GITHUB_REPOSITORY"], "build_run_id": os.environ["GITHUB_RUN_ID"], "artifacts": arts}
+          json.dump(m, open("dist/release-manifest.json", "w"), indent=2)
+          PY
           rm -f "$AIWB_KEYSTORE_PATH"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
