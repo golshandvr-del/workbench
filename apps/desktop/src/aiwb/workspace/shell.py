@@ -359,20 +359,35 @@ class WorkspaceWindow:
     def _view_team(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("team"))
         f.rowconfigure(1, weight=1)
-        cols = ("role", "account", "chat", "tasks", "ready")
+        dash = self.wc.dashboard()
+        c = dash["counts"]
+        self.team_status_var = tk.StringVar(value=self.wc.tr(("Verified ", "تأییدشده ")) + str(c["verified"]) + " · "
+                                            + self.wc.tr(("working ", "در حال کار ")) + str(c["working"]) + " · "
+                                            + self.wc.tr(("waiting for your paste ", "منتظر Paste شما ")) + str(c["waiting_answer"]) + " · "
+                                            + self.wc.tr(("blocked ", "مسدود ")) + str(c["blocked"]) + " · "
+                                            + self.wc.tr(("needs action ", "نیازمند اقدام ")) + str(c["needs_action"]))
+        bar = ttk.Frame(f, style="WS.TFrame")
+        bar.grid(row=0, column=0, sticky="e" if not self.wc.rtl else "w")
+        ttk.Label(bar, textvariable=self.team_status_var, style="WS.Muted.TLabel").pack(side="left", padx=4)
+        self.team_filter = tk.StringVar()
+        ttk.Entry(bar, textvariable=self.team_filter, width=14).pack(side="left")
+        self.team_attention_only = tk.BooleanVar(value=dash["density"] == "compact")
+        ttk.Checkbutton(bar, text=self.wc.tr(("needs action only", "فقط نیازمند اقدام")), variable=self.team_attention_only,
+                        command=self.fill_team).pack(side="left", padx=4)
+        ttk.Button(bar, text=self.wc.tr(("Filter", "فیلتر")), command=self.fill_team).pack(side="left")
+        cols = ("role", "account", "chat", "tasks", "stage", "attention", "ready")
         self.team_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=8)
         heads = {"#0": ("Agent", "Agent"), "role": ("Role", "نقش"), "account": ("Account profile", "پروفایل اکانت"),
-                 "chat": ("Chat", "چت"), "tasks": ("Open tasks", "Taskهای باز"), "ready": ("Ready?", "آماده؟")}
+                 "chat": ("Chat", "چت"), "tasks": ("Open tasks", "Taskهای باز"), "stage": ("Current step", "گام فعلی"),
+                 "attention": ("Needs you", "نیاز به شما"), "ready": ("Ready?", "آماده؟")}
         for c, pair in heads.items():
             self.team_tree.heading(c, text=self.wc.tr(pair))
         self.team_tree.column("#0", width=180)
-        for c, wdt in (("role", 120), ("account", 150), ("chat", 140), ("tasks", 80), ("ready", 120)):
+        for c, wdt in (("role", 110), ("account", 130), ("chat", 110), ("tasks", 70), ("stage", 200), ("attention", 80),
+                       ("ready", 100)):
             self.team_tree.column(c, width=wdt, stretch=c in ("account", "chat"))
         self.team_tree.grid(row=1, column=0, sticky="nsew")
-        for r in self.wc.team_rows():
-            ok = {"bound": "✓", "no_binding": "–", "account_disabled": "⚠", "agent_disabled": "✕"}.get(r["readiness"], "?")
-            self.team_tree.insert("", "end", iid=r["agent_id"], text=r["name"],
-                                  values=(r["role"], r["account"] or "—", r["chat"] or "—", r["open_tasks"], f"{ok} {r['readiness']}"))
+        self.fill_team()
         self.team_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.team_tree, "agent"))
         acc = ttk.LabelFrame(f, text=self.wc.tr(("Your account profiles (labels only — no passwords or keys)",
                                                    "پروفایل‌های اکانت شما (فقط برچسب — بدون رمز یا کلید)")), padding=6)
@@ -390,6 +405,24 @@ class WorkspaceWindow:
                    command=self.toggle_selected_account).pack(side=side, pady=4, padx=4)
         self._team_planner(f, 3)
         self._proposal_review(f, 4)
+
+    def fill_team(self) -> list[str]:
+        """Team rows (registry + dashboard columns); 7–10 agents start with 'needs action only' (spec §10.4)."""
+        dash = self.wc.dashboard(text=self.team_filter.get(), attention_only=self.team_attention_only.get())
+        by = {a["agent_id"]: a for a in dash["agents"]}
+        self.team_tree.delete(*self.team_tree.get_children())
+        shown = []
+        for r in self.wc.team_rows():
+            d = by.get(r["agent_id"])
+            if d is None:
+                continue
+            ok = {"bound": "✓", "no_binding": "–", "account_disabled": "⚠", "agent_disabled": "✕"}.get(r["readiness"], "?")
+            self.team_tree.insert("", "end", iid=r["agent_id"], text=r["name"],
+                                  values=(r["role"], r["account"] or "—", r["chat"] or "—", r["open_tasks"],
+                                          d["stage_text"] or "—", ("● " + str(d["attention"])) if d["attention"] else "—",
+                                          f"{ok} {r['readiness']}"))
+            shown.append(r["agent_id"])
+        return shown
 
     # -- team planner (2.4.0)
     def _team_planner(self, f: ttk.Frame, row: int) -> None:
