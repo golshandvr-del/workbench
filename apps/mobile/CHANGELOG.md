@@ -1,5 +1,10 @@
 # AI Workbench Mobile — Changelog
 
+## [0.2.2] - 2026-10-18
+
+### Release pipeline fix
+- The signed release build ran `testReleaseUnitTest`, which AGP 9 no longer creates by default (unit tests are generated for the tested build type only), so the `mobile-v0.2.1` release job failed before publishing anything. The release workflow now runs `testDebugUnitTest` together with `assembleRelease bundleRelease`. 0.2.2 is the first published build with AGP 9.4.1 + Gradle 9.8.1 + built-in Kotlin.
+
 ## [0.2.1] - 2026-10-18
 ### Tooling migration (roadmap mobile 0.2.x-tooling)
 - Android Gradle Plugin 8.7.3 → **9.4.1** together with Gradle **9.8.1** in one change (AGP 8.x does not
