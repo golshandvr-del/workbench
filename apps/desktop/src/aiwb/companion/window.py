@@ -57,7 +57,8 @@ class CompanionWindow:
             ttk.Checkbutton(row2, text=p.replace("_", " "), variable=v).pack(side="left")
         ttk.Button(row2, text="Set permissions", command=self.do_permissions).pack(side="left", padx=6)
         ttk.Button(row2, text="Revoke", command=self.do_revoke).pack(side="left")
-        self.svc.on_change = lambda: self.win.after(0, self.refresh)
+        # on_change is called from the network thread: never touch Tk there, the timer refreshes the UI
+        self.svc.on_change = lambda: None
         self.refresh()
         self._timer = self.win.after(1500, self._tick)
 
