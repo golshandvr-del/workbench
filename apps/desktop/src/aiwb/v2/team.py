@@ -265,6 +265,11 @@ def check_team(data: dict[str, Any], ops: list[dict[str, Any]], state: dict[str,
             if workers is not None and not pm_in and team["total_agents"] != workers:
                 add("warning", "count_mismatch", f"total_agents {team['total_agents']} without the manager should equal "
                     f"additional_workers {workers}")
+        if "total_agents" in team:
+            actual = total_after if team.get("pm_counted", True) else total_after - 1
+            if team["total_agents"] != actual:
+                add("warning", "declared_vs_actual", f"the manager says {team['total_agents']} agent(s) but accepting every "
+                    f"create_agent gives {actual} ({total_after} enabled incl. the manager); check the count")
         if not accs:
             add("warning", "no_resources", "no account profiles are registered; every agent will share whatever chat you use")
         if not team.get("size_rationale"):
@@ -281,7 +286,9 @@ def check_team(data: dict[str, Any], ops: list[dict[str, Any]], state: dict[str,
 def revision_request_prompt(proposal: dict[str, Any], user_note: str = "") -> str:
     """'Request changes' (spec §7.5): a prompt listing the issues; nothing is applied."""
     lines = ["# AI Workbench — please revise your proposal",
-             f"Your proposal {proposal['proposal_id']} (base revision {proposal['base_state_revision']}) was NOT applied.",
+             f"Your proposal {proposal['proposal_id']} (base revision {proposal['base_state_revision']}) has status "
+             f"'{proposal['status']}'" + (" — nothing was applied." if proposal["status"] in ("pending", "rejected") else
+                                          "; only the operations the user accepted were applied."),
              "Fix the points below and return a complete new AIWB_MANAGER_PROPOSAL block (same format)."]
     issues = [i for i in proposal.get("team_issues", []) if i["level"] in ("error", "warning")]
     issues_txt = [f"- [{i['level']}] {i['message']}" for i in issues]
