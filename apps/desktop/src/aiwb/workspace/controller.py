@@ -13,6 +13,7 @@ from typing import Any, Callable
 from .. import i18n
 from ..v2.controller import ProjectsController
 from ..v2.models import ModelError
+from ..v2.dashboard import attention_queue, filter_agents, summarize, team_overview
 from ..v2.timeline import lanes, planned_items, progress
 from ..v2.workflow import stage_label, task_stage
 from ..v2.resources import binding_readiness, current_binding
@@ -41,7 +42,7 @@ TOOL_LABELS = {
     "companion": ("Mobile Companion…", "همراه موبایل…"),
     "classic": ("Projects window (classic)…", "پنجرهٔ پروژه‌ها (کلاسیک)…"),
 }
-UI_KEYS = ("ws_section", "ws_inspector", "ws_sidebar", "ws_theme")
+UI_KEYS = ("ws_section", "ws_inspector", "ws_sidebar", "ws_theme", "ws_seen")
 
 
 class WorkspaceController:
@@ -295,6 +296,63 @@ class WorkspaceController:
 
     def route_answer(self, text: str) -> Any:
         return self.ctl.route_answer(text)
+
+    # -- team dashboard & needs-attention queue (2.6.0, spec §10, Gate C)
+    def _publish_paused(self) -> str:
+        pub = self.ctl.publisher
+        if pub is None:
+            return ""
+        try:
+            return str(pub.queue().get("paused") or "")
+        except Exception:  # noqa: BLE001 - dashboard never fails because of publishing
+            return ""
+
+    def seen_keys(self) -> set[str]:
+        return set(self.ctl._load_ui().get("ws_seen") or [])
+
+    def mark_seen(self, keys: list[str]) -> set[str]:
+        """'Mark as read' for queue items: user preference in app data; history is never removed."""
+        cur = self.seen_keys() | set(keys)
+        self.ctl._save_ui(ws_seen=sorted(cur)[-500:])
+        return cur
+
+    def clear_seen(self) -> None:
+        self.ctl._save_ui(ws_seen=[])
+
+    def attention(self, *, include_info: bool = False, hide_seen: bool = False, collapse: bool = True,
+                  agent_id: str = "") -> list[dict[str, Any]]:
+        items = attention_queue(self.ctl.state(), lang=self.lang, publish_paused=self._publish_paused(),
+                                include_info=include_info, seen=self.seen_keys())
+        if agent_id:
+            items = [i for i in items if i["agent_id"] == agent_id]
+        if hide_seen:
+            items = [i for i in items if not i["seen"]]
+        return summarize(items) if collapse else items
+
+    def dashboard(self, *, role: str = "", text: str = "", attention_only: bool = False) -> dict[str, Any]:
+        ov = team_overview(self.ctl.state(), lang=self.lang)
+        ov["agents"] = filter_agents(ov["agents"], role=role, text=text, attention_only=attention_only)
+        ov.pop("queue", None)
+        return ov
+
+    def attention_text(self, item: dict[str, Any]) -> str:
+        if item["kind"] == "more":
+            return self.tr(("… and ", "… و ")) + item["why"].split()[0] + self.tr((" more in this group", " مورد دیگر در این گروه"))
+        who = f" · {item['agent_id']}" if item["agent_id"] else ""
+        return f"{item['ref']}{who} — {item['ask']} ({self.tr(('why: ', 'چرا: '))}{item['why']})"
+
+    def open_attention(self, item: dict[str, Any]) -> tuple[str, str]:
+        """Where a queue item leads: (section, selection). Selection reuses the Inspector (no second logic)."""
+        if item.get("task_id"):
+            self.select("task", item["task_id"])
+            return ("tasks", item["task_id"])
+        if item["kind"] == "proposal":
+            return ("team", item["ref"])
+        if item["kind"] == "decision":
+            return ("tasks", item["ref"])
+        if item["kind"] == "publish":
+            return ("settings", "")
+        return (self.section, "")
 
     # -- timeline (2.3.0: ledger list; lanes/milestones in 2.5.0)
     def timeline_page(self, page: int = 0, **filters: Any) -> dict[str, Any]:
