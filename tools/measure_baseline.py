@@ -108,10 +108,16 @@ def main() -> int:
             opens.append(_ms(t0))
         out["open_project"] = {"tasks": a.tasks, "events_kept": len(ctl.state()["events"]), "state_bytes": size,
                                "median_ms": statistics.median(opens), "max_ms": max(opens)}
-        ws = getattr(ctl, "workspace", None)
-        if callable(ws):
-            for name in ("overview", "timeline_page", "team_summary", "attention_queue", "progress"):
-                fn = getattr(ws(), name, None)
+        try:
+            from aiwb.workspace.controller import WorkspaceController
+            wc = WorkspaceController(ctl)
+        except ImportError:  # older versions without the workspace
+            wc = None
+        if wc is not None:
+            calls = {"overview": wc.overview, "task_rows": wc.task_rows, "timeline_page": wc.timeline_page,
+                     "timeline_lanes": getattr(wc, "timeline_lanes", None), "team_rows": wc.team_rows,
+                     "attention": getattr(wc, "attention", None), "dashboard": getattr(wc, "dashboard", None)}
+            for name, fn in calls.items():
                 if callable(fn):
                     ts = []
                     for _ in range(a.repeat):
@@ -119,6 +125,7 @@ def main() -> int:
                         fn()
                         ts.append(_ms(t0))
                     reads[name] = statistics.median(ts)
+            out["ledger_records"] = ctl.project.store.ledger.count()
         out["read_models_median_ms"] = reads or "n/a (workspace read models not present)"
     out["max_rss_mib"] = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 1)
     out.update(payload_size())
