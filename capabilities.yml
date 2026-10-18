@@ -28,3 +28,4 @@ capabilities:
   - {id: v2.publish, title: "Project state snapshot and auto-publish", roadmap: "1.19.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/snapshot.py, publisher.py"}
   - {id: v2.manager, title: "Project manager proposals", roadmap: "1.20.0", desktop: implemented, mobile: not_applicable, evidence: "aiwb/v2/proposals.py"}
   - {id: v2.next_action, title: "Next action and projects window", roadmap: "1.20.1", desktop: implemented, mobile: planned, evidence: "aiwb/v2/next_action.py, controller.py"}
+  - {id: ui.modes, title: "Simple and Advanced views on one controller", roadmap: "2.1.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/controller.py, projects_window.py"}

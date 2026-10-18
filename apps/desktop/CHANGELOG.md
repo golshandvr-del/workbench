@@ -1,3 +1,18 @@
+## [2.1.0] - 2026-10-18
+
+### Phase 3: Simple and Advanced views on one logic (Future Roadmap §19, §28)
+- The view preference lives in `.workbench/v2/ui.json`, **outside** the project state: switching
+  Simple ⇄ Advanced never changes data, never bumps `state_revision` and never triggers a publish.
+- `ProjectsController.next_action_view()`: the same next action (type, reference, approval flag, summary)
+  in both views; Advanced adds the reason and the queue behind it.
+- Advanced read-only panels: Agent Registry, Decision Ledger, Evidence Ledger (verified vs reported, run id,
+  commit), Attempt/Handoff history, Manager Proposal queue (stale marked), State revision / source commit /
+  publish history and pause reason.
+- The window contains no write path of its own (test enforces it): both views call the same controller.
+
+### Validation
+- `test_v2_controller.py` (8), `gui_projects_smoke.py` covers both views and asserts no data change on switch.
+
 ## [2.0.0] - 2026-10-18
 
 ### Phase-2 Release Gate (Future Roadmap §27)

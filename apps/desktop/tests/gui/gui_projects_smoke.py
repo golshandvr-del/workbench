@@ -68,10 +68,22 @@ def main() -> None:
             assert w.tree.get_children() == simple_rows
             details = w.detail.get("1.0", "end-1c")
             assert "Handoff " + h["handoff_id"] in details and "Evidence" in details, details
-            assert w.ctl.state()["settings"]["ui_mode"] == "advanced"
+            assert w.ctl.mode == "advanced"
+            root.update()
+            assert w.adv.winfo_manager(), "advanced panels shown"
+            assert "agent-architect" in w.adv_text["Agents"].get("1.0", "end-1c")
+            assert h["handoff_id"] in w.adv_text["Attempts"].get("1.0", "end-1c")
+            assert "locally only" in w.adv_text["Publish"].get("1.0", "end-1c")
             res = w.do_review(True, tid)
             assert res["status"] == "done", res
             assert "Done (verified)" in w.tree.item(tid)["values"][0] or w.ctl.mode == "advanced"
+            rev_before = w.ctl.project.store.revision
+            w.mode_var.set("simple")
+            w._mode_changed()
+            root.update()
+            assert not w.adv.winfo_manager(), "simple view hides internals"
+            assert w.ctl.project.store.revision == rev_before, "switching views changes no data"
+            assert "rev " not in str(w.tree.item(tid)["values"])
             bad = w.do_import("<<<AIWB_HANDOFF>>>\n" + json.dumps({**ho, "handoff_id": "HO-9999", "attempt_id": "att-x"}) +
                               "\n<<<AIWB_END_HANDOFF>>>")
             assert bad.kind == "rejected", bad

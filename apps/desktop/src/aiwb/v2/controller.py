@@ -8,6 +8,9 @@ first and only then routed to a V2 service (proposal or handoff).
 from __future__ import annotations
 
 import hashlib
+import json
+import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
@@ -46,6 +49,8 @@ SIMPLE_ACTION = {
     "review_task": "Review the finished task",
 }
 
+MODES = ("simple", "advanced")
+
 
 @dataclass
 class RouteResult:
@@ -67,15 +72,88 @@ class ProjectsController:
         self.publisher = publisher
         self.base_commit = base_commit
         self.state_url = state_url
-        self.mode = str(self.project.store.load()["settings"].get("ui_mode", "simple"))
+        self.ui_path = self.project.store.dir / "ui.json"
+        self.mode = self._load_ui().get("mode") or str(self.project.store.load()["settings"].get("ui_mode", "simple"))
+        if self.mode not in MODES:
+            self.mode = "simple"
 
-    # -- mode (one setting, two views of the same data)
+    # -- mode: a view preference kept OUTSIDE the project state (spec §19.5: switching views changes no data,
+    #    does not bump state_revision and never triggers a publish)
+    def _load_ui(self) -> dict[str, Any]:
+        try:
+            d = json.loads(self.ui_path.read_text(encoding="utf-8"))
+            return d if isinstance(d, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
     def set_mode(self, mode: str) -> None:
-        if mode not in ("simple", "advanced"):
+        if mode not in MODES:
             raise ModelError("mode must be simple or advanced")
-        with self.project.store.transaction("ui mode") as s:
-            s["settings"]["ui_mode"] = mode
         self.mode = mode
+        try:
+            self.ui_path.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(dir=str(self.ui_path.parent), prefix=".ui-", suffix=".tmp")
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump({**self._load_ui(), "mode": mode}, fh)
+            os.replace(tmp, self.ui_path)
+        except OSError:
+            pass  # a view preference that cannot be saved is not an error
+
+    def next_action_view(self) -> dict[str, Any] | None:
+        """The same next action in both views (§19.1): Simple gets the summary, Advanced also the reason,
+        the referenced entity and the queue behind it."""
+        a = self.next_action()
+        if not a:
+            return None
+        v = {"type": a["type"], "reference_id": a.get("reference_id", ""), "needs_approval": bool(a.get("needs_approval")),
+             "summary": SIMPLE_ACTION.get(a["type"], a["label"])}
+        if self.mode == "advanced":
+            pending = bool(self.publisher and getattr(self.publisher, "pending", False))
+            v.update(reason=a.get("reason", ""), label=a.get("label", ""),
+                     queue=[f"{x['type']} {x.get('reference_id', '')}".strip()
+                            for x in self.project.next_actions(publish_pending=pending)[1:6]])
+        return v
+
+    def advanced_panels(self) -> dict[str, str]:
+        """Read-only texts for the Advanced view (§19): registry, ledgers, attempts, proposals, publish history.
+        Pure projections of the same state; nothing here writes."""
+        st = self.state()
+        agents = [f"{a['agent_id']} · {a['name']} · role {a['role']} · rev {a['revision']} · "
+                  f"{'enabled' if a.get('enabled', True) else 'disabled'} · model label "
+                  f"{a.get('preferred_model_label') or '—'}" for a in st["agents"].values()]
+        decisions = [f"{d['decision_id']} [{d['status']}] {d['title']}"
+                     + (f" → {d.get('decision')}" if d.get("decision") else "")
+                     + (f" · why: {d.get('rationale')}" if d.get("rationale") else "")
+                     + (f" · superseded by {d['superseded_by']}" if d.get("superseded_by") else "")
+                     for d in st["decisions"].values()]
+        evidence = [f"{e['evidence_id']} {e['type']} {e['result']} · {e['subject_id']} rev {e.get('task_revision', '')} · "
+                    f"{'VERIFIED' if e['verified'] else 'reported only'} ({e['source']['kind']}"
+                    + (f", run {e['source']['run_id']}" if e['source'].get('run_id') else "")
+                    + (f", commit {str(e['source'].get('commit_sha'))[:12]}" if e['source'].get('commit_sha') else "") + ")"
+                    for e in st["evidence"].values()]
+        attempts = [f"{a['attempt_id']} · {a.get('task_id', '')} rev {a.get('task_revision', '')} · {a.get('kind', '')} · "
+                    f"{a['status']}" for a in st["attempts"].values()]
+        handoffs = [f"{h['handoff_id']} {h.get('from_agent_id') or '—'} → {h['to_agent_id']} · {h['task_id']} · "
+                    f"{h['status']} {h.get('outcome', '')}" for h in st["handoffs"].values()]
+        proposals = [f"{p['proposal_id']} [{p['status']}] base rev {p.get('base_state_revision')} · "
+                     f"{len(p.get('operations', []))} op(s){' · STALE' if p.get('stale') else ''} · {p.get('summary', '')}"
+                     for p in st["proposals"].values()]
+        pub = st["settings"].get("publish", {})
+        lines = [f"State revision {st.get('state_revision', self.project.store.revision)} · source commit "
+                 f"{self.base_commit() or '—'}",
+                 f"Publishing {'on' if pub.get('enabled') else 'off'} · branch {pub.get('branch') or 'aiwb-state'}"]
+        if self.publisher is not None:
+            q = self.publisher.queue()
+            lines += [f"Last published revision {q['last_published_revision']} · commit {q['last_commit'][:12] or '—'}",
+                      f"Paused: {q['paused'] or 'no'} · last error: {q['last_error'] or '—'}"]
+            lines += [f"  {h.get('publish_id', '')} rev {h.get('state_revision')} {h.get('commit', '')[:12]}"
+                      for h in q.get("history", [])[-10:]]
+        else:
+            lines.append("No GitHub repository bound: state is kept locally only.")
+        empty = "—"
+        return {"Agents": "\n".join(agents) or empty, "Decisions": "\n".join(decisions) or empty,
+                "Evidence": "\n".join(evidence) or empty, "Attempts": "\n".join(attempts + [""] + handoffs).strip() or empty,
+                "Proposals": "\n".join(proposals) or empty, "Publish": "\n".join(lines)}
 
     # -- read models
     def state(self) -> dict[str, Any]:
