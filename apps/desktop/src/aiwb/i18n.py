@@ -80,6 +80,12 @@ TERMS = {
     "next_step": ("Next step", "قدم بعدی"),
     "then": ("Then", "سپس"),
     "see_details": ("see details", "جزئیات را ببینید"),
+    "local_only": ("Local only (no GitHub repository bound)", "فقط محلی (مخزن GitHub متصل نیست)"),
+    "published_current": ("Published: up to date", "منتشرشده: به‌روز"),
+    "published_behind": ("Not published yet", "هنوز منتشر نشده"),
+    "local_revision": ("local revision", "نسخهٔ محلی"),
+    "last_published": ("last published", "آخرین انتشار"),
+    "retry_at": ("next retry", "تلاش بعدی"),
 }
 
 

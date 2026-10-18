@@ -93,6 +93,27 @@ class ControllerLanguageTests(unittest.TestCase):
         self.c.set_language("fa")
         self.assertTrue(self.c.warning_items()[0]["text"].startswith("انتشار وضعیت"))
 
+    def test_publish_status_local_vs_published(self):
+        self.assertEqual(self.c.publish_status()["state"], "local_only")
+
+        class Pub:
+            def __init__(self):
+                self.pending, self.q = True, {"last_published_revision": 3, "paused": "", "last_error": "boom"}
+
+            def queue(self):
+                return self.q
+        self.c.publisher = Pub()
+        st = self.c.publish_status()
+        self.assertEqual((st["state"], st["published_revision"]), ("behind", 3))
+        self.assertIn("Not published yet", st["text"])
+        self.assertNotIn("boom", st["text"], "simple view hides internals")
+        self.c.set_mode("advanced")
+        self.assertIn("boom", self.c.publish_status()["text"])
+        self.c.publisher.pending = False
+        self.assertEqual(self.c.publish_status()["state"], "current")
+        self.c.publisher.q["paused"] = "conflict"
+        self.assertEqual(self.c.publish_status()["state"], "paused")
+
 
 if __name__ == "__main__":
     unittest.main()
