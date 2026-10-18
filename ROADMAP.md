@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.7` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
-**گام فعال بعدی:** [`v1.14.8` — One-click Sync & Build Orchestrator](#v1148--one-click-sync--build-orchestrator)
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.8` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.1.0`
+**گام فعال بعدی:** `v1.14.9` — Self-hosting Repository & Desktop CI Baseline
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -60,8 +60,8 @@
 | 1.14.5 | Safe Git Review & Sync Plan | ✅ | `aiwb/git/sync.py`, `review_dialog.py`, ۱۷ تست روی Repo واقعی؛ Release `desktop-v1.14.5` |
 | 1.14.6 | Build Center: Workflow & Run Monitoring | ✅ | `aiwb/github/actions.py`, `build_center.py`, `tests/test_github_actions.py`, `tests/gui/gui_build_center_smoke.py`؛ Release `desktop-v1.14.6` |
 | 1.14.7 | Workflow Dispatch & Safe Artifact Download | ✅ | `aiwb/github/artifacts.py`, `build_center_dialogs.py`, `tests/test_github_artifacts.py` (23), `gui_dispatch_artifacts_smoke.py`; dispatch و دانلود واقعی روی همین ریپو؛ Release `desktop-v1.14.7` |
-| **1.14.8** | **One-click Sync & Build Orchestrator** | ⬜ **گام فعال** | — |
-| 1.14.9 | Self-hosting Repository & Desktop CI Baseline | 🟡 زیرساخت زودتر ساخته شد | ✅ ریپو، CI روی Linux+Windows، Actionsهای pin‌شده به SHA، permissions حداقلی، `CI summary`، Artifact نصاب CI. ⬜ ADR سیاست branch/tag |
+| 1.14.8 | One-click Sync & Build Orchestrator | ✅ | `aiwb/github/orchestrator.py`, `sync_build_window.py`, `tests/test_orchestrator.py` (10, Git واقعی + remote محلی), `gui_sync_build_smoke.py`؛ Release `desktop-v1.14.8` |
+| **1.14.9** | **Self-hosting Repository & Desktop CI Baseline** | 🟡 زیرساخت زودتر ساخته شد **گام فعال** | ✅ ریپو، CI روی Linux+Windows، Actionsهای pin‌شده به SHA، permissions حداقلی، `CI summary`، Artifact نصاب CI. ⬜ ADR سیاست branch/tag |
 | 1.14.10 | Staged Monorepo Migration | 🟡 | ✅ `apps/desktop/{src,tests,installer}`، manifest v2، نصاب بایت‌به‌بایت یکسان (PR #1). ⬜ `packages/contracts/` |
 | 1.14.11 | Android Proof-of-Build & Capability Contracts | 🟡 | ✅ `apps/mobile/android`، APK از CI. ⬜ `packages/contracts` (JSON Schema + fixtures)، `capabilities.yml`، job اعتبارسنجی قرارداد |
 | 1.14.12 | Versioned Releases & Protected Signing | 🟡 | ✅ تگ‌های `desktop-v*`/`mobile-v*`، workflowهای release، SHA-256 و manifest، Secretهای امضا فقط در Environment محافظت‌شدهٔ `release` (فقط تگ `mobile-v*`). ⬜ approval انسانی پیش از انتشار پایدار؛ اولین Release موبایل با Environment جدید |
@@ -98,12 +98,12 @@
 
 وضعیت‌ها: `Checking → Review Required → Ready to Commit → Committed → Pushing → CI Queued → CI Running → Build Passed/Failed → Artifact Verified/Downloaded`
 
-- [ ] Preflight حساب، binding، Git root، branch، working tree و Remote
-- [ ] Review کامل + هشدار فایل حساس، خارج از scope و تغییر Workflow
-- [ ] Fetch/reconcile مجدد پیش از Commit/Push؛ Plan قدیمی منسوخ شود
-- [ ] `GitOperationRecord` و `BuildRunRecord` با زنجیرهٔ Task → Apply → Commit SHA → Run ID → Artifact ID → Hash
-- [ ] Cancel واقعی در هر مرحله؛ هرگز حذف Commit یا Undo خودکار
-- [ ] operation lock و idempotency (دوبارکلیک/retry)
+- [x] Preflight حساب، binding، Git root، branch، working tree و Remote
+- [x] Review کامل + هشدار فایل حساس، خارج از scope و تغییر Workflow
+- [x] Fetch/reconcile مجدد پیش از Commit/Push؛ Plan قدیمی منسوخ شود
+- [x] `GitOperationRecord` و `BuildRunRecord` با زنجیرهٔ Task → Apply → Commit SHA → Run ID → Artifact ID → Hash
+- [x] Cancel واقعی در هر مرحله؛ هرگز حذف Commit یا Undo خودکار
+- [x] operation lock و idempotency (دوبارکلیک/retry)
 
 ### v1.14.9 تا v1.14.12 — باقی‌ماندهٔ زیرساخت
 

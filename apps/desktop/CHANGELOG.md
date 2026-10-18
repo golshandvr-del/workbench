@@ -1,3 +1,19 @@
+## [1.14.8] - 2026-10-18
+
+### One-click Sync & Build Orchestrator (roadmap v1.14.8)
+- New **Sync & Build…** window in the GitHub panel (`aiwb/github/orchestrator.py` service, `aiwb/github/sync_build_window.py`). Visible state chain: Checking → Review Required → Ready to Commit → Committed → Pushing → CI Queued → CI Running → Build Passed/Failed → Artifact Verified/Downloaded, with the last successful step, the real effect on Git and the next action.
+- **Preflight:** account token, selected Build workflow, bound work branch (never `main`/`master`) checked out, remote `origin`, fetch, sync state (diverged/conflict/remote-ahead stop the flow).
+- **Review:** each change is flagged *sensitive* (cannot be committed), *outside_scope* or *workflow_change* (both need explicit confirmation).
+- **Stale plan:** the remote is fetched again before commit and checked live before push; if it moved, nothing is committed/pushed.
+- **Exact build tracking:** runs are looked up by bound workflow + branch + the pushed commit's full SHA; artifacts must match `repository_id + run_id + head_sha` (+ the binding's artifact pattern).
+- **Cancel:** before commit — nothing changed; after commit — local commit kept; after push — the Actions run is cancelled, the commit stays. No commit is ever deleted or undone.
+- **Idempotency & lock:** operation ID per flow; repeated commit/push/download reuse the record (a push whose result was lost is detected from the remote SHA); one flow per repository/branch; unfinished operations can be resumed after reopening.
+- **Records:** `GitOperationRecord` + `BuildRunRecord` in `.workbench/sync_build_operations.json` (Task → approved paths → Commit SHA → Run ID → Artifact ID → SHA-256); no credentials or prompt text.
+- Fixed an undefined name (`RepositoryBindingError`) that turned a failed binding save into a NameError; CI now has an undefined-name gate (`tools/check_undefined_names.py`, pyflakes).
+
+### Validation
+- 10 new orchestrator tests on real Git repositories with a local bare remote; new GUI smoke `gui_sync_build_smoke.py` (18 GUI smokes).
+
 ## [1.14.7] - 2026-10-18
 ### Workflow Dispatch & Safe Artifact Download (roadmap v1.14.7)
 - New `aiwb/github/artifacts.py` (no Tk) and `aiwb/github/build_center_dialogs.py`; Build Center gets **Run workflow…** and **Artifacts…**.
