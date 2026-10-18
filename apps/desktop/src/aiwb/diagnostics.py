@@ -99,7 +99,7 @@ def collect_bundle(project_root: Path | None, *, app_version: str, app_log: Path
     entries.append(BundleEntry("execution_events_recent.json", clean(json.dumps(recent, ensure_ascii=False, indent=2))))
 
     state = rj("task_state.json", {})
-    if isinstance(state, dict):
+    if project_root is not None and isinstance(state, dict):
         keep = {k: state.get(k) for k in ("task_id", "workflow_stage", "workflow_stage_updated_at", "completion_status",
                                            "last_prompt_stage", "last_output_format", "last_response_rejected_at")}
         keep["workflow_history"] = [{k: h.get(k) for k in ("from", "to", "at")}
