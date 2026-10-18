@@ -72,13 +72,9 @@ def apply_route(project: Any, task_id: str, route: str, request: str, *, title: 
                            "and their late answers will be marked stale."}
     if route == "new_task":
         data = {"title": (title or req.splitlines()[0])[:200], "objective": req, "owner_agent_id": t.get("owner_agent_id", ""),
-                "acceptance_criteria": [], "origin": "manual"}
+                "acceptance_criteria": [], "origin": "manual",
+                "depends_on": [task_id] if t["status"] not in ("done", "cancelled", "superseded") else []}
         new = project.tasks.create(data)
-        if t["status"] != "done":
-            try:
-                project.tasks.add_dependency(new["task_id"], task_id)
-            except (ModelError, AttributeError):
-                pass
         return {"route": route, "task_id": new["task_id"],
                 "message": f"New task {new['task_id']} (draft) — add scope and acceptance criteria, then mark it ready."}
     lines = ["# Re-plan request (AI Workbench)", "",
