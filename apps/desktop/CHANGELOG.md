@@ -1,3 +1,19 @@
+## [2.1.1] - 2026-10-18
+
+### Phase 3 polish (roadmap 2.1.x, Future Roadmap §19.2–§19.4)
+- **One FA/EN glossary** `aiwb/i18n.py`: every task status, evidence state (Verified / Reported / Not run /
+  Failed), warning severity, next action and UI term has exactly one English and one Persian text and a
+  symbol. `check_glossary()` rejects missing or duplicate translations; program logic uses keys only (test
+  forbids comparisons against Persian text).
+- **Language switch** in *Projects (multi-agent)*: display only, stored in `ui.json`, never changes data.
+- **Prioritised warnings** (`warning_items`): blocking first (publishing paused), then actions (stale
+  proposals, decisions, stale answers, blocked tasks), then info (not verified yet); de-duplicated; each
+  shown with a severity symbol, not colour alone.
+- Applying a stale proposal asks with **No** as the default button.
+
+### Validation
+- `test_i18n.py` (5); GUI smoke switches to Persian and back without changing `state_revision`.
+
 ## [2.1.0] - 2026-10-18
 
 ### Phase 3: Simple and Advanced views on one logic (Future Roadmap §19, §28)

@@ -11,6 +11,7 @@ import tkinter as tk
 from tkinter import messagebox, simpledialog, ttk
 from typing import Any, Callable
 
+from .. import i18n
 from .controller import ProjectsController
 from .models import ModelError
 
@@ -27,14 +28,25 @@ class ProjectsWindow:
         self.win.geometry("1120x760")
         top = ttk.Frame(self.win, padding=(10, 8))
         top.pack(fill="x")
-        ttk.Label(top, text="View:").pack(side="left")
+        self.view_label = ttk.Label(top, text=ctl.t("view") + ":")
+        self.view_label.pack(side="left")
         self.mode_var = tk.StringVar(value=ctl.mode)
-        for m, label in (("simple", "Simple"), ("advanced", "Advanced")):
-            ttk.Radiobutton(top, text=label, value=m, variable=self.mode_var, command=self._mode_changed).pack(side="left", padx=4)
+        self.mode_buttons = {}
+        for m in ("simple", "advanced"):
+            rb = ttk.Radiobutton(top, text=ctl.t(m), value=m, variable=self.mode_var, command=self._mode_changed)
+            rb.pack(side="left", padx=4)
+            self.mode_buttons[m] = rb
+        self.lang_var = tk.StringVar(value=ctl.lang)
+        self.lang_label = ttk.Label(top, text=ctl.t("language") + ":")
+        self.lang_label.pack(side="left", padx=(16, 0))
+        lang_box = ttk.Combobox(top, textvariable=self.lang_var, values=list(i18n.LANGUAGES), width=4, state="readonly")
+        lang_box.pack(side="left", padx=4)
+        lang_box.bind("<<ComboboxSelected>>", lambda _e: self._lang_changed())
         ttk.Button(top, text="Close", command=self.close).pack(side="right")
         ttk.Button(top, text="Publish state now", command=self.do_publish).pack(side="right", padx=6)
         self.next_var = tk.StringVar()
-        nxt = ttk.LabelFrame(self.win, text="Next step", padding=8)
+        nxt = ttk.LabelFrame(self.win, text=ctl.t("next_step"), padding=8)
+        self.next_frame = nxt
         nxt.pack(fill="x", padx=10)
         ttk.Label(nxt, textvariable=self.next_var, wraplength=1060, font=("Segoe UI", 11, "bold")).pack(anchor="w")
         self.warn_var = tk.StringVar()
@@ -98,11 +110,20 @@ class ProjectsWindow:
         self.ctl.set_mode(self.mode_var.get())
         self.refresh()
 
+    def _lang_changed(self) -> None:
+        self.ctl.set_language(self.lang_var.get())
+        self.view_label.configure(text=self.ctl.t("view") + ":")
+        self.lang_label.configure(text=self.ctl.t("language") + ":")
+        self.next_frame.configure(text=self.ctl.t("next_step"))
+        for m, rb in self.mode_buttons.items():
+            rb.configure(text=self.ctl.t(m))
+        self.refresh()
+
     def refresh(self) -> None:
         self.next_var.set(self.ctl.next_action_text())
         nv = self.ctl.next_action_view()
         if nv and self.ctl.mode == "advanced" and nv.get("queue"):
-            self.next_var.set(self.next_var.get() + "\nThen: " + " · ".join(nv["queue"]))
+            self.next_var.set(self.next_var.get() + f"\n{self.ctl.t('then')}: " + " · ".join(nv["queue"]))
         if self.ctl.mode == "advanced":
             if not self.adv.winfo_ismapped():
                 self.adv.pack(fill="both", expand=False, padx=10, pady=(0, 8))
@@ -110,8 +131,9 @@ class ProjectsWindow:
                 self._set(self.adv_text[name], text)
         elif self.adv.winfo_manager():
             self.adv.pack_forget()
-        w = self.ctl.warnings()
-        self.warn_var.set("\n".join("⚠ " + x for x in w[:6]))
+        w = self.ctl.warning_items()
+        # symbol + words per severity: colour never carries meaning alone (§19.3)
+        self.warn_var.set("\n".join(f"{i18n.SEVERITY[x['severity']][0]} {x['text']}" for x in w[:6]))
         keep = self.selected_task()
         self.tree.delete(*self.tree.get_children())
         for r in self.ctl.task_rows():
@@ -239,7 +261,7 @@ class ProjectsWindow:
                 return None
         confirm = bool(p.get("stale")) and (indices == [] or messagebox.askyesno(
             "Older proposal", "This proposal was written for an older project state. Apply the selected changes anyway?",
-            parent=self.win))
+            parent=self.win, default="no"))
         out = self._guard(lambda: self.ctl.accept_proposal(pid, indices, confirm_stale=confirm))
         if out:
             res = out.get("result", {})
