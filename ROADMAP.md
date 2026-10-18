@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.1.2` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** Mobile `0.2.x-tooling` — مهاجرت AGP/Gradle/Kotlin
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.1.2` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.2`
+**گام فعال بعدی:** Mobile Companion (Integration Spec P3)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -184,8 +184,8 @@
 |---|---|---|
 | 0.1.0 | Proof-of-build: provenance، بررسی Releaseها، FA/EN، APK/AAB امضاشده | ✅ `mobile-v0.1.0` |
 | 0.2.0 | مصرف `packages/contracts`: `ReleaseManifest.kt` سخت‌گیر + تست روی fixtureهای مشترک؛ `release-manifest.json` قراردادی در Release موبایل | ✅ `mobile-v0.2.0` |
-| 0.2.x-tooling | مهاجرت هماهنگ AGP + Gradle + Kotlin در یک PR (PRهای #2، #5 و #8 Dependabot بسته شدند چون Build را می‌شکستند؛ AGP 8.13 با Gradle 9.8 سازگار نیست) | ⬜ **گام فعال** |
-| Companion | Pairing امن، مشاهدهٔ Task/Build، ورود پاسخ از موبایل (Integration Spec P3) | ⏭ پس از 2.0.0 |
+| 0.2.x-tooling | مهاجرت هماهنگ AGP + Gradle + Kotlin در یک PR (PRهای #2، #5 و #8 Dependabot بسته شدند چون Build را می‌شکستند؛ AGP 8.13 با Gradle 9.8 سازگار نیست) | ✅ AGP 9.4.1 + Gradle 9.8.1 + Kotlin داخلی؛ Release `mobile-v0.2.2` (تگ 0.2.1 در Build امضا شکست و منتشر نشد) |
+| Companion | Pairing امن، مشاهدهٔ Task/Build، ورود پاسخ از موبایل (Integration Spec P3) | ⬜ **گام فعال** |
 
 اثرانگشت گواهی امضای Release اندروید (برای تأیید هر APK):
 `SHA-256 6F:88:0A:C2:36:94:D0:C4:C0:E3:B5:9B:35:7D:F2:CE:A2:09:14:7B:7A:2E:01:7D:88:ED:2F:CE:87:3F:8D:59`
