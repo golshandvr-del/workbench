@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "1.16.3",
+  "version": "1.20.1",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -118,8 +118,24 @@
       "source": "apps/desktop/tests/test_context_request.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v1.16.3.md",
-      "source": "docs/release/v1.16.3/WINDOWS_RELEASE_CHECKLIST_v1.16.3.md"
+      "path": "test_v2_model.py",
+      "source": "apps/desktop/tests/test_v2_model.py"
+    },
+    {
+      "path": "test_v2_flow.py",
+      "source": "apps/desktop/tests/test_v2_flow.py"
+    },
+    {
+      "path": "test_v2_reference_scenario.py",
+      "source": "apps/desktop/tests/test_v2_reference_scenario.py"
+    },
+    {
+      "path": "test_v2_controller.py",
+      "source": "apps/desktop/tests/test_v2_controller.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v1.20.1.md",
+      "source": "docs/release/v1.20.1/WINDOWS_RELEASE_CHECKLIST_v1.20.1.md"
     },
     {
       "path": "install.ps1",
@@ -268,6 +284,62 @@
     {
       "path": "aiwb/context_request_window.py",
       "source": "apps/desktop/src/aiwb/context_request_window.py"
+    },
+    {
+      "path": "aiwb/v2/__init__.py",
+      "source": "apps/desktop/src/aiwb/v2/__init__.py"
+    },
+    {
+      "path": "aiwb/v2/models.py",
+      "source": "apps/desktop/src/aiwb/v2/models.py"
+    },
+    {
+      "path": "aiwb/v2/store.py",
+      "source": "apps/desktop/src/aiwb/v2/store.py"
+    },
+    {
+      "path": "aiwb/v2/agents.py",
+      "source": "apps/desktop/src/aiwb/v2/agents.py"
+    },
+    {
+      "path": "aiwb/v2/tasks.py",
+      "source": "apps/desktop/src/aiwb/v2/tasks.py"
+    },
+    {
+      "path": "aiwb/v2/attempts.py",
+      "source": "apps/desktop/src/aiwb/v2/attempts.py"
+    },
+    {
+      "path": "aiwb/v2/ledger.py",
+      "source": "apps/desktop/src/aiwb/v2/ledger.py"
+    },
+    {
+      "path": "aiwb/v2/handoff.py",
+      "source": "apps/desktop/src/aiwb/v2/handoff.py"
+    },
+    {
+      "path": "aiwb/v2/snapshot.py",
+      "source": "apps/desktop/src/aiwb/v2/snapshot.py"
+    },
+    {
+      "path": "aiwb/v2/publisher.py",
+      "source": "apps/desktop/src/aiwb/v2/publisher.py"
+    },
+    {
+      "path": "aiwb/v2/proposals.py",
+      "source": "apps/desktop/src/aiwb/v2/proposals.py"
+    },
+    {
+      "path": "aiwb/v2/next_action.py",
+      "source": "apps/desktop/src/aiwb/v2/next_action.py"
+    },
+    {
+      "path": "aiwb/v2/controller.py",
+      "source": "apps/desktop/src/aiwb/v2/controller.py"
+    },
+    {
+      "path": "aiwb/v2/projects_window.py",
+      "source": "apps/desktop/src/aiwb/v2/projects_window.py"
     }
   ],
   "zip_timestamp": [
