@@ -45,6 +45,12 @@
             android:text="@string/check_updates" />
 
         <Button
+            android:id="@+id/companion_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/companion_open" />
+
+        <Button
             android:id="@+id/open_repo_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
