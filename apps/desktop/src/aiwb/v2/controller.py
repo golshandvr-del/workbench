@@ -39,6 +39,11 @@ SIMPLE_ACTION = {
     "publish_state": "Publish the project state to GitHub",
     "manager_update": "Send the manager an update",
     "replan": "Re-plan a blocked task",
+    "unblock_task": "Unblock a task whose prerequisites changed",
+    "approve_task": "Approve finished work so the task can be closed",
+    "review_delivery": "Review what the agent delivered",
+    "prepare_handoff": "Prepare the prompt for the next agent",
+    "review_task": "Review the finished task",
 }
 
 
