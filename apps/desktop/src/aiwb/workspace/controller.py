@@ -13,6 +13,8 @@ from typing import Any, Callable
 from .. import i18n
 from ..v2.controller import ProjectsController
 from ..v2.models import ModelError
+from ..v2.timeline import lanes, planned_items, progress
+from ..v2.workflow import stage_label, task_stage
 from ..v2.resources import binding_readiness, current_binding
 
 SECTIONS = ("overview", "timeline", "tasks", "team", "files", "versions", "settings")
@@ -121,13 +123,10 @@ class WorkspaceController:
         counts: dict[str, int] = {}
         for t in tasks:
             counts[t["status"]] = counts.get(t["status"], 0) + 1
-        in_scope = [t for t in tasks if t["status"] not in ("cancelled", "superseded")]
-        done = sum(1 for t in in_scope if t["status"] == "done")
         nv = self.ctl.next_action_view() or {"type": "nothing", "summary": i18n.action("nothing", self.lang),
                                              "reference_id": ""}
         return {"goal": str(st["settings"].get("goal", "")), "next": nv,
-                "progress": {"done": done, "total": len(in_scope),
-                             "percent": round(100 * done / len(in_scope)) if in_scope else 0},
+                "progress": progress(st),
                 "counts": counts, "warnings": self.ctl.warning_items()[:5],
                 "agents": sum(1 for a in st["agents"].values() if a.get("enabled", True)),
                 "accounts": sum(1 for a in st["account_profiles"].values() if a.get("enabled", True)),
@@ -140,9 +139,30 @@ class WorkspaceController:
             return f"{pr['done']} از {pr['total']} Task تأیید شده؛ {pr['percent']}٪ از تعداد Taskها (نه حجم کار)"
         return f"{pr['done']} of {pr['total']} tasks verified; {pr['percent']}% of tasks by count (not of effort)"
 
+    def progress_details(self, pr: dict[str, Any]) -> list[str]:
+        """Separate indicators (spec §6.2); the weighted figure only when weights exist, labelled estimated."""
+        fa = self.lang == "fa"
+        lines = [(f"در انتظار تست/Build: {pr['validation_pending']} · در انتظار بازبینی: {pr['in_review']} · "
+                  f"مسدود: {pr['blocked']} · نیازمند تصمیم: {pr['needs_decision']} · در حال انجام: {pr['in_progress']}")
+                 if fa else
+                 (f"Waiting for test/build: {pr['validation_pending']} · waiting for review: {pr['in_review']} · "
+                  f"blocked: {pr['blocked']} · needs decision: {pr['needs_decision']} · in progress: {pr['in_progress']}")]
+        if pr.get("excluded"):
+            lines.append(f"{pr['excluded']} Task لغو/جایگزین‌شده از مخرج خارج است" if fa
+                         else f"{pr['excluded']} cancelled/superseded task(s) excluded from the count")
+        if pr.get("weighted"):
+            lines.append(f"پیشرفت وزنی (تخمینی، بر اساس وزن‌های شما): {pr['weighted']['percent']}٪" if fa
+                         else f"Weighted progress (estimated, from your task weights): {pr['weighted']['percent']}%")
+        return lines
+
     # -- tasks
     def task_rows(self, *, status: str = "", agent_id: str = "", text: str = "") -> list[dict[str, Any]]:
         rows = self.ctl.task_rows()
+        st = self.ctl.state()
+        for r in rows:
+            if r["task_id"] in st["tasks"]:
+                ts = task_stage(st, r["task_id"])
+                r["stage"], r["stage_text"], r["user_action"] = ts["stage"], stage_label(ts["stage"], self.lang), ts["user_action"]
         needle = text.lower().strip()
         return [r for r in rows if (not status or r["status"] == status) and (not agent_id or r["owner"] == agent_id)
                 and (not needle or needle in (r["task_id"] + " " + r["title"]).lower())]
