@@ -46,7 +46,7 @@ UI thread: Publish و Build در پس‌زمینه می‌مانند (رفتار
 1. **Manual End-to-End با دو چت مستقل واقعی مدل** (§۲۴) — نیازمند مالک محصول.
 2. **Windows فیزیکی با DPI متفاوت و Taskbar در موقعیت‌های مختلف** — فقط Windows CI (runner مجازی) اجرا می‌شود.
 3. **Mobile Companion 0.3.0 روی گوشی واقعی** (از 2.2.0 باقی مانده).
-4. Downgrade: سیاست موجود (`docs/release/ROLLBACK_PLAN.md`) — نسخهٔ قدیمی‌تر state با `db_version` بالاتر را باز نمی‌کند و backup قبل از migration حفظ می‌شود؛ downgrade واقعی دستی اجرا نشده.
+4. Downgrade: `v2/store.migrate_state` state با `db_version` بالاتر را رد می‌کند و فایل را تغییر نمی‌دهد (تست‌شده در unit tests)، backup قبل از migration حفظ می‌شود؛ rollback انتشار طبق `docs/release/ROLLBACK_PLAN.md`. نصب دستی نسخهٔ قدیمی روی دادهٔ جدید: NOT RUN.
 
 ## ۵. تصمیم انتشار
 
