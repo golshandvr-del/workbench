@@ -76,6 +76,7 @@ def make_zip(entries: list[tuple[str, bytes]], *, mode: int | None = None) -> by
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
         for name, data in entries:
             info = zipfile.ZipInfo(name)
+            info.filename = name  # keep raw name (ZipInfo() turns '\\' into '/' on Windows)
             info.compress_type = zipfile.ZIP_DEFLATED
             if mode is not None:
                 info.external_attr = mode << 16
