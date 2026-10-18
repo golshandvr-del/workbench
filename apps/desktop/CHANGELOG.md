@@ -1,3 +1,9 @@
+## [1.15.0] - 2026-10-18
+
+### Integrated GitHub & Monorepo Stable
+- Stable release of the 1.14.x GitHub chain: accounts → repository binding → review/sync → Build Center → dispatch/artifacts → one-click Sync & Build, with monorepo CI, shared contracts and protected releases.
+- No functional changes over 1.14.13 (RC); Definition-of-Done evidence in `docs/release/v1.15.0/DEFINITION_OF_DONE_v1.15.0.md`.
+
 ## [1.14.13] - 2026-10-18
 
 ### Release Candidate & Native Windows Validation (roadmap v1.14.13)

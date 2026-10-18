@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.14.13` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** `v1.15.0` — Integrated GitHub & Monorepo Stable
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.15.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** `v1.16.0` — Response Inbox
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -66,7 +66,7 @@
 | 1.14.11 | Android Proof-of-Build & Capability Contracts | ✅ | JSON Schema `release-manifest.v1`/`build-metadata.v1`/`capabilities.v1` + fixtures؛ `capabilities.yml`؛ `tools/validate_contracts.py` (job `contracts`)؛ مصرف در Kotlin (`ReleaseManifest.kt` + تست روی fixtureهای مشترک) |
 | 1.14.12 | Versioned Releases & Protected Signing | ✅ | تگ‌های جدا، SHA-256 و manifest قراردادی در هر دو release؛ Secretهای امضا فقط در Environment `release` با **Required reviewer**؛ `mobile-v0.2.0` |
 | 1.14.13 | Release Candidate & Native Windows Validation | ✅ | E2E واقعی روی `aiwb-e2e-sandbox` (`tools/e2e_github_sandbox.py`)، تست ارتقا + مسیر Unicode در CI ویندوز، `test_rc_hardening.py` (13)، بازیابی `settings.json`، rollback plan و تصمیم‌های release owner؛ Release `desktop-v1.14.13` |
-| **1.15.0** | **Integrated GitHub & Monorepo Stable** | ⬜ **گام فعال** | — |
+| 1.15.0 | Integrated GitHub & Monorepo Stable | ✅ | `docs/release/v1.15.0/DEFINITION_OF_DONE_v1.15.0.md`؛ Release `desktop-v1.15.0` |
 
 > زیرساخت ریپو (1.14.9 تا 1.14.12) برای نگهداری و انتشار امن زودتر ساخته شد. این **ترتیب قابلیت‌های داخل اپ را تغییر نمی‌دهد**: گام فعال همچنان طبق جدول بالاست و موارد ⬜ این ردیف‌ها در نوبت خودشان بسته می‌شوند.
 
@@ -136,7 +136,7 @@
 
 | نسخه | محتوا | وضعیت |
 |---|---|---|
-| 1.16.0 | **Response Inbox:** ذخیرهٔ پاسخ خام پیش از Parse؛ `response_id`/`attempt_id` پایدار؛ Raw و Parse Result جدا؛ `schema_version`؛ Reparse بدون دریافت مجدد | ⬜ |
+| **1.16.0** | **Response Inbox:** ذخیرهٔ پاسخ خام پیش از Parse؛ `response_id`/`attempt_id` پایدار؛ Raw و Parse Result جدا؛ `schema_version`؛ Reparse بدون دریافت مجدد | ⬜ **گام فعال** |
 | 1.16.1 | **خطای قابل‌فهم و بازیابی:** کد خطای استاندارد، مرحلهٔ شکست، آنچه سالم مانده، قدم بعدی؛ نجات پاسخ ناقص؛ تشخیص پاسخ قدیمی/متعلق به Task دیگر | ⬜ |
 | 1.16.2 | **Repair Prompt هوشمند** بر اساس خطا و Attempt واقعی؛ Diagnostics Bundle redacted (باقی‌ماندهٔ v1.11 بخش ۷.۴) | ⬜ |
 | 1.16.3 | **Context Request:** Capability Manifest، قرارداد `AIWB_CONTEXT_REQUEST`، استخراج خطوط/Symbol، inline در برابر ZIP، رد مسیر خطرناک/ناموجود | ⬜ |
