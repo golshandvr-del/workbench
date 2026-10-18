@@ -23,7 +23,7 @@ apps/desktop/
   release_manifest.json     Version + payload map (repo source -> installed flat path)
   CHANGELOG.md, README*.md, ARCHITECTURE.md
 apps/mobile/                Android app (Kotlin, Gradle) + version.properties
-packages/contracts/         (planned, roadmap 1.14.10/11) shared JSON schemas
+packages/contracts/         shared JSON schemas + fixtures (ADR-005)
 tools/                      Reproducible installer builder, manifest gate, installed-app smoke
 tools/legacy/               Original 1.14.4 builder + independent packaging verifier
 docs/specs/                 Product specs and roadmaps (FA) — detail behind ROADMAP.md
