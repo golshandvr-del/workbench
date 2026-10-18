@@ -88,6 +88,15 @@ def main() -> None:
                               "\n<<<AIWB_END_HANDOFF>>>")
             assert bad.kind == "rejected", bad
             assert w.do_publish()["status"] == "disabled", "no binding → local only"
+            rev_lang = w.ctl.project.store.revision
+            w.lang_var.set("fa")
+            w._lang_changed()
+            root.update()
+            assert "انجام‌شده" in w.tree.item(tid)["values"][0], w.tree.item(tid)["values"]
+            assert w.next_frame.cget("text") == "قدم بعدی"
+            assert w.ctl.project.store.revision == rev_lang, "language switch changes no data"
+            w.lang_var.set("en")
+            w._lang_changed()
             assert sorted(p.name for p in project.iterdir() if p.name != ".workbench") == ["main.py"]
             w.close()
             print("PASS: Projects (multi-agent) GUI smoke, simple + advanced")

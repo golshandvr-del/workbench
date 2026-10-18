@@ -15,39 +15,17 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
+from .. import i18n
 from . import V2Project, build_snapshot
 from .handoff import BLOCK_RE as HANDOFF_RE
 from .models import ModelError
 from .proposals import BLOCK_RE as PROPOSAL_RE, manager_update_prompt, planning_prompt
 from .snapshot import fallback_summary, render_status_md
 
-# Plain-language labels for the Simple view: status words + a symbol, never colour alone (spec §19, 2.1.x).
-SIMPLE_STATUS = {
-    "draft": ("○", "Not planned yet"), "proposed": ("○", "Proposed"), "ready": ("▶", "Ready to start"),
-    "in_progress": ("…", "Waiting for the model"), "blocked": ("■", "Blocked"),
-    "needs_decision": ("?", "Needs your decision"), "in_review": ("◆", "Needs your review"),
-    "validation_pending": ("◇", "Needs a real test/build"), "done": ("✓", "Done (verified)"),
-    "cancelled": ("✕", "Cancelled"), "superseded": ("↷", "Replaced"),
-}
-SIMPLE_ACTION = {
-    "plan_project": "Write the project goal and copy the planning prompt to your project-manager chat",
-    "review_proposal": "Review the manager's proposal and accept the parts you agree with",
-    "resolve_decision": "Make a decision the work is waiting for",
-    "start_task": "Start the next task: copy its prompt to the agent's chat",
-    "copy_prompt": "Copy the prepared prompt into the agent's chat",
-    "import_response": "Paste the model's answer here",
-    "review_handoff": "Review what the agent delivered",
-    "run_validation": "Run the tests/build so the result is verified",
-    "repair": "Ask the model only for what is missing",
-    "publish_state": "Publish the project state to GitHub",
-    "manager_update": "Send the manager an update",
-    "replan": "Re-plan a blocked task",
-    "unblock_task": "Unblock a task whose prerequisites changed",
-    "approve_task": "Approve finished work so the task can be closed",
-    "review_delivery": "Review what the agent delivered",
-    "prepare_handoff": "Prepare the prompt for the next agent",
-    "review_task": "Review the finished task",
-}
+# Plain-language labels come from the single FA/EN glossary (aiwb.i18n); English kept as module constants
+# for callers that predate the language setting.
+SIMPLE_STATUS = {k: (v[0], v[1]) for k, v in i18n.STATUS.items()}
+SIMPLE_ACTION = {k: v[0] for k, v in i18n.ACTION.items() if k != "nothing"}
 
 MODES = ("simple", "advanced")
 
@@ -76,6 +54,9 @@ class ProjectsController:
         self.mode = self._load_ui().get("mode") or str(self.project.store.load()["settings"].get("ui_mode", "simple"))
         if self.mode not in MODES:
             self.mode = "simple"
+        self.lang = self._load_ui().get("lang") or i18n.DEFAULT_LANGUAGE
+        if self.lang not in i18n.LANGUAGES:
+            self.lang = i18n.DEFAULT_LANGUAGE
 
     # -- mode: a view preference kept OUTSIDE the project state (spec §19.5: switching views changes no data,
     #    does not bump state_revision and never triggers a publish)
@@ -86,18 +67,31 @@ class ProjectsController:
         except (OSError, ValueError):
             return {}
 
-    def set_mode(self, mode: str) -> None:
-        if mode not in MODES:
-            raise ModelError("mode must be simple or advanced")
-        self.mode = mode
+    def _save_ui(self, **kw: str) -> None:
         try:
             self.ui_path.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(dir=str(self.ui_path.parent), prefix=".ui-", suffix=".tmp")
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                json.dump({**self._load_ui(), "mode": mode}, fh)
+                json.dump({**self._load_ui(), **kw}, fh)
             os.replace(tmp, self.ui_path)
         except OSError:
             pass  # a view preference that cannot be saved is not an error
+
+    def set_mode(self, mode: str) -> None:
+        if mode not in MODES:
+            raise ModelError("mode must be simple or advanced")
+        self.mode = mode
+        self._save_ui(mode=mode)
+
+    def set_language(self, lang: str) -> None:
+        """Display language only; data and logic use keys, never translated text (§19.4)."""
+        if lang not in i18n.LANGUAGES:
+            raise ModelError("language must be one of " + ", ".join(i18n.LANGUAGES))
+        self.lang = lang
+        self._save_ui(lang=lang)
+
+    def t(self, key: str) -> str:
+        return i18n.term(key, self.lang)
 
     def next_action_view(self) -> dict[str, Any] | None:
         """The same next action in both views (§19.1): Simple gets the summary, Advanced also the reason,
@@ -106,7 +100,7 @@ class ProjectsController:
         if not a:
             return None
         v = {"type": a["type"], "reference_id": a.get("reference_id", ""), "needs_approval": bool(a.get("needs_approval")),
-             "summary": SIMPLE_ACTION.get(a["type"], a["label"])}
+             "summary": i18n.action(a["type"], self.lang, a["label"])}
         if self.mode == "advanced":
             pending = bool(self.publisher and getattr(self.publisher, "pending", False))
             v.update(reason=a.get("reason", ""), label=a.get("label", ""),
@@ -167,15 +161,15 @@ class ProjectsController:
     def next_action_text(self) -> str:
         a = self.next_action()
         if not a:
-            return "Nothing is waiting. Add a task or ask the manager for the next step."
-        base = SIMPLE_ACTION.get(a["type"], a["label"])
+            return i18n.action("nothing", self.lang)
+        base = i18n.action(a["type"], self.lang, a["label"])
         ref = f" ({a['reference_id']})" if a.get("reference_id") else ""
         return base + ref + ("" if self.mode == "simple" else f" — {a['reason']}")
 
     def task_rows(self) -> list[dict[str, Any]]:
         rows = []
         for t in self.project.tasks.list():
-            sym, word = SIMPLE_STATUS.get(t["status"], ("·", t["status"]))
+            sym, word = i18n.status(t["status"], self.lang)
             row = {"task_id": t["task_id"], "title": t["title"], "symbol": sym, "status_text": word,
                    "status": t["status"], "owner": t.get("owner_agent_id", ""), "reason": t.get("blocked_reason", "")}
             if self.mode == "advanced":
@@ -184,26 +178,51 @@ class ProjectsController:
             rows.append(row)
         return rows
 
-    def warnings(self) -> list[str]:
-        """Prioritised warnings: decisions and blockers first (2.1.x)."""
+    def warning_items(self) -> list[dict[str, str]]:
+        """Prioritised, de-duplicated warnings (§19.2): blocking (stop) first, then actions, then info.
+        Each item has a severity key, a text in the display language and a reference id."""
         st = self.state()
-        out = [f"Decision needed: {d['title']} ({d['decision_id']})" for d in st["decisions"].values()
-               if d["status"] == "proposed"]
-        out += [f"Blocked: {t['title']} — {t.get('blocked_reason') or 'see details'}" for t in st["tasks"].values()
-                if t["status"] == "blocked"]
-        out += [f"Not verified yet: {t['title']}" for t in st["tasks"].values() if t["status"] == "validation_pending"]
+        items: list[dict[str, str]] = []
         if self.publisher is not None:
             q = self.publisher.queue()
             if q.get("paused"):
-                out.insert(0, "State publishing is paused: " + q["paused"])
+                items.append({"severity": "blocking", "ref": "publish", "text": f"{self.t('publish_paused')}: {q['paused']}"})
+        for p in st["proposals"].values():
+            if p["status"] == "pending" and p.get("stale"):
+                items.append({"severity": "action", "ref": p["proposal_id"],
+                              "text": f"{self.t('stale_proposal')} ({p['proposal_id']})"})
+        for d in st["decisions"].values():
+            if d["status"] == "proposed":
+                items.append({"severity": "action", "ref": d["decision_id"],
+                              "text": f"{self.t('decision_needed')}: {d['title']} ({d['decision_id']})"})
+        for h in st["handoffs"].values():
+            if h["status"] in ("stale", "reconciliation_required"):
+                items.append({"severity": "action", "ref": h["handoff_id"],
+                              "text": f"{self.t('stale_answer')} ({h['handoff_id']}, {h['task_id']})"})
+        for t in st["tasks"].values():
+            if t["status"] == "blocked":
+                items.append({"severity": "action", "ref": t["task_id"],
+                              "text": f"{self.t('blocked')}: {t['title']} — {t.get('blocked_reason') or self.t('see_details')}"})
+        for t in st["tasks"].values():
+            if t["status"] == "validation_pending":
+                items.append({"severity": "info", "ref": t["task_id"], "text": f"{self.t('not_verified')}: {t['title']}"})
+        seen, out = set(), []
+        for it in sorted(items, key=lambda x: i18n.SEVERITY_ORDER.index(x["severity"])):
+            if it["text"] not in seen:
+                seen.add(it["text"])
+                out.append(it)
         return out
+
+    def warnings(self) -> list[str]:
+        """Prioritised warning texts (blocking first, then decisions, then blockers)."""
+        return [w["text"] for w in self.warning_items()]
 
     def task_details(self, task_id: str) -> str:
         st = self.state()
         t = st["tasks"].get(task_id)
         if not t:
             return ""
-        lines = [f"{t['task_id']} · {t['title']}", f"Status: {SIMPLE_STATUS.get(t['status'], ('', t['status']))[1]}",
+        lines = [f"{t['task_id']} · {t['title']}", f"Status: {' '.join(i18n.status(t['status'], self.lang))}",
                  f"Goal: {t['objective']}"]
         if t.get("acceptance_criteria"):
             lines += ["Done when:"] + [f"  - {c}" for c in t["acceptance_criteria"]]
@@ -218,7 +237,7 @@ class ProjectsController:
                 lines.append(f"Handoff {h['handoff_id']} → {h['to_agent_id']}: {h['status']} {h['outcome']}")
             for e in self.project.evidence.list(task_id):
                 lines.append(f"Evidence {e['evidence_id']}: {e['type']} {e['result']} "
-                             f"({'verified' if e['verified'] else 'reported only'}, {e['source']['kind']})")
+                             f"({i18n.evidence_label(i18n.evidence_state(e), self.lang)}, {e['source']['kind']})")
             ev = t.get("evaluation") or {}
             if ev.get("reasons"):
                 lines.append("Policy: " + "; ".join(ev["reasons"]))
