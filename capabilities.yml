@@ -38,3 +38,5 @@ capabilities:
   - {id: team.planner, title: "Team Planner: resources, parallel-chat limit, team proposal review", roadmap: "2.4.0", desktop: implemented, mobile: not_applicable, evidence: "aiwb/v2/team.py, team-proposal.v1, gui_team_planner_smoke.py"}
   - {id: workflow.tracking, title: "Manual workflow stages, I-sent-this confirmation, duplicate-start warning", roadmap: "2.5.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/workflow.py, gui_workflow_timeline_smoke.py"}
   - {id: timeline.milestones_versions, title: "Timeline lanes, milestones, versions and computed progress", roadmap: "2.5.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/timeline.py, test_workflow_timeline.py"}
+- {id: team.dashboard, title: "Team dashboard and explainable needs-attention queue", roadmap: "2.6.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/dashboard.py, test_dashboard.py, gui_dashboard_smoke.py"}
+- {id: task.change_routes, title: "Change this task / new task / re-plan routes; context-request detection", roadmap: "2.6.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/changes.py, test_dashboard.py"}
