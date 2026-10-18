@@ -1,3 +1,24 @@
+## [2.4.0] - 2026-10-18
+
+### Team Planner (Workspace Roadmap stage 4, Gate A)
+- **Team view:** account profile manager (add, enable/disable; labels only, secret-like values refused), chat
+  bindings per agent, **chats you follow at the same time** (1–12, separate from the number of agents) and
+  project-manager selection.
+- **Plan team & tasks…:** short brief (goal required; non-goals, success, platform, constraints, limits optional) →
+  a planning prompt listing the registered account profiles (self-declared, not verified), the parallel-chat
+  limit and an explicit team-size question. Prompt is copied by the user; nothing is sent.
+- **Team Proposal** (`team-proposal.v1`, backward compatible with `AIWB_MANAGER_PROPOSAL`): `team` block
+  (`pm_counted`, `total_agents`, `additional_workers`, rationale, simpler alternative), new operations
+  `create_agent` and `assign_account`, task `reviewer_agent_id` and `parallel_group`.
+- **Validation:** invented/disabled account profiles and unknown agents/owners are errors on the affected item;
+  warnings for unclear or inconsistent agent counts, parallel groups wider than the chat limit, overlapping file
+  scopes inside a parallel group, account reuse, and tasks missing owner/scope/acceptance criteria.
+- **Review:** counts and issues first; accept selected (dry-run preview, dependencies re-validated), reject all,
+  or **Request changes** (a prompt listing the issues; nothing applied). Old proposals work unchanged.
+
+### Validation
+- `test_team_planner.py` (15, incl. the Gate A flow); `gui_team_planner_smoke.py`; `team-proposal.v1` fixtures.
+
 ## [2.3.0] - 2026-10-18
 
 ### Project Workbench foundation (Workspace Roadmap stages 0–3)
