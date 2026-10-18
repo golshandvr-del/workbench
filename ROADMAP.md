@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.1.1` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** `v2.1.2` — پالایش بصری و Release Gate فاز سوم
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.1.2` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** Mobile `0.2.x-tooling` — مهاجرت AGP/Gradle/Kotlin
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -172,7 +172,7 @@
 |---|---|---|
 | 2.1.0 | حالت Simple و Advanced روی یک منطق و داده؛ Next Action ثابت در هر دو | ✅ `controller.py` (`next_action_view`، `advanced_panels`، `ui.json`)؛ Release `desktop-v2.1.0` |
 | 2.1.1 | خطاهای اولویت‌دار، وضعیت‌ها نه فقط با رنگ، واژگان FA/EN یکپارچه | ✅ `aiwb/i18n.py`، `warning_items`، `test_i18n.py`؛ Release `desktop-v2.1.1` |
-| 2.1.2 | پالایش بصری و Release Gate فاز سوم (Future Roadmap بخش ۲۸) | ⬜ **گام فعال** |
+| 2.1.2 | پالایش بصری و Release Gate فاز سوم (Future Roadmap بخش ۲۸) | ✅ `publish_status`، `gui_phase3_gate_smoke.py`، `RELEASE_GATE_PHASE3_v2.1.2.md`؛ Release `desktop-v2.1.2` |
 
 اصول UI از همین حالا رعایت می‌شوند؛ فقط بازطراحی بصری گسترده به این بخش موکول است.
 
@@ -184,7 +184,7 @@
 |---|---|---|
 | 0.1.0 | Proof-of-build: provenance، بررسی Releaseها، FA/EN، APK/AAB امضاشده | ✅ `mobile-v0.1.0` |
 | 0.2.0 | مصرف `packages/contracts`: `ReleaseManifest.kt` سخت‌گیر + تست روی fixtureهای مشترک؛ `release-manifest.json` قراردادی در Release موبایل | ✅ `mobile-v0.2.0` |
-| 0.2.x-tooling | مهاجرت هماهنگ AGP + Gradle + Kotlin در یک PR (PRهای #2، #5 و #8 Dependabot بسته شدند چون Build را می‌شکستند؛ AGP 8.13 با Gradle 9.8 سازگار نیست) | ⬜ |
+| 0.2.x-tooling | مهاجرت هماهنگ AGP + Gradle + Kotlin در یک PR (PRهای #2، #5 و #8 Dependabot بسته شدند چون Build را می‌شکستند؛ AGP 8.13 با Gradle 9.8 سازگار نیست) | ⬜ **گام فعال** |
 | Companion | Pairing امن، مشاهدهٔ Task/Build، ورود پاسخ از موبایل (Integration Spec P3) | ⏭ پس از 2.0.0 |
 
 اثرانگشت گواهی امضای Release اندروید (برای تأیید هر APK):
