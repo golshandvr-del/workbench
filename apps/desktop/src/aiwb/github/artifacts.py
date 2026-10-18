@@ -700,6 +700,8 @@ def inspect_zip(zip_path: Path, limits: ExtractLimits = ExtractLimits()) -> list
         total = 0
         files: list[zipfile.ZipInfo] = []
         for info in infos:
+            if "\\" in (info.orig_filename or ""):
+                raise UnsafeArchiveError(f"Entry '{info.orig_filename[:80]}' uses backslashes in its path.")
             path = _check_member_name(info.filename.rstrip("/") if info.is_dir() else info.filename)
             key = str(path).casefold()
             if key in seen:
