@@ -43,8 +43,8 @@ _T = {
     "superseded": set(),
 }
 _A = {
-    "created": {"prompt_ready", "abandoned"},
-    "prompt_ready": {"exported", "abandoned", "stale"},
+    "created": {"prompt_ready", "abandoned", "stale"},
+    "prompt_ready": {"exported", "response_received", "abandoned", "stale"},
     "exported": {"waiting_response", "response_received", "abandoned", "stale"},
     "waiting_response": {"response_received", "abandoned", "stale"},
     "response_received": {"parse_failed", "parsed", "stale", "abandoned"},

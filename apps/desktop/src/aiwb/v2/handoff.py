@@ -86,6 +86,7 @@ class HandoffService:
                  "verified_evidence_ids": [], "recommended_next_action": "", "source_response_id": "",
                  "issues": [], "note": note[:2000], "created_at": now_utc(), "updated_at": now_utc()}
             s["attempts"][att["attempt_id"]]["handoff_id"] = hid
+            s["attempts"][att["attempt_id"]]["status"] = "prompt_ready"
             h["prompt"] = build_prompt(s, h, previous)
             s["handoffs"][hid] = h
             emit(s, "handoff_prepared", handoff_id=hid, task_id=task_id, to_agent_id=to_agent_id)

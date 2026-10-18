@@ -98,8 +98,10 @@ class AttemptService:
                 a["response_ids"].append(response_id)
             task = s["tasks"].get(a["task_id"]) or {}
             is_active = task.get("active_attempt_id") == attempt_id
-            if a["status"] in ("created", "prompt_ready"):
-                self._move(s, attempt_id, "exported", "response arrived")
+            if a["status"] == "created":
+                self._move(s, attempt_id, "prompt_ready", "response arrived")
+            if a["status"] == "prompt_ready":
+                self._move(s, attempt_id, "response_received", f"response {response_id} (prompt not marked as copied)")
             if a["status"] in ("exported", "waiting_response", "parse_failed"):
                 self._move(s, attempt_id, "response_received", f"response {response_id}")
             if a["status"] == "response_received":
