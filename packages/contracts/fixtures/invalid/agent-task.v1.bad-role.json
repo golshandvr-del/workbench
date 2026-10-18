@@ -1,0 +1,13 @@
+{
+  "agents": [
+    {
+      "schema_version": "1.0",
+      "agent_id": "agent-implementer",
+      "name": "Implementer",
+      "role": "wizard",
+      "revision": 1,
+      "enabled": true
+    }
+  ],
+  "tasks": []
+}

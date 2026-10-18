@@ -21,3 +21,10 @@ capabilities:
   - {id: diagnostics.bundle, title: "Redacted local diagnostics bundle", roadmap: "1.16.2", desktop: implemented, mobile: not_applicable, evidence: "aiwb/diagnostics.py"}
   - {id: context.request, title: "AIWB_CONTEXT_REQUEST context packs", roadmap: "1.16.3", desktop: implemented, mobile: not_applicable, evidence: "aiwb/context_request.py"}
   - {id: agents.v2, title: "Multi-agent project management", roadmap: "2.0.0", desktop: planned, mobile: planned}
+  - {id: v2.model, title: "V2 data model, store and migration", roadmap: "1.17.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/models.py, store.py"}
+  - {id: v2.agents_tasks, title: "Agent registry and task graph", roadmap: "1.17.1", desktop: implemented, mobile: planned, evidence: "aiwb/v2/agents.py, tasks.py"}
+  - {id: v2.handoff, title: "Handoff protocol", roadmap: "1.18.0", desktop: implemented, mobile: not_applicable, evidence: "aiwb/v2/handoff.py"}
+  - {id: v2.ledgers, title: "Decision and evidence ledgers", roadmap: "1.18.1", desktop: implemented, mobile: planned, evidence: "aiwb/v2/ledger.py"}
+  - {id: v2.publish, title: "Project state snapshot and auto-publish", roadmap: "1.19.0", desktop: implemented, mobile: planned, evidence: "aiwb/v2/snapshot.py, publisher.py"}
+  - {id: v2.manager, title: "Project manager proposals", roadmap: "1.20.0", desktop: implemented, mobile: not_applicable, evidence: "aiwb/v2/proposals.py"}
+  - {id: v2.next_action, title: "Next action and projects window", roadmap: "1.20.1", desktop: implemented, mobile: planned, evidence: "aiwb/v2/next_action.py, controller.py"}

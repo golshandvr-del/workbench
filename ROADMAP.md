@@ -4,8 +4,8 @@
 > اسناد `docs/specs/` منبع جزئیات و معیارهای پذیرش هستند؛ این فایل ترتیب، وضعیت و دروازه‌ها را تعیین می‌کند.
 > اگر بین این فایل و یک سند مرجع تعارض دیده شد، طبق همین فایل عمل کن و تعارض را با یک ADR در `docs/adr/` حل کن.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.16.3` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
-**گام فعال بعدی:** `v1.17.0` — مدل داده و Migration فاز دوم
+**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v1.20.1` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.2.0`
+**گام فعال بعدی:** `v2.0.0` — Release Gate فاز دوم
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنهٔ فعلی
 
@@ -151,14 +151,14 @@
 
 | نسخه | برش | محتوا | وضعیت |
 |---|---|---|---|
-| **1.17.0** | 2A | مدل داده و Migration: Agent، Task، Attempt، Handoff، Decision، Evidence با `schema_version` | ⬜ **گام فعال** |
-| 1.17.1 | 2B | Agent Registry (۴ نقش پایه) و Task Graph با اعتبارسنجی وابستگی/چرخه | ⬜ |
-| 1.18.0 | 2C | Handoff Protocol و اتصال به Response Inbox؛ انتقال Task بین دو چت/مدل مستقل | ⬜ |
-| 1.18.1 | 2D | Decision Ledger و Evidence Ledger؛ وضعیت Task از سیاست + شواهد | ⬜ |
-| 1.19.0 | 2E | Project State Snapshot و Auto-Publish به GitHub (صف پایدار، no-op، retry، conflict، fallback داخل Prompt) | ⬜ |
-| 1.20.0 | 2F | Project Manager: Manager Update Prompt و Proposal Review با تشخیص stale | ⬜ |
-| 1.20.1 | 2G | Next Action و سناریوی مرجع انتها‌به‌انتها (Future Roadmap بخش ۱۸) | ⬜ |
-| **2.0.0** | — | **Release Gate فاز دوم** (Future Roadmap بخش ۲۷) | ⬜ |
+| 1.17.0 | 2A | مدل داده و Migration: Agent، Task، Attempt، Handoff، Decision، Evidence با `schema_version` | ✅ `aiwb/v2/{models,store}.py`، `test_v2_model.py`؛ Release `desktop-v1.20.1` |
+| 1.17.1 | 2B | Agent Registry (۴ نقش پایه) و Task Graph با اعتبارسنجی وابستگی/چرخه | ✅ `aiwb/v2/{agents,tasks}.py`؛ Release `desktop-v1.20.1` |
+| 1.18.0 | 2C | Handoff Protocol و اتصال به Response Inbox؛ انتقال Task بین دو چت/مدل مستقل | ✅ `aiwb/v2/handoff.py`؛ Release `desktop-v1.20.1` |
+| 1.18.1 | 2D | Decision Ledger و Evidence Ledger؛ وضعیت Task از سیاست + شواهد | ✅ `aiwb/v2/ledger.py`؛ Release `desktop-v1.20.1` |
+| 1.19.0 | 2E | Project State Snapshot و Auto-Publish به GitHub (صف پایدار، no-op، retry، conflict، fallback داخل Prompt) | ✅ `aiwb/v2/{snapshot,publisher}.py`، E2E واقعی؛ Release `desktop-v1.20.1` |
+| 1.20.0 | 2F | Project Manager: Manager Update Prompt و Proposal Review با تشخیص stale | ✅ `aiwb/v2/proposals.py`؛ Release `desktop-v1.20.1` |
+| 1.20.1 | 2G | Next Action و سناریوی مرجع انتها‌به‌انتها (Future Roadmap بخش ۱۸) | ✅ `next_action.py`، `controller.py`، `projects_window.py`، `test_v2_reference_scenario.py`؛ Release `desktop-v1.20.1` |
+| **2.0.0** | — | **Release Gate فاز دوم** (Future Roadmap بخش ۲۷) | ⬜ **گام فعال** |
 
 **دروازهٔ 2.0.0 (خلاصه):** سه قرارداد Agent/Task، Handoff و Project State/Evidence مستند و تست شده · حداقل دو Agent با دو چت/مدل متفاوت روی یک پروژهٔ واقعی · انتقال کار بدون تاریخچهٔ چت قبلی · Evidence جدا از گزارش مدل · Auto-Publish کامل · سناریوی بخش ۱۸ بدون دست‌کاری دستی داده.
 

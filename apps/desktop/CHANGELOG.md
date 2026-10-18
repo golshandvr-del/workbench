@@ -1,3 +1,39 @@
+## [1.20.1] - 2026-10-18
+
+### Multi-agent project management V2 (roadmap 1.17.0 → 1.20.1, slices 2A–2G)
+- **Data model & migration (2A):** `aiwb/v2` — Agent, Task, Attempt, Handoff, Decision, Evidence, Proposal with
+  `schema_version`, stable IDs (`TASK-0001`, `HO-0001`, `EV-0001` …), task revisions and central state machines.
+  One local source of truth `.workbench/v2/state.json`, transactional (lock + atomic replace + `state_revision`),
+  idempotent migration with pre-migration backup, newer/corrupt files refused without writing, unknown fields kept,
+  malformed collections quarantined. The legacy task and its Inbox attempts are linked once.
+- **Agent Registry & Task Graph (2B):** four base roles (project manager, architect, implementer, reviewer) installed
+  once and never overwritten; copy/disable/edit with revisions. Dependencies validated (unknown, self, cycles);
+  ready only when prerequisites are done; cancelled prerequisites block dependants with a re-plan reason; contract
+  changes create a new revision and flag dependants; parallel candidates only for non-overlapping scopes.
+- **Handoff protocol (2C):** self-contained prompt for a fresh chat (task contract, accepted decisions, previous
+  handoff summary, claims marked NOT verified, `AIWB_HANDOFF` manifest). Answers are matched by handoff/attempt;
+  wrong-task answers are refused, late answers become `stale`, revision changes need reconciliation; missing expected
+  files downgrade the outcome to `partial`. Accepting a handoff never writes files and never completes a task.
+- **Decision & Evidence ledgers (2D):** decisions are never deleted (rejected/superseded kept with reason, repeated
+  rejected proposals flagged). Evidence from model claims is always `verified=false`; task status follows the
+  acceptance policy + verified evidence for the current task revision (and commit when given).
+- **State snapshot & auto-publish (2E):** `PROJECT_STATUS.md` + `project-state.json` built from the local store only,
+  published as one atomic commit to the `aiwb-state` branch (never the default branch, no force push): persistent
+  queue, debounce, no-op detection, retry with backoff, `Retry-After`, auth pause, conflict pause without overwrite,
+  foreign-project guard. Checked against the real GitHub API (`docs/release/v1.20.1/V2_E2E_PUBLISHER_REPORT_v1.20.1.md`).
+- **Project manager (2F):** planning prompt, Manager Update prompt with link + in-prompt fallback, state probe;
+  `AIWB_MANAGER_PROPOSAL` with 12 operation types, per-operation preview and partial acceptance, forward references
+  between new tasks, graph validation, stale-proposal confirmation, "mark done" never accepted from a model.
+- **Next Action (2G):** derived only from local state and policies, ranked, with reason and approval flag.
+- **Projects (multi-agent) window:** one controller, Simple and Advanced views of the same data; one paste box
+  that captures every answer raw in the Inbox before routing it to a proposal or handoff.
+- **Contracts:** `agent-task.v1`, `handoff.v1`, `project-state.v1` JSON Schemas generated from `aiwb.v2.models`
+  (`tools/gen_v2_contracts.py --check` in CI) and validated against real producer output.
+
+### Validation
+- `test_v2_model.py` (15), `test_v2_flow.py` (15), `test_v2_reference_scenario.py` (Future Roadmap §18 end-to-end +
+  failure variants), `test_v2_controller.py` (4); GUI smoke `gui_projects_smoke.py`.
+
 ## [1.16.3] - 2026-10-18
 ### Smart repair, diagnostics bundle and Context Request (roadmap v1.16.2 + v1.16.3) — Phase 1 complete
 - **Smart repair prompt (1.16.2):** an import repair is built from the real Inbox evidence — a new `repair` attempt

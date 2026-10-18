@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/golshandvr-del/workbench/packages/contracts/schemas/handoff.v1.schema.json",
+  "title": "AI Workbench V2 Handoff manifest (model answer inside <<<AIWB_HANDOFF>>>)",
+  "type": "object",
+  "required": [
+    "attempt_id",
+    "handoff_id",
+    "outcome",
+    "schema_version",
+    "summary",
+    "task_id",
+    "task_revision"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "handoff_id": {
+      "type": "string",
+      "pattern": "^HO-[0-9]{4,}$"
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^TASK-[0-9]{4,}$"
+    },
+    "task_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^att-[0-9]{8}-[0-9]{6}-[0-9a-f]{8}$"
+    },
+    "outcome": {
+      "enum": [
+        "complete",
+        "partial",
+        "blocked",
+        "needs_decision",
+        "failed"
+      ]
+    },
+    "summary": {
+      "type": "string"
+    },
+    "completed_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unresolved_items": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "decision_requests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "validation_claims": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "recommended_next_action": {
+      "type": "string"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "logical_path"
+        ],
+        "properties": {
+          "logical_path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^([0-9a-f]{7,40})?$"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true,
+  "$defs": {
+    "handoff_status": {
+      "enum": [
+        "prepared",
+        "prompt_exported",
+        "response_received",
+        "parsed",
+        "reconciled",
+        "accepted",
+        "rejected",
+        "superseded",
+        "stale",
+        "reconciliation_required"
+      ]
+    }
+  }
+}

@@ -7,7 +7,7 @@ Git/GitHub for the project. A companion Android app is starting in `apps/mobile`
 
 | App | Path | Current | Download |
 |---|---|---|---|
-| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **1.16.3** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **1.20.1** | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
 | Mobile (Android 7.0+) | `apps/mobile` | **0.1.0** proof-of-build | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
 
 ## Repository layout
@@ -73,8 +73,8 @@ cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Status / roadmap
 
-**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: 1.14.1–1.16.3, Android proof-of-build,
-monorepo + CI/CD. **Next: 1.17.0 Phase-2 data model** →
+**[`ROADMAP.md`](ROADMAP.md)** is the master plan. Done: 1.14.1–1.20.1, Android proof-of-build,
+monorepo + CI/CD. **Next: 2.0.0 Phase-2 release gate** →
 1.14.13 RC → 1.15.0 → 1.16 → 2.0. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
 
 See also [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).

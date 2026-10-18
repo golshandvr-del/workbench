@@ -41,7 +41,7 @@ jobs:
           echo "$changed"
           has() { [ "$changed" = ALL ] && { echo true; return; }; echo "$changed" | grep -Eq "$1" && echo true || echo false; }
           # Contract changes re-test every consumer.
-          contracts=$(has '^(packages/contracts/|tools/validate_contracts\.py)')
+          contracts=$(has '^(packages/contracts/|tools/validate_contracts\.py|tools/gen_v2_contracts\.py|apps/desktop/src/aiwb/v2/)')
           ci=$(has '^\.github/workflows/ci\.yml$')
           desktop=$(has '^(apps/desktop/|tools/)')
           mobile=$(has '^apps/mobile/')

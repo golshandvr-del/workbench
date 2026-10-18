@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "handoff_id": "HO-0001",
+  "task_id": "TASK-0001",
+  "task_revision": 1,
+  "attempt_id": "att-20261018-080000-deadbeef",
+  "outcome": "done",
+  "summary": "4 of 5 files",
+  "unresolved_items": [
+    "missing file: core/e.py"
+  ],
+  "validation_claims": [
+    "tests pass"
+  ]
+}
