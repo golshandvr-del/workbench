@@ -33,13 +33,17 @@ data class Pairing(val host: String, val port: Int, val deviceId: String, val ke
         .put("key", B64Url.encode(key)).toString()
 
     companion object {
-        fun decode(text: String?): Pairing? = try {
-            val o = JSONObject(text ?: return null)
-            val host = o.getString("host")
-            if (!PairingCode.isPrivateLan(host)) null
-            else Pairing(host, o.getInt("port"), o.getString("device_id"), B64Url.decode(o.getString("key")).takeIf { it.size == 32 } ?: return null)
-        } catch (e: Exception) {
-            null
+        fun decode(text: String?): Pairing? {
+            if (text == null) return null
+            return try {
+                val o = JSONObject(text)
+                val host = o.getString("host")
+                val key = B64Url.decode(o.getString("key"))
+                if (!PairingCode.isPrivateLan(host) || key.size != 32) null
+                else Pairing(host, o.getInt("port"), o.getString("device_id"), key)
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 }
