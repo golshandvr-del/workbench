@@ -1,0 +1,324 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/golshandvr-del/workbench/packages/contracts/schemas/agent-task.v1.schema.json",
+  "title": "AI Workbench V2 Agent/Task contract",
+  "type": "object",
+  "required": [
+    "agents",
+    "tasks"
+  ],
+  "properties": {
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "agent_id",
+          "enabled",
+          "name",
+          "revision",
+          "role",
+          "schema_version"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          },
+          "agent_id": {
+            "type": "string",
+            "pattern": "^agent-[a-z0-9-]{1,40}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "project_manager",
+              "architect",
+              "implementer",
+              "reviewer",
+              "researcher"
+            ]
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "allowed_task_types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "preferred_model_label": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "acceptance_policy",
+          "depends_on",
+          "schema_version",
+          "status",
+          "task_id",
+          "task_revision",
+          "title"
+        ],
+        "properties": {
+          "schema_version": {
+            "const": "1.0"
+          },
+          "task_id": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{4,}$"
+          },
+          "task_revision": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "project_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "objective": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "proposed",
+              "ready",
+              "in_progress",
+              "blocked",
+              "needs_decision",
+              "in_review",
+              "validation_pending",
+              "done",
+              "cancelled",
+              "superseded"
+            ]
+          },
+          "owner_agent_id": {
+            "type": "string"
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^TASK-[0-9]{4,}$"
+            },
+            "uniqueItems": true
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "acceptance_policy": {
+            "enum": [
+              "evidence_required",
+              "review_and_evidence",
+              "manual_review"
+            ]
+          },
+          "required_approvals": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "scope": {
+            "type": "object"
+          },
+          "priority": {
+            "type": "string"
+          },
+          "base_commit_sha": {
+            "type": "string",
+            "pattern": "^([0-9a-f]{7,40})?$"
+          },
+          "active_attempt_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "$defs": {
+    "agent": {
+      "type": "object",
+      "required": [
+        "agent_id",
+        "enabled",
+        "name",
+        "revision",
+        "role",
+        "schema_version"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "agent_id": {
+          "type": "string",
+          "pattern": "^agent-[a-z0-9-]{1,40}$"
+        },
+        "name": {
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "project_manager",
+            "architect",
+            "implementer",
+            "reviewer",
+            "researcher"
+          ]
+        },
+        "purpose": {
+          "type": "string"
+        },
+        "instructions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_task_types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preferred_model_label": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "task": {
+      "type": "object",
+      "required": [
+        "acceptance_policy",
+        "depends_on",
+        "schema_version",
+        "status",
+        "task_id",
+        "task_revision",
+        "title"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "1.0"
+        },
+        "task_id": {
+          "type": "string",
+          "pattern": "^TASK-[0-9]{4,}$"
+        },
+        "task_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "project_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "objective": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "proposed",
+            "ready",
+            "in_progress",
+            "blocked",
+            "needs_decision",
+            "in_review",
+            "validation_pending",
+            "done",
+            "cancelled",
+            "superseded"
+          ]
+        },
+        "owner_agent_id": {
+          "type": "string"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^TASK-[0-9]{4,}$"
+          },
+          "uniqueItems": true
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "acceptance_policy": {
+          "enum": [
+            "evidence_required",
+            "review_and_evidence",
+            "manual_review"
+          ]
+        },
+        "required_approvals": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scope": {
+          "type": "object"
+        },
+        "priority": {
+          "type": "string"
+        },
+        "base_commit_sha": {
+          "type": "string",
+          "pattern": "^([0-9a-f]{7,40})?$"
+        },
+        "active_attempt_id": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

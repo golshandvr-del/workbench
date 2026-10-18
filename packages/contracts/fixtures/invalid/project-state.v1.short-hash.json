@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "project_id": "demo",
+  "state_revision": 12,
+  "content_hash": "abc",
+  "previous_snapshot_hash": "",
+  "source": {
+    "repository": "o/r",
+    "branch": "main",
+    "commit_sha": "abc1234",
+    "local_changes_pending": false
+  },
+  "summary": {
+    "total_tasks": 1,
+    "verified_complete": 0
+  },
+  "tasks": [
+    {
+      "task_id": "TASK-0001",
+      "task_revision": 1,
+      "status": "validation_pending"
+    }
+  ],
+  "next_action": null
+}

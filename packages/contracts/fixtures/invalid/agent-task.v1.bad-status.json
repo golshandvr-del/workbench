@@ -1,0 +1,23 @@
+{
+  "agents": [
+    {
+      "schema_version": "1.0",
+      "agent_id": "agent-implementer",
+      "name": "Implementer",
+      "role": "implementer",
+      "revision": 1,
+      "enabled": true
+    }
+  ],
+  "tasks": [
+    {
+      "schema_version": "1.0",
+      "task_id": "TASK-0001",
+      "task_revision": 1,
+      "title": "Core",
+      "status": "finished",
+      "depends_on": [],
+      "acceptance_policy": "evidence_required"
+    }
+  ]
+}
