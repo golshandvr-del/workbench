@@ -18,7 +18,7 @@
     <string name="open_release_page">Open release page</string>
     <string name="untrusted_link">Blocked a link that is not a GitHub https URL.</string>
     <string name="no_browser">No browser is available to open the link.</string>
-    <string name="scope_note">This early mobile build verifies the Android build/release pipeline. Companion features (pairing with the desktop app, tasks, prompts) are planned and not yet available.</string>
+    <string name="scope_note">Shows build provenance and the latest releases. Mobile Companion pairs with Workbench on your desktop over the local network: view project, tasks and builds; create tasks and submit answers when the desktop allows it.</string>
     <string name="companion_open">Mobile Companion (pair with desktop)</string>
     <string name="companion_title">Mobile Companion</string>
     <string name="pair_code_hint">One-time code from the desktop (aiwb1:…)</string>
