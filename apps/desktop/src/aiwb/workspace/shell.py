@@ -335,7 +335,8 @@ class WorkspaceWindow:
         return next((i for i in getattr(self, "attention_items", []) if i["key"] == key), None)
 
     def open_attention_selected(self, key: str = "") -> Any:
-        key = key or next(iter(self.att_tree.selection()), "") if hasattr(self, "att_tree") else key
+        if not key and hasattr(self, "att_tree"):
+            key = next(iter(self.att_tree.selection()), "")
         item = self._attention_by_key(key)
         if not item:
             self.status_var.set(self.wc.tr(("Select an item first.", "ابتدا یک مورد انتخاب کنید.")))
@@ -353,7 +354,8 @@ class WorkspaceWindow:
         return section, ref
 
     def mark_attention_seen(self, keys: list[str] | None = None) -> set[str]:
-        keys = keys if keys is not None else list(self.att_tree.selection()) if hasattr(self, "att_tree") else []
+        if keys is None:
+            keys = list(self.att_tree.selection()) if hasattr(self, "att_tree") else []
         out = self.wc.mark_seen([k for k in keys if not k.startswith("more:")])
         self.show("overview")
         return out
