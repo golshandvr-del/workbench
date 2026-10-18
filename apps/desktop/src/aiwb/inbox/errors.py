@@ -26,6 +26,8 @@ ERROR_CODES: dict[str, tuple[str, str, str]] = {
                        "Ask the model to send each file exactly once."),
     "context_plan": ("parse", "This is a context plan, not an implementation response.",
                      "Use 'Import context plan' to select the requested files."),
+    "context_request": ("parse", "The model is asking for more context (AIWB_CONTEXT_REQUEST), not sending files.",
+                        "Open 'Context request…' to review the requested files and prepare a context pack."),
     "protocol_invalid": ("validate", "The response does not follow the expected protocol.",
                          "Use 'Repair prompt'; the exact validation error is included."),
     "unsafe_path": ("validate", "A file path is unsafe (absolute, '..', reserved or outside the project).",
@@ -62,7 +64,7 @@ class ImportIssue:
 
     @property
     def blocking(self) -> bool:
-        return self.code not in ("attempt_unknown", "stale_base", "partial_parse", "duplicate_response")
+        return self.code not in ("attempt_unknown", "stale_base", "partial_parse", "duplicate_response", "context_request")
 
 
 def classify_error_message(message: str) -> str:

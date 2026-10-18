@@ -45,6 +45,10 @@ from aiwb.github.artifacts import GitHubDispatchService
 from aiwb.github.sync_build_window import SyncBuildWindow
 from aiwb import inbox as inbox_service
 from aiwb.inbox.inbox_window import InboxWindow
+from aiwb.inbox import repair as inbox_repair
+from aiwb import diagnostics as diagnostics_service
+from aiwb import context_request as context_request_service
+from aiwb.context_request_window import ContextRequestWindow
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
     GitHubAccountError, GitHubAccountService, GitHubApiClient, GitHubApiError,
@@ -59,7 +63,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "1.16.0"
+APP_VERSION = "1.16.3"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -3225,6 +3229,8 @@ def build_capability_manifest(root: Path | None = None, output_format: str = OUT
         "- Candidate comparison: validated text/JSON model responses may be saved locally and selected file-by-file into a new workbench-v3 preview. Candidate command actions are not merged implicitly. GPT ZIP binary contents are not stored as response candidates.",
         "- Task playbooks: deterministic workflows cover feature work, bug fixes, refactors, security, performance, docs/release, and engineering simulation.",
         "- Semantic diff and static dependency impact analysis are best-effort advisory tools; Python uses AST for supported source analysis and other languages rely on bounded heuristics. They do not prove build/runtime correctness.",
+        context_request_service.CAPABILITY_LINE,
+        "- Response Inbox: every answer is stored raw before parsing; repeat the AIWB_ATTEMPT_ID line first so Workbench can match it to this task. A partially broken answer is salvaged block by block; only complete, valid blocks are kept.",
         "- Manual diagnostics: users can enter undetected runtime/build/test/simulation errors with affected file and reproduction steps; the report is stored against the selected history entry and included in a repair prompt.",
         f"- Hard importer limits: {MAX_RESPONSE_FILES} proposed files; {MAX_RESPONSE_ACTIONS} proposed actions; {MAX_RESPONSE_BYTES:,} raw response bytes; {MAX_FILE_BYTES:,} bytes per file; {MAX_TOTAL_CONTENT_BYTES:,} bytes total file content; each command timeout at most {MAX_COMMAND_SECONDS} seconds. The generated response contract requests no more than 12 actions for manageable review.",
         "- File changes: JSON v1/v2 and AIWB blocks are write-only UTF-8 text transports; JSON v3 supports typed write/delete/rename/move for regular files. The separate ZIP transport may carry permitted binary artifacts as exact bytes. All paths must be relative to project root; absolute paths, traversal, reserved/sensitive paths and symlink escapes are rejected. Deliverables are not limited to apps or websites: text-native schematics, SPICE netlists, CAD/configuration files and technical documentation are valid when their native formats are text-based.",
@@ -3379,8 +3385,13 @@ def transition_task_state(root: Path, new_stage: str, reason: str = "") -> dict[
 def build_repair_prompt(
     root: Path, *, error: str = "", failure_stage: str = "import", raw_response: str = "",
     format_name: str = "", command_output: str = "", diagnostics: dict[str, Any] | None = None,
+    inbox_evidence: str = "",
 ) -> str:
-    """Create a bounded, evidence-based repair prompt from observed Workbench state."""
+    """Create a bounded, evidence-based repair prompt from observed Workbench state.
+
+    ``inbox_evidence`` (1.16.2) is the Response Inbox section: new repair attempt ID, error codes,
+    files received intact (must not be regenerated) and the files to resend.
+    """
     state = load_task_state(root) if root.is_dir() else {}
     # Use a caller-supplied response only to derive redacted diagnostics; never echo its raw contents.
     if raw_response and diagnostics is None:
@@ -3414,7 +3425,12 @@ def build_repair_prompt(
     else:
         diag_lines.append("No structured import diagnostic was supplied.")
     response_rules = response_delivery_rule(fmt)
-    return f"""# AI Workbench — Repair Task
+    identity = ""
+    if inbox_evidence.startswith("AIWB_ATTEMPT_ID:"):
+        identity, _, inbox_evidence = inbox_evidence.partition("\n\n")
+        identity += "\n\n"
+    inbox_block = ("\n" + inbox_evidence.strip() + "\n") if inbox_evidence.strip() else ""
+    return identity + f"""# AI Workbench — Repair Task
 
 The previous attempt did not pass Workbench's actual validation or runtime checks. Fix the specific failure below; do not claim success without evidence.
 
@@ -3432,7 +3448,7 @@ The previous attempt did not pass Workbench's actual validation or runtime check
 
 ## Import diagnostics
 {chr(10).join(diag_lines)}
-
+{inbox_block}
 ## Required correction
 1. Diagnose the exact root cause from the evidence, rather than guessing or rewriting unrelated files.
 2. If this was an import/format failure, correct the previous response in this conversation so every file/action block or JSON field is valid and complete. Do not require the user to manually repair markers.
@@ -4544,6 +4560,7 @@ class WorkbenchApp:
         help_menu.add_command(label="Quick start guide", command=self.show_help)
         help_menu.add_command(label="About", command=self.show_about)
         help_menu.add_command(label="Open application data folder", command=lambda: open_folder_in_explorer(app_data_dir()))
+        help_menu.add_command(label="Diagnostics bundle (local, redacted)…", command=self.show_diagnostics_bundle)
         menu.add_cascade(label="Help", menu=help_menu)
         self.root.config(menu=menu)
 
@@ -5315,6 +5332,7 @@ class WorkbenchApp:
         ttk.Button(controls, text="Import context plan / select requested files", command=self.import_context_plan).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
         ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
+        ttk.Button(controls, text="Context request…", command=self.open_context_request).pack(side="left", padx=(6, 0))
         candidate_controls = ttk.Frame(tab)
         candidate_controls.pack(fill="x", pady=(0, 5))
         ttk.Button(candidate_controls, text="Save response candidate…", command=self.save_response_candidate).pack(side="left")
@@ -8690,6 +8708,16 @@ class WorkbenchApp:
             self.response_input.edit_modified(False)
         except tk.TclError:
             pass
+        if not archive_selected and context_request_service.find_request(raw) is not None:
+            try:
+                pipe = make_inbox_pipeline(root)
+                captured = pipe.capture_text(raw, source="context-request")
+                if captured.response is not None:
+                    pipe.process(captured.response.response_id)
+            except Exception as inbox_exc:
+                log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
+            self.open_context_request(raw)
+            return
         inbox_response_id = ""
         if not archive_selected and raw.strip():
             try:
@@ -8736,6 +8764,9 @@ class WorkbenchApp:
                         inbox_note += f" {len(outcome.salvage_paths)} complete file(s) can be recovered: open Response Inbox."
                 except Exception as inbox_exc:
                     log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
+            hints = context_request_service.free_text_hints(raw) if not archive_selected else []
+            if hints:
+                inbox_note += " The answer seems to ask for: " + ", ".join(hints[:5]) + " (suggestion only; use Context request… to prepare them)."
             self.set_status("Response rejected; diagnostics are available and no project files were applied." + inbox_note)
             self.refresh_workflow_status()
             self.show_import_diagnostics(error_override=str(exc))
@@ -8770,6 +8801,58 @@ class WorkbenchApp:
             messagebox.showwarning("Response history not saved", f"The response parsed successfully, but its exact snapshot/history could not be saved. Workbench will block applying this response until it can record it reliably. Resolve the storage problem and analyze the response again.\n\n{exc}")
         self.refresh_workflow_status()
         self._show_diff_window(payload, changes, format_name)
+
+    def open_context_request(self, raw: str | None = None) -> None:
+        root = self.require_workspace()
+        if root is None:
+            return
+        text = raw if raw is not None else self.response_input.get("1.0", "end-1c")
+        try:
+            req = context_request_service.parse_request(text)
+        except context_request_service.ContextRequestError as exc:
+            hints = context_request_service.free_text_hints(text)
+            extra = ("\n\nThe text seems to ask for: " + ", ".join(hints) +
+                     ". Use 'Import context plan' or select the files manually.") if hints else ""
+            messagebox.showwarning("No structured context request", str(exc) + extra)
+            return
+
+        def path_problem(p: str) -> str:
+            try:
+                validate_relative_path(root, p)
+                return ""
+            except WorkbenchError as exc:
+                return redact(str(exc))
+
+        def attempt_line() -> str:
+            try:
+                state = load_task_state(root)
+                registry = inbox_service.AttemptRegistry(root)
+                att = registry.new(
+                    task_id=str(state.get("task_id", "")), task_revision="",
+                    base_revision=project_base_revision(iter_project_files(root)), kind="context",
+                    parent_attempt_id=req.attempt_id if registry.get(req.attempt_id) else "")
+                return inbox_service.prompt_identity_block(att)
+            except Exception as exc:
+                log_exception(type(exc), exc, exc.__traceback__)
+                return ""
+
+        def on_prepared(result: str, items: list) -> None:
+            try:
+                append_execution_event(root, {
+                    "type": "context_pack_prepared", "delivery": result.split(":", 1)[0],
+                    "request_attempt_id": req.attempt_id,
+                    "items": [{"path": i.path, "mode": i.mode, "status": i.status, "lines": i.lines, "sha256": i.sha256}
+                              for i in items],
+                    "message": "Context prepared for the user to paste/attach; Workbench did not send it.",
+                })
+            except Exception as exc:
+                log_exception(type(exc), exc, exc.__traceback__)
+            self.set_status("Context prepared — paste/attach it in the same chat (Workbench did not send it).")
+
+        self.context_request_window = ContextRequestWindow(
+            self.root, req, root, path_problem=path_problem, is_sensitive=lambda p: is_sensitive_path(p),
+            attempt_line=attempt_line, clipboard=self._copy_text_to_clipboard, on_prepared=on_prepared)
+        self.set_status("The model asked for more context; review the request window.")
 
     def open_response_inbox(self) -> None:
         root = self.require_workspace()
@@ -8859,7 +8942,16 @@ class WorkbenchApp:
         root = self.require_workspace()
         if root is None:
             return
-        prompt = build_repair_prompt(root, error=error, failure_stage=failure_stage, raw_response=raw_response, format_name=format_name, command_output=command_output, diagnostics=diagnostics)
+        inbox_evidence = ""
+        if failure_stage == "import":
+            try:
+                inbox_evidence = self._inbox_repair_evidence(root, raw_response)
+            except Exception as inbox_exc:
+                log_exception(type(inbox_exc), inbox_exc, inbox_exc.__traceback__)
+        if inbox_evidence.startswith("STOP:"):
+            messagebox.showwarning("Repair limit reached", inbox_evidence)
+            return
+        prompt = build_repair_prompt(root, error=error, failure_stage=failure_stage, raw_response=raw_response, format_name=format_name, command_output=command_output, diagnostics=diagnostics, inbox_evidence=inbox_evidence)
         repair_entry = None
         try:
             state = load_task_state(root)
@@ -8899,6 +8991,75 @@ class WorkbenchApp:
         ttk.Button(buttons, text="Copy prompt", style="Primary.TButton", command=lambda: self._copy_text_to_clipboard(prompt)).pack(side="left")
         ttk.Button(buttons, text="Save prompt…", command=lambda: self._save_prompt_text(prompt)).pack(side="left", padx=(6, 0))
         ttk.Button(buttons, text="Close", command=win.destroy).pack(side="right")
+
+    def _inbox_repair_evidence(self, root: Path, raw_response: str) -> str:
+        """Inbox section for an import repair; 'STOP: …' when the repair chain limit is reached."""
+        pipe = make_inbox_pipeline(root)
+        rid = ""
+        if raw_response.strip():
+            captured = pipe.capture_text(raw_response, source="repair")
+            rid = captured.response.response_id if captured.response else ""
+        else:
+            latest = pipe.store.list()
+            rid = latest[0].response_id if latest else ""
+        if not rid:
+            return ""
+        outcome = pipe.process(rid)
+        plan = inbox_repair.plan_repair(outcome, pipe.attempts, base_revision=project_base_revision(iter_project_files(root)),
+                                        task_id=pipe.current_task_id())
+        if plan.needs_decision:
+            return ("STOP: " + str(plan.chain_depth) + " consecutive repair prompts for this task did not produce an importable answer. "
+                    "Workbench will not generate another one automatically. Split the task, change the response format, or rewrite the prompt.")
+        return plan.section
+
+    def show_diagnostics_bundle(self) -> None:
+        root = self.workspace if self.workspace is not None and self.workspace.is_dir() else None
+        win = tk.Toplevel(self.root)
+        win.title("Diagnostics bundle (local, redacted) — AI Workbench")
+        win.geometry("980x720")
+        ttk.Label(win, wraplength=940, text=(
+            "This bundle is created only on this computer and is never uploaded. By default it contains NO project "
+            "source, NO prompt/response text, NO raw Inbox data and NO credentials; user paths are replaced. "
+            "Review the exact content below before saving.")).pack(anchor="w", padx=12, pady=(12, 4))
+        opts = ttk.Frame(win)
+        opts.pack(fill="x", padx=12)
+        task_var, hist_var = tk.BooleanVar(value=False), tk.BooleanVar(value=False)
+        text = tk.Text(win, wrap="none", font=("Consolas", 9))
+        state: dict[str, Any] = {}
+
+        def rebuild() -> None:
+            state["entries"] = diagnostics_service.collect_bundle(
+                root, app_version=APP_VERSION, app_log=app_data_dir() / "logs" / "app.log", redact=redact,
+                read_json=lambda r, name, default: read_project_json(r, name, default),
+                include_task_text=task_var.get(), include_full_history=hist_var.get())
+            text.configure(state="normal")
+            text.delete("1.0", "end")
+            text.insert("1.0", diagnostics_service.preview_text(state["entries"]))
+            text.configure(state="disabled")
+
+        ttk.Checkbutton(opts, text="Include task text (opt-in)", variable=task_var, command=rebuild).pack(side="left")
+        ttk.Checkbutton(opts, text="Include full execution history (opt-in)", variable=hist_var, command=rebuild).pack(side="left", padx=12)
+        text.pack(fill="both", expand=True, padx=12, pady=6)
+
+        def save() -> None:
+            path = filedialog.asksaveasfilename(parent=win, title="Save diagnostics bundle", defaultextension=".zip",
+                                                initialfile="aiwb-diagnostics.zip", filetypes=[("ZIP", "*.zip")])
+            if not path:
+                return
+            try:
+                diagnostics_service.write_bundle(state["entries"], Path(path))
+                self.set_status(f"Diagnostics bundle saved: {path}")
+                win.destroy()
+            except (OSError, FileExistsError) as exc:
+                messagebox.showerror("Save failed", str(exc), parent=win)
+
+        bar = ttk.Frame(win, padding=10)
+        bar.pack(fill="x")
+        ttk.Button(bar, text="Save bundle…", style="Primary.TButton", command=save).pack(side="left")
+        ttk.Button(bar, text="Close", command=win.destroy).pack(side="right")
+        rebuild()
+        self.diagnostics_window = win
+        self.diagnostics_state = state
 
     def _save_prompt_text(self, prompt: str) -> None:
         path = filedialog.asksaveasfilename(title="Save repair prompt", defaultextension=".md", filetypes=[("Markdown", "*.md"), ("Text", "*.txt"), ("All files", "*.*")])

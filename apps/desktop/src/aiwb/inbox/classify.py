@@ -13,7 +13,7 @@ AIWB_HEADER = re.compile(r"(?m)^\s*(?:`{3,}\w*\s*\n\s*)?<<<AIWB_(FILE|COMMAND|DE
 AIWB_END = re.compile(r"(?m)^\s*<<<AIWB_END_(FILE|COMMAND)>>>\s*$")
 JSON_PROTOCOL = re.compile(r"""["']protocol["']\s*:\s*["'](workbench-v[123]|workbench-context-[\w.-]+)["']""")
 CONTEXT_PROTOCOL = re.compile(r"""["']protocol["']\s*:\s*["']workbench-context""")
-CONTEXT_REQUEST = re.compile(r"(?m)^\s*<<<AIWB_CONTEXT_REQUEST>>>")
+CONTEXT_REQUEST = re.compile(r"(?m)^\s*<<<AIWB_CONTEXT_REQUEST>>>|\"type\"\s*:\s*\"AIWB_CONTEXT_REQUEST\"")
 MD_FENCE_WITH_PATH = re.compile(r"(?m)^(?:#+\s*|\*\*)?`?[\w./-]+\.\w{1,8}`?(?:\*\*)?\s*:?\s*\n`{3,}")
 
 

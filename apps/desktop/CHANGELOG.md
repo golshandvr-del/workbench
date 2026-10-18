@@ -1,3 +1,25 @@
+## [1.16.3] - 2026-10-18
+### Smart repair, diagnostics bundle and Context Request (roadmap v1.16.2 + v1.16.3) — Phase 1 complete
+- **Smart repair prompt (1.16.2):** an import repair is built from the real Inbox evidence — a new `repair` attempt
+  linked to the failed one, the stable error codes, the files that arrived intact (must NOT be regenerated) and only
+  the files to resend. After 3 consecutive failed repair rounds for a task Workbench stops and asks the user to decide.
+- **Diagnostics bundle (1.16.2, spec v1.11 §7.4):** *Help → Diagnostics bundle (local, redacted)…* builds a ZIP on
+  this computer only, with a full preview before saving. Default content: versions, redacted log tail, Inbox status
+  summary (codes only), task/attempt metadata. No source, prompt/response text, raw Inbox data or credentials; user
+  paths are replaced. Task text and full history are explicit opt-ins.
+- **Context Request (1.16.3):** versioned `AIWB_CONTEXT_REQUEST` contract (described in the Capability Manifest of
+  every prompt). Items: `full_file`, `range` (≤500 lines) or Python `symbol` (`func`, `Class`, `Class.method`,
+  decorators included). Unsafe paths, missing files, invalid ranges, too-large files and sensitive files (.env, keys)
+  are reported per item; sensitive files need a separate explicit decision. Files changed since the model saw them
+  (`base_hashes`) are marked stale and the current version is prepared. Delivery is an inline listing (clipboard) or a
+  ZIP context pack with `AIWB_CONTEXT_MANIFEST.json`; Workbench only prepares, the user pastes/attaches.
+- Context requests are routed through the Inbox with their own status (`context_request`), not as an import error.
+  Plain-text answers that seem to ask for files get a suggestion only.
+
+### Validation
+- `test_repair_diagnostics.py` (9), `test_context_request.py` (9); GUI smokes `gui_repair_diag_smoke.py`,
+  `gui_context_request_smoke.py`.
+
 ## [1.16.0] - 2026-10-18
 
 ### Response Inbox & understandable import errors (roadmap v1.16.0 + v1.16.1)
