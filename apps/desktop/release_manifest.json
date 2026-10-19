@@ -110,6 +110,10 @@
       "source": "apps/desktop/tests/test_inbox.py"
     },
     {
+      "path": "test_intake_normalize.py",
+      "source": "apps/desktop/tests/test_intake_normalize.py"
+    },
+    {
       "path": "test_repair_diagnostics.py",
       "source": "apps/desktop/tests/test_repair_diagnostics.py"
     },
