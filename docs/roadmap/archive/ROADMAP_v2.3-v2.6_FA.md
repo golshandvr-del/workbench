@@ -1,5 +1,7 @@
 # AI Workbench — نقشه‌راه اصلی (Master Roadmap) — Project Workbench و تیم چند Agent
 
+> **وضعیت: superseded (2026-10-19)** — جایگزین: [`ROADMAP.md`](../../../ROADMAP.md) و [`docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md`](../../specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md).
+>
 > **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر کار توسعه باید به یکی از گام‌های همین فایل اشاره کند.
 > منبع جزئیات، معیارها و Gateها: [`docs/specs/AI_Workbench_GUI_Team_Orchestration_Roadmap_FA.md`](docs/specs/AI_Workbench_GUI_Team_Orchestration_Roadmap_FA.md) (نسخه 1.0، 2026-10-18).
 > Roadmap قبلی (1.14.1 → 2.2.0، کامل‌شده) در [`docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md) بایگانی شده است.
