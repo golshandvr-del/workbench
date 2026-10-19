@@ -152,7 +152,8 @@ def apply(style: Any, theme: str) -> dict[str, str]:
     """
     p = palette(theme)
     try:
-        if style.theme_use() != "clam" and "clam" in style.theme_names():
+        current = style.theme_use()
+        if not str(current).startswith("sun-valley") and current != "clam" and "clam" in style.theme_names():
             style.theme_use("clam")
     except Exception:  # pragma: no cover - theme not available
         pass
