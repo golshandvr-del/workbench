@@ -6,6 +6,16 @@ package io.github.golshandvr.aiworkbench.core
  * Pure functions of the state document.
  */
 object Prompts {
+    /**
+     * How files must be delivered (mobile 1.0.1 / desktop 3.9.1). Chat apps render text outside code blocks as Markdown:
+     * indentation and backticks are lost when the answer is copied. A four-backtick fence keeps the body verbatim
+     * (inner ``` blocks stay intact) and the header has no body attribute, so a copy without fences still parses.
+     */
+    val FILE_RULES = listOf(
+        "- Files: one AIWB file block per file, complete files only. Wrap every file body in a fence of FOUR backticks (````)" +
+            " so the chat app keeps indentation and backticks when the answer is copied:",
+        "<<<AIWB_FILE path=\"relative/path.ext\" action=\"write\">>>", "````", "(the complete file)", "````", "<<<AIWB_END_FILE>>>")
+
     private fun section(title: String, lines: List<String>): List<String> = listOf("", "## $title") + lines.ifEmpty { listOf("- (none)") }
 
     /** Python `json.dumps(v, ensure_ascii=False, indent=1)` (insertion order). */
@@ -91,8 +101,7 @@ object Prompts {
             "summary" to "…", "completed_items" to listOf("done and delivered"), "unresolved_items" to listOf("not done"),
             "assumptions" to listOf("what you assumed"), "decision_requests" to listOf("what the user must decide"),
             "validation_claims" to listOf("what you believe works (unverified)"), "recommended_next_action" to "…")
-        lines += section("9. Expected delivery", listOf(
-            "- Files: AIWB file blocks (<<<AIWB_FILE path=\"…\" action=\"write\" body=\"raw\">>> … <<<AIWB_END_FILE>>>), complete files only.",
+        lines += section("9. Expected delivery", FILE_RULES + listOf(
             "- Then exactly one manifest block:", "<<<AIWB_HANDOFF>>>", dumpsIndent1(manifest), "<<<AIWB_END_HANDOFF>>>",
             "- Keep separate: done, proposed, not run, needs decision."))
         return lines.joinToString("\n")
@@ -109,8 +118,7 @@ object Prompts {
         if (done.isNotEmpty()) lines += listOf("", "## Arrived complete (do NOT resend)") + done.map { "- $it" }
         lines += listOf("", "## Still missing") + missing.map { "- $it" }.ifEmpty { listOf("- (see the acceptance criteria below)") }
         lines += listOf("", "## Acceptance criteria") + Json.strs(t["acceptance_criteria"]).map { "- [ ] $it" }.ifEmpty { listOf("- (none)") }
-        lines += listOf("", "## Format", "- Complete files as AIWB file blocks (<<<AIWB_FILE path=\"…\" action=\"write\" body=\"raw\">>> … " +
-            "<<<AIWB_END_FILE>>>), then one manifest:", "<<<AIWB_HANDOFF>>>",
+        lines += listOf("", "## Format") + FILE_RULES + listOf("- Then one manifest:", "<<<AIWB_HANDOFF>>>",
             dumpsSpaced(linkedMapOf("schema_version" to "1.0", "handoff_id" to n["handoff_id"], "task_id" to n["task_id"],
                 "task_revision" to n["task_revision"], "attempt_id" to n["attempt_id"], "outcome" to "complete|partial", "summary" to "…",
                 "completed_items" to listOf("…"), "unresolved_items" to emptyList<Any?>(), "validation_claims" to emptyList<Any?>())),
