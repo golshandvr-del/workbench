@@ -1,3 +1,23 @@
+## [3.6.0] - 2026-10-19
+
+### Visual timeline (Roadmap 3.x, Gate 3.6.0)
+- New `aiwb/ui/timeline_canvas.py`: a horizontal time axis with one lane per AI (plus "project"). Every
+  ledger event is a circle whose size and colour show its importance (minor / normal / major / critical;
+  an explicit `payload.importance` wins). Every version is a vertical line — dashed while proposed /
+  local / tagged, solid once released (drawn at its release time); withdrawn versions are hidden.
+- Zoom (mouse wheel or +/-, anchored at the cursor), pan (drag or arrow keys), tooltip on hover, click →
+  the event opens in the Inspector and is revealed in the event list.
+- Legacy events without a timestamp keep their order (they take the time of the neighbouring event).
+- Uses the Workbench theme tokens, so light and dark both work. English only.
+- Project Workbench → Timeline shows the canvas above the filterable event list.
+
+### Validation
+- `test_timeline_canvas.py`: importance levels, circle sizes, lanes, version lines (solid / dashed /
+  hidden), undated events, empty project.
+- `gui_timeline_smoke.py`: 2000 events redraw in < 300 ms (median ~45 ms on CI-class Linux), circle size
+  per importance, solid vs dashed version line, dark palette, zoom/pan, click → Inspector.
+- NOT RUN: physical Windows at 125/150/200 % DPI.
+
 ## [3.5.0] - 2026-10-19
 
 ### Guided loop without dead ends (Roadmap 3.x, Gate 3.5.0)
