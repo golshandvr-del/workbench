@@ -97,13 +97,40 @@ def keep_on_screen(win: tk.Misc) -> None:
         pass
 
 
+_BARS: list["FlowBar"] = []
+_RTL = [False]
+
+
+def set_direction(rtl: bool) -> None:
+    """Mirror every flow bar (Persian = right-to-left)."""
+    _RTL[0] = bool(rtl)
+    for bar in list(_BARS):
+        try:
+            if not bar.frame.winfo_exists():
+                _BARS.remove(bar)
+                continue
+        except tk.TclError:
+            _BARS.remove(bar)
+            continue
+        bar.rtl = _RTL[0]
+        bar.reflow(force=True)
+
+
+def no_flow(frame: tk.Misc) -> tk.Misc:
+    """Mark a frame whose children are laid out by its owner (never converted)."""
+    frame._aiwb_noflow = True  # type: ignore[attr-defined]
+    return frame
+
+
 class FlowBar:
     """Lays the children of ``frame`` out left-to-right and wraps them onto new rows."""
 
     def __init__(self, frame: tk.Misc, items: list[tuple[tk.Misc, dict[str, Any]]] | None = None,
-                 *, gap: int = GAP, row_gap: int = SPACE, rtl: bool = False) -> None:
+                 *, gap: int = GAP, row_gap: int = SPACE, rtl: bool | None = None) -> None:
         self.frame = frame
-        self.gap, self.row_gap, self.rtl = gap, row_gap, rtl
+        self.gap, self.row_gap = gap, row_gap
+        self.rtl = _RTL[0] if rtl is None else rtl
+        _BARS.append(self)
         self.items: list[tuple[tk.Misc, dict[str, Any]]] = list(items or [])
         self._rows: tuple[tuple[int, ...], ...] = ()
         self._row_frames: list[ttk.Frame] = []
@@ -220,6 +247,8 @@ def flow(frame: tk.Misc, **kw: Any) -> FlowBar | None:
     """Convert a frame of packed controls into a :class:`FlowBar` (no-op if unsuitable)."""
     if getattr(frame, "_aiwb_flow", None) is not None:
         return frame._aiwb_flow  # type: ignore[attr-defined]
+    if getattr(frame, "_aiwb_noflow", False):
+        return None
     try:
         slaves = frame.pack_slaves()
     except tk.TclError:

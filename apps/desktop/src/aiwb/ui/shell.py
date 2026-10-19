@@ -17,6 +17,7 @@ from tkinter import ttk
 from typing import Any, Callable
 
 from . import appearance
+from .layout import no_flow, set_direction
 from .prefs import AppPrefs
 
 # key -> (EN label, FA label, glyph, advanced_only)
@@ -187,6 +188,8 @@ class AppShell:
     def _on_pref(self, key: str) -> None:
         if key == "theme":
             self.palette = appearance.apply(self.root, self.prefs.theme)
+        if key == "lang":
+            set_direction(self.prefs.rtl)
         if key in ("lang", "mode"):
             self._layout_rail()
             self._relabel()
@@ -221,13 +224,13 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
     mode_var = tk.StringVar(value=prefs.mode)
     c1 = card(0, ("Appearance", "ظاهر"), ("Light or dark — applies to every page immediately.",
                                          "روشن یا تیره — بلافاصله روی همهٔ صفحات اعمال می‌شود."))
-    row1 = ttk.Frame(c1, style="Card.TFrame")
+    row1 = no_flow(ttk.Frame(c1, style="Card.TFrame"))
     row1.grid(row=2, column=0, sticky="w")
     widgets["theme"] = [ttk.Radiobutton(row1, variable=theme_var, value=v, style="Card.TRadiobutton",
                                         command=lambda: prefs.set_theme(theme_var.get())) for v in ("light", "dark")]
     c2 = card(1, ("Language", "زبان"), ("Interface language; Persian uses a right-to-left layout.",
                                        "زبان رابط؛ فارسی چیدمان راست‌به‌چپ دارد."))
-    row2 = ttk.Frame(c2, style="Card.TFrame")
+    row2 = no_flow(ttk.Frame(c2, style="Card.TFrame"))
     row2.grid(row=2, column=0, sticky="w")
     widgets["lang"] = [ttk.Radiobutton(row2, variable=lang_var, value=v, style="Card.TRadiobutton",
                                        command=lambda: prefs.set_lang(lang_var.get())) for v in ("en", "fa")]
@@ -236,7 +239,7 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
                "Advanced: adds Project Profile, History, Run & Report and Git / GitHub.",
                "ساده: مسیر هدایت‌شده — خانه، میز کار پروژه، پرامپت، پاسخ AI. "
                "پیشرفته: پروفایل پروژه، تاریخچه، اجرا و گزارش و گیت/گیت‌هاب هم اضافه می‌شوند."))
-    row3 = ttk.Frame(c3, style="Card.TFrame")
+    row3 = no_flow(ttk.Frame(c3, style="Card.TFrame"))
     row3.grid(row=2, column=0, sticky="w")
     widgets["mode"] = [ttk.Radiobutton(row3, variable=mode_var, value=v, style="Card.TRadiobutton",
                                        command=lambda: prefs.set_mode(mode_var.get())) for v in ("simple", "advanced")]
