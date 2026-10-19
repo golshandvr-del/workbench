@@ -4600,7 +4600,7 @@ class WorkbenchApp:
         self.title_refresh_btn = ttk.Button(actions, text="Refresh files", command=self.refresh_files)
         self.title_refresh_btn.pack(side="left")
         self.shell.project_label.configure(textvariable=self.workspace_var)
-        self.manager_tab = self.shell.add_page("home", padding=(8, 8))
+        self.manager_tab = self.shell.add_page("home", padding=(8, 8), on_show=self.refresh_home_next_step)
         self.workbench_tab = self.shell.add_page("workbench", padding=0, on_show=self._show_workbench_page)
         self.project_tab = self.shell.add_page("prompt", padding=8)
         self.response_tab = self.shell.add_page("response", padding=8)
@@ -4735,11 +4735,43 @@ class WorkbenchApp:
         self.projects_tree.bind("<Double-1>", lambda _event: self.open_selected_project())
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
 
+        # 3.5.0: the active project's next guided step, so Home never leaves the user without a way forward
+        self.home_next_var = tk.StringVar(value="Open or create a project to see its next step.")
+        nxt = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
+        nxt.pack(fill="x", pady=(9, 0))
+        ttk.Label(nxt, text="Next step", style="CardAccent.TLabel").pack(side="left", padx=(0, 10))
+        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=900).pack(
+            side="left", fill="x", expand=True)
+        self.home_next_btn = ttk.Button(nxt, text="Continue in Workbench", style="Primary.TButton",
+                                        command=lambda: self.shell.show("workbench"))
+        self.home_next_btn.pack(side="right")
         detail = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
         detail.pack(fill="x", pady=(9, 0))
         ttk.Label(detail, textvariable=self.manager_active_var, style="CardAccent.TLabel").pack(anchor="w")
         ttk.Label(detail, textvariable=self.manager_detail_var, style="CardMuted.TLabel", wraplength=1170).pack(anchor="w", pady=(4, 0))
         ttk.Label(tab, text="Tip: double-click a project to open it. Each project stores its profile and resumable task in its own .workbench/project.json; that metadata is excluded from model edits and local Git commits.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(8, 0))
+
+    def home_next_step(self) -> dict[str, Any] | None:
+        """First guided step of the active project (read from its local V2 state; nothing is written)."""
+        ws = getattr(self, "workspace_window", None)
+        if ws is None or self.workspace is None or getattr(ws, "_project_root", None) != str(self.workspace):
+            return None
+        try:
+            return ws.wc.guide_steps()[0]
+        except Exception:  # noqa: BLE001 - a broken project state must not break Home
+            return None
+
+    def refresh_home_next_step(self) -> None:
+        if not hasattr(self, "home_next_var"):
+            return
+        st = self.home_next_step()
+        if self.workspace is None:
+            self.home_next_var.set("Open or create a project to see its next step.")
+        elif st is None:
+            self.home_next_var.set(f"{Path(self.workspace).name}: open the Workbench to see the next step.")
+        else:
+            who = "" if st["agent_id"] == "you" else f" [{st['agent_id']}]"
+            self.home_next_var.set(f"{Path(self.workspace).name}: {st['title']}{who}")
 
     def _project_selection_changed(self, _event: Any = None) -> None:
         path = self._selected_project_path()
