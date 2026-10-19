@@ -23,30 +23,56 @@ object StrictJson {
 
     fun isValid(text: String): Boolean = try { parse(text); true } catch (_: ParseError) { false }
 
-    /** Compact serialization (keys in map order, non-ASCII kept as-is). */
-    fun stringify(v: Any?): String = StringBuilder().also { write(it, v) }.toString()
+    /**
+     * Compact serialization, non-ASCII kept as-is. With [sortKeys] the output is byte-identical to Python's
+     * `json.dumps(v, ensure_ascii=False, sort_keys=True, separators=(",", ":"))` (the bundle integrity rule).
+     */
+    fun stringify(v: Any?, sortKeys: Boolean = false): String = StringBuilder().also { write(it, v, sortKeys) }.toString()
 
-    private fun write(sb: StringBuilder, v: Any?) {
+    /** Python `float.__repr__` for the doubles found in project state (whole numbers keep ".0"). */
+    fun pyFloat(v: Double): String {
+        if (v.isNaN()) return "NaN"
+        if (v.isInfinite()) return if (v > 0) "Infinity" else "-Infinity"
+        if (v == Math.floor(v) && Math.abs(v) < 1e16) return v.toLong().toString() + ".0"
+        val t = v.toString()
+        val e = t.indexOf('E')
+        if (e < 0) return t
+        val mant = t.substring(0, e).removeSuffix(".0")
+        val exp = t.substring(e + 1).toInt()
+        return mant + "e" + (if (exp < 0) "-" else "+") + String.format("%02d", Math.abs(exp))
+    }
+
+    /** Deep, mutable copy of a parsed JSON tree. */
+    @Suppress("UNCHECKED_CAST")
+    fun copy(v: Any?): Any? = when (v) {
+        is Map<*, *> -> LinkedHashMap<String, Any?>().also { m -> for ((k, x) in v) m[k.toString()] = copy(x) }
+        is List<*> -> ArrayList<Any?>().also { a -> for (x in v) a.add(copy(x)) }
+        else -> v
+    }
+
+    private fun write(sb: StringBuilder, v: Any?, sortKeys: Boolean) {
         when (v) {
             null -> sb.append("null")
             is String -> quote(sb, v)
             is Boolean -> sb.append(v)
             is Int, is Long -> sb.append(v.toString())
-            is Double -> if (v == Math.floor(v) && !v.isInfinite() && Math.abs(v) < 1e15) sb.append(v.toLong()) else sb.append(v)
+            is Double -> sb.append(pyFloat(v))
+            is Float -> sb.append(pyFloat(v.toDouble()))
             is Number -> sb.append(v.toString())
             is Map<*, *> -> {
                 sb.append('{')
                 var first = true
-                for ((k, x) in v) {
+                val keys = v.keys.map { it.toString() }.let { if (sortKeys) it.sorted() else it }
+                for (k in keys) {
                     if (!first) sb.append(',')
                     first = false
-                    quote(sb, k.toString()); sb.append(':'); write(sb, x)
+                    quote(sb, k); sb.append(':'); write(sb, v[k], sortKeys)
                 }
                 sb.append('}')
             }
             is List<*> -> {
                 sb.append('[')
-                v.forEachIndexed { i, x -> if (i > 0) sb.append(','); write(sb, x) }
+                v.forEachIndexed { i, x -> if (i > 0) sb.append(','); write(sb, x, sortKeys) }
                 sb.append(']')
             }
             else -> quote(sb, v.toString())
