@@ -16,6 +16,7 @@ missing) and *Continue* (the pasted answer was cut off).
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from .models import ModelError, now_utc
@@ -70,21 +71,27 @@ def _owner(state: dict[str, Any], t: dict[str, Any]) -> str:
 
 
 # -- prompts ---------------------------------------------------------------------------------------
-def repair_prompt(state: dict[str, Any], h: dict[str, Any]) -> str:
-    """Ask the same AI only for what its delivery is missing (files, items) — never for what arrived."""
+def repair_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str, Any] | None = None) -> str:
+    """Ask the same AI only for what its delivery ``h`` is missing — never for what arrived. ``new`` is the
+    fresh handoff/attempt the answer must name (defaults to ``h``)."""
     t = state["tasks"][h["task_id"]]
+    n = new or h
     done = [a["logical_path"] for a in h.get("artifact_refs", [])]
     missing = [x for x in h.get("unresolved_items", [])]
-    lines = [f"AIWB_ATTEMPT_ID: {h['attempt_id']}", "(Repeat the line above as the first line of your answer.)", "",
+    lines = [f"AIWB_ATTEMPT_ID: {n['attempt_id']}", "(Repeat the line above as the first line of your answer.)", "",
              f"# AI Workbench — repair request for {h['handoff_id']} ({t['task_id']} {t['title']})",
              "Your previous delivery was incomplete. Send ONLY what is missing; do not resend what already arrived."]
     if done:
         lines += ["", "## Arrived complete (do NOT resend)"] + [f"- {p}" for p in done]
     lines += ["", "## Still missing"] + ([f"- {m}" for m in missing] or ["- (see the acceptance criteria below)"])
-    lines += ["", "## Acceptance criteria"] + [f"- [ ] {c}" for c in t.get("acceptance_criteria", [])] or ["- (none)"]
-    lines += ["", "## Format", "- Complete files as AIWB file blocks, then one AIWB_HANDOFF manifest with the same "
-              f"handoff_id {h['handoff_id']}, task_id {h['task_id']}, task_revision {h['task_revision']} and "
-              f"attempt_id {h['attempt_id']}; outcome complete or partial."]
+    lines += ["", "## Acceptance criteria"] + ([f"- [ ] {c}" for c in t.get("acceptance_criteria", [])] or ["- (none)"])
+    lines += ["", "## Format", "- Complete files as AIWB file blocks (<<<AIWB_FILE path=\"…\" action=\"write\" body=\"raw\">>> … "
+              "<<<AIWB_END_FILE>>>), then one manifest:", "<<<AIWB_HANDOFF>>>",
+              json.dumps({"schema_version": "1.0", "handoff_id": n["handoff_id"], "task_id": n["task_id"],
+                          "task_revision": n["task_revision"], "attempt_id": n["attempt_id"],
+                          "outcome": "complete|partial", "summary": "…", "completed_items": ["…"],
+                          "unresolved_items": [], "validation_claims": []}, ensure_ascii=False),
+              "<<<AIWB_END_HANDOFF>>>"]
     return "\n".join(lines)
 
 
@@ -98,7 +105,7 @@ def review_prompt(state: dict[str, Any], task_id: str) -> str:
              "You have NO access to earlier chats or to the project files. Review only what is below.", "",
              f"## Objective\n{t['objective']}", "", "## Acceptance criteria"]
     lines += [f"- [ ] {c}" for c in t.get("acceptance_criteria", [])] or ["- (none)"]
-    lines += ["", "## Delivery summary", last.get("summary") or "(no summary)"]
+    lines += ["", "## Delivery summary", str(last.get("summary") or "(no summary)")]
     lines += [f"- Done: {x}" for x in last.get("completed_items", [])]
     lines += [f"- Open: {x}" for x in last.get("unresolved_items", [])]
     lines += [f"- Claimed (NOT verified): {x}" for x in last.get("validation_claims", [])]
@@ -374,14 +381,14 @@ class Guide:
             return {"message": f"Delivery {ref} rejected. A new prompt can be prepared."}
         if action == "repair":
             h = self.p.handoffs.get(ref)
-            prompt = repair_prompt(c.state(), h)
-            c.resolve_handoff(ref, False, "partial delivery: repair requested")
-            t = self.p.tasks.get(h["task_id"])
+            c.resolve_handoff(ref, True, "partial delivery accepted; repair requested for the missing items")
+            if self.p.tasks.get(h["task_id"])["status"] == "in_review":
+                self.p.tasks.transition(h["task_id"], "in_progress", "repair requested")
             nh = c.start_task(h["task_id"], h["to_agent_id"])
             with self.p.store.transaction("repair prompt") as s:
-                s["handoffs"][nh["handoff_id"]]["prompt"] = repair_prompt(s, s["handoffs"][nh["handoff_id"]]) \
-                    + "\n\n" + s["handoffs"][nh["handoff_id"]]["prompt"].split("\n## 9. Expected delivery")[0][-0:]
-            return {"message": f"Repair prompt for {t['task_id']} ready (only the missing items).", "prompt": prompt,
+                s["handoffs"][nh["handoff_id"]]["prompt"] = prompt = repair_prompt(s, h, s["handoffs"][nh["handoff_id"]])
+                s["handoffs"][nh["handoff_id"]]["repair_of"] = ref
+            return {"message": f"Repair prompt for {h['task_id']} ready (only the missing items).", "prompt": prompt,
                     "handoff_id": nh["handoff_id"]}
         if action == "abandon":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")) or "dropped by the user")
