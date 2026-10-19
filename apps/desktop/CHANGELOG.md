@@ -1,3 +1,30 @@
+## [3.5.0] - 2026-10-19
+
+### Guided loop without dead ends (Roadmap 3.x, Gate 3.5.0)
+- New `aiwb/v2/guide.py`: for every project state a list of *steps* — title, plain explanation, whose chat it
+  belongs to, the ready prompt (if any) and the actions that move the project on. The guide only calls the
+  existing services; it adds no state machine of its own and never sends anything to a model.
+- Covered states: empty project (describe the goal → Project Charter prompt), pending plans, open decisions,
+  prompts not copied / copied but not sent / sent and waiting for the answer, deliveries to check (with
+  *Ask only for what is missing* for partial deliveries), stale answers, reviews, validation (real result with
+  run ID), blocked / waiting-for-decision tasks, drafts, milestones whose tasks are done, versions whose
+  milestones are accepted (release with commit, tag and run), and — when nothing else waits — the manager update.
+- Automatic prompts: **Manager Update / Continue** (asks the project manager for the next step), **Review**
+  (a reviewer AI checks a delivery against the acceptance criteria — advice only), **Repair** (only the missing
+  items, named with the fresh attempt) and **Continue** (a cut-off pasted answer).
+- "Copied" and "I sent it" are one click each and are recorded (attempt workflow / manager-seen revision).
+- Project Workbench: the Next-step strip shows the first step with its explanation, one primary button and a
+  More menu for the other actions; Overview lists the **queue of each AI** (double-click runs the step).
+- Home: a **Next step** card for the active project.
+
+### Validation
+- `test_v2_guide.py`: no-dead-end invariant checked in every state reached (every step has exactly one primary
+  action; prompt steps carry their prompt); edge states (blocked, needs decision, cancelled-only, cut-off answer,
+  incomplete charter); scripted E2E from idea to two released versions with three AIs, two of them working in
+  parallel, including a cut-off answer and a partial delivery repaired by a focused prompt.
+- `gui_guide_smoke.py`.
+- NOT RUN: real ChatGPT/Gemini/Claude chats; physical Windows.
+
 ## [3.4.0] - 2026-10-19
 
 ### Project Charter (Roadmap 3.x, Gate 3.4.0)
