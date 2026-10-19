@@ -85,8 +85,8 @@ def repair_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str, Any] 
         lines += ["", "## Arrived complete (do NOT resend)"] + [f"- {p}" for p in done]
     lines += ["", "## Still missing"] + ([f"- {m}" for m in missing] or ["- (see the acceptance criteria below)"])
     lines += ["", "## Acceptance criteria"] + ([f"- [ ] {c}" for c in t.get("acceptance_criteria", [])] or ["- (none)"])
-    lines += ["", "## Format", "- Complete files as AIWB file blocks (<<<AIWB_FILE path=\"…\" action=\"write\" body=\"raw\">>> … "
-              "<<<AIWB_END_FILE>>>), then one manifest:", "<<<AIWB_HANDOFF>>>",
+    from .handoff import FILE_RULES
+    lines += ["", "## Format", *FILE_RULES, "- Then one manifest:", "<<<AIWB_HANDOFF>>>",
               json.dumps({"schema_version": "1.0", "handoff_id": n["handoff_id"], "task_id": n["task_id"],
                           "task_revision": n["task_revision"], "attempt_id": n["attempt_id"],
                           "outcome": "complete|partial", "summary": "…", "completed_items": ["…"],
