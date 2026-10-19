@@ -1,6 +1,6 @@
 """Gate 3.1.0 — robust layout (roadmap 3.x, problem P2).
 
-At 1024x640, 1280x720 and 1920x1080, in English and Persian (RTL), every page of the
+At 1024x640, 1280x720 and 1920x1080, in English (the only supported UI language for now), every page of the
 single window shows each button fully: none is squeezed below its requested width or
 clipped by an ancestor. A dialog wider/taller than the screen is fitted to the work area.
 """
@@ -34,7 +34,7 @@ def main() -> None:
     wait_for_project_ready(app, root, proj)
     app.prefs.set_mode("advanced")
     failures = []
-    for lang in ("en", "fa"):
+    for lang in ("en",):  # English-only product scope (see ROADMAP: language policy)
         app.prefs.set_lang(lang)
         for size in ("1024x640", "1280x720", "1920x1080"):
             root.geometry(size + "+0+0")
@@ -60,7 +60,7 @@ def main() -> None:
     assert dlg.minsize()[0] <= aw and dlg.minsize()[1] <= ah, dlg.minsize()
     dlg.destroy()
     root.destroy()
-    print("Layout smoke passed: no squeezed/clipped button on any page at 1024x640, 1280x720, 1920x1080 (EN + FA RTL); oversized dialog fitted to the work area")
+    print("Layout smoke passed: no squeezed/clipped button on any page at 1024x640, 1280x720, 1920x1080 (EN); oversized dialog fitted to the work area")
 
 
 if __name__ == "__main__":
