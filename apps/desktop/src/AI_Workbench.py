@@ -4693,11 +4693,14 @@ class WorkbenchApp:
 
         toolbar = ttk.Frame(tab, style="Card.TFrame", padding=10)
         toolbar.pack(fill="x", pady=(0, 9))
-        ttk.Button(toolbar, text="+ New project", style="Primary.TButton", command=self.new_project).pack(side="left")
-        ttk.Button(toolbar, text="Add existing folder…", command=self.add_existing_project).pack(side="left", padx=(7, 0))
-        ttk.Button(toolbar, text="Open selected", command=self.open_selected_project).pack(side="left", padx=(7, 0))
-        ttk.Button(toolbar, text="Reveal folder", command=self.reveal_selected_project).pack(side="left", padx=(7, 0))
-        ttk.Button(toolbar, text="Remove from list", command=self.forget_selected_project).pack(side="right")
+        ui_actions.ActionBar(
+            toolbar,
+            primary=(("+ New project", self.new_project, "Primary.TButton"),
+                     ("Open selected", self.open_selected_project),
+                     ("Add existing folder…", self.add_existing_project)),
+            more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
+                                        ("Remove from list", self.forget_selected_project))),),
+            style="Card.TFrame").pack(side="left")
 
         search_row = ttk.Frame(tab)
         search_row.pack(fill="x", pady=(0, 7))
