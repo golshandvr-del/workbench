@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "3.7.0"
+APP_VERSION = "3.8.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -9011,7 +9011,9 @@ class WorkbenchApp:
 
         tools = {"response": classic_response, "inbox": self.open_response_inbox,
                  "context_request": self.open_context_request, "build_center": self.open_build_center,
-                 "sync_build": self.open_sync_build, "companion": self.open_companion, "classic": classic_projects}
+                 "sync_build": self.open_sync_build, "companion": self.open_companion, "classic": classic_projects,
+                 "export_bundle": lambda: self.export_project_bundle(ctl),
+                 "import_bundle": lambda: self.import_project_bundle(ctl)}
         # 3.0.0: the Workbench is a page of the main window (no second window, one theme/language/mode)
         old = getattr(self, "workspace_window", None)
         if old is not None:
@@ -9024,6 +9026,58 @@ class WorkbenchApp:
         if self.shell.current != "workbench":
             self.shell.show("workbench")
         self.set_status("Project Workbench: " + ctl.next_action_text())
+
+    # -- project bundle (roadmap 3.8.0): the same project on the phone (AI Workbench Mobile 1.0.0)
+    def export_project_bundle(self, ctl: Any, path: str | None = None) -> str:
+        """Save the open project as ``<name>.aiwb-bundle.json`` for the phone. Returns the path ('' if cancelled)."""
+        if path is None:
+            path = filedialog.asksaveasfilename(
+                parent=self.root, title="Export project for the phone", defaultextension=".json",
+                initialfile=f"{ctl.root.name}.aiwb-bundle.json",
+                filetypes=[("AI Workbench project bundle", "*.aiwb-bundle.json *.json"), ("All files", "*.*")])
+        if not path:
+            return ""
+        text = ctl.export_bundle(version=APP_VERSION)
+        Path(path).write_text(text, encoding="utf-8")
+        self.set_status(f"Project exported to {Path(path).name}. Open it in AI Workbench Mobile → Projects → Import.")
+        return path
+
+    def import_project_bundle(self, ctl: Any, path: str | None = None, *, confirm: bool | None = None) -> dict[str, Any]:
+        """Replace the open project with a bundle from the phone (never merges; a backup is kept)."""
+        if path is None:
+            path = filedialog.askopenfilename(
+                parent=self.root, title="Import project from the phone",
+                filetypes=[("AI Workbench project bundle", "*.aiwb-bundle.json *.json"), ("All files", "*.*")])
+        if not path:
+            return {"imported": False, "kind": "cancelled"}
+        data = Path(path).read_bytes()
+        try:
+            plan = ctl.plan_bundle_import(data)
+        except Exception as exc:  # noqa: BLE001 - shown to the user, nothing changed
+            messagebox.showerror("Import project", redact(str(exc)), parent=self.root)
+            return {"imported": False, "kind": "invalid", "message": str(exc)}
+        if plan["kind"] == "same":
+            self.set_status(plan["message"])
+            return {**plan, "imported": False}
+        if plan["kind"] == "other_project":
+            messagebox.showwarning("Import project", plan["message"], parent=self.root)
+            return {**plan, "imported": False}
+        if confirm is None:
+            ask = messagebox.askyesno if plan["safe"] else messagebox.askokcancel
+            confirm = ask("Import project", plan["message"] + ("" if plan["safe"] else "\n\nReplace this copy anyway?"),
+                          parent=self.root, icon=None if plan["safe"] else "warning")
+        if not confirm:
+            self.set_status("Import cancelled; nothing changed.")
+            return {**plan, "imported": False}
+        out = ctl.import_bundle(data, force=not plan["safe"])
+        self.set_status(f"Project imported (revision {out['bundle_revision']}). A backup of the previous state was kept.")
+        ww = getattr(self, "workspace_window", None)
+        if ww is not None:
+            try:
+                ww.show(ww.wc.section)
+            except tk.TclError:
+                pass
+        return out
 
     def _companion_builds(self) -> list[dict[str, Any]]:
         """Recent Sync & Build results of the open project in the shared build-metadata.v1 shape."""

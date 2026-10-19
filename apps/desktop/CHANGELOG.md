@@ -1,3 +1,18 @@
+## [3.8.0] - 2026-10-19
+
+### Project bundles between desktop and phone (Roadmap 3.x, Gate mobile 1.0.0 + 3.8.0)
+- New `aiwb/v2/bundle.py` (`aiwb-bundle.v1`): export the whole project document as one file with a SHA-256 of the
+  exact state text, read it back (damage, tampering and newer schema versions are refused), plan the import and
+  import it. A bundle is never merged: the plan says *new*, *same*, *newer*, *older* or *diverged*; only *new* and
+  *newer* are applied directly, *older*/*diverged* need an explicit replace, and a backup is always written first.
+- Settings → *Export project bundle* / *Import project bundle*.
+- AI Workbench Mobile 1.0.0 opens the same bundles and can run the whole guided loop on the phone.
+
+### Validation
+- `test_bundle.py`: round-trip, byte-identical re-export, every plan kind, damage/tamper refusal, backup before
+  replace, and import of the bundle produced by the Kotlin core (`fixtures/bundle/todo.mobile.aiwb-bundle.json`).
+- NOT RUN: moving a bundle between a real Windows PC and a physical phone.
+
 ## [3.7.0] - 2026-10-19
 
 ### Pairing with QR (Roadmap 3.x, Gate 3.7.0 + mobile 0.4.0)

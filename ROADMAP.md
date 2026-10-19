@@ -3,8 +3,8 @@
 > **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر PR باید به یک گام همین فایل اشاره کند.
 > Roadmapهای قبلی در `docs/roadmap/archive/` بایگانی شده‌اند (superseded): `ROADMAP_v2.7-v2.10_GUI-only_FA.md`، `ROADMAP_v2.3-v2.6_FA.md`، `ROADMAP_v1.14-v2.2_FA.md`.
 
-**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v3.7.0` · **Mobile منتشرشده:** `mobile-v0.4.0`
-**گام فعال:** mobile 1.0.0 + 3.8.0 — موبایل مستقل
+**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v3.8.0` · **Mobile منتشرشده:** `mobile-v1.0.0`
+**گام فعال:** 3.9.0 — Release Gate محصول
 
 راهنما: ✅ کامل (Gate پاس) · 🟡 بخشی · ⬜ شروع‌نشده · NOT RUN = اجرا نشده
 
@@ -57,7 +57,7 @@
 | **3.5.0** | حلقهٔ هدایت‌شده (بدون بن‌بست) | `v2/guide.py`: برای هر وضعیت یک Step با عنوان، توضیح، پرامپت آماده یا تصمیم؛ کارت «قدم بعدی» در Home و Project؛ صف هر AI؛ پرامپت Manager Update/Review/Repair/Continue خودکار؛ ثبت «کپی شد/ارسال شد» با یک کلیک | تست ثابت روی همهٔ وضعیت‌های قابل‌رسیدن: هیچ Step بدون عمل؛ E2E شبیه‌سازی‌شده از ایده تا نسخهٔ منتشرشده با پاسخ‌های اسکریپتی ۳ AI موازی | ✅ (`test_v2_guide`، `gui_guide_smoke`) |
 | **3.6.0** | Timeline تصویری | `ui/timeline_canvas.py`: محور افقی زمان، دایره با اندازهٔ اهمیت (minor/normal/major/critical)، خط عمودی هر نسخه (پیشنهادی خط‌چین، منتشرشده توپر)، Lane هر AI، Zoom/Pan، Tooltip، کلیک → Inspector | smoke: رندر ۲۰۰۰ رویداد < 300ms؛ اندازهٔ دایره و خط نسخه مطابق داده؛ Dark (فقط انگلیسی) | ✅ (`test_timeline_canvas`، `gui_timeline_smoke`) |
 | **3.7.0** + mobile **0.4.0** | اتصال موبایل با QR | QR روی Desktop (Canvas، بدون PIL)؛ URI `aiwb://pair?h=&p=&k=`؛ کد دستی ۱۶ نویسه (Base32، ۸۰ بیت، ۱۰ دقیقه، ۵ تلاش)؛ موبایل: اسکنر داخلی + Deep link از دوربین سیستم | تست واحد QR (decode با کتابخانهٔ مرجع در CI)، قرارداد کد کوتاه در هر دو طرف | ✅ (`test_qr_pairing` با zbar، `PairingContractTest` با ZXing، `companion-pairing.v2`) |
-| mobile **1.0.0** + **3.8.0** | موبایل مستقل | هستهٔ Kotlin: پروژه‌ها، Charter، پرامپت‌ها، Intake با همان Normalizer (پیکرهٔ مشترک در `packages/contracts/fixtures`)، Task، حلقهٔ هدایت‌شده، Timeline Canvas؛ Export/Import `aiwb-bundle.v1` بین Desktop و موبایل | تست‌های JVM روی پیکرهٔ مشترک؛ round-trip بسته | ⬜ |
+| mobile **1.0.0** + **3.8.0** | موبایل مستقل | هستهٔ Kotlin: پروژه‌ها، Charter، پرامپت‌ها، Intake با همان Normalizer (پیکرهٔ مشترک در `packages/contracts/fixtures`)، Task، حلقهٔ هدایت‌شده، Timeline Canvas؛ Export/Import `aiwb-bundle.v1` بین Desktop و موبایل | تست‌های JVM روی پیکرهٔ مشترک؛ round-trip بسته | ✅ (`IntakeCorpusTest`، `BundleContractTest`، `StandaloneLoopTest`، `test_bundle`؛ `fixtures/bundle/`) |
 | **3.9.0** | Release Gate محصول | E2E کامل، Screenshotهای قبل/بعد، Performance، مستندات کاربر EN | همهٔ Gateها؛ NOT RUNها صریح | ⬜ |
 
 ## ۴. موارد NOT RUN که فقط مالک محصول می‌تواند اجرا کند

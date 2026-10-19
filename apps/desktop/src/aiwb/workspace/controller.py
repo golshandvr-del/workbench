@@ -31,7 +31,7 @@ SHORT_LABELS = {"overview": ("Home", "خانه"), "timeline": ("Time", "زمان
 TOOLS = {
     "files": ("response", "inbox", "context_request"),
     "versions": ("build_center", "sync_build"),
-    "settings": ("companion", "classic"),
+    "settings": ("export_bundle", "import_bundle", "companion", "classic"),
 }
 TOOL_LABELS = {
     "response": ("Classic prompt & response…", "پرامپت و پاسخ کلاسیک…"),
@@ -39,6 +39,8 @@ TOOL_LABELS = {
     "context_request": ("Context request…", "درخواست زمینه…"),
     "build_center": ("Build Center…", "مرکز Build…"),
     "sync_build": ("Sync & Build…", "همگام‌سازی و Build…"),
+    "export_bundle": ("Export project for the phone…", "Export project for the phone…"),
+    "import_bundle": ("Import project from the phone…", "Import project from the phone…"),
     "companion": ("Mobile Companion…", "همراه موبایل…"),
     "classic": ("Projects window (classic)…", "پنجرهٔ پروژه‌ها (کلاسیک)…"),
 }

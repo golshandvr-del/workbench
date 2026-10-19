@@ -48,4 +48,24 @@
     <string name="not_allowed">دسکتاپ اجازه نداده است: %1$s</string>
     <string name="companion_error">خطای همراه موبایل: %1$s</string>
     <string name="companion_note">فقط در همان شبکهٔ محلی دسکتاپ کار می‌کند. پیام‌ها سرتاسر رمزنگاری می‌شوند؛ Tokenهای GitHub هرگز از دسکتاپ خارج نمی‌شوند. Preview، Apply و اجرای فرمان روی دسکتاپ می‌ماند.</string>
+    <string name="standalone_open">حالت مستقل (کار روی همین گوشی)</string>
+    <string name="standalone_title">AI Workbench — حالت مستقل</string>
+    <string name="standalone_projects">پروژه‌های این گوشی</string>
+    <string name="standalone_no_projects">هنوز پروژه‌ای نیست. یکی بسازید یا Bundle خروجی دسکتاپ را وارد کنید.</string>
+    <string name="standalone_new_project">پروژهٔ جدید</string>
+    <string name="standalone_import_bundle">ورود Bundle پروژه</string>
+    <string name="standalone_export_bundle">خروجی Bundle پروژه</string>
+    <string name="standalone_project_name">نام پروژه</string>
+    <string name="standalone_goal">چه چیزی می‌خواهید بسازید؟ (اختیاری)</string>
+    <string name="standalone_name_required">نام پروژه لازم است.</string>
+    <string name="standalone_exists">پروژهٔ %1$s از قبل وجود دارد.</string>
+    <string name="standalone_other_steps">گام‌های باز دیگر</string>
+    <string name="standalone_paste_answer">چسباندن پاسخ هوش مصنوعی</string>
+    <string name="standalone_paste_hint">پاسخ کامل چت را اینجا بچسبانید</string>
+    <string name="standalone_route">خواندن پاسخ</string>
+    <string name="standalone_timeline">خط زمانی</string>
+    <string name="standalone_back">همهٔ پروژه‌ها</string>
+    <string name="standalone_exported">Bundle ذخیره شد.</string>
+    <string name="standalone_replace">جایگزینی (پشتیبان نگه داشته می‌شود)</string>
+    <string name="standalone_error">خطا: %1$s</string>
 </resources>

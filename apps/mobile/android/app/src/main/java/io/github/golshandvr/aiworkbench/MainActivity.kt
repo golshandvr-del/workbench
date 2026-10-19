@@ -48,6 +48,9 @@ class MainActivity : Activity() {
             BuildConfig.BUILD_REF,
         )
         checkButton.setOnClickListener { checkReleases() }
+        findViewById<Button>(R.id.standalone_button).setOnClickListener {
+            startActivity(Intent(this, StandaloneActivity::class.java))
+        }
         findViewById<Button>(R.id.companion_button).setOnClickListener {
             startActivity(Intent(this, CompanionActivity::class.java))
         }
