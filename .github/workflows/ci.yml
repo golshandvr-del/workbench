@@ -68,14 +68,18 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: ${{ matrix.python }}
-      - name: Install Tk + Xvfb
-        run: sudo apt-get update -q && sudo apt-get install -y -q python3-tk xvfb
+      - name: Install Tk + Xvfb + zbar (reference QR decoder for test_qr_pairing)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q python3-tk xvfb libzbar0
+          python -m pip install -q pyzbar==0.1.9 pillow
       - name: Compile all sources
         run: python -m compileall -q apps/desktop tools
       - name: Undefined-name gate (pyflakes)
         run: python -m pip install -q pyflakes==4.0.3 && python tools/check_undefined_names.py
       - name: Unit and regression tests
         working-directory: apps/desktop
+        env:
+          AIWB_REQUIRE_QR_DECODER: "1"
         run: python -m unittest discover -s tests -t . -v 2>&1 | tail -n 60; exit ${PIPESTATUS[0]}
         shell: bash
       - name: Builder tests and installer/manifest gate
