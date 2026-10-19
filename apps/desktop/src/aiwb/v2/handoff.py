@@ -21,6 +21,16 @@ BLOCK_RE = re.compile(r"(?s)<<<AIWB_HANDOFF>>>\s*(.*?)\s*<<<AIWB_END_HANDOFF>>>"
 MAX_LIST = 50
 
 
+# How files must be delivered (3.9.1 / mobile 1.0.1). Chat apps render text outside code blocks as Markdown, so
+# indentation and backticks are lost when the answer is copied. A four-backtick fence keeps the body verbatim
+# (inner ``` blocks stay intact); the header has no body attribute, so a copy that lost its fences still parses.
+FILE_RULES = [
+    "- Files: one AIWB file block per file, complete files only. Wrap every file body in a fence of FOUR backticks (````)"
+    " so the chat app keeps indentation and backticks when the answer is copied:",
+    "<<<AIWB_FILE path=\"relative/path.ext\" action=\"write\">>>", "````", "(the complete file)", "````", "<<<AIWB_END_FILE>>>",
+]
+
+
 def find_manifest(text: str) -> dict[str, Any] | None:
     m = BLOCK_RE.search(text or "")
     if not m:
@@ -303,7 +313,7 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
     if h.get("note"):
         lines += _section("Note from the user", [h["note"]])
     lines += _section("9. Expected delivery", [
-        "- Files: AIWB file blocks (<<<AIWB_FILE path=\"…\" action=\"write\" body=\"raw\">>> … <<<AIWB_END_FILE>>>), complete files only.",
+        *FILE_RULES,
         "- Then exactly one manifest block:",
         "<<<AIWB_HANDOFF>>>",
         json.dumps({"schema_version": "1.0", "handoff_id": h["handoff_id"], "task_id": h["task_id"],
