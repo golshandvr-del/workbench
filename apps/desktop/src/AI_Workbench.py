@@ -52,6 +52,7 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.intake import normalize as intake_normalize
 from aiwb.ui import layout as ui_layout
 from aiwb.workspace import theme as tokens
 from aiwb.ui.prefs import AppPrefs
@@ -985,7 +986,7 @@ def _looks_like_json_response(raw_text: str) -> bool:
     )
 
 
-def validate_any_model_response(raw_text: str, root: Path) -> tuple[dict[str, Any], list[FileChange], str]:
+def _validate_any_model_response_raw(raw_text: str, root: Path) -> tuple[dict[str, Any], list[FileChange], str]:
     """Auto-detect versioned JSON or explicit AIWB file/action blocks, then validate everything."""
     if has_top_level_aiwb_file_marker(raw_text):
         payload = parse_aiwb_file_blocks(raw_text)
@@ -1205,7 +1206,7 @@ def parse_model_zip_archive(archive_path: Path | str, root: Path) -> tuple[dict[
     return validated, changes, artifact_info
 
 
-def detect_model_response_format(raw_text: str) -> str:
+def _detect_model_response_format_raw(raw_text: str) -> str:
     """Lightweight response classification for feedback immediately after pasting."""
     if not isinstance(raw_text, str) or not raw_text.strip():
         raise WorkbenchError("The clipboard has no text response.")
@@ -1237,6 +1238,34 @@ def detect_model_response_format(raw_text: str) -> str:
         raise
     return f"labeled Markdown code blocks ({len(payload['files'])} file(s); paths require review)"
 
+
+
+def validate_any_model_response(raw_text: str, root: Path) -> tuple[dict[str, Any], list[FileChange], str]:
+    """Raw first; if that fails, retry once on the chat-copy-normalized text (3.2.0)."""
+    try:
+        return _validate_any_model_response_raw(raw_text, root)
+    except WorkbenchError as first_error:
+        cleaned = intake_normalize(raw_text) if isinstance(raw_text, str) else None
+        if cleaned is None or not cleaned.changed:
+            raise
+        try:
+            payload, changes, format_name = _validate_any_model_response_raw(cleaned.text, root)
+        except WorkbenchError:
+            raise first_error from None
+        return payload, changes, f"{format_name} (cleaned: {', '.join(f.split(':')[0] for f in cleaned.fixes)})"
+
+
+def detect_model_response_format(raw_text: str) -> str:
+    try:
+        return _detect_model_response_format_raw(raw_text)
+    except WorkbenchError as first_error:
+        cleaned = intake_normalize(raw_text) if isinstance(raw_text, str) else None
+        if cleaned is None or not cleaned.changed:
+            raise
+        try:
+            return _detect_model_response_format_raw(cleaned.text) + " — cleaned copy artefacts"
+        except WorkbenchError:
+            raise first_error from None
 
 def validate_model_response(raw_text: str | dict[str, Any], root: Path, *, allow_empty_files: bool = False) -> tuple[dict[str, Any], list[FileChange]]:
     """Validate model text; only trusted ZIP adapter may allow empty text list for binary artifacts."""
