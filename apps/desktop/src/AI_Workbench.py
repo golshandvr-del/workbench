@@ -6712,29 +6712,34 @@ class WorkbenchApp:
         self._set_text(self.report_text, "No report has been generated. Select a project and run or import an action first.")
 
     def _make_git_tab(self) -> None:
-        tab = self.git_tab
-        self._make_github_accounts_panel(tab)
-        self._make_github_repository_panel(tab)
-        ttk.Label(tab, text="Local Git", font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(2, 0))
+        outer = self.git_tab
+        self.git_subtabs = ttk.Notebook(outer)
+        self.git_subtabs.pack(fill="both", expand=True)
+        tab = ttk.Frame(self.git_subtabs, padding=8)
+        repos_tab = ttk.Frame(self.git_subtabs, padding=8)
+        accounts_tab = ttk.Frame(self.git_subtabs, padding=8)
+        self.git_subtabs.add(tab, text="Local Git")
+        self.git_subtabs.add(repos_tab, text="GitHub repositories")
+        self.git_subtabs.add(accounts_tab, text="GitHub accounts")
+        self._make_github_accounts_panel(accounts_tab)
+        self._make_github_repository_panel(repos_tab)
         ttk.Label(tab, text="Git fetch/push authentication continues to use Git's configured credential helper (for example Git Credential Manager). The PAT stored above is for GitHub REST API only and is never inserted into a Git remote URL.", wraplength=1100).pack(anchor="w", pady=(3, 6))
         info_frame = ttk.Frame(tab)
         info_frame.pack(fill="x", pady=(0, 5))
         ttk.Label(info_frame, textvariable=self.git_branch_var, font=("Segoe UI", 9, "bold")).pack(anchor="w")
         ttk.Label(info_frame, textvariable=self.git_remote_var).pack(anchor="w")
-        git_tool_row = ttk.Frame(tab)
-        git_tool_row.pack(fill="x", pady=(3, 7))
-        ttk.Label(git_tool_row, textvariable=self.git_version_var, font=("Segoe UI", 9, "bold")).pack(side="left")
-        ttk.Button(git_tool_row, text="Check Git", command=self.check_git_installation).pack(side="right")
-        ttk.Button(git_tool_row, text="Update Git", command=lambda: self.install_or_update_git("upgrade")).pack(side="right", padx=(0, 6))
-        ttk.Button(git_tool_row, text="Install Git", command=lambda: self.install_or_update_git("install")).pack(side="right", padx=(0, 6))
-        ttk.Label(tab, text="Install/Update uses Windows Package Manager (winget). After installation Workbench refreshes common Git paths; if Windows does not expose Git to the current process, restart the app.", style="Hint.TLabel", wraplength=1120).pack(anchor="w", pady=(0, 5))
-        actions = ttk.Frame(tab)
-        actions.pack(fill="x", pady=(0, 7))
-        ttk.Button(actions, text="Refresh Git status / project history", command=lambda: self.refresh_git(silent=False, ensure_version_baseline=True)).pack(side="left")
-        ttk.Button(actions, text="Create work branch", command=self.create_workbench_branch).pack(side="left", padx=(6, 0))
-        ttk.Button(actions, text="Commit changes…", command=self.commit_changes).pack(side="left", padx=(6, 0))
-        ttk.Button(actions, text="Push to GitHub…", command=self.push_changes).pack(side="left", padx=(6, 0))
-        ttk.Button(actions, text="Review & Sync…", command=self.open_git_review_sync).pack(side="left", padx=(18, 0))
+        ttk.Label(tab, textvariable=self.git_version_var, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(3, 4))
+        self.git_actions = ui_actions.bar(
+            tab,
+            primary=(("Refresh Git status / project history", lambda: self.refresh_git(silent=False, ensure_version_baseline=True)),
+                     ("Commit changes…", self.commit_changes),
+                     ("Push to GitHub…", self.push_changes),
+                     ("Review & Sync…", self.open_git_review_sync, "Primary.TButton")),
+            more=(("Branch", (("Create work branch", self.create_workbench_branch),)),
+                  ("Git for Windows (winget)", (("Check Git", self.check_git_installation),
+                                                ("Install Git", lambda: self.install_or_update_git("install")),
+                                                ("Update Git", lambda: self.install_or_update_git("upgrade"))))),
+            pady=(0, 7))
         ttk.Label(tab, text="Local changes (sensitive paths or detected secrets are blocked from commit)").pack(anchor="w", pady=(3, 4))
         status_frame = ttk.Frame(tab)
         status_frame.pack(fill="both", expand=True)
