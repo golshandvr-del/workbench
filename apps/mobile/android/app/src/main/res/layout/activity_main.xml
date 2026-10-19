@@ -45,6 +45,12 @@
             android:text="@string/check_updates" />
 
         <Button
+            android:id="@+id/standalone_button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/standalone_open" />
+
+        <Button
             android:id="@+id/companion_button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
