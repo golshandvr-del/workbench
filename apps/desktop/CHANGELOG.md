@@ -1,3 +1,27 @@
+## [3.4.0] - 2026-10-19
+
+### Project Charter (Roadmap 3.x, Gate 3.4.0)
+- New `aiwb/v2/charter.py` and contract `project-charter.v1` (schema + valid/invalid fixtures).
+- Project Workbench › Overview › **Design the whole project…**: one prompt asks the project-manager chat for the
+  architecture and modules, how many AI chats work in parallel and why (plus a simpler alternative), the coordination
+  protocol (file/path ownership, shared contracts, sync points, conflict resolution), a roadmap of milestones with
+  versions, the tasks of every AI and a start prompt for every AI.
+- The answer (`AIWB_PROJECT_CHARTER` block) is read raw first and through the 3.2.0 chat-copy normalizer as a fallback.
+  Every required part is checked with a precise message (e.g. `tasks[1].owner_agent_id: agent-x is not in team.agents`,
+  overlapping file ownership, dependency cycles, versions that do not grow). An incomplete or cut-off charter is
+  refused, nothing changes, and a ready fix prompt is shown.
+- A valid charter is imported once as an ordinary proposal and reviewed per operation: agents (`create_agent`), tasks
+  (`create_task` with dependencies), milestones with a proposed version (new `create_milestone` operation). Only
+  accepted tasks are linked to milestones. The charter (architecture, coordination, start prompts) is kept in the
+  project state after acceptance.
+- Team view: **Copy start prompt** for each AI, framed with its owned paths, shared contracts, sync points and tasks.
+
+### Validation
+- `test_v2_charter.py` (prompt asks for every section; each missing section named; precise errors; chat-copy damage
+  repaired; cut-off detected; fix prompt; full import → agents/tasks/milestones/versions; partial acceptance; rejection
+  changes nothing). `gui_charter_smoke.py`. `tools/validate_contracts.py` checks that schema and code agree on fixtures.
+- NOT RUN: a real ChatGPT/Gemini/Claude chat answering the charter prompt; physical Windows.
+
 ## [3.3.0] - 2026-10-19
 
 ### UI information architecture (Roadmap 3.x, Gate 3.3.0 — owner request)
