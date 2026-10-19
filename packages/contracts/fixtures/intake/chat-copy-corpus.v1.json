@@ -1,0 +1,387 @@
+{
+ "version": 1,
+ "description": "Real-world chat-copy breakage corpus (roadmap 3.2.0). Each broken case must import to expect_files; healthy cases must stay byte-identical; truncated cases must be detected.",
+ "broken": [
+  {
+   "id": "bom_blocks",
+   "source": "notepad",
+   "note": "",
+   "text": "﻿<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "crlf_blocks",
+   "source": "windows-clipboard",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\r\nprint(\"hi\")\r\n<<<AIWB_END_FILE>>>\r\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "cr_only",
+   "source": "old-mac",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\rprint(\"hi\")\r<<<AIWB_END_FILE>>>\r",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "nbsp_in_header",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "zero_width_in_marker",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_​END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "zero_width_in_header",
+   "source": "gemini-web",
+   "note": "",
+   "text": "​<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n​<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "smart_quotes_header",
+   "source": "chatgpt-mobile",
+   "note": "",
+   "text": "<<<AIWB_FILE path=“src/app.py” action=“write” body=“raw”>>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "single_smart_quotes_header",
+   "source": "claude-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path=‘src/app.py’ action=‘write’>>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "md_escaped_markers",
+   "source": "chatgpt-copy-md",
+   "note": "",
+   "text": "\\<\\<\\<AIWB\\_FILE path=\"src/app.py\" action=\"write\" body=\"raw\"\\>\\>\\>\nprint(\"hi\")\n\\<\\<\\<AIWB\\_END\\_FILE\\>\\>\\>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "md_escaped_underscore_only",
+   "source": "gemini-copy-md",
+   "note": "",
+   "text": "<<<AIWB\\_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB\\_END\\_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "html_entities_markers",
+   "source": "rendered-html",
+   "note": "",
+   "text": "&lt;&lt;&lt;AIWB_FILE path=&quot;src/app.py&quot; action=&quot;write&quot; body=&quot;raw&quot;&gt;&gt;&gt;\nprint(\"hi\")\n&lt;&lt;&lt;AIWB_END_FILE&gt;&gt;&gt;\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "bold_markers",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "**<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>**\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "backtick_markers",
+   "source": "gemini-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n`<<<AIWB_END_FILE>>>`\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "spaces_in_marker",
+   "source": "claude-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<< AIWB_END_FILE >>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "indented_markers",
+   "source": "chatgpt-list",
+   "note": "",
+   "text": "   <<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n   <<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "spaces_around_equals",
+   "source": "gemini-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path = \"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "outer_fence_text",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "```text\n<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n```\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "outer_fence_four",
+   "source": "claude-web",
+   "note": "",
+   "text": "````\n<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n````\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "outer_fence_tilde",
+   "source": "gemini-web",
+   "note": "",
+   "text": "~~~\n<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n~~~\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "outer_fence_with_inner_fence",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "`````\n<<<AIWB_FILE path=\"README.md\" action=\"write\" body=\"raw\">>>\n# Title\n\n```python\nx = 1\n```\n<<<AIWB_END_FILE>>>\n`````\n",
+   "expect_files": {
+    "README.md": "# Title\n\n```python\nx = 1\n```\n"
+   }
+  },
+  {
+   "id": "prose_around_blocks",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "Sure! Here are the files:\n\n<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n\nLet me know if you need more.\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "bom_crlf_smart",
+   "source": "windows+chatgpt",
+   "note": "",
+   "text": "﻿<<<AIWB_FILE path=“src/app.py” action=\"write\" body=\"raw\">>>\r\nprint(\"hi\")\r\n<<<AIWB_END_FILE>>>\r\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_fenced",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "```json\n{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}\n```\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_trailing_commas",
+   "source": "gemini-web",
+   "note": "",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\",\n    },\n  ],\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_line_comments",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\", // short\n  // files follow\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_block_comment",
+   "source": "claude-web",
+   "note": "",
+   "text": "/* response */\n{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_smart_quotes_keys",
+   "source": "chatgpt-mobile",
+   "note": "",
+   "text": "{\n  “protocol”: \"workbench-v2\",\n  “task_id”: \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_python_literals",
+   "source": "local-llm",
+   "note": "extra key draft",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ],\n  \"draft\": False\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_nbsp_indent",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_bom_crlf",
+   "source": "notepad",
+   "note": "",
+   "text": "﻿{\r\n  \"protocol\": \"workbench-v2\",\r\n  \"task_id\": \"t1\",\r\n  \"summary\": \"s\",\r\n  \"files\": [\r\n    {\r\n      \"path\": \"src/app.py\",\r\n      \"action\": \"write\",\r\n      \"content\": \"print(\\\"hi\\\")\\n\"\r\n    }\r\n  ]\r\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_zero_width",
+   "source": "gemini-web",
+   "note": "",
+   "text": "{\n  ​\"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_md_escaped_underscore",
+   "source": "chatgpt-copy-md",
+   "note": "",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task\\_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_html_entities",
+   "source": "rendered-html",
+   "note": "",
+   "text": "{\n  &quot;protocol&quot;: &quot;workbench-v2&quot;,\n  &quot;task_id&quot;: &quot;t1&quot;,\n  &quot;summary&quot;: &quot;s&quot;,\n  &quot;files&quot;: [\n    {\n      &quot;path&quot;: &quot;src/app.py&quot;,\n      &quot;action&quot;: &quot;write&quot;,\n      &quot;content&quot;: &quot;print(\\&quot;hi\\&quot;)\\n&quot;\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "json_prose_and_fence",
+   "source": "claude-web",
+   "note": "",
+   "text": "Here is the JSON:\n\n```json\n{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\",\n    }\n  ]\n}\n```\nDone.",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "two_files_one_broken_marker",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "<<<AIWB_FILE path=\"README.md\" action=\"write\" body=\"raw\">>>\n# Title\n\n```python\nx = 1\n```\n<<<AIWB_END_FILE>>>\n<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n\\<\\<\\<AIWB\\_END\\_FILE\\>\\>\\>\n",
+   "expect_files": {
+    "README.md": "# Title\n\n```python\nx = 1\n```\n",
+    "src/app.py": "print(\"hi\")\n"
+   }
+  }
+ ],
+ "healthy": [
+  {
+   "id": "ok_blocks",
+   "text": "<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"hi\")\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "ok_blocks_inner_fence",
+   "text": "<<<AIWB_FILE path=\"README.md\" action=\"write\" body=\"raw\">>>\n# Title\n\n```python\nx = 1\n```\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "README.md": "# Title\n\n```python\nx = 1\n```\n"
+   }
+  },
+  {
+   "id": "ok_json",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "ok_json_fenced_prose",
+   "text": "Result:\n```json\n{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}\n```\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
+   "id": "ok_body_with_smart_quotes",
+   "text": "<<<AIWB_FILE path=\"doc.md\" action=\"write\" body=\"raw\">>>\nHe said “hello” — it’s fine & <b>ok</b> \\_x\\_\n<<<AIWB_END_FILE>>>\n",
+   "expect_files": {
+    "doc.md": "He said “hello” — it’s fine & <b>ok</b> \\_x\\_\n"
+   }
+  },
+  {
+   "id": "ok_json_string_with_comment_like",
+   "text": "{\"protocol\": \"workbench-v2\", \"task_id\": \"t1\", \"summary\": \"s\", \"files\": [{\"path\": \"a.js\", \"action\": \"write\", \"content\": \"// keep me\\nconst u='http://x/*y*/';\\n\"}]}",
+   "expect_files": {
+    "a.js": "// keep me\nconst u='http://x/*y*/';\n"
+   }
+  }
+ ],
+ "truncated": [
+  {
+   "id": "cut_second_file",
+   "text": "<<<AIWB_FILE path=\"README.md\" action=\"write\" body=\"raw\">>>\n# Title\n\n```python\nx = 1\n```\n<<<AIWB_END_FILE>>>\n<<<AIWB_FILE path=\"src/app.py\" action=\"write\" body=\"raw\">>>\nprint(\"h",
+   "reason": "unclosed_block",
+   "open": "src/app.py",
+   "done": [
+    "README.md"
+   ]
+  },
+  {
+   "id": "cut_json",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"",
+   "reason": "json_cut"
+  },
+  {
+   "id": "cut_fence",
+   "text": "Here:\n```python\nprint(1)\n",
+   "reason": "unclosed_fence"
+  }
+ ]
+}
