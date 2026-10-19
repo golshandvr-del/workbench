@@ -1,5 +1,26 @@
 # AI Workbench Mobile — Changelog
 
+## [1.0.0] - 2026-10-19
+
+### Standalone mode (roadmap mobile 1.0.0 + 3.8.0)
+- The phone no longer needs the desktop: **Standalone mode** keeps projects in app-private storage, in the same V2
+  project document as the desktop.
+- Kotlin core (`core/`): `StrictJson` (RFC 8259, output byte-identical to Python `json.dumps`), `Normalize` and
+  `Intake` (same normalizer and AIWB blocks as the desktop, shared corpus), `State`/`ProjectStore` (transactions,
+  backups), `Charter` (prompt, validation, fix prompt, reviewed import), `Project` (proposals, tasks, handoffs,
+  evidence policy, decisions, milestones, versions), `Prompts`, `Guide` (guided loop: a next step for every state)
+  and `Timeline` (lanes per AI, importance, version lines).
+- UI: project list, *next step* card with its actions, paste-an-answer box (charter, manager proposal or task
+  answer is recognised automatically), visual timeline with pinch zoom/pan/tap, and project bundle
+  import/export (`aiwb-bundle.v1`) through the system file picker. Bundles are never merged; a backup is kept.
+- Mobile Companion (pairing with the desktop) is unchanged.
+
+### Validation
+- JVM tests on the shared fixtures: `IntakeCorpusTest`, `BundleContractTest` (desktop bundle read, byte-identical
+  re-export, newer/older/diverged, damage) and `StandaloneLoopTest` (from charter to a released version without a
+  dead end; model claims never count as validation).
+- NOT RUN: the standalone loop on a physical phone.
+
 ## [0.4.0] - 2026-10-19
 
 ### Pairing with QR (roadmap 3.7.0 + mobile 0.4.0)
