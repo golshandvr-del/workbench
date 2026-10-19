@@ -181,6 +181,15 @@ def visible_buttons(view: tk.Misc) -> list[str]:
     return out
 
 
+def _ordered(w: tk.Misc) -> list[tk.Misc]:
+    """Children in on-screen reading order (top-to-bottom, then left-to-right)."""
+    kids = list(w.winfo_children())
+    try:
+        return sorted(kids, key=lambda c: (c.winfo_rooty() // 8, c.winfo_rootx()))
+    except tk.TclError:
+        return kids
+
+
 def describe(view: tk.Misc, depth: int = 0) -> list[str]:
     """Indented tree: sections (labelled frames, sub-tabs), buttons, and More-menu items."""
     lines: list[str] = []
@@ -212,13 +221,13 @@ def describe(view: tk.Misc, depth: int = 0) -> list[str]:
         if cls == "TNotebook":
             for tab in w.tabs():
                 lines.append(f"{p}- tab: **{w.tab(tab, 'text')}**")
-                for ch in w.nametowidget(tab).winfo_children():
+                for ch in _ordered(w.nametowidget(tab)):
                     walk(ch, d + 1)
             return
-        for ch in w.winfo_children():
+        for ch in _ordered(w):
             walk(ch, d)
 
-    for ch in view.winfo_children():
+    for ch in _ordered(view):
         walk(ch, depth)
     return [pad + ln if pad else ln for ln in lines]
 
