@@ -1,5 +1,7 @@
 # AI Workbench — نقشه‌راه اصلی (Master Roadmap) — بازطراحی رابط کاربری (GUI-only)
 
+> **وضعیت: superseded (2026-10-19)** — فقط 2.7.0 (سند و توکن) منتشر شد؛ 2.8–2.10 لغو و با [`ROADMAP.md`](../../../ROADMAP.md) (Roadmap 3.x — بازسازی محصول) جایگزین شد.
+
 > **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر کار توسعه باید به یکی از گام‌های همین فایل اشاره کند.
 > منبع جزئیات، معیارها و Gateها: [`docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md`](docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md) (نسخه 1.0، 2026-10-19).
 > Roadmapهای قبلی بایگانی شده‌اند: [`ROADMAP_v2.3-v2.6_FA.md`](docs/roadmap/archive/ROADMAP_v2.3-v2.6_FA.md) (Project Workbench و تیم چند Agent، کامل‌شده) و [`ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md).
