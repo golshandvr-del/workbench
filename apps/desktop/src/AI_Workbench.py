@@ -5322,12 +5322,13 @@ class WorkbenchApp:
         self.file_tree.configure(yscrollcommand=file_scroll.set)
         self.file_tree.pack(side="left", fill="both", expand=True)
         file_scroll.pack(side="right", fill="y")
-        left_buttons = ttk.Frame(left)
-        left_buttons.pack(fill="x", pady=(6, 0))
-        ttk.Button(left_buttons, text="Select recommended context", command=self.select_recommended_context).pack(side="left")
-        ttk.Button(left_buttons, text="Why these files?", command=self.show_context_rationale).pack(side="left", padx=(5, 0))
-        ttk.Button(left_buttons, text="Select all", command=self.select_all_files).pack(side="left", padx=(5, 0))
-        ttk.Button(left_buttons, text="Clear", command=lambda: self.file_tree.selection_remove(self.file_tree.selection())).pack(side="left", padx=(5, 0))
+        self.file_actions = ui_actions.bar(
+            left,
+            primary=(("Select recommended context", self.select_recommended_context),),
+            more=(("Selection", (("Why these files?", self.show_context_rationale),
+                                 ("Select all", self.select_all_files),
+                                 ("Clear", lambda: self.file_tree.selection_remove(self.file_tree.selection())))),),
+            pady=(6, 0))
 
         vpane = ttk.Panedwindow(right, orient="vertical")
         vpane.pack(fill="both", expand=True)
@@ -5363,30 +5364,23 @@ class WorkbenchApp:
             text="Recommended: AIWB file blocks — plain text that survives copy/paste from ChatGPT, Gemini and Claude. Use GPT ZIP when the chat can attach a real downloadable ZIP, or strict workbench-v3 JSON when typed Delete/Rename/Move operations are needed. Planning stages always use JSON.",
             style="Hint.TLabel", wraplength=700, justify="left",
         ).pack(anchor="w", pady=(0, 5))
-        task_buttons = ttk.Frame(setup.body)
-        task_buttons.pack(fill="x", pady=(0, 5))
-        ttk.Button(task_buttons, text="Build prompt", command=self.build_prompt).pack(side="left")
-        ttk.Button(task_buttons, text="Copy prompt", command=self.copy_prompt).pack(side="left", padx=(6, 0))
-        ttk.Button(task_buttons, text="Save prompt…", command=self.save_prompt).pack(side="left", padx=(6, 0))
         ttk.Checkbutton(
-            task_buttons, text="Include project history in this prompt",
+            setup.body, text="Include project history in this prompt",
             variable=self.project_history_context_var,
-        ).pack(side="left", padx=(10, 0))
-        ttk.Button(task_buttons, text="Add history to prompt", command=self.include_project_history_in_next_prompt).pack(side="left", padx=(6, 0))
+        ).pack(anchor="w", pady=(0, 5))
+        self.prompt_actions = ui_actions.bar(
+            setup.body,
+            primary=(("Build prompt", self.build_prompt),
+                     ("Copy prompt", self.copy_prompt, "Primary.TButton")),
+            more=(("Prompt", (("Save prompt…", self.save_prompt),
+                              ("Add history to prompt", self.include_project_history_in_next_prompt))),),
+            pady=(0, 5))
         quick_row = ttk.Frame(setup.body)
         quick_row.pack(fill="x", pady=(0, 5))
         quick_menu = tk.Menu(self.root, tearoff=False)
         self.quick_instruction_menu = quick_menu
-        self.quick_instruction_button = ttk.Menubutton(quick_row, text="More quick instructions ▾", menu=quick_menu)
+        self.quick_instruction_button = ttk.Menubutton(quick_row, text="Add quick instruction ▾", menu=quick_menu)
         self.quick_instruction_button.pack(side="left")
-        direct_shortcuts = {
-            "Quality first": BUILTIN_QUICK_INSTRUCTIONS[0],
-            "Tests & evidence": BUILTIN_QUICK_INSTRUCTIONS[4],
-            "Preserve behavior": BUILTIN_QUICK_INSTRUCTIONS[6],
-        }
-        for label, instruction in direct_shortcuts.items():
-            ttk.Button(quick_row, text=label, command=lambda item=dict(instruction): self.append_quick_instruction(item)).pack(side="left", padx=(6, 0))
-        ttk.Button(quick_row, text="Manage…", command=self.manage_quick_instructions).pack(side="left", padx=(6, 0))
         self._refresh_quick_instruction_menu()
         ttk.Label(out, text="Generated prompt (editable; quick instructions append at the end)", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(3, 0))
         prompt_frame = ttk.Frame(out)
