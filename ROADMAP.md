@@ -6,7 +6,7 @@
 > تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
 
 **آخرین به‌روزرسانی:** 2026-10-19 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.6.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** 2.7.0 — مراحل 0 تا 4 (Audit، تحقیق، IA، Wireframe، Design System)
+**گام فعال بعدی:** 2.8.0 — مرحلهٔ 5 (پوسته و کامپوننت‌های مشترک)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
 
@@ -37,11 +37,11 @@
 
 | مرحله | نام | وضعیت | شواهد |
 |---|---|---|---|
-| 0 | Baseline و Audit | ⬜ | |
-| 1 | تحقیق موج اول | ⬜ | |
-| 2 | UX/IA و تحقیق موج دوم | ⬜ | |
-| 3 | Wireframe و Layout | ⬜ | |
-| 4 | تحقیق نهایی و Visual system | ⬜ | |
+| 0 | Baseline و Audit | ✅ | `docs/audit/GUI_AUDIT_FA.md`، `docs/audit/screens/v2.6.0/`، `tools/gui_screenshots.py` |
+| 1 | تحقیق موج اول | ✅ | `docs/specs/GUI_RESEARCH_FA.md` §۱–۳ |
+| 2 | UX/IA و تحقیق موج دوم | ✅ | `docs/specs/GUI_INFORMATION_ARCHITECTURE_FA.md` (آزمون کاربر: NOT RUN) |
+| 3 | Wireframe و Layout | ✅ | `docs/specs/GUI_WIREFRAMES_FA.md` (آزمون وظیفه: NOT RUN) |
+| 4 | تحقیق نهایی و Visual system | ✅ | `docs/specs/GUI_DESIGN_SYSTEM_FA.md`، `workspace/theme.py`، `test_gui_design_system.py` |
 | 5 | Core shell و کامپوننت‌ها | ⬜ | |
 | 6 | بازطراحی نماها (6A–6E) | ⬜ | |
 | 7 | Responsive، RTL/LTR، Accessibility | ⬜ | |
