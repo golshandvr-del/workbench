@@ -713,6 +713,29 @@ class Project(val store: ProjectStore) {
         return evaluateTask(taskId)
     }
 
+    /**
+     * The user cannot run tests/builds (e.g. on a phone): the task is accepted on review alone. Nothing is faked —
+     * no passing evidence is created; the task records the waiver with its reason, the policy becomes
+     * `manual_review` (same task revision, so the recorded review still counts) and the timeline shows it.
+     */
+    fun waiveValidation(taskId: String, reason: String): Pair<String, List<String>> {
+        store.transaction("waive validation $taskId") { s ->
+            val t = State.require(s, "tasks", taskId)
+            if (t["status"] !in setOf("validation_pending", "in_review", "in_progress"))
+                throw ModelError("validation can only be waived while the task is being checked (now ${t["status"]})")
+            val why = reason.trim().ifEmpty { "tests/build cannot be run by the user" }.take(500)
+            t["acceptance_policy"] = "manual_review"
+            t["validation_waiver"] = linkedMapOf<String, Any?>("at" to State.nowUtc(), "reason" to why,
+                "task_revision" to Json.int(t["task_revision"]).toLong(), "result" to "not_run")
+            val flag = "validation NOT RUN (waived by the user): $why"
+            val flags = ArrayList<Any?>((t["flags"] as? List<*>).orEmpty())
+            if (flag !in flags) flags.add(flag)
+            t["flags"] = flags
+            State.emit(s, "validation_waived", "task_id" to taskId, "why" to why, "importance" to "major")
+        }
+        return evaluateTask(taskId)
+    }
+
     // --------------------------------------------------------------- decisions
 
     fun proposeDecision(title: String, problem: String, affected: List<String>): String = store.transaction("propose decision") { s ->
