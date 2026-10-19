@@ -98,7 +98,6 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(a.plan_bundle_import(old)["kind"], "older")
         with self.assertRaises(bundle.BundleError):
             a.import_bundle(old)
-        b.review_task("TASK-0001", False, "x") if False else None
         b.set_team_settings(max_parallel_chats=3)  # B changes too → diverged
         plan = b.plan_bundle_import(a.export_bundle())
         self.assertEqual(plan["kind"], "diverged")
