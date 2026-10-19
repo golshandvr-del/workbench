@@ -33,7 +33,7 @@ MODES = ("simple", "advanced")
 
 @dataclass
 class RouteResult:
-    kind: str                       # proposal | handoff | context_request | inbox_only | rejected
+    kind: str                       # proposal | charter_rejected | handoff | context_request | inbox_only | rejected
     response_id: str = ""
     message: str = ""
     reference_id: str = ""
@@ -289,6 +289,45 @@ class ProjectsController:
                 emit(s, "team_settings_changed", **{k: str(v) for k, v in new.items()})
         return new
 
+    # -- Project Charter (3.4.0)
+    def charter_prompt(self, project: dict[str, Any]) -> str:
+        """'Design the whole project' prompt. Saves the goal/brief only; nothing else changes."""
+        from .charter import charter_prompt
+        goal = str(project.get("goal", "")).strip()
+        if not goal:
+            raise ModelError("describe the project goal first (one or two sentences are enough)")
+        with self.project.store.transaction("project goal") as s:
+            s["settings"]["goal"] = goal[:2000]
+            for k in ("non_goals", "success", "platform", "constraints", "limits"):
+                if project.get(k):
+                    s["settings"].setdefault("brief", {})[k] = str(project[k]).strip()[:2000]
+        return charter_prompt({**project, "goal": goal}, self.state())
+
+    def import_charter(self, text: str, *, response_id: str = "") -> dict[str, Any]:
+        """Parse + validate a charter answer; a valid one becomes a pending proposal (nothing applied)."""
+        from .charter import charter_fix_prompt, charter_record, charter_to_proposal, parse_charter
+        st = self.state()
+        res = parse_charter(text, st)
+        if not res["ok"]:
+            return {**res, "proposal": None, "fix_prompt": charter_fix_prompt(res)}
+        p = self.project.proposals.import_data(charter_to_proposal(res["data"], st), response_id=response_id,
+                                               kind="charter", charter=charter_record(res["data"]))
+        self._dirty("charter imported")
+        return {**res, "proposal": p, "fix_prompt": ""}
+
+    def charter(self) -> dict[str, Any] | None:
+        return self.state()["settings"].get("charter")
+
+    def charter_start_prompt(self, agent_id: str) -> str:
+        from .charter import start_prompt
+        ch = self.charter()
+        if not ch:
+            raise ModelError("no Project Charter has been accepted yet")
+        st = self.state()
+        tasks = [f"{t['task_id']} {t['title']} ({t['status']})" for t in sorted(st["tasks"].values(), key=lambda t: t["task_id"])
+                 if t.get("owner_agent_id") == agent_id and t["status"] not in ("cancelled", "superseded")]
+        return start_prompt(ch, agent_id, task_lines=tasks)
+
     def team_planning_prompt(self, project: dict[str, Any]) -> str:
         """Planning prompt with registered resources + explicit team-size question. Saves goal only."""
         goal = str(project.get("goal", "")).strip()
@@ -369,6 +408,19 @@ class ProjectsController:
             rid = cap.response.response_id if cap.response else ""
         rid = rid or "resp-" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
         try:
+            from .charter import has_charter
+            if has_charter(text):
+                out = self.import_charter(text, response_id=rid)
+                if out["proposal"] is None:
+                    return RouteResult("charter_rejected", rid, "The Project Charter is incomplete and was not imported: "
+                                       + "; ".join(out["errors"][:3]) + (" …" if len(out["errors"]) > 3 else "")
+                                       + " A fix prompt is ready to copy.", "", out)
+                p = out["proposal"]
+                msg = (f"Project Charter imported as {p['proposal_id']} with {len(p['operations'])} change(s) "
+                       "(agents, tasks, milestones and versions) — review and accept them.")
+                if out["warnings"]:
+                    msg += f" {len(out['warnings'])} warning(s) to check."
+                return RouteResult("proposal", rid, msg, p["proposal_id"], p)
             if PROPOSAL_RE.search(text):
                 p = self.project.proposals.import_text(text, response_id=rid)
                 msg = f"Manager proposal {p['proposal_id']} with {len(p['operations'])} change(s) is ready for review."
