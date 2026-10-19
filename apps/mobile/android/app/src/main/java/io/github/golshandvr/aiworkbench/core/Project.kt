@@ -45,6 +45,21 @@ class Project(val store: ProjectStore) {
         }
     }
 
+    /** How many chats the user will follow at the same time (desktop `team.normalize_team_settings`, 1..12). */
+    fun maxParallelChats(): Int = (Json.obj(Json.obj(state()["settings"])["team"])["max_parallel_chats"] as? Number)?.toInt() ?: 2
+
+    fun setMaxParallelChats(n: Int) {
+        if (n !in 1..MAX_PARALLEL_CHATS) throw ModelError("max_parallel_chats must be between 1 and $MAX_PARALLEL_CHATS")
+        store.transaction("team settings") { s ->
+            val settings = Json.obj(s["settings"])
+            val team = Json.obj(settings.getOrPut("team") { linkedMapOf<String, Any?>() })
+            if ((team["max_parallel_chats"] as? Number)?.toInt() != n) {
+                team["max_parallel_chats"] = n.toLong()
+                State.emit(s, "team_settings_updated", "max_parallel_chats" to n.toLong())
+            }
+        }
+    }
+
     // ----------------------------------------------------------- charter + plans
 
     fun charterPrompt(goal: String): String = Charter.prompt(mapOf("goal" to goal), state())
@@ -802,6 +817,7 @@ class Project(val store: ProjectStore) {
     fun managerUpdate(): String = Prompts.managerUpdate(state())
 
     companion object {
+        const val MAX_PARALLEL_CHATS = 12
         val PROPOSAL_RE = Regex("(?s)<<<AIWB_MANAGER_PROPOSAL>>>\\s*(.*?)\\s*<<<AIWB_END_MANAGER_PROPOSAL>>>")
         val HANDOFF_RE = Regex("(?s)<<<AIWB_HANDOFF>>>\\s*(.*?)\\s*<<<AIWB_END_HANDOFF>>>")
         const val MAX_OPS = 60
