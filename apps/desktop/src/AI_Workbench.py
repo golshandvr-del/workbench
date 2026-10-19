@@ -4622,7 +4622,7 @@ class WorkbenchApp:
                 pass
 
     def _settings_app_section(self, card: ttk.Frame) -> None:
-        row = ttk.Frame(card, style="Card.TFrame")
+        row = ttk.Frame(card, style=ui_layout.row_style(card))
         row.grid(row=2, column=0, sticky="ew")
         for text, cmd in (("Mobile Companion…", self.open_companion),
                           ("Validation Profiles…", self.manage_validation_profiles),
