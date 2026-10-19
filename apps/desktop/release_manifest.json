@@ -118,6 +118,10 @@
       "source": "apps/desktop/tests/test_ui_actions.py"
     },
     {
+      "path": "test_timeline_canvas.py",
+      "source": "apps/desktop/tests/test_timeline_canvas.py"
+    },
+    {
       "path": "test_v2_charter.py",
       "source": "apps/desktop/tests/test_v2_charter.py"
     },
@@ -524,6 +528,10 @@
     {
       "path": "aiwb/ui/actions.py",
       "source": "apps/desktop/src/aiwb/ui/actions.py"
+    },
+    {
+      "path": "aiwb/ui/timeline_canvas.py",
+      "source": "apps/desktop/src/aiwb/ui/timeline_canvas.py"
     },
     {
       "path": "aiwb/intake/__init__.py",
