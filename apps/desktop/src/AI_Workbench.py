@@ -4280,9 +4280,7 @@ class WorkbenchApp:
         ensure_app_dirs()
         self.root = root
         self._configure_styles()
-        self.root.title(f"{APP_NAME} {APP_VERSION} — Project Studio")
-        self.root.geometry("1280x860")
-        self.root.minsize(1080, 740)
+        self.root.title(f"{APP_NAME} {APP_VERSION}")
         try:
             self.root.tk.call("tk", "scaling", 1.08)
         except tk.TclError:

@@ -35,6 +35,24 @@ NAV_ORDER = ("home", "workbench", "prompt", "response", "profile", "history", "r
 RAIL_WIDTH = 210
 
 
+def work_area(root: tk.Misc) -> tuple[int, int, int, int]:
+    """Usable screen area (x, y, w, h); leaves room for the Windows taskbar."""
+    try:
+        return 0, 0, root.winfo_screenwidth(), max(480, root.winfo_screenheight() - 48)
+    except tk.TclError:
+        return 0, 0, 1280, 720
+
+
+def fit_to_screen(root: tk.Tk, want: tuple[int, int] = (1280, 820), minimum: tuple[int, int] = (900, 560)) -> str:
+    """Size and centre the main window inside the work area; the minimum never exceeds the screen."""
+    ax, ay, aw, ah = work_area(root)
+    w, h = min(want[0], aw), min(want[1], ah)
+    root.minsize(min(minimum[0], aw), min(minimum[1], ah))
+    geo = f"{w}x{h}+{ax + (aw - w) // 2}+{ay + max(0, (ah - h) // 2)}"
+    root.geometry(geo)
+    return geo
+
+
 class AppShell:
     """Owns the chrome; pages are plain frames created by the application."""
 
@@ -47,6 +65,7 @@ class AppShell:
         self.pref_listeners: list[Callable[[str], None]] = []
         self.current = "home"
         self.palette = appearance.apply(root, prefs.theme)
+        fit_to_screen(root)
         self.outer = ttk.Frame(root)
         self.outer.pack(fill="both", expand=True)
         self.outer.rowconfigure(0, weight=1)
@@ -147,12 +166,14 @@ class AppShell:
                 self.nav[key].pack(fill="x", pady=1)
         self.rail_version.pack(side="bottom", fill="x")
         self.nav["settings"].pack(side="bottom", fill="x", pady=(1, 4))
-        anchor = "e" if self.prefs.rtl else "w"
-        self.title_label.grid_configure(sticky=anchor)
-        self.project_label.grid_configure(sticky=anchor)
-        self.actions.grid_configure(sticky="w" if self.prefs.rtl else "e")
-        self.actions.grid(column=1 if not self.prefs.rtl else 1)
-        self.title_label.grid(column=0)
+        rtl = self.prefs.rtl
+        anchor = "e" if rtl else "w"
+        title_col, action_col = (1, 0) if rtl else (0, 1)
+        self.titlebar.columnconfigure(title_col, weight=1)
+        self.titlebar.columnconfigure(action_col, weight=0)
+        self.title_label.grid_configure(column=title_col, sticky=anchor)
+        self.project_label.grid_configure(column=title_col, sticky=anchor)
+        self.actions.grid_configure(column=action_col, sticky="w" if rtl else "e")
         _ = other
 
     def _relabel(self) -> None:
