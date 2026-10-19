@@ -5446,9 +5446,9 @@ class WorkbenchApp:
         split.add(right, weight=2)
         history_toolbar = ttk.Frame(left)
         history_toolbar.pack(fill="x", pady=(0, 5))
-        ttk.Button(history_toolbar, text="Refresh", command=self._refresh_history_view).pack(side="left")
-        ttk.Button(history_toolbar, text="Report error…", command=self.report_manual_runtime_error).pack(side="left", padx=(5, 0))
-        ttk.Button(history_toolbar, text="Project versions…", command=self.show_project_versions).pack(side="left", padx=(5, 0))
+        ui_actions.ActionBar(history_toolbar, primary=(("Project versions…", self.show_project_versions),),
+                             more=(("History", (("Refresh", self._refresh_history_view),
+                                                ("Report error…", self.report_manual_runtime_error))),)).pack(side="left")
         filter_row = ttk.Frame(left)
         filter_row.pack(fill="x", pady=(0, 5))
         ttk.Label(filter_row, text="Filter history").pack(side="left", padx=(0, 5))
@@ -5500,8 +5500,8 @@ class WorkbenchApp:
         self.history_notes.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(4, 4))
         meta_buttons = ttk.Frame(meta)
         meta_buttons.grid(row=4, column=0, columnspan=2, sticky="ew")
-        ttk.Button(meta_buttons, text="Save metadata / notes", style="Primary.TButton", command=self._save_history_metadata).pack(side="left")
-        ttk.Button(meta_buttons, text="Delete selected entry…", command=self._delete_history_entry).pack(side="left", padx=(6, 0))
+        ui_actions.ActionBar(meta_buttons, primary=(("Save metadata / notes", self._save_history_metadata, "Primary.TButton"),),
+                             more=(("Entry", (("Delete selected entry…", self._delete_history_entry),)),)).pack(side="left")
 
         self.history_detail_tabs = ttk.Notebook(right)
         self.history_detail_tabs.pack(fill="both", expand=True)
@@ -5510,10 +5510,13 @@ class WorkbenchApp:
         self.history_error_view = self._make_history_text_page("Errors / context requests")
         action_row = ttk.Frame(right)
         action_row.pack(fill="x", pady=(6, 0))
-        ttk.Button(action_row, text="Copy prompt", command=lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))).pack(side="left")
-        ttk.Button(action_row, text="Copy model output", command=lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c"))).pack(side="left", padx=(6, 0))
-        ttk.Button(action_row, text="Edit prompt as new revision…", command=self._edit_history_prompt_revision).pack(side="left", padx=(6, 0))
-        ttk.Button(action_row, text="Create repair prompt from this step", command=self._repair_from_selected_history).pack(side="left", padx=(6, 0))
+        ui_actions.ActionBar(
+            action_row,
+            primary=(("Copy prompt", lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))),
+                     ("Copy model output", lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c")))),
+            more=(("This step", (("Edit prompt as new revision…", self._edit_history_prompt_revision),
+                                 ("Create repair prompt from this step", self._repair_from_selected_history))),),
+        ).pack(side="left")
 
     def _make_history_text_page(self, title: str) -> tk.Text:
         frame = ttk.Frame(self.history_detail_tabs)
