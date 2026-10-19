@@ -203,6 +203,11 @@ class AppShell:
         self.pref_listeners.append(fn)
 
 
+# Language policy (2026-10-19): the UI is English-only for now, so the Language card is
+# not shown. The preference and translations stay in place for a later version.
+SHOW_LANGUAGE_CARD = False
+
+
 def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[ttk.Frame], None] | None = None) -> dict[str, Any]:
     """The one Settings page: appearance, language, experience mode (+ optional app section)."""
     prefs = shell.prefs
@@ -270,6 +275,8 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
         for r in (row1, row2, row3):
             r.grid_configure(sticky=anchor)
 
+    if not SHOW_LANGUAGE_CARD:
+        c2.grid_remove()
     relabel()
     shell.on_pref(relabel)
     widgets.update(theme_var=theme_var, lang_var=lang_var, mode_var=mode_var, relabel=relabel)
