@@ -52,6 +52,7 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.ui import actions as ui_actions
 from aiwb.intake import normalize as intake_normalize
 from aiwb.intake import continue_prompt as intake_continue_prompt, truncation_report as intake_truncation_report
 from aiwb.ui import layout as ui_layout
@@ -5398,36 +5399,29 @@ class WorkbenchApp:
 
     def _make_response_tab(self) -> None:
         tab = self.response_tab
-        ttk.Label(tab, text="Paste a complete text response, or load a GPT ZIP artifact. ZIP files are inspected without extraction; text and binary artifacts pass path/security validation, type-appropriate preview, backup, and approval flow. Gemini file/action blocks and strict JSON remain supported.", wraplength=1100).pack(anchor="w", pady=(0, 5))
-        controls = ttk.Frame(tab)
-        controls.pack(fill="x", pady=(0, 5))
-        ttk.Button(controls, text="Paste & detect format", command=self.paste_response).pack(side="left")
-        ttk.Button(controls, text="Load response / ZIP…", command=self.load_response_file).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Analyze / preview files…", style="Primary.TButton", command=self.preview_response).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Import context plan / select requested files", command=self.import_context_plan).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Context request…", command=self.open_context_request).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Project Workbench…", style="Primary.TButton", command=self.open_project_workbench).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Projects (multi-agent)…", command=self.open_projects).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Mobile Companion…", command=self.open_companion).pack(side="left", padx=(6, 0))
-        candidate_controls = ttk.Frame(tab)
-        candidate_controls.pack(fill="x", pady=(0, 5))
-        ttk.Button(candidate_controls, text="Save response candidate…", command=self.save_response_candidate).pack(side="left")
-        ttk.Button(candidate_controls, text="Compare candidates / choose files…", command=self.compare_response_candidates).pack(side="left", padx=(6, 0))
-        ttk.Button(candidate_controls, text="Import architecture plan…", command=self.import_architecture_plan_from_response).pack(side="left", padx=(6, 0))
-        ttk.Label(tab, textvariable=self.workflow_stage_var, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 2))
-        stage_controls = ttk.Frame(tab)
-        stage_controls.pack(fill="x", pady=(0, 4))
-        ttk.Button(stage_controls, text="Refresh workflow", command=self.refresh_workflow_status).pack(side="left")
-        ttk.Button(stage_controls, text="Mark Verified… (manual review)", command=self.mark_task_verified).pack(side="left", padx=(6, 0))
-        ttk.Button(stage_controls, text="Report manual runtime / test error…", command=self.report_manual_runtime_error).pack(side="left", padx=(6, 0))
-        self.save_validated_history_button = ttk.Button(
-            stage_controls, text="Save validated prompt + output to history",
-            command=self.save_validated_turn_to_history, state="disabled",
-        )
-        self.save_validated_history_button.pack(side="left", padx=(6, 0))
-        ttk.Label(tab, text="File paths are validated. Text/binary writes require approval and create backups; proposed commands are only queued on import and require a separate review/approval in the Run tab. Typed model output may propose Delete/Rename/Move; every operation is previewed, destructive changes need final approval, and no command is auto-run.", style="Warning.TLabel", wraplength=1100).pack(anchor="w", pady=(0, 5))
+        ttk.Label(tab, text="Paste the model's whole answer (or load a ZIP), then Review & apply. Nothing is written until you approve the preview.",
+                  style="Hint.TLabel", wraplength=1100).pack(anchor="w", pady=(0, 6))
+        self.response_actions = ui_actions.bar(
+            tab,
+            primary=(("Paste & detect format", self.paste_response),
+                     ("Load response / ZIP…", self.load_response_file),
+                     ("Analyze / preview files…", self.preview_response, "Primary.TButton")),
+            more=(("If something went wrong", (("Import diagnostics…", self.show_import_diagnostics),
+                                               ("Response Inbox…", self.open_response_inbox),
+                                               ("Context request…", self.open_context_request),
+                                               ("Import context plan / select requested files", self.import_context_plan))),
+                  ("Several answers", (("Save response candidate…", self.save_response_candidate),
+                                       ("Compare candidates / choose files…", self.compare_response_candidates),
+                                       ("Import architecture plan…", self.import_architecture_plan_from_response))),
+                  ("After applying", (("Save validated prompt + output to history", self.save_validated_turn_to_history),
+                                      ("Mark Verified… (manual review)", self.mark_task_verified),
+                                      ("Report manual runtime / test error…", self.report_manual_runtime_error),
+                                      ("Refresh workflow", self.refresh_workflow_status))),
+                  ("Multi-agent", (("Projects (multi-agent)…", self.open_projects),))),
+            pady=(0, 5))
+        self.save_validated_history_button = self.response_actions.handle("Save validated prompt + output to history")
+        self.save_validated_history_button.configure(state="disabled")
+        ttk.Label(tab, textvariable=self.workflow_stage_var, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 4))
         response_frame = ttk.Frame(tab)
         response_frame.pack(fill="both", expand=True)
         self.response_input = tk.Text(response_frame, wrap="none", undo=True, font=("Consolas", 9))
