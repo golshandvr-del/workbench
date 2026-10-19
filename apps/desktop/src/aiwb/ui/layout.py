@@ -133,6 +133,16 @@ class FlowBar:
                 w = 0
         return w if w > 1 else 10_000
 
+    def _fit_labels(self, width: int) -> None:
+        """Wrapped labels in a bar never ask for more than the bar's width."""
+        for w, opts in self.items:
+            orig = opts.get("wrap")
+            if orig:
+                try:
+                    w.configure(wraplength=max(160, min(orig, width - 2 * self.gap)))
+                except tk.TclError:
+                    pass
+
     def rows_for(self, width: int) -> tuple[tuple[int, ...], ...]:
         rows: list[list[int]] = [[]]
         used = 0
@@ -153,6 +163,7 @@ class FlowBar:
         except tk.TclError:
             return
         self._last_width = self.frame.winfo_width()
+        self._fit_labels(width)
         rows = self.rows_for(width)
         if rows == self._rows and not force:
             return
@@ -217,13 +228,21 @@ def flow(frame: tk.Misc, **kw: Any) -> FlowBar | None:
             return None
         if s.winfo_class() not in FLOW_CLASSES:
             return None
-        if str(info.get("expand")) in ("1", "true", "True") or info.get("fill") in ("y", "both"):
+        wrap = 0
+        if s.winfo_class() in ("TLabel", "Label"):
+            try:
+                wrap = int(float(str(s.cget("wraplength"))))
+            except (tk.TclError, ValueError):
+                wrap = 0
+        expands = str(info.get("expand")) in ("1", "true", "True") or info.get("fill") in ("y", "both")
+        if expands and not wrap:
             return None
         side = info.get("side", "top")
+        opts = {"wrap": wrap} if wrap else {}
         if side == "left":
-            left.append((s, {"padx": info.get("padx", 0)}))
+            left.append((s, opts))
         elif side == "right":
-            right.insert(0, (s, {"padx": info.get("padx", 0)}))
+            right.insert(0, (s, opts))
         else:
             return None
     for s, _o in left + right:
