@@ -1,3 +1,23 @@
+## [3.3.0] - 2026-10-19
+
+### UI information architecture (Roadmap 3.x, Gate 3.3.0 — owner request)
+- New `aiwb/ui/actions.py`: `ActionBar` shows at most 4 primary buttons; every other command lives in one
+  grouped **More** menu whose group headers say when to use it. Menu commands keep a button-compatible handle,
+  so enable/disable logic is unchanged.
+- **AI Response:** 17 buttons → Paste & detect format · Load response / ZIP… · Analyze / preview files… + More
+  (If something went wrong · Several answers · After applying · Multi-agent). The duplicate "Project Workbench…"
+  and "Mobile Companion…" buttons are gone (they are a rail page / a Settings item).
+- **Git / GitHub:** one 24-button page → three sub-tabs: Local Git, GitHub repositories, GitHub accounts.
+- **Prompt, History, Run & Report, Home, Settings:** every toolbar uses the same 4 + More pattern;
+  quick instructions are one menu.
+- Settings: the Language card is hidden (English-only policy).
+- `docs/specs/UI_TREE.md`: the full page → section → button → menu tree, generated from the running app.
+
+### Validation
+- `gui_ia_smoke.py` (Gate 3.3.0): every page ≤ 10 visible action buttons, every bar ≤ 4 primary + More,
+  every 3.2.0 command still reachable, no duplicates of rail pages. `test_ui_actions.py`.
+- NOT RUN: physical Windows at 125/150 % DPI.
+
 ## [3.2.0] - 2026-10-19
 ### Reliable intake of model output (Roadmap 3.x, Gate 3.2.0, problem P7)
 - New `aiwb/intake/normalize.py`, used as a fallback before every parser (raw text is always tried first, so an answer that parsed before can never be broken): BOM, NBSP, zero-width characters, CR/CRLF; smart quotes, Markdown escapes (`\<\<\<AIWB\_FILE`), HTML entities, bold/backtick wrappers and stray spaces on AIWB marker lines only (file bodies untouched); an outer fence around the blocks, even after leading prose; JSON comments, trailing commas, smart quotes and Python literals outside strings.
