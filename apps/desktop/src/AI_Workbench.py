@@ -52,6 +52,7 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.ui import actions as ui_actions
 from aiwb.intake import normalize as intake_normalize
 from aiwb.intake import continue_prompt as intake_continue_prompt, truncation_report as intake_truncation_report
 from aiwb.ui import layout as ui_layout
@@ -73,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "3.2.0"
+APP_VERSION = "3.3.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4655,14 +4656,15 @@ class WorkbenchApp:
                 pass
 
     def _settings_app_section(self, card: ttk.Frame) -> None:
-        row = ttk.Frame(card, style=ui_layout.row_style(card))
-        row.grid(row=2, column=0, sticky="ew")
-        for text, cmd in (("Mobile Companion…", self.open_companion),
-                          ("Validation Profiles…", self.manage_validation_profiles),
-                          ("Restore Manager…", self.open_restore_manager),
-                          ("Export redacted diagnostics…", self.export_redacted_diagnostics),
-                          ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))):
-            ttk.Button(row, text=text, command=cmd).pack(side="left", padx=(0, 6), pady=2)
+        bar = ui_actions.ActionBar(
+            card,
+            primary=(("Mobile Companion…", self.open_companion),
+                     ("Restore Manager…", self.open_restore_manager)),
+            more=(("Tools", (("Validation Profiles…", self.manage_validation_profiles),)),
+                  ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
+                               ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
+            style=ui_layout.row_style(card))
+        bar.grid(row=2, column=0, sticky="w")
 
     def _make_workbench_placeholder(self) -> None:
         tab = self.workbench_tab
@@ -4691,11 +4693,14 @@ class WorkbenchApp:
 
         toolbar = ttk.Frame(tab, style="Card.TFrame", padding=10)
         toolbar.pack(fill="x", pady=(0, 9))
-        ttk.Button(toolbar, text="+ New project", style="Primary.TButton", command=self.new_project).pack(side="left")
-        ttk.Button(toolbar, text="Add existing folder…", command=self.add_existing_project).pack(side="left", padx=(7, 0))
-        ttk.Button(toolbar, text="Open selected", command=self.open_selected_project).pack(side="left", padx=(7, 0))
-        ttk.Button(toolbar, text="Reveal folder", command=self.reveal_selected_project).pack(side="left", padx=(7, 0))
-        ttk.Button(toolbar, text="Remove from list", command=self.forget_selected_project).pack(side="right")
+        ui_actions.ActionBar(
+            toolbar,
+            primary=(("+ New project", self.new_project, "Primary.TButton"),
+                     ("Open selected", self.open_selected_project),
+                     ("Add existing folder…", self.add_existing_project)),
+            more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
+                                        ("Remove from list", self.forget_selected_project))),),
+            style="Card.TFrame").pack(side="left")
 
         search_row = ttk.Frame(tab)
         search_row.pack(fill="x", pady=(0, 7))
@@ -5321,12 +5326,13 @@ class WorkbenchApp:
         self.file_tree.configure(yscrollcommand=file_scroll.set)
         self.file_tree.pack(side="left", fill="both", expand=True)
         file_scroll.pack(side="right", fill="y")
-        left_buttons = ttk.Frame(left)
-        left_buttons.pack(fill="x", pady=(6, 0))
-        ttk.Button(left_buttons, text="Select recommended context", command=self.select_recommended_context).pack(side="left")
-        ttk.Button(left_buttons, text="Why these files?", command=self.show_context_rationale).pack(side="left", padx=(5, 0))
-        ttk.Button(left_buttons, text="Select all", command=self.select_all_files).pack(side="left", padx=(5, 0))
-        ttk.Button(left_buttons, text="Clear", command=lambda: self.file_tree.selection_remove(self.file_tree.selection())).pack(side="left", padx=(5, 0))
+        self.file_actions = ui_actions.bar(
+            left,
+            primary=(("Select recommended context", self.select_recommended_context),),
+            more=(("Selection", (("Why these files?", self.show_context_rationale),
+                                 ("Select all", self.select_all_files),
+                                 ("Clear", lambda: self.file_tree.selection_remove(self.file_tree.selection())))),),
+            pady=(6, 0))
 
         vpane = ttk.Panedwindow(right, orient="vertical")
         vpane.pack(fill="both", expand=True)
@@ -5362,30 +5368,23 @@ class WorkbenchApp:
             text="Recommended: AIWB file blocks — plain text that survives copy/paste from ChatGPT, Gemini and Claude. Use GPT ZIP when the chat can attach a real downloadable ZIP, or strict workbench-v3 JSON when typed Delete/Rename/Move operations are needed. Planning stages always use JSON.",
             style="Hint.TLabel", wraplength=700, justify="left",
         ).pack(anchor="w", pady=(0, 5))
-        task_buttons = ttk.Frame(setup.body)
-        task_buttons.pack(fill="x", pady=(0, 5))
-        ttk.Button(task_buttons, text="Build prompt", command=self.build_prompt).pack(side="left")
-        ttk.Button(task_buttons, text="Copy prompt", command=self.copy_prompt).pack(side="left", padx=(6, 0))
-        ttk.Button(task_buttons, text="Save prompt…", command=self.save_prompt).pack(side="left", padx=(6, 0))
         ttk.Checkbutton(
-            task_buttons, text="Include project history in this prompt",
+            setup.body, text="Include project history in this prompt",
             variable=self.project_history_context_var,
-        ).pack(side="left", padx=(10, 0))
-        ttk.Button(task_buttons, text="Add history to prompt", command=self.include_project_history_in_next_prompt).pack(side="left", padx=(6, 0))
+        ).pack(anchor="w", pady=(0, 5))
+        self.prompt_actions = ui_actions.bar(
+            setup.body,
+            primary=(("Build prompt", self.build_prompt),
+                     ("Copy prompt", self.copy_prompt, "Primary.TButton")),
+            more=(("Prompt", (("Save prompt…", self.save_prompt),
+                              ("Add history to prompt", self.include_project_history_in_next_prompt))),),
+            pady=(0, 5))
         quick_row = ttk.Frame(setup.body)
         quick_row.pack(fill="x", pady=(0, 5))
         quick_menu = tk.Menu(self.root, tearoff=False)
         self.quick_instruction_menu = quick_menu
-        self.quick_instruction_button = ttk.Menubutton(quick_row, text="More quick instructions ▾", menu=quick_menu)
+        self.quick_instruction_button = ttk.Menubutton(quick_row, text="Add quick instruction", menu=quick_menu)
         self.quick_instruction_button.pack(side="left")
-        direct_shortcuts = {
-            "Quality first": BUILTIN_QUICK_INSTRUCTIONS[0],
-            "Tests & evidence": BUILTIN_QUICK_INSTRUCTIONS[4],
-            "Preserve behavior": BUILTIN_QUICK_INSTRUCTIONS[6],
-        }
-        for label, instruction in direct_shortcuts.items():
-            ttk.Button(quick_row, text=label, command=lambda item=dict(instruction): self.append_quick_instruction(item)).pack(side="left", padx=(6, 0))
-        ttk.Button(quick_row, text="Manage…", command=self.manage_quick_instructions).pack(side="left", padx=(6, 0))
         self._refresh_quick_instruction_menu()
         ttk.Label(out, text="Generated prompt (editable; quick instructions append at the end)", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(3, 0))
         prompt_frame = ttk.Frame(out)
@@ -5398,36 +5397,29 @@ class WorkbenchApp:
 
     def _make_response_tab(self) -> None:
         tab = self.response_tab
-        ttk.Label(tab, text="Paste a complete text response, or load a GPT ZIP artifact. ZIP files are inspected without extraction; text and binary artifacts pass path/security validation, type-appropriate preview, backup, and approval flow. Gemini file/action blocks and strict JSON remain supported.", wraplength=1100).pack(anchor="w", pady=(0, 5))
-        controls = ttk.Frame(tab)
-        controls.pack(fill="x", pady=(0, 5))
-        ttk.Button(controls, text="Paste & detect format", command=self.paste_response).pack(side="left")
-        ttk.Button(controls, text="Load response / ZIP…", command=self.load_response_file).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Analyze / preview files…", style="Primary.TButton", command=self.preview_response).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Import context plan / select requested files", command=self.import_context_plan).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Import diagnostics…", command=self.show_import_diagnostics).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Response Inbox…", command=self.open_response_inbox).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Context request…", command=self.open_context_request).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Project Workbench…", style="Primary.TButton", command=self.open_project_workbench).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Projects (multi-agent)…", command=self.open_projects).pack(side="left", padx=(6, 0))
-        ttk.Button(controls, text="Mobile Companion…", command=self.open_companion).pack(side="left", padx=(6, 0))
-        candidate_controls = ttk.Frame(tab)
-        candidate_controls.pack(fill="x", pady=(0, 5))
-        ttk.Button(candidate_controls, text="Save response candidate…", command=self.save_response_candidate).pack(side="left")
-        ttk.Button(candidate_controls, text="Compare candidates / choose files…", command=self.compare_response_candidates).pack(side="left", padx=(6, 0))
-        ttk.Button(candidate_controls, text="Import architecture plan…", command=self.import_architecture_plan_from_response).pack(side="left", padx=(6, 0))
-        ttk.Label(tab, textvariable=self.workflow_stage_var, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 2))
-        stage_controls = ttk.Frame(tab)
-        stage_controls.pack(fill="x", pady=(0, 4))
-        ttk.Button(stage_controls, text="Refresh workflow", command=self.refresh_workflow_status).pack(side="left")
-        ttk.Button(stage_controls, text="Mark Verified… (manual review)", command=self.mark_task_verified).pack(side="left", padx=(6, 0))
-        ttk.Button(stage_controls, text="Report manual runtime / test error…", command=self.report_manual_runtime_error).pack(side="left", padx=(6, 0))
-        self.save_validated_history_button = ttk.Button(
-            stage_controls, text="Save validated prompt + output to history",
-            command=self.save_validated_turn_to_history, state="disabled",
-        )
-        self.save_validated_history_button.pack(side="left", padx=(6, 0))
-        ttk.Label(tab, text="File paths are validated. Text/binary writes require approval and create backups; proposed commands are only queued on import and require a separate review/approval in the Run tab. Typed model output may propose Delete/Rename/Move; every operation is previewed, destructive changes need final approval, and no command is auto-run.", style="Warning.TLabel", wraplength=1100).pack(anchor="w", pady=(0, 5))
+        ttk.Label(tab, text="Paste the model's whole answer (or load a ZIP), then Review & apply. Nothing is written until you approve the preview.",
+                  style="Hint.TLabel", wraplength=1100).pack(anchor="w", pady=(0, 6))
+        self.response_actions = ui_actions.bar(
+            tab,
+            primary=(("Paste & detect format", self.paste_response),
+                     ("Load response / ZIP…", self.load_response_file),
+                     ("Analyze / preview files…", self.preview_response, "Primary.TButton")),
+            more=(("If something went wrong", (("Import diagnostics…", self.show_import_diagnostics),
+                                               ("Response Inbox…", self.open_response_inbox),
+                                               ("Context request…", self.open_context_request),
+                                               ("Import context plan / select requested files", self.import_context_plan))),
+                  ("Several answers", (("Save response candidate…", self.save_response_candidate),
+                                       ("Compare candidates / choose files…", self.compare_response_candidates),
+                                       ("Import architecture plan…", self.import_architecture_plan_from_response))),
+                  ("After applying", (("Save validated prompt + output to history", self.save_validated_turn_to_history),
+                                      ("Mark Verified… (manual review)", self.mark_task_verified),
+                                      ("Report manual runtime / test error…", self.report_manual_runtime_error),
+                                      ("Refresh workflow", self.refresh_workflow_status))),
+                  ("Multi-agent", (("Projects (multi-agent)…", self.open_projects),))),
+            pady=(0, 5))
+        self.save_validated_history_button = self.response_actions.handle("Save validated prompt + output to history")
+        self.save_validated_history_button.configure(state="disabled")
+        ttk.Label(tab, textvariable=self.workflow_stage_var, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(0, 4))
         response_frame = ttk.Frame(tab)
         response_frame.pack(fill="both", expand=True)
         self.response_input = tk.Text(response_frame, wrap="none", undo=True, font=("Consolas", 9))
@@ -5454,13 +5446,13 @@ class WorkbenchApp:
         split.pack(fill="both", expand=True)
         left = ttk.Frame(split, padding=(0, 0, 8, 0))
         right = ttk.Frame(split, padding=(8, 0, 0, 0))
-        split.add(left, weight=1)
-        split.add(right, weight=2)
+        split.add(left, weight=2)
+        split.add(right, weight=1)
         history_toolbar = ttk.Frame(left)
         history_toolbar.pack(fill="x", pady=(0, 5))
-        ttk.Button(history_toolbar, text="Refresh", command=self._refresh_history_view).pack(side="left")
-        ttk.Button(history_toolbar, text="Report error…", command=self.report_manual_runtime_error).pack(side="left", padx=(5, 0))
-        ttk.Button(history_toolbar, text="Project versions…", command=self.show_project_versions).pack(side="left", padx=(5, 0))
+        ui_actions.ActionBar(history_toolbar, primary=(("Project versions…", self.show_project_versions),),
+                             more=(("History", (("Refresh", self._refresh_history_view),
+                                                ("Report error…", self.report_manual_runtime_error))),)).pack(side="left")
         filter_row = ttk.Frame(left)
         filter_row.pack(fill="x", pady=(0, 5))
         ttk.Label(filter_row, text="Filter history").pack(side="left", padx=(0, 5))
@@ -5480,11 +5472,11 @@ class WorkbenchApp:
         self.history_tree.heading("stage", text="Stage")
         self.history_tree.heading("feature", text="Feature")
         self.history_tree.heading("version", text="Version")
-        self.history_tree.column("#0", width=250, minwidth=150, stretch=True)
-        self.history_tree.column("status", width=110, minwidth=90, stretch=False)
-        self.history_tree.column("stage", width=130, minwidth=100, stretch=False)
-        self.history_tree.column("feature", width=160, minwidth=100, stretch=True)
-        self.history_tree.column("version", width=80, minwidth=60, stretch=False)
+        self.history_tree.column("#0", width=180, minwidth=120, stretch=True)
+        self.history_tree.column("status", width=80, minwidth=70, stretch=False)
+        self.history_tree.column("stage", width=90, minwidth=70, stretch=False)
+        self.history_tree.column("feature", width=110, minwidth=70, stretch=True)
+        self.history_tree.column("version", width=60, minwidth=50, stretch=False)
         history_scroll = ttk.Scrollbar(tree_frame, orient="vertical", command=self.history_tree.yview)
         self.history_tree.configure(yscrollcommand=history_scroll.set)
         self.history_tree.pack(side="left", fill="both", expand=True)
@@ -5512,8 +5504,8 @@ class WorkbenchApp:
         self.history_notes.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(4, 4))
         meta_buttons = ttk.Frame(meta)
         meta_buttons.grid(row=4, column=0, columnspan=2, sticky="ew")
-        ttk.Button(meta_buttons, text="Save metadata / notes", style="Primary.TButton", command=self._save_history_metadata).pack(side="left")
-        ttk.Button(meta_buttons, text="Delete selected entry…", command=self._delete_history_entry).pack(side="left", padx=(6, 0))
+        ui_actions.ActionBar(meta_buttons, primary=(("Save metadata / notes", self._save_history_metadata, "Primary.TButton"),),
+                             more=(("Entry", (("Delete selected entry…", self._delete_history_entry),)),)).pack(side="left")
 
         self.history_detail_tabs = ttk.Notebook(right)
         self.history_detail_tabs.pack(fill="both", expand=True)
@@ -5522,10 +5514,13 @@ class WorkbenchApp:
         self.history_error_view = self._make_history_text_page("Errors / context requests")
         action_row = ttk.Frame(right)
         action_row.pack(fill="x", pady=(6, 0))
-        ttk.Button(action_row, text="Copy prompt", command=lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))).pack(side="left")
-        ttk.Button(action_row, text="Copy model output", command=lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c"))).pack(side="left", padx=(6, 0))
-        ttk.Button(action_row, text="Edit prompt as new revision…", command=self._edit_history_prompt_revision).pack(side="left", padx=(6, 0))
-        ttk.Button(action_row, text="Create repair prompt from this step", command=self._repair_from_selected_history).pack(side="left", padx=(6, 0))
+        ui_actions.ActionBar(
+            action_row,
+            primary=(("Copy prompt", lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))),
+                     ("Copy model output", lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c")))),
+            more=(("This step", (("Edit prompt as new revision…", self._edit_history_prompt_revision),
+                                 ("Create repair prompt from this step", self._repair_from_selected_history))),),
+        ).pack(side="left")
 
     def _make_history_text_page(self, title: str) -> tk.Text:
         frame = ttk.Frame(self.history_detail_tabs)
@@ -6694,20 +6689,21 @@ class WorkbenchApp:
         self.action_tree.configure(yscrollcommand=queue_scroll.set)
         self.action_tree.pack(side="left", fill="x", expand=True)
         queue_scroll.pack(side="right", fill="y")
-        queue_buttons = ttk.Frame(queue_box)
-        queue_buttons.pack(fill="x", pady=(5, 0))
-        ttk.Button(queue_buttons, text="Run selected / retry…", command=lambda: self.run_queued_actions(all_pending=False)).pack(side="left")
-        ttk.Button(queue_buttons, text="Run all pending…", command=lambda: self.run_queued_actions(all_pending=True)).pack(side="left", padx=(6, 0))
-        ttk.Button(queue_buttons, text="Remove selected", command=self.remove_selected_actions).pack(side="left", padx=(6, 0))
-        ttk.Button(queue_buttons, text="Repair prompt from latest failure…", command=self.show_latest_repair_prompt).pack(side="right", padx=(0, 6))
-        ttk.Button(queue_buttons, text="Build continuation handoff…", style="Primary.TButton", command=self.show_continuation_handoff).pack(side="right")
+        self.queue_actions = ui_actions.bar(
+            queue_box,
+            primary=(("Run selected / retry…", lambda: self.run_queued_actions(all_pending=False)),
+                     ("Run all pending…", lambda: self.run_queued_actions(all_pending=True)),
+                     ("Build continuation handoff…", self.show_continuation_handoff, "Primary.TButton")),
+            more=(("Queue", (("Remove selected", self.remove_selected_actions),)),
+                  ("After a failure", (("Repair prompt from latest failure…", self.show_latest_repair_prompt),))),
+            pady=(5, 0))
 
         report_toolbar = ttk.Frame(tab)
         report_toolbar.pack(fill="x", pady=(0, 4))
         ttk.Label(report_toolbar, text="Execution report & latest results", font=("Segoe UI", 10, "bold")).pack(side="left")
-        ttk.Button(report_toolbar, text="Refresh report", command=self.refresh_report).pack(side="right")
-        ttk.Button(report_toolbar, text="Save report…", command=self.save_report).pack(side="right", padx=(0, 6))
-        ttk.Button(report_toolbar, text="Copy report", command=self.copy_report).pack(side="right", padx=(0, 6))
+        ui_actions.ActionBar(report_toolbar, primary=(("Copy report", self.copy_report),),
+                             more=(("Report", (("Refresh report", self.refresh_report), ("Save report…", self.save_report))),),
+                             side="right").pack(side="right")
         report_frame = ttk.Frame(tab)
         report_frame.pack(fill="both", expand=True)
         self.report_text = tk.Text(report_frame, wrap="word", font=("Consolas", 9), state="normal")
@@ -6718,29 +6714,34 @@ class WorkbenchApp:
         self._set_text(self.report_text, "No report has been generated. Select a project and run or import an action first.")
 
     def _make_git_tab(self) -> None:
-        tab = self.git_tab
-        self._make_github_accounts_panel(tab)
-        self._make_github_repository_panel(tab)
-        ttk.Label(tab, text="Local Git", font=("Segoe UI", 11, "bold")).pack(anchor="w", pady=(2, 0))
-        ttk.Label(tab, text="Git fetch/push authentication continues to use Git's configured credential helper (for example Git Credential Manager). The PAT stored above is for GitHub REST API only and is never inserted into a Git remote URL.", wraplength=1100).pack(anchor="w", pady=(3, 6))
+        outer = self.git_tab
+        self.git_subtabs = ttk.Notebook(outer)
+        self.git_subtabs.pack(fill="both", expand=True)
+        tab = ttk.Frame(self.git_subtabs, padding=8)
+        repos_tab = ttk.Frame(self.git_subtabs, padding=8)
+        accounts_tab = ttk.Frame(self.git_subtabs, padding=8)
+        self.git_subtabs.add(tab, text="Local Git")
+        self.git_subtabs.add(repos_tab, text="GitHub repositories")
+        self.git_subtabs.add(accounts_tab, text="GitHub accounts")
+        self._make_github_accounts_panel(accounts_tab)
+        self._make_github_repository_panel(repos_tab)
+        ttk.Label(tab, text="Git fetch/push authentication continues to use Git's configured credential helper (for example Git Credential Manager). The PAT stored under the GitHub accounts tab is for the GitHub REST API only and is never inserted into a Git remote URL.", wraplength=1100).pack(anchor="w", pady=(3, 6))
         info_frame = ttk.Frame(tab)
         info_frame.pack(fill="x", pady=(0, 5))
         ttk.Label(info_frame, textvariable=self.git_branch_var, font=("Segoe UI", 9, "bold")).pack(anchor="w")
         ttk.Label(info_frame, textvariable=self.git_remote_var).pack(anchor="w")
-        git_tool_row = ttk.Frame(tab)
-        git_tool_row.pack(fill="x", pady=(3, 7))
-        ttk.Label(git_tool_row, textvariable=self.git_version_var, font=("Segoe UI", 9, "bold")).pack(side="left")
-        ttk.Button(git_tool_row, text="Check Git", command=self.check_git_installation).pack(side="right")
-        ttk.Button(git_tool_row, text="Update Git", command=lambda: self.install_or_update_git("upgrade")).pack(side="right", padx=(0, 6))
-        ttk.Button(git_tool_row, text="Install Git", command=lambda: self.install_or_update_git("install")).pack(side="right", padx=(0, 6))
-        ttk.Label(tab, text="Install/Update uses Windows Package Manager (winget). After installation Workbench refreshes common Git paths; if Windows does not expose Git to the current process, restart the app.", style="Hint.TLabel", wraplength=1120).pack(anchor="w", pady=(0, 5))
-        actions = ttk.Frame(tab)
-        actions.pack(fill="x", pady=(0, 7))
-        ttk.Button(actions, text="Refresh Git status / project history", command=lambda: self.refresh_git(silent=False, ensure_version_baseline=True)).pack(side="left")
-        ttk.Button(actions, text="Create work branch", command=self.create_workbench_branch).pack(side="left", padx=(6, 0))
-        ttk.Button(actions, text="Commit changes…", command=self.commit_changes).pack(side="left", padx=(6, 0))
-        ttk.Button(actions, text="Push to GitHub…", command=self.push_changes).pack(side="left", padx=(6, 0))
-        ttk.Button(actions, text="Review & Sync…", command=self.open_git_review_sync).pack(side="left", padx=(18, 0))
+        ttk.Label(tab, textvariable=self.git_version_var, font=("Segoe UI", 9, "bold")).pack(anchor="w", pady=(3, 4))
+        self.git_actions = ui_actions.bar(
+            tab,
+            primary=(("Refresh Git status / project history", lambda: self.refresh_git(silent=False, ensure_version_baseline=True)),
+                     ("Commit changes…", self.commit_changes),
+                     ("Push to GitHub…", self.push_changes),
+                     ("Review & Sync…", self.open_git_review_sync, "Primary.TButton")),
+            more=(("Branch", (("Create work branch", self.create_workbench_branch),)),
+                  ("Git for Windows (winget)", (("Check Git", self.check_git_installation),
+                                                ("Install Git", lambda: self.install_or_update_git("install")),
+                                                ("Update Git", lambda: self.install_or_update_git("upgrade"))))),
+            pady=(0, 7))
         ttk.Label(tab, text="Local changes (sensitive paths or detected secrets are blocked from commit)").pack(anchor="w", pady=(3, 4))
         status_frame = ttk.Frame(tab)
         status_frame.pack(fill="both", expand=True)
@@ -6893,18 +6894,20 @@ class WorkbenchApp:
             self.github_accounts_tree.heading(column, text=title)
             self.github_accounts_tree.column(column, width=width, minwidth=80, stretch=False)
         self.github_accounts_tree.pack(fill="x", expand=False)
-        toolbar = ttk.Frame(panel)
-        toolbar.pack(fill="x", pady=(6, 0))
-        self.github_add_button = ttk.Button(toolbar, text="Add PAT…", command=lambda: self._open_github_pat_dialog())
-        self.github_add_button.pack(side="left")
-        self.github_test_button = ttk.Button(toolbar, text="Test Connection", command=self._test_selected_github_account)
-        self.github_test_button.pack(side="left", padx=(6, 0))
-        self.github_replace_button = ttk.Button(toolbar, text="Replace Credential…", command=self._replace_selected_github_credential)
-        self.github_replace_button.pack(side="left", padx=(6, 0))
-        self.github_refresh_button = ttk.Button(toolbar, text="Refresh Accounts", command=self._refresh_github_accounts)
-        self.github_refresh_button.pack(side="left", padx=(6, 0))
-        self.github_disconnect_button = ttk.Button(toolbar, text="Disconnect", command=self._disconnect_selected_github_account)
-        self.github_disconnect_button.pack(side="right")
+        self.github_account_actions = ui_actions.bar(
+            panel,
+            primary=(("Add PAT…", lambda: self._open_github_pat_dialog(), "Primary.TButton"),
+                     ("Test Connection", self._test_selected_github_account),
+                     ("Refresh Accounts", self._refresh_github_accounts)),
+            more=(("Selected account", (("Replace Credential…", self._replace_selected_github_credential),
+                                        ("Disconnect", self._disconnect_selected_github_account))),),
+            pady=(6, 0))
+        h = self.github_account_actions.handle
+        self.github_add_button = h("Add PAT…")
+        self.github_test_button = h("Test Connection")
+        self.github_refresh_button = h("Refresh Accounts")
+        self.github_replace_button = h("Replace Credential…")
+        self.github_disconnect_button = h("Disconnect")
         if os.name != "nt":
             for button in (self.github_add_button, self.github_test_button, self.github_replace_button, self.github_refresh_button, self.github_disconnect_button):
                 button.configure(state="disabled")
@@ -6961,32 +6964,32 @@ class WorkbenchApp:
         ttk.Label(panel, textvariable=self.github_repository_status_var, style="Hint.TLabel", wraplength=1120).pack(anchor="w", pady=(5, 2))
         self.github_repository_binding_var = tk.StringVar(value="Project binding: no active project")
         ttk.Label(panel, textvariable=self.github_repository_binding_var, style="Accent.TLabel", wraplength=1120).pack(anchor="w", pady=(0, 5))
-        buttons = ttk.Frame(panel)
-        buttons.pack(fill="x")
-        self.github_repository_refresh_button = ttk.Button(buttons, text="Refresh Repositories", command=self._refresh_github_repositories)
-        self.github_repository_refresh_button.pack(side="left")
-        self.github_repository_link_button = ttk.Button(buttons, text="Link to Active Project…", command=self._link_selected_github_repository)
-        self.github_repository_link_button.pack(side="left", padx=(6, 0))
-        self.github_repository_unlink_button = ttk.Button(buttons, text="Unlink Project", command=self._unlink_active_github_repository)
-        self.github_repository_unlink_button.pack(side="left", padx=(6, 0))
-        self.github_repository_open_button = ttk.Button(buttons, text="Open on GitHub", command=self._open_selected_github_repository)
-        self.github_repository_open_button.pack(side="right")
-        advanced = ttk.Frame(panel)
-        advanced.pack(fill="x", pady=(5, 0))
-        self.github_repository_clone_button = ttk.Button(advanced, text="Clone Selected…", command=self._clone_selected_github_repository)
-        self.github_repository_clone_button.pack(side="left")
-        self.github_repository_initialize_button = ttk.Button(advanced, text="Initialize & Link Local…", command=self._initialize_and_link_active_project)
-        self.github_repository_initialize_button.pack(side="left", padx=(6, 0))
-        self.github_repository_review_button = ttk.Button(advanced, text="Initial Push Review…", command=self._review_initial_push_files)
-        self.github_repository_review_button.pack(side="left", padx=(6, 0))
-        self.github_repository_binding_settings_button = ttk.Button(advanced, text="Binding Settings…", command=self._configure_active_github_binding)
-        self.github_repository_binding_settings_button.pack(side="left", padx=(6, 0))
-        self.github_repository_metadata_button = ttk.Button(advanced, text="Refresh Binding Metadata", command=self._refresh_active_binding_metadata)
-        self.github_repository_metadata_button.pack(side="right")
-        self.github_build_center_button = ttk.Button(advanced, text="Build Center…", command=self.open_build_center)
-        self.github_build_center_button.pack(side="right", padx=(0, 6))
-        self.github_sync_build_button = ttk.Button(advanced, text="Sync & Build…", command=self.open_sync_build)
-        self.github_sync_build_button.pack(side="right", padx=(0, 6))
+        self.github_repository_actions = ui_actions.bar(
+            panel,
+            primary=(("Refresh Repositories", self._refresh_github_repositories),
+                     ("Link to Active Project…", self._link_selected_github_repository, "Primary.TButton"),
+                     ("Clone Selected…", self._clone_selected_github_repository),
+                     ("Sync & Build…", self.open_sync_build)),
+            more=(("Selected repository", (("Open on GitHub", self._open_selected_github_repository),)),
+                  ("Active project binding", (("Initialize & Link Local…", self._initialize_and_link_active_project),
+                                              ("Initial Push Review…", self._review_initial_push_files),
+                                              ("Binding Settings…", self._configure_active_github_binding),
+                                              ("Refresh Binding Metadata", self._refresh_active_binding_metadata),
+                                              ("Unlink Project", self._unlink_active_github_repository))),
+                  ("Builds", (("Build Center…", self.open_build_center),))),
+            pady=(0, 0))
+        h = self.github_repository_actions.handle
+        self.github_repository_refresh_button = h("Refresh Repositories")
+        self.github_repository_link_button = h("Link to Active Project…")
+        self.github_repository_clone_button = h("Clone Selected…")
+        self.github_sync_build_button = h("Sync & Build…")
+        self.github_repository_open_button = h("Open on GitHub")
+        self.github_repository_initialize_button = h("Initialize & Link Local…")
+        self.github_repository_review_button = h("Initial Push Review…")
+        self.github_repository_binding_settings_button = h("Binding Settings…")
+        self.github_repository_metadata_button = h("Refresh Binding Metadata")
+        self.github_repository_unlink_button = h("Unlink Project")
+        self.github_build_center_button = h("Build Center…")
         self._refresh_github_repository_account_choices()
         self._render_github_repository_binding_status()
         if os.name != "nt":

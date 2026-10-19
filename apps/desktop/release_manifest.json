@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "3.2.0",
+  "version": "3.3.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -114,6 +114,10 @@
       "source": "apps/desktop/tests/test_intake_normalize.py"
     },
     {
+      "path": "test_ui_actions.py",
+      "source": "apps/desktop/tests/test_ui_actions.py"
+    },
+    {
       "path": "test_repair_diagnostics.py",
       "source": "apps/desktop/tests/test_repair_diagnostics.py"
     },
@@ -170,8 +174,8 @@
       "source": "apps/desktop/tests/test_single_shell.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v3.2.0.md",
-      "source": "docs/release/v3.2.0/WINDOWS_RELEASE_CHECKLIST_v3.2.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v3.3.0.md",
+      "source": "docs/release/v3.3.0/WINDOWS_RELEASE_CHECKLIST_v3.3.0.md"
     },
     {
       "path": "install.ps1",
@@ -500,6 +504,10 @@
     {
       "path": "aiwb/ui/layout.py",
       "source": "apps/desktop/src/aiwb/ui/layout.py"
+    },
+    {
+      "path": "aiwb/ui/actions.py",
+      "source": "apps/desktop/src/aiwb/ui/actions.py"
     },
     {
       "path": "aiwb/intake/__init__.py",
