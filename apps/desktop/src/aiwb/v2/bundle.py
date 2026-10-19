@@ -128,6 +128,13 @@ def descends(child: dict[str, Any], parent: dict[str, Any]) -> bool:
         and _contains(child.get("events") or [], last)
 
 
+def _comparable(state: dict[str, Any]) -> dict[str, Any]:
+    """The state without the per-device sync bookkeeping."""
+    out = dict(state)
+    out["settings"] = {k: v for k, v in (state.get("settings") or {}).items() if k != "sync"}
+    return out
+
+
 def plan_import(local: dict[str, Any] | None, incoming: dict[str, Any]) -> dict[str, Any]:
     """Decide what importing *incoming* over *local* means. Pure; never writes."""
     rev_in = int(incoming.get("state_revision", 0) or 0)
@@ -140,9 +147,7 @@ def plan_import(local: dict[str, Any] | None, incoming: dict[str, Any]) -> dict[
         return {**base, "kind": "other_project", "safe": False,
                 "message": f"This bundle is project '{incoming.get('project_id')}', not '{local.get('project_id')}'. "
                            "Import it into an empty project folder instead."}
-    strip = ("settings",)
-    same = {k: v for k, v in local.items() if k not in strip} == {k: v for k, v in incoming.items() if k not in strip}
-    if same and local.get("settings", {}).get("goal") == incoming.get("settings", {}).get("goal"):
+    if _comparable(local) == _comparable(incoming):
         return {**base, "kind": "same", "safe": True, "message": "The project is already up to date."}
     if rev_in > rev_local and descends(incoming, local):
         return {**base, "kind": "newer", "safe": True,
