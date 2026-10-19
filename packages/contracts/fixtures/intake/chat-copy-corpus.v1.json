@@ -309,6 +309,15 @@
    }
   },
   {
+   "id": "prose_then_fence_escaped",
+   "source": "chatgpt-web",
+   "note": "",
+   "text": "Sure, here you go:\n\n````\n\\<\\<\\<AIWB\\_FILE path=\"src/app.py\" action=\"write\" body=\"raw\"\\>\\>\\>\nprint(\"hi\")\n\\<\\<\\<AIWB\\_END\\_FILE\\>\\>\\>\n````\nHope this helps!\n",
+   "expect_files": {
+    "src/app.py": "print(\"hi\")\n"
+   }
+  },
+  {
    "id": "two_files_one_broken_marker",
    "source": "chatgpt-web",
    "note": "",
