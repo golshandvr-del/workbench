@@ -115,6 +115,8 @@ class StandaloneActivity : Activity() {
         }
         body.addView(tl)
         body.addView(info)
+        button(getString(R.string.standalone_overview)) { showOverview(p) }
+        button(getString(R.string.standalone_settings)) { editSettings(p) }
         button(getString(R.string.standalone_export_bundle)) { pickExport(p) }
         button(getString(R.string.standalone_back)) { showProjects() }
     }
@@ -136,7 +138,10 @@ class StandaloneActivity : Activity() {
     private fun ask(s: Guide.Step, a: Guide.Action, needs: List<String>, p: Project) {
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
         val fields = needs.distinct().associateWith { n ->
-            EditText(this).apply { hint = n.replace('_', ' '); if (n == "text") minLines = 4 }.also { box.addView(it) }
+            EditText(this).apply {
+                hint = Guide.INPUT_HINTS[n] ?: n.replace('_', ' ')
+                if (n == "text") minLines = 4 else inputType = InputType.TYPE_CLASS_TEXT
+            }.also { box.addView(it) }
         }
         AlertDialog.Builder(this).setTitle(a.label).setView(box)
             .setPositiveButton(android.R.string.ok) { _, _ -> run(p, s, a, fields.mapValues { it.value.text.toString() }) }
@@ -211,7 +216,53 @@ class StandaloneActivity : Activity() {
         (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).setPrimaryClip(ClipData.newPlainText("AI Workbench", text))
     }
 
-    private fun say(msg: String) { status.text = msg; status.visibility = View.VISIBLE }
+    private fun say(msg: String) {
+        status.text = msg; status.visibility = View.VISIBLE
+        status.setTextColor(if (msg.startsWith(getString(R.string.standalone_error, "").trimEnd())) 0xFFC42B1C.toInt() else 0xFF1C1C1C.toInt())
+        (status.parent?.parent as? ScrollView)?.post { (status.parent?.parent as? ScrollView)?.smoothScrollTo(0, 0) }
+    }
+
+    // ---------------------------------------------------------------- settings + overview
+    private fun editSettings(p: Project) {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
+        box.addView(TextView(this).apply { text = getString(R.string.standalone_goal_label) })
+        val goal = EditText(this).apply { setText(Json(p.state()["settings"].let { (it as? Map<*, *>)?.get("goal") })); minLines = 2 }
+        box.addView(goal)
+        box.addView(TextView(this).apply { text = getString(R.string.standalone_chats_label); setPadding(0, 16, 0, 0) })
+        val chats = EditText(this).apply { inputType = InputType.TYPE_CLASS_NUMBER; setText(p.maxParallelChats().toString()) }
+        box.addView(chats)
+        box.addView(TextView(this).apply { text = getString(R.string.standalone_chats_help); textSize = 12f })
+        AlertDialog.Builder(this).setTitle(R.string.standalone_settings).setView(box)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                guard {
+                    p.setMaxParallelChats(chats.text.toString().trim().toIntOrNull() ?: error("1–12"))
+                    if (goal.text.isNotBlank()) p.setGoal(goal.text.toString())
+                    render(getString(R.string.standalone_saved))
+                }
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun showOverview(p: Project) {
+        val st = p.state()
+        fun coll(k: String) = (st[k] as? Map<*, *>).orEmpty().values.mapNotNull { it as? Map<*, *> }
+        val sb = StringBuilder()
+        sb.append(getString(R.string.standalone_chats_label)).append(' ').append(p.maxParallelChats()).append("\n\n")
+        sb.append("AI team\n")
+        for (a in coll("agents").filter { it["enabled"] != false }.sortedBy { Json(it["agent_id"]) })
+            sb.append("• ").append(Json(a["agent_id"])).append(" (").append(Json(a["role"])).append(")\n")
+        sb.append("\nTasks\n")
+        for (t in coll("tasks").sortedBy { Json(it["task_id"]) })
+            sb.append("• ").append(Json(t["task_id"])).append(" [").append(Json(t["status"])).append("] ").append(Json(t["title"]))
+                .append(" — ").append(Json(t["owner_agent_id"])).append("\n")
+        sb.append("\nVersions\n")
+        for (v in coll("versions").sortedBy { Json(it["version_id"]) })
+            sb.append("• ").append(Json(v["label"])).append(" [").append(Json(v["status"])).append("]\n")
+        val ch = (st["settings"] as? Map<*, *>)?.get("charter") as? Map<*, *>
+        val qs = (ch?.get("questions_for_user") as? List<*>).orEmpty().mapNotNull { it as? String }
+        if (qs.isNotEmpty()) { sb.append("\nQuestions for you\n"); qs.forEach { sb.append("• ").append(it).append("\n") } }
+        AlertDialog.Builder(this).setTitle(R.string.standalone_overview)
+            .setMessage(sb.toString().trim()).setPositiveButton(android.R.string.ok, null).show()
+    }
 
     private fun heading(t: String) = body.addView(TextView(this).apply {
         text = t; textSize = 16f; setTypeface(null, Typeface.BOLD); setPadding(0, 24, 0, 8)
