@@ -564,8 +564,9 @@ class WorkspaceWindow:
                    command=self.dialog_plan_team).pack(side=side, padx=8)
         ch = self.wc.ctl.charter()
         if ch:
-            cb = ttk.LabelFrame(f, text="Project Charter — start prompts", padding=6)
-            cb.grid(row=row, column=0, sticky="se", pady=4)
+            cb = ttk.Frame(box, style="WS.TFrame")
+            cb.pack(side=side, padx=(12, 0))
+            ttk.Label(cb, text="Charter start prompt:").pack(side=side)
             agents = sorted(ch.get("start_prompts") or {})
             self.charter_agent_var = tk.StringVar(value=agents[0] if agents else "")
             ttk.Combobox(cb, textvariable=self.charter_agent_var, values=agents, width=24, state="readonly").pack(side=side)
