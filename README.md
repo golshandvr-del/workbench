@@ -73,7 +73,7 @@ cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 
 ## Status / roadmap
 
-**[`ROADMAP.md`](ROADMAP.md)** is the master plan (Project Workbench & multi-agent team, 2.3.0–2.6.0).
+**[`ROADMAP.md`](ROADMAP.md)** is the master plan (GUI-only redesign, 2.7.0–2.10.0). Previous roadmaps are in `docs/roadmap/archive/`.
 Previous roadmap (desktop 1.14.1–2.2.0, mobile 0.1.0–0.3.0) is archived in `docs/roadmap/archive/`. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).
 
 See also [`CONTRIBUTING.md`](CONTRIBUTING.md) and [`SECURITY.md`](SECURITY.md).
