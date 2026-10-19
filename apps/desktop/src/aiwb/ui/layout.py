@@ -106,6 +106,7 @@ class FlowBar:
         self.gap, self.row_gap, self.rtl = gap, row_gap, rtl
         self.items: list[tuple[tk.Misc, dict[str, Any]]] = list(items or [])
         self._rows: tuple[tuple[int, ...], ...] = ()
+        self._row_frames: list[ttk.Frame] = []
         self._last_width = -1
         frame._aiwb_flow = self  # type: ignore[attr-defined]
         frame.bind("<Configure>", self._on_configure, add="+")
@@ -168,29 +169,35 @@ class FlowBar:
         if rows == self._rows and not force:
             return
         self._rows = rows
-        for w, _o in self.items:
-            try:
-                w.grid_forget()
-            except tk.TclError:
-                pass
-        for r, row in enumerate(rows):
-            for c, i in enumerate(row):
-                w, opts = self.items[i]
-                col = (len(row) - 1 - c) if self.rtl else c
-                padx = opts.get("padx", 0)
-                left = _pad_pair(padx)
-                lead = (self.gap if c else 0)
-                px = (left[0] + (0 if self.rtl else lead), left[1] + (lead if self.rtl else 0))
-                pady = (self.row_gap if r else 0, 0)
-                try:
-                    w.grid(row=r, column=col, sticky="e" if self.rtl else "w", padx=px, pady=pady)
-                except tk.TclError:
-                    pass
+        bg_style = "TFrame"
         try:
-            for c in range(max((len(r) for r in rows), default=0) + 1):
-                self.frame.columnconfigure(c, weight=0)
+            bg_style = self.frame.cget("style") or "TFrame"
         except tk.TclError:
             pass
+        while len(self._row_frames) < len(rows):
+            rf = ttk.Frame(self.frame, style=bg_style)
+            self._row_frames.append(rf)
+        for w, _o in self.items:
+            try:
+                w.pack_forget()
+            except tk.TclError:
+                pass
+        for i, rf in enumerate(self._row_frames):
+            if i < len(rows):
+                rf.pack(side="top", fill="x", anchor="e" if self.rtl else "w", pady=(self.row_gap if i else 0, 0))
+            else:
+                rf.pack_forget()
+        side = "right" if self.rtl else "left"
+        for r, row in enumerate(rows):
+            rf = self._row_frames[r]
+            for c, i in enumerate(row):
+                w, _opts = self.items[i]
+                pad = (0, self.gap if c else 0) if self.rtl else (self.gap if c else 0, 0)
+                try:
+                    w.pack(in_=rf, side=side, padx=pad)
+                    w.lift(rf)
+                except tk.TclError:
+                    pass
 
 
 def _pad_pair(p: Any) -> tuple[int, int]:
