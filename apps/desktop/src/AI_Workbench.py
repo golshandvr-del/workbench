@@ -8897,8 +8897,7 @@ class WorkbenchApp:
             return
 
         def classic_response() -> None:
-            self.root.lift()
-            self.notebook.select(self.response_tab)
+            self.shell.show("response")
 
         def classic_projects() -> None:
             self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
@@ -8906,8 +8905,17 @@ class WorkbenchApp:
         tools = {"response": classic_response, "inbox": self.open_response_inbox,
                  "context_request": self.open_context_request, "build_center": self.open_build_center,
                  "sync_build": self.open_sync_build, "companion": self.open_companion, "classic": classic_projects}
-        self.workspace_window = WorkspaceWindow(self.root, WorkspaceController(ctl, tools=tools),
-                                                clipboard=self._copy_text_to_clipboard)
+        # 3.0.0: the Workbench is a page of the main window (no second window, one theme/language/mode)
+        old = getattr(self, "workspace_window", None)
+        if old is not None:
+            old.close()
+        if getattr(self, "workbench_empty", None) is not None:
+            self.workbench_empty.pack_forget()
+        self.workspace_window = WorkspaceWindow(self.root, WorkspaceController(ctl, tools=tools, prefs=self.prefs),
+                                                clipboard=self._copy_text_to_clipboard, host=self.workbench_tab)
+        self.workspace_window._project_root = str(root)
+        if self.shell.current != "workbench":
+            self.shell.show("workbench")
         self.set_status("Project Workbench: " + ctl.next_action_text())
 
     def _companion_builds(self) -> list[dict[str, Any]]:
@@ -10877,7 +10885,7 @@ class WorkbenchApp:
         self.busy = True
         self.set_status(label)
         try:
-            self.activity_progress.pack(side="right", padx=(8, 12))
+            self.activity_progress.grid()
             self.activity_progress.start(12)
         except (AttributeError, tk.TclError):
             pass
@@ -10900,7 +10908,7 @@ class WorkbenchApp:
             self.busy = False
             try:
                 self.activity_progress.stop()
-                self.activity_progress.pack_forget()
+                self.activity_progress.grid_remove()
             except (AttributeError, tk.TclError):
                 pass
             if error is not None:
