@@ -87,6 +87,8 @@ def place_dialog(win: tk.Misc, width: int, height: int, parent: tk.Misc | None =
 def keep_on_screen(win: tk.Misc) -> None:
     """Pull an already-shown window back inside the work area (and shrink it if needed)."""
     try:
+        mw, mh = win.minsize()
+        clamp_minsize(win, mw, mh)
         win.update_idletasks()
         w, h = fit_size(win, win.winfo_width(), win.winfo_height())
         x, y = clamp_position(win, win.winfo_rootx(), win.winfo_rooty(), w, h)
@@ -274,6 +276,25 @@ def auto_flow(root: tk.Misc) -> int:
                 pass
         stack.extend(children)
     return n
+
+
+def _on_dialog_map(event: Any) -> None:
+    win = event.widget
+    if not isinstance(win, tk.Toplevel) or getattr(win, "_aiwb_placed", False):
+        return
+    try:
+        if win.winfo_class() == "ComboboxPopdown" or win.overrideredirect():
+            return
+    except tk.TclError:
+        return
+    win._aiwb_placed = True  # type: ignore[attr-defined]
+    auto_flow(win)
+    keep_on_screen(win)
+
+
+def install(root: tk.Misc) -> None:
+    """Every dialog, the first time it is shown: fit to the work area and wrap its toolbars."""
+    root.bind_class("Toplevel", "<Map>", _on_dialog_map, add="+")
 
 
 class ScrollPage(ttk.Frame):
