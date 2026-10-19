@@ -121,7 +121,7 @@ def main() -> None:
                 Path(out).write_text("\n".join(tree_md) + "\n", encoding="utf-8")
         finally:
             root.destroy()
-    print(f"IA smoke passed: every page ≤ {ui_actions.MAX_VISIBLE_PER_VIEW} visible buttons, every bar ≤ "
+    print(f"IA smoke passed: every page <= {ui_actions.MAX_VISIBLE_PER_VIEW} visible buttons, every bar <= "
           f"{ui_actions.MAX_PRIMARY} primary + More, all pre-3.3.0 commands reachable, no rail duplicates")
 
 
