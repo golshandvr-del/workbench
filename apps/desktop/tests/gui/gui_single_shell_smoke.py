@@ -49,13 +49,13 @@ def main() -> None:
             assert style.theme_use() == "sun-valley-light", style.theme_use()
             app.set_workspace(project, focus_project=True)
             wait_for_project_ready(app, root, project)
-            before = len(toplevels(root))
+            before = set(toplevels(root))
             app.shell.show("workbench")
             for _ in range(5):
                 root.update()
             w = app.workspace_window
             assert w is not None and w.embedded, "Workbench must be embedded"
-            assert len(toplevels(root)) == before, ("opening the Workbench created a window", toplevels(root))
+            assert not (set(toplevels(root)) - before), ("opening the Workbench created a window", toplevels(root))
             assert w.win.winfo_toplevel() is root
             assert not w.mode_box.winfo_ismapped() and not w.lang_box.winfo_ismapped() and not w.theme_box.winfo_ismapped()
             ctl = w.wc.ctl
