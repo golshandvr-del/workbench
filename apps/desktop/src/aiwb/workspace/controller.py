@@ -386,6 +386,11 @@ class WorkspaceController:
         recs = self.ctl.project.store.ledger.all()[-limit:]
         return lanes(recs, self.ctl.state())
 
+    def timeline_model(self, limit: int = 5000) -> dict[str, Any]:
+        """Drawable model for the visual timeline (3.6.0): the latest ``limit`` ledger events + versions."""
+        from ..ui.timeline_canvas import build_model
+        return build_model(self.ctl.project.store.ledger.all()[-limit:], self.ctl.state())
+
     def planned(self) -> list[dict[str, Any]]:
         return planned_items(self.ctl.state())
 
