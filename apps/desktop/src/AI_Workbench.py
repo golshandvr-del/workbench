@@ -53,6 +53,7 @@ from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
 from aiwb.intake import normalize as intake_normalize
+from aiwb.intake import continue_prompt as intake_continue_prompt, truncation_report as intake_truncation_report
 from aiwb.ui import layout as ui_layout
 from aiwb.workspace import theme as tokens
 from aiwb.ui.prefs import AppPrefs
@@ -8842,6 +8843,10 @@ class WorkbenchApp:
             hints = context_request_service.free_text_hints(raw) if not archive_selected else []
             if hints:
                 inbox_note += " The answer seems to ask for: " + ", ".join(hints[:5]) + " (suggestion only; use Context request… to prepare them)."
+            if not archive_selected and self._offer_continue_prompt(raw):
+                self.set_status("Response was cut off; a 'continue' prompt is on the clipboard. No project files were applied." + inbox_note)
+                self.refresh_workflow_status()
+                return
             self.set_status("Response rejected; diagnostics are available and no project files were applied." + inbox_note)
             self.refresh_workflow_status()
             self.show_import_diagnostics(error_override=str(exc))
@@ -8876,6 +8881,34 @@ class WorkbenchApp:
             messagebox.showwarning("Response history not saved", f"The response parsed successfully, but its exact snapshot/history could not be saved. Workbench will block applying this response until it can record it reliably. Resolve the storage problem and analyze the response again.\n\n{exc}")
         self.refresh_workflow_status()
         self._show_diff_window(payload, changes, format_name)
+
+    def _offer_continue_prompt(self, raw: str) -> bool:
+        """Truncated answer → copy a precise 'continue from where you stopped' prompt (3.2.0)."""
+        try:
+            report = intake_truncation_report(raw)
+        except Exception as exc:
+            log_exception(type(exc), exc, exc.__traceback__)
+            return False
+        if not report.truncated:
+            return False
+        prompt = intake_continue_prompt(report)
+        self.last_continue_prompt = prompt
+        try:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(prompt)
+        except tk.TclError:
+            pass
+        if getattr(self, "suppress_dialogs", False):
+            return True
+        done = ", ".join(report.completed_paths) or "none"
+        messagebox.showinfo(
+            "The answer was cut off",
+            "The model's answer ends in the middle"
+            + (f" of {report.open_path}" if report.open_path else "") + ".\n\n"
+            f"Complete files: {done}.\n\n"
+            "A 'continue' prompt is now on your clipboard. Paste it into the same chat, "
+            "then paste the new answer here. Nothing was applied.")
+        return True
 
     def make_projects_controller(self, root: Path) -> ProjectsController:
         """V2 controller for this project; the state publisher is bound only when a GitHub binding exists."""
