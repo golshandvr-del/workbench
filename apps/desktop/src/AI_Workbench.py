@@ -84,8 +84,9 @@ GEMINI_BLOCK_PROTOCOL = "workbench-files-v1"
 GEMINI_ACTION_PROTOCOL = "workbench-actions-v1"
 OUTPUT_FORMAT_JSON = "Strict JSON manifest (GPT / general)"
 OUTPUT_FORMAT_GPT_ZIP = "GPT downloadable ZIP + usage guide"
-OUTPUT_FORMAT_GEMINI = "Gemini named code blocks"
-OUTPUT_FORMAT_OPTIONS = (OUTPUT_FORMAT_GPT_ZIP, OUTPUT_FORMAT_JSON, OUTPUT_FORMAT_GEMINI)
+OUTPUT_FORMAT_GEMINI = "AIWB file blocks — any chat (recommended)"
+OUTPUT_FORMAT_GEMINI_LEGACY = "Gemini named code blocks"
+OUTPUT_FORMAT_OPTIONS = (OUTPUT_FORMAT_GEMINI, OUTPUT_FORMAT_GPT_ZIP, OUTPUT_FORMAT_JSON)
 WORKFLOW_STAGES = (
     "Draft", "Prompt Ready", "Response Received", "Validated", "Files Applied",
     "Actions Completed", "Tests Run", "Verified", "Import Failed", "Apply Failed",
@@ -3192,7 +3193,7 @@ def response_delivery_rule(format_hint: str) -> str:
             "it is control metadata and must not be placed in the project. Do not use Base64 or claim a nonexistent attachment. "
             "The ZIP transport supports reviewed writes/binary artifacts, not typed Delete/Rename/Move. If those operations are required or a real ZIP cannot be attached, use one strict workbench-v3 JSON object; workbench-v2 remains supported for write-only text responses."
         )
-    if "gemini" in hint or "ai workbench file/action blocks" in hint or GEMINI_BLOCK_PROTOCOL.casefold() in hint or "named code blocks" in hint:
+    if "gemini" in hint or "aiwb file blocks" in hint or "ai workbench file/action blocks" in hint or GEMINI_BLOCK_PROTOCOL.casefold() in hint or "named code blocks" in hint:
         return (
             'Return complete text files using <<<AIWB_FILE path="relative/path.ext" action="write" body="raw">>> blocks. '
             "PREFERRED v1.10 BLOCK FORM: put the exact raw file text immediately after the header, with NO Markdown fence, "
@@ -4356,9 +4357,11 @@ class WorkbenchApp:
         self.github_repository_page_count = 0
         self.github_repository_account_choices: dict[str, str] = {}
         self.github_binding_migration_notice: str | None = None
-        saved_output_format = self.settings_data.get("output_format", OUTPUT_FORMAT_GPT_ZIP)
+        saved_output_format = self.settings_data.get("output_format", OUTPUT_FORMAT_GEMINI)
+        if saved_output_format == OUTPUT_FORMAT_GEMINI_LEGACY:
+            saved_output_format = OUTPUT_FORMAT_GEMINI
         if saved_output_format not in OUTPUT_FORMAT_OPTIONS:
-            saved_output_format = OUTPUT_FORMAT_GPT_ZIP
+            saved_output_format = OUTPUT_FORMAT_GEMINI
         self.output_format_var = tk.StringVar(value=saved_output_format)
         self.project_history_context_var = tk.BooleanVar(value=False)
         self.last_workspace: str | None = self.settings_data.get("last_workspace")
@@ -5356,7 +5359,7 @@ class WorkbenchApp:
         ttk.Label(playbook_row, text="Adds a review-first workflow and acceptance rules to the prompt.", style="Hint.TLabel").pack(side="left", padx=(8, 0))
         ttk.Label(
             right,
-            text="Recommended: GPT ZIP for multi-file projects when downloadable artifacts are available; the ZIP should include README.md and AIWB_RESPONSE.json control metadata (actions may be empty). Choose Gemini named blocks for write-only file replies, or strict workbench-v3 JSON when typed Delete/Rename/Move operations may be needed. Planning stages always use JSON.",
+            text="Recommended: AIWB file blocks — plain text that survives copy/paste from ChatGPT, Gemini and Claude. Use GPT ZIP when the chat can attach a real downloadable ZIP, or strict workbench-v3 JSON when typed Delete/Rename/Move operations are needed. Planning stages always use JSON.",
             style="Hint.TLabel", wraplength=700, justify="left",
         ).pack(anchor="w", pady=(0, 5))
         task_buttons = ttk.Frame(setup.body)
