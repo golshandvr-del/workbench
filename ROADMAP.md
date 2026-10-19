@@ -1,12 +1,12 @@
-# AI Workbench — نقشه‌راه اصلی (Master Roadmap) — Project Workbench و تیم چند Agent
+# AI Workbench — نقشه‌راه اصلی (Master Roadmap) — بازطراحی رابط کاربری (GUI-only)
 
 > **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر کار توسعه باید به یکی از گام‌های همین فایل اشاره کند.
-> منبع جزئیات، معیارها و Gateها: [`docs/specs/AI_Workbench_GUI_Team_Orchestration_Roadmap_FA.md`](docs/specs/AI_Workbench_GUI_Team_Orchestration_Roadmap_FA.md) (نسخه 1.0، 2026-10-18).
-> Roadmap قبلی (1.14.1 → 2.2.0، کامل‌شده) در [`docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md) بایگانی شده است.
+> منبع جزئیات، معیارها و Gateها: [`docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md`](docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md) (نسخه 1.0، 2026-10-19).
+> Roadmapهای قبلی بایگانی شده‌اند: [`ROADMAP_v2.3-v2.6_FA.md`](docs/roadmap/archive/ROADMAP_v2.3-v2.6_FA.md) (Project Workbench و تیم چند Agent، کامل‌شده) و [`ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md).
 > تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
 
-**آخرین به‌روزرسانی:** 2026-10-18 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.6.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** — Roadmap از نظر کد و تست خودکار کامل است؛ موارد NOT RUN (E2E با دو چت واقعی، Windows فیزیکی با DPI متفاوت، Companion روی گوشی) منتظر اجرای مالک محصول هستند.
+**آخرین به‌روزرسانی:** 2026-10-19 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.6.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال بعدی:** 2.7.0 — مراحل 0 تا 4 (Audit، تحقیق، IA، Wireframe، Design System)
 
 راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
 
@@ -14,93 +14,52 @@
 
 ## ۰. قواعد استفاده
 
-1. یک گام در هر زمان؛ ✅ فقط با شواهد (تست، Run، Release). شمارهٔ نسخه به‌تنهایی مدرک تکمیل نیست.
+1. یک گام در هر زمان؛ ✅ فقط با شواهد (تست، Run، Release، سند). شمارهٔ نسخه به‌تنهایی مدرک تکمیل نیست.
 2. وضعیت در همان PR به‌روز می‌شود.
-3. قابلیت موجود دوباره ساخته نمی‌شود: V2 Store/Services، Inbox، Repair، Context Request، Publisher، GitHub و Companion reuse می‌شوند.
-4. «NOT RUN» صریح می‌ماند: آنچه روی ویندوز واقعی، با چت واقعی مدل یا گوشی واقعی اجرا نشده PASS اعلام نمی‌شود.
-5. تغییر فناوری GUI هرگز در یک PR با تغییر پرخطر State Schema مخلوط نمی‌شود.
+3. **دامنه فقط GUI است** (سند مرجع §10): بدون تغییر Store/State Schema، Event Ledger، workflow، Publisher، Build یا Installer. اگر View به Action تازه نیاز داشت، به‌عنوان «وابستگی» ثبت می‌شود.
+4. Tkinter/ttk می‌ماند (ADR-007). تغییر Toolkit فقط با ADR تازه و اندازه‌گیری.
+5. «NOT RUN» صریح می‌ماند: آزمون کاربر مستقل، Windows فیزیکی با DPI مختلف و چت واقعی مدل که اجرا نشده‌اند PASS اعلام نمی‌شوند. CI مجازی معادل DPI فیزیکی نیست.
+6. قرارداد PR مربوط به UI (سند مرجع §7.3) و قواعد ضدوصله‌پینه (§7.1) برای هر PR الزامی است.
+7. تغییر View/Theme/Inspector هرگز Revision یا Event دامنه نمی‌سازد (UX-18).
 
-## ۱. اصول تغییرناپذیر (سند مرجع §۲)
+## ۱. نسخه‌بندی
 
-- بدون API مدل، بدون API Key، بدون ورود به حساب مدل، بدون scraping و بدون ارسال خودکار پیام. مسیر دستی کپی/پیست حفظ می‌شود.
-- Agent (نقش) ≠ Account Profile (برچسب محلی خوداظهاری) ≠ Chat Binding (یادداشت دستی چت) ≠ Task ≠ Attempt/Handoff ≠ Milestone ≠ Version.
-- «پرامپت کپی شد» ≠ «کاربر ارسال را تأیید کرد» ≠ «پاسخ دریافت شد». Workbench هرگز ادعا نمی‌کند مدل «در حال کار» است.
-- ادعای مدل Evidence نیست؛ Done فقط با سیاست پذیرش و شاهد.
-- هیچ Proposal/پاسخ بدون بازبینی کاربر State یا فایل را تغییر نمی‌دهد. Merge خودکار Candidateهای متعارض ممنوع.
-- Event Ledger تاریخچه است، نه منبع دوم وضعیت جاری؛ تاریخ حدسی ساخته نمی‌شود.
+شماره‌های مراحل، مراحل طراحی‌اند نه تضمین نسخهٔ نرم‌افزار (سند مرجع §5). نگاشت اجرایی:
 
-## ۲. نمای کلی مسیر
+| نسخه | مراحل سند مرجع | محتوا |
+|---|---|---|
+| 2.7.0 | 0، 1، 2، 3، 4 | Audit و Screenshotهای Baseline، تحقیق، IA و ۱۰ جریان کار، Wireframe، Design System (سند + توکن‌های معنایی) |
+| 2.8.0 | 5 | پوستهٔ تازه و کامپوننت‌های مشترک، Component gallery |
+| 2.9.0 | 6 | بازطراحی Overview، Tasks، Team، Timeline، Deliveries، Files & Context، Settings |
+| 2.10.0 | 7، 8، 9 | ماتریس Responsive/RTL/Contrast/Keyboard، ارزیابی Heuristic و بازنگری، Release Gate GUI |
 
-```text
-2.3.0  مرحله 0–3  ADR + Spike + Event Ledger + Account/Chat data + پوستهٔ Workspace واکنش‌گرا   (Gate: نصب/مهاجرت/Responsive)
-2.4.0  مرحله 4    Account/Chat UI + Team Planner + Team Proposal                                  (Gate A)
-2.5.0  مرحله 5–6  Workflow tracking دستی + Timeline + Milestone/Version + Progress                (Gate B, D)
-2.6.0  مرحله 7–9  Team Dashboard + Needs Attention + یکپارچه‌سازی/Polish + Release Gate          (Gate C, E, F, G)
-```
+## ۲. وضعیت مراحل
 
----
-
-## 2.3.0 — Foundation (مراحل 0، 1، 2، 3)
-
-| گام | عنوان | وضعیت | شواهد / باقی‌مانده |
+| مرحله | نام | وضعیت | شواهد |
 |---|---|---|---|
-| 0 | Discovery، Audit، UX Flow، Baseline و ADR | ✅ | `docs/audit/WORKSPACE_STAGE0_AUDIT_FA.md`، `tools/measure_baseline.py` |
-| 1 | UI Technology Spike و Design System | ✅ | ADR-007، `aiwb/workspace/theme.py` |
-| 2 | Event Ledger، Account Profile و Chat Binding (داده) | ✅ | ADR-008، `v2/events.py`، `v2/resources.py`، `event-ledger.v1` |
-| 3 | پوستهٔ Workspace و Responsive | ✅ | `aiwb/workspace/`، `gui_workspace_smoke.py`؛ DPI ویندوز واقعی NOT RUN |
+| 0 | Baseline و Audit | ⬜ | |
+| 1 | تحقیق موج اول | ⬜ | |
+| 2 | UX/IA و تحقیق موج دوم | ⬜ | |
+| 3 | Wireframe و Layout | ⬜ | |
+| 4 | تحقیق نهایی و Visual system | ⬜ | |
+| 5 | Core shell و کامپوننت‌ها | ⬜ | |
+| 6 | بازطراحی نماها (6A–6E) | ⬜ | |
+| 7 | Responsive، RTL/LTR، Accessibility | ⬜ | |
+| 8 | ارزیابی استفاده‌پذیری و بازنگری | ⬜ | |
+| 9 | یکپارچه‌سازی و انتشار کنترل‌شده | ⬜ | |
 
-**معیارهای پذیرش (خلاصه):**
-- [x] ADR فناوری GUI و ADR Event Ledger/Data Model ثبت شده‌اند.
-- [x] Audit موجود/جدید/حذف‌شدنی UI و نقشهٔ جریان UX با ۵ سناریو.
-- [x] Baseline عملکرد (start، open project، حافظه، اندازهٔ Payload) با اعداد واقعی ثبت شده.
-- [x] Event Ledger append-only نسخه‌دار، idempotent، بدون Prompt/Response خام؛ تغییر نما Event نمی‌سازد.
-- [x] Account Profile / Chat Binding بدون هیچ Credential؛ پروژه‌های قدیمی بدون آن باز می‌شوند؛ `preferred_model_label` حفظ می‌شود.
-- [x] Workspace: Project Bar، Sidebar، Workspace، Inspector جمع‌شونده، Next Action، Status Footer؛ همهٔ مسیرهای موجود در دسترس.
-- [x] تنظیم Layout بیرون از State پروژه؛ RTL فارسی/LTR انگلیسی در پوسته.
-- [x] تست‌های واحد + GUI smoke (اندازه‌های 1280×720، 1366×768، 1920×1080) و Installer ویندوز در CI سبز.
+## ۳. موارد NOT RUN که فقط مالک محصول می‌تواند اجرا کند
 
-## 2.4.0 — Team Planner (مرحله 4، Gate A)
+- آزمون وظیفه با ۵ کاربر مستقل (Gate 2، 3، 8؛ معیارهای §1.3).
+- Windows فیزیکی با DPI 100/125/150/200٪ و دو مانیتور (Gate 7، UX-16).
+- سناریوهای دستی UX-03 تا UX-10 با چت واقعی مدل (Gate انتشار §9.2).
+- از Roadmap قبلی: E2E با دو چت واقعی، Companion روی گوشی واقعی.
 
-| گام | عنوان | وضعیت | شواهد / باقی‌مانده |
-|---|---|---|---|
-| 4.1 | Account Profile manager و Chat Binding UI | ✅ | نمای Team در Workspace |
-| 4.2 | Planning Prompt با منابع، سقف چت هم‌زمان و سؤال اندازهٔ تیم | ✅ | `v2/team.py` `team_planning_prompt` |
-| 4.3 | قرارداد Team Proposal (نسخه‌دار، سازگار با قبلی) + اعتبارسنجی منابع | ✅ | `team-proposal.v1`، `check_team` |
-| 4.4 | Review UI تیم: پذیرش کل/انتخابی/رد | ✅ | + Request changes؛ `gui_team_planner_smoke.py`؛ چت واقعی مدل NOT RUN |
-
-- [x] PM نمی‌تواند Account Profile ناموجود را منبع واقعی معرفی کند؛ شمارش PM داخل/خارج تیم صریح است.
-- [x] Taskها Owner/Scope/Acceptance/Dependencies دارند یا کمبودها روشن نمایش داده می‌شوند.
-- [x] محدودیت منابع/هم‌زمانی در اعتبارسنجی لحاظ می‌شود؛ قرارداد قدیمی Proposal کار می‌کند.
-
-## 2.5.0 — Workflow tracking، Timeline و Progress (مراحل 5، 6؛ Gate B، D)
-
-| گام | عنوان | وضعیت | شواهد / باقی‌مانده |
-|---|---|---|---|
-| 5.1 | Workflow projection: prompt_prepared / copied / user_confirmed_sent / waiting / received / parse_failed / partial / stale … | ✅ | `v2/workflow.py` `task_stage` |
-| 5.2 | «I sent this prompt»، هشدار Start تکراری، اتصال Attempt به Account/Chat | ✅ | `WorkflowService`، `gui_workflow_timeline_smoke.py` |
-| 6.1 | Timeline از Event Ledger با فیلتر، Lane و legacy برچسب‌دار | ✅ | `timeline.lanes`، نمای Timeline |
-| 6.2 | Milestone و Version مستقل، اتصال به Commit/Build/Artifact | ✅ | `TimelineService` |
-| 6.3 | Progress: «n از m Task تأییدشده» + شاخص‌های جدا؛ وزن فقط با برچسب «تخمینی» | ✅ | `timeline.progress` |
-
-## 2.6.0 — Team Dashboard، یکپارچه‌سازی و Release Gate (مراحل 7، 8، 9؛ Gate C، E، F، G)
-
-| گام | عنوان | وضعیت | شواهد / باقی‌مانده |
-|---|---|---|---|
-| 7 | Team Dashboard و صف Needs Attention (اولویت قطعی و توضیح‌پذیر) | ✅ | `v2/dashboard.py`، `test_dashboard.py`، `gui_dashboard_smoke.py` |
-| 8 | یکپارچه‌سازی ورودی‌ها (اصلاح همین Task / Task جدید / Re-plan)، Polish، Light/Dark | ✅ | `v2/changes.py`، تشخیص Context Request در Inbox، smoke Light/Dark |
-| 9 | Release Gate: Dataset ده Agent، Performance در برابر Baseline، Installer upgrade، NOT RUNها | ✅ | `docs/release/v2.6.0/RELEASE_GATE_WORKSPACE_v2.6.0.md` (NOT RUNها صریح) |
-
----
-
-## Definition of Done (سند مرجع §۲۴)
-
-Roadmap فقط وقتی کامل اعلام می‌شود که همهٔ موارد §۲۴ سند مرجع با شواهد پاس شده باشند. آزمون Manual End-to-End با دو چت واقعی مدل و آزمون روی Windows واقعی با DPI متفاوت تا اجرای مالک محصول **NOT RUN** می‌مانند و در Release Gate صریحاً ثبت می‌شوند.
-
-## اسناد
+## ۴. اسناد
 
 | سند | نقش |
 |---|---|
-| `docs/specs/AI_Workbench_GUI_Team_Orchestration_Roadmap_FA.md` | منبع جزئیات این Roadmap |
-| `docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md` | Roadmap کامل‌شدهٔ قبلی (1.14.1 → 2.2.0) |
-| `docs/specs/*` دیگر | مشخصات V2، GitHub Hub و Integration (مرجع رفتار موجود) |
-| `docs/adr/` | تصمیم‌های معماری |
+| `docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md` | منبع جزئیات این Roadmap |
+| `docs/roadmap/archive/` | Roadmapهای کامل‌شدهٔ قبلی (superseded) |
+| `docs/adr/ADR-007-workspace-gui-technology-v2.3.0.md` | تصمیم Tkinter/ttk |
+| `docs/specs/*` دیگر | مشخصات رفتار موجود (مرجع، تغییر نمی‌کند) |
