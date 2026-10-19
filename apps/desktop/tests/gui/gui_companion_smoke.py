@@ -11,7 +11,7 @@ from pathlib import Path
 
 import AI_Workbench as wb
 from gui_smoke_helpers import wait_for_project_ready
-from aiwb.companion import crypto
+from aiwb.companion import crypto, pairing
 
 
 def post(port: int, env: dict) -> tuple[int, dict]:
@@ -43,9 +43,10 @@ def main() -> None:
             uri = w.do_pair()
             root.update()
             assert app.companion_server.running
-            _, host, port, pid, secret = uri.split(":")
-            port = int(port)
-            secret = crypto.b64d(secret)
+            host, port, raw = pairing.parse_uri(uri)
+            pid, secret = pairing.pairing_id(raw), pairing.master_key(raw)
+            assert w.code_var.get() == pairing.format_code(pairing.code_from_secret(raw)), w.code_var.get()
+            assert w.qr_canvas.find_withtag("qr"), "QR code drawn"
             dkey = os.urandom(32)
             code, out = post(port, crypto.seal(secret, pid, {"op": "pair_request", "device_name": "Smoke phone",
                                                               "device_key": crypto.b64e(dkey)}))
