@@ -4583,7 +4583,9 @@ class WorkbenchApp:
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
-        self.settings_widgets = build_settings_page(self.shell, self.settings_tab, extra=self._settings_app_section)
+        self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
+        self.settings_scroll.pack(fill="both", expand=True)
+        self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
         bottom = self.shell.statusbar
         ttk.Label(bottom, textvariable=self.status_var, style="StatusBar.TLabel").grid(row=0, column=0, sticky="ew")
         self.activity_progress = ttk.Progressbar(bottom, mode="indeterminate", length=100)
@@ -4592,6 +4594,7 @@ class WorkbenchApp:
         ttk.Label(bottom, text=f"v{APP_VERSION}", style="StatusBar.TLabel").grid(row=0, column=2)
         self.shell.on_pref(self._on_app_pref)
         ui_layout.install(self.root)
+        ui_layout.set_direction(self.prefs.rtl)
         for page in self.shell.pages.values():
             ui_layout.auto_flow(page)
         ui_layout.flow(self.shell.actions)
