@@ -1,3 +1,15 @@
+## [2.7.0] - 2026-10-19
+
+### GUI redesign foundation (GUI roadmap stages 0–4; Gate 0–4)
+- **Audit and baseline:** `docs/audit/GUI_AUDIT_FA.md` with 72 reproducible screenshots of desktop 2.6.0 (`docs/audit/screens/v2.6.0/`, conditions in `manifest.json`), component inventory, prioritized issues (IA, hierarchy, consistency, responsive/accessibility) and the "must not change" list.
+- **Research, information architecture, wireframes:** `docs/specs/GUI_RESEARCH_FA.md`, `GUI_INFORMATION_ARCHITECTURE_FA.md` (destinations, glossary, ten flows), `GUI_WIREFRAMES_FA.md` (three widths, all views, decision log).
+- **Design System 1.0:** `docs/specs/GUI_DESIGN_SYSTEM_FA.md` and new semantic tokens in `workspace/theme.py` — surfaces, text, borders, selection, focus, one accent, status and banner colours for light and dark; type roles; 4px spacing scale; control and layout tokens. All workspace ttk styles are scoped under `WS.` (the classic window is untouched); tables, buttons, inputs and scrollbars now follow the theme in dark mode.
+- `tools/gui_screenshots.py`: before/after screenshots for every view × theme × language × size; verifies that taking them changes neither project state nor the event ledger.
+
+### Validation
+- `test_gui_design_system.py`: token completeness, WCAG contrast for every text role on every surface (4.5:1) and for focus/control borders (3:1), type and spacing scales, scoped styles, no raw colours or fonts in views.
+- NOT RUN: user testing with independent participants; physical Windows at 125/150/200 % DPI.
+
 ## [2.6.0] - 2026-10-18
 
 ### Team Dashboard, integration and Release Gate (Workspace Roadmap stages 7, 8, 9; Gate C, E, F, G)

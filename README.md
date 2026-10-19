@@ -7,7 +7,7 @@ Git/GitHub for the project. The Android companion app in `apps/mobile` pairs wit
 
 | App | Path | Current | Download |
 |---|---|---|---|
-| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **2.6.0** (Project Workbench, Team Planner, Timeline, Team Dashboard) | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **2.7.0** (Project Workbench, Team Dashboard, GUI Design System 1.0) | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
 | Mobile (Android 7.0+) | `apps/mobile` | **0.3.0** (Companion) | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
 
 ## Repository layout

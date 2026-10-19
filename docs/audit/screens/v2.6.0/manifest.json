@@ -1,0 +1,657 @@
+{
+ "label": "Baseline desktop 2.6.0 (before GUI redesign)",
+ "dataset": "tests/fixtures_ten_agents.py (10 agents, 2 tasks each)",
+ "tk_scaling": 1.0802764486975012,
+ "capture": "Xvfb + ImageMagick import (Linux, not physical Windows)",
+ "machine": "Linux 6.1.155 Python 3.13.14",
+ "shots": [
+  {
+   "file": "overview_light_en_1280x720.png",
+   "view": "overview",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "timeline_light_en_1280x720.png",
+   "view": "timeline",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_light_en_1280x720.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_light_en_1280x720_sel.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_light_en_1280x720.png",
+   "view": "team",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_light_en_1280x720_sel.png",
+   "view": "team",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "files_light_en_1280x720.png",
+   "view": "files",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "versions_light_en_1280x720.png",
+   "view": "versions",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "settings_light_en_1280x720.png",
+   "view": "settings",
+   "theme": "light",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "overview_light_en_1024x640.png",
+   "view": "overview",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "timeline_light_en_1024x640.png",
+   "view": "timeline",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_light_en_1024x640.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_light_en_1024x640_sel.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_light_en_1024x640.png",
+   "view": "team",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_light_en_1024x640_sel.png",
+   "view": "team",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "files_light_en_1024x640.png",
+   "view": "files",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "versions_light_en_1024x640.png",
+   "view": "versions",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "settings_light_en_1024x640.png",
+   "view": "settings",
+   "theme": "light",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "overview_dark_en_1280x720.png",
+   "view": "overview",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "timeline_dark_en_1280x720.png",
+   "view": "timeline",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_dark_en_1280x720.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_dark_en_1280x720_sel.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_dark_en_1280x720.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_dark_en_1280x720_sel.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "files_dark_en_1280x720.png",
+   "view": "files",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "versions_dark_en_1280x720.png",
+   "view": "versions",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "settings_dark_en_1280x720.png",
+   "view": "settings",
+   "theme": "dark",
+   "language": "en",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "overview_dark_en_1024x640.png",
+   "view": "overview",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "timeline_dark_en_1024x640.png",
+   "view": "timeline",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_dark_en_1024x640.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_dark_en_1024x640_sel.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_dark_en_1024x640.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_dark_en_1024x640_sel.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "files_dark_en_1024x640.png",
+   "view": "files",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "versions_dark_en_1024x640.png",
+   "view": "versions",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "settings_dark_en_1024x640.png",
+   "view": "settings",
+   "theme": "dark",
+   "language": "en",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "overview_light_fa_1280x720.png",
+   "view": "overview",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "timeline_light_fa_1280x720.png",
+   "view": "timeline",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_light_fa_1280x720.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_light_fa_1280x720_sel.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_light_fa_1280x720.png",
+   "view": "team",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_light_fa_1280x720_sel.png",
+   "view": "team",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "files_light_fa_1280x720.png",
+   "view": "files",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "versions_light_fa_1280x720.png",
+   "view": "versions",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "settings_light_fa_1280x720.png",
+   "view": "settings",
+   "theme": "light",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "overview_light_fa_1024x640.png",
+   "view": "overview",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "timeline_light_fa_1024x640.png",
+   "view": "timeline",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_light_fa_1024x640.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_light_fa_1024x640_sel.png",
+   "view": "tasks",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_light_fa_1024x640.png",
+   "view": "team",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_light_fa_1024x640_sel.png",
+   "view": "team",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "files_light_fa_1024x640.png",
+   "view": "files",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "versions_light_fa_1024x640.png",
+   "view": "versions",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "settings_light_fa_1024x640.png",
+   "view": "settings",
+   "theme": "light",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "overview_dark_fa_1280x720.png",
+   "view": "overview",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "timeline_dark_fa_1280x720.png",
+   "view": "timeline",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_dark_fa_1280x720.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "tasks_dark_fa_1280x720_sel.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_dark_fa_1280x720.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "team_dark_fa_1280x720_sel.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": true,
+   "actual": "1280x720"
+  },
+  {
+   "file": "files_dark_fa_1280x720.png",
+   "view": "files",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "versions_dark_fa_1280x720.png",
+   "view": "versions",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "settings_dark_fa_1280x720.png",
+   "view": "settings",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1280x720",
+   "selection": false,
+   "actual": "1280x720"
+  },
+  {
+   "file": "overview_dark_fa_1024x640.png",
+   "view": "overview",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "timeline_dark_fa_1024x640.png",
+   "view": "timeline",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_dark_fa_1024x640.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "tasks_dark_fa_1024x640_sel.png",
+   "view": "tasks",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_dark_fa_1024x640.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "team_dark_fa_1024x640_sel.png",
+   "view": "team",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": true,
+   "actual": "1024x640"
+  },
+  {
+   "file": "files_dark_fa_1024x640.png",
+   "view": "files",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "versions_dark_fa_1024x640.png",
+   "view": "versions",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  },
+  {
+   "file": "settings_dark_fa_1024x640.png",
+   "view": "settings",
+   "theme": "dark",
+   "language": "fa",
+   "size": "1024x640",
+   "selection": false,
+   "actual": "1024x640"
+  }
+ ]
+}
