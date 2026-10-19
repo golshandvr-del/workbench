@@ -91,8 +91,7 @@ def main() -> None:
             wait_for_project_ready(app, root, project)
             app.open_project_workbench()
             w = app.workspace_window
-            w.wc.ctl.project.tasks.create({"title": "First task", "objective": "Do the first thing",
-                                           "owner_agent_id": "agent-core-dev"})
+            w.wc.ctl.project.tasks.create({"title": "First task", "objective": "Do the first thing"})
             w.show("timeline")
             root.update()
             c = w.tl_canvas
