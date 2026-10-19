@@ -28,6 +28,7 @@ def load() -> dict:
     return json.loads(CORPUS.read_text(encoding="utf-8"))
 
 
+@unittest.skipUnless(CORPUS.exists(), "shared contracts corpus is only present in the repository checkout")
 class CorpusTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
