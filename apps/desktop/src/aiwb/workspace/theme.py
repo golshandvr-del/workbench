@@ -13,19 +13,19 @@ from typing import Any
 THEMES = ("light", "dark")
 DESIGN_SYSTEM_VERSION = "1.0"
 
-PALETTES: dict[str, dict[str, str]] = {
-    "light": {"bg": "#f5f6f8", "surface": "#ffffff", "surface_alt": "#eef0f3", "sidebar": "#eceef2", "field": "#ffffff",
-              "text": "#1b2129", "muted": "#5a6472", "border": "#c9ced6", "border_strong": "#7c8592", "divider": "#e2e5ea",
-              "selected": "#dbe6fb", "selected_text": "#10213f", "focus": "#2f5fd0",
-              "accent": "#2456c4", "accent_text": "#ffffff", "accent_hover": "#1d47a6",
-              "success": "#1c6b35", "warning": "#8a5300", "danger": "#b0201c", "info": "#265f99",
-              "banner_info": "#e8f0fb", "banner_warning": "#fbf1e1", "banner_danger": "#fbe7e6", "banner_success": "#e5f3e9"},
-    "dark": {"bg": "#15181d", "surface": "#1d2127", "surface_alt": "#242930", "sidebar": "#191c21", "field": "#111418",
-             "text": "#e5e8ed", "muted": "#9da6b3", "border": "#3a414b", "border_strong": "#7a8494", "divider": "#2b3038",
-             "selected": "#2a3b5e", "selected_text": "#eef3ff", "focus": "#86a8ff",
-             "accent": "#7ea3ff", "accent_text": "#0b1322", "accent_hover": "#9bb8ff",
-             "success": "#7ad295", "warning": "#f0bf5c", "danger": "#ff8f8a", "info": "#8fc0ff",
-             "banner_info": "#1d2a3d", "banner_warning": "#33291a", "banner_danger": "#3a1f1f", "banner_success": "#1b3024"},
+PALETTES: dict[str, dict[str, str]] = {  # 3.0.0: aligned with the Fluent (Sun Valley) theme surfaces
+    "light": {"bg": "#fafafa", "surface": "#ffffff", "surface_alt": "#f0f0f0", "sidebar": "#f0f0f0", "field": "#fdfdfd",
+              "text": "#1c1c1c", "muted": "#5c5c5c", "border": "#e0e0e0", "border_strong": "#8a8a8a", "divider": "#e5e5e5",
+              "selected": "#dde9f7", "selected_text": "#0f2a47", "focus": "#005fb8",
+              "accent": "#005fb8", "accent_text": "#ffffff", "accent_hover": "#1a6fc2",
+              "success": "#0e700e", "warning": "#8a5300", "danger": "#c42b1c", "info": "#005a9e",
+              "banner_info": "#e6f0fa", "banner_warning": "#fff4ce", "banner_danger": "#fde7e9", "banner_success": "#dff6dd"},
+    "dark": {"bg": "#1c1c1c", "surface": "#272727", "surface_alt": "#2b2b2b", "sidebar": "#202020", "field": "#292929",
+             "text": "#f2f2f2", "muted": "#b0b0b0", "border": "#3d3d3d", "border_strong": "#8a8a8a", "divider": "#333333",
+             "selected": "#203a55", "selected_text": "#eef6ff", "focus": "#57c8ff",
+             "accent": "#57c8ff", "accent_text": "#00141f", "accent_hover": "#7dd5ff",
+             "success": "#6ccb5f", "warning": "#fce100", "danger": "#ff99a4", "info": "#99ebff",
+             "banner_info": "#1a2b3c", "banner_warning": "#3a3214", "banner_danger": "#442726", "banner_success": "#1f3320"},
 }
 # Legacy names (2.3.0–2.6.0) kept as aliases so older call sites keep working.
 LEGACY_ALIASES = {"select": "selected", "blocking": "danger", "action": "warning", "ok": "success"}
