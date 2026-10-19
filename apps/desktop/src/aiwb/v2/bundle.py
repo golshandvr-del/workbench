@@ -12,7 +12,7 @@ between Python and Kotlin). Both apps work on the same V2 state document, so unk
 
 Import never merges. :func:`plan_import` compares the bundle with the local project:
 
-* ``new``         – no local project yet;
+* ``new``         – no local work yet (no tasks, plans, milestones or handoffs);
 * ``same``        – identical state;
 * ``newer``       – the bundle *descends* from the local state (its event history contains the local last event) and
                     has a higher revision: safe to replace (a backup is written first);
@@ -138,7 +138,7 @@ def _comparable(state: dict[str, Any]) -> dict[str, Any]:
 def plan_import(local: dict[str, Any] | None, incoming: dict[str, Any]) -> dict[str, Any]:
     """Decide what importing *incoming* over *local* means. Pure; never writes."""
     rev_in = int(incoming.get("state_revision", 0) or 0)
-    if local is None or (int(local.get("state_revision", 0) or 0) == 0 and not local.get("tasks")):
+    if local is None or not any(local.get(k) for k in ("tasks", "proposals", "milestones", "handoffs")):
         return {"kind": "new", "safe": True, "local_revision": 0, "bundle_revision": rev_in,
                 "message": f"Import the project (revision {rev_in})."}
     rev_local = int(local.get("state_revision", 0) or 0)
