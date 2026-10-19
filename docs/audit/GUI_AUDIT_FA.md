@@ -1,6 +1,6 @@
 # ممیزی GUI — وضعیت پایهٔ Desktop 2.6.0 (GUI roadmap، مرحلهٔ 0)
 
-**تاریخ:** 2026-10-19 · **نسخه:** `desktop-v2.6.0` (main `9ca55dc`) · **مرجع:** `docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md` §5 مرحلهٔ 0
+**تاریخ:** 2026-10-19 · **نسخه:** `desktop-v2.6.0` (main `9ca55dc`) · **مرجع:** `docs/roadmap/archive/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md` §5 مرحلهٔ 0
 
 ## ۱. شرایط ثبت شواهد
 

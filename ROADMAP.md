@@ -1,65 +1,74 @@
-# AI Workbench — نقشه‌راه اصلی (Master Roadmap) — بازطراحی رابط کاربری (GUI-only)
+# AI Workbench — نقشه‌راه اصلی (Master Roadmap 3.x) — بازسازی محصول
 
-> **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر کار توسعه باید به یکی از گام‌های همین فایل اشاره کند.
-> منبع جزئیات، معیارها و Gateها: [`docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md`](docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md) (نسخه 1.0، 2026-10-19).
-> Roadmapهای قبلی بایگانی شده‌اند: [`ROADMAP_v2.3-v2.6_FA.md`](docs/roadmap/archive/ROADMAP_v2.3-v2.6_FA.md) (Project Workbench و تیم چند Agent، کامل‌شده) و [`ROADMAP_v1.14-v2.2_FA.md`](docs/roadmap/archive/ROADMAP_v1.14-v2.2_FA.md).
-> تعارض بین این فایل و سند مرجع با ADR در `docs/adr/` حل می‌شود.
+> **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر PR باید به یک گام همین فایل اشاره کند.
+> Roadmapهای قبلی در `docs/roadmap/archive/` بایگانی شده‌اند (superseded): `ROADMAP_v2.7-v2.10_GUI-only_FA.md`، `ROADMAP_v2.3-v2.6_FA.md`، `ROADMAP_v1.14-v2.2_FA.md`.
 
-**آخرین به‌روزرسانی:** 2026-10-19 · **نسخهٔ Desktop منتشرشده:** `desktop-v2.6.0` · **نسخهٔ Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال بعدی:** 2.8.0 — مرحلهٔ 5 (پوسته و کامپوننت‌های مشترک)
+**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v2.7.0` · **Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال:** 3.0.0 — پوستهٔ واحد
 
-راهنمای وضعیت: ✅ کامل (دروازه پاس شده) · 🟡 بخشی · ⬜ شروع‌نشده · ⏭ خارج از دامنه · NOT RUN = اجرا نشده
+راهنما: ✅ کامل (Gate پاس) · 🟡 بخشی · ⬜ شروع‌نشده · NOT RUN = اجرا نشده
 
 ---
 
-## ۰. قواعد استفاده
+## ۰. هدف محصول (بدون تغییر، ولی این بار واقعاً)
 
-1. یک گام در هر زمان؛ ✅ فقط با شواهد (تست، Run، Release، سند). شمارهٔ نسخه به‌تنهایی مدرک تکمیل نیست.
-2. وضعیت در همان PR به‌روز می‌شود.
-3. **دامنه فقط GUI است** (سند مرجع §10): بدون تغییر Store/State Schema، Event Ledger، workflow، Publisher، Build یا Installer. اگر View به Action تازه نیاز داشت، به‌عنوان «وابستگی» ثبت می‌شود.
-4. Tkinter/ttk می‌ماند (ADR-007). تغییر Toolkit فقط با ADR تازه و اندازه‌گیری.
-5. «NOT RUN» صریح می‌ماند: آزمون کاربر مستقل، Windows فیزیکی با DPI مختلف و چت واقعی مدل که اجرا نشده‌اند PASS اعلام نمی‌شوند. CI مجازی معادل DPI فیزیکی نیست.
-6. قرارداد PR مربوط به UI (سند مرجع §7.3) و قواعد ضدوصله‌پینه (§7.1) برای هر PR الزامی است.
-7. تغییر View/Theme/Inspector هرگز Revision یا Event دامنه نمی‌سازد (UX-18).
+کاربر **بدون API و بدون لاگین در اپ**، فقط با چت‌های معمولی (ChatGPT، Gemini، Claude، …) پروژه‌اش را جلو می‌برد.
+اپ فقط دو کار با مدل‌ها دارد: **پرامپت می‌سازد** (کاربر کپی می‌کند) و **خروجی مدل را می‌گیرد** (کاربر Paste/فایل می‌دهد).
+هیچ راه ارتباطی دیگری با مدل‌ها وجود ندارد و نخواهد داشت.
 
-## ۱. نسخه‌بندی
+**تعریف موفقیت:** کاربر از «ایدهٔ پروژه» تا «نسخهٔ منتشرشده» بدون بن‌بست می‌رود؛ در هر لحظه اپ دقیقاً یک «قدم بعدی» با پرامپت آماده نشان می‌دهد.
 
-شماره‌های مراحل، مراحل طراحی‌اند نه تضمین نسخهٔ نرم‌افزار (سند مرجع §5). نگاشت اجرایی:
+## ۱. ریشه‌یابی مشکلات نسخهٔ 2.6/2.7
 
-| نسخه | مراحل سند مرجع | محتوا |
-|---|---|---|
-| 2.7.0 | 0، 1، 2، 3، 4 | Audit و Screenshotهای Baseline، تحقیق، IA و ۱۰ جریان کار، Wireframe، Design System (سند + توکن‌های معنایی) |
-| 2.8.0 | 5 | پوستهٔ تازه و کامپوننت‌های مشترک، Component gallery |
-| 2.9.0 | 6 | بازطراحی Overview، Tasks، Team، Timeline، Deliveries، Files & Context، Settings |
-| 2.10.0 | 7، 8، 9 | ماتریس Responsive/RTL/Contrast/Keyboard، ارزیابی Heuristic و بازنگری، Release Gate GUI |
-
-## ۲. وضعیت مراحل
-
-| مرحله | نام | وضعیت | شواهد |
+| # | مشکل گزارش‌شده | ریشه | راه حل (نسخه) |
 |---|---|---|---|
-| 0 | Baseline و Audit | ✅ | `docs/audit/GUI_AUDIT_FA.md`، `docs/audit/screens/v2.6.0/`، `tools/gui_screenshots.py` |
-| 1 | تحقیق موج اول | ✅ | `docs/specs/GUI_RESEARCH_FA.md` §۱–۳ |
-| 2 | UX/IA و تحقیق موج دوم | ✅ | `docs/specs/GUI_INFORMATION_ARCHITECTURE_FA.md` (آزمون کاربر: NOT RUN) |
-| 3 | Wireframe و Layout | ✅ | `docs/specs/GUI_WIREFRAMES_FA.md` (آزمون وظیفه: NOT RUN) |
-| 4 | تحقیق نهایی و Visual system | ✅ | `docs/specs/GUI_DESIGN_SYSTEM_FA.md`، `workspace/theme.py`، `test_gui_design_system.py` |
-| 5 | Core shell و کامپوننت‌ها | ⬜ | |
-| 6 | بازطراحی نماها (6A–6E) | ⬜ | |
-| 7 | Responsive، RTL/LTR، Accessibility | ⬜ | |
-| 8 | ارزیابی استفاده‌پذیری و بازنگری | ⬜ | |
-| 9 | یکپارچه‌سازی و انتشار کنترل‌شده | ⬜ | |
+| P1 | «لباس وصله‌پینه»؛ Project Workbench یک اپ دیگر با زبان/تم جدا | دو پنجره (`WorkbenchApp` و `WorkspaceWindow` به‌صورت Toplevel)، دو سیستم Style (۵۴ رنگ hard-code در کلاسیک + `WS.*`)، تنظیمات نمایش فقط داخل Workspace | یک پنجره، یک ناوبری، یک Theme، یک Settings برای کل اپ (3.0.0) |
+| P2 | دیالوگ‌ها از کادر بیرون می‌زنند؛ دکمه‌ها در پنجرهٔ کوچک دیده نمی‌شوند؛ تقارن ندارد | ۲۲+۱۴ Toplevel با `geometry` ثابت، Toolbarهای `pack(side=left)` بدون wrap، نبود Grid مشترک | `ui/layout.py`: قرار دادن همهٔ دیالوگ‌ها در Work area، Toolbar جریانی (wrap)، صفحات Scrollable، Grid فاصله‌گذاری ۴px؛ تست خودکار overflow (3.1.0) |
+| P3 | Simple/Advanced فقط در Workbench و بی‌اثر | Mode فقط در `ProjectsController` و فقط چند Label را عوض می‌کرد | Mode سراسری: Simple = مسیر هدایت‌شده (Home → قدم بعدی)، صفحات پیشرفته پنهان؛ Advanced = همه‌چیز (3.0.0) |
+| P4 | بعد از Paste خروجی مدل «هیچ کاری نمی‌شود کرد»؛ پرامپت بعدی تولید نمی‌شود | `next_action` فقط «نوع» عمل را می‌گوید؛ بسیاری از عمل‌ها (approve_task، start_task، …) پرامپت نمی‌سازند و دکمه فقط به Tasks می‌برد | موتور «حلقهٔ هدایت‌شده» (Guided Loop): هر وضعیت → یک قدم با پرامپت/دکمهٔ واقعی؛ تست ثابت «هیچ وضعیتی بن‌بست نیست» + E2E شبیه‌سازی‌شده (3.4.0) |
+| P5 | Timeline گرافیکی (دایره با اندازهٔ اهمیت، خطوط عمودی نسخه) وجود ندارد | Timeline فقط Treeview متنی است | ویجت Canvas اختصاصی: محور افقی زمان، دایره با اندازهٔ اهمیت، خط عمودی برای هر نسخه، Lane هر Agent، Zoom/Scroll/Tooltip (3.5.0) |
+| P6 | پرامپت اولیه معماری کامل پروژه را تعریف نمی‌کند (تعداد AI موازی، هماهنگی، Roadmap، وظیفهٔ هر AI) | `planning_prompt`/`team_planning_prompt` فقط «تیم + ۳ تا ۸ Task» می‌خواهد | قرارداد تازهٔ **Project Charter** (`project-charter.v1`): معماری، تیم موازی، پروتکل هماهنگی، Roadmap با نسخه‌ها، نقش و پرامپت شروع هر AI؛ Import یک‌جا (3.3.0) |
+| P7 | GPT Output هنوز خراب دریافت می‌شود | Parserها روی متن خام کار می‌کنند؛ کپی از ChatGPT کاراکترهای پنهان (NBSP، zero-width، نقل‌قول هوشمند)، escape مارک‌داون (`\<\<\<`، `\_`)، HTML entity، fence اضافه، ویرگول انتهایی و JSON بریده‌شده می‌آورد | لایهٔ `intake/normalize.py` پیش از همهٔ Parserها + پیکرهٔ تست از الگوهای واقعی خرابی GPT + تشخیص بریدگی و پرامپت «ادامه بده» خودکار (3.2.0) |
+| P8 | GUI ساده و «AI-ساخت» | ttk `clam` پیش‌فرض، بدون سلسله‌مراتب بصری | تم Fluent (Sun Valley، MIT، ۹۲KB، فقط Tcl+PNG، بدون وابستگی Python) + کارت‌ها، Command bar، Nav rail با آیکن، Typography نقش‌محور (3.0.0) |
+| P9 | کد اتصال موبایل خیلی طولانی | Base64 شناسه + کلید ۳۲ بایتی + آدرس | QR (رندر با Canvas، کتابخانهٔ QR خالص vendored) + Deep link `aiwb://pair` + کد دستی کوتاه ۱۶ نویسه‌ای با محدودیت تلاش (3.6.0 / mobile 0.4.0) |
+| P10 | موبایل باید مستقل از ویندوز کار کند | اپ موبایل فقط Companion است | حالت Standalone: هستهٔ Kotlin (پروژه، Charter، پرامپت، Intake، Task، حلقه، Timeline) + Export/Import بستهٔ پروژه با Desktop (mobile 1.0.0) |
 
-## ۳. موارد NOT RUN که فقط مالک محصول می‌تواند اجرا کند
+## ۲. اصول معماری (الزامی برای هر PR)
 
-- آزمون وظیفه با ۵ کاربر مستقل (Gate 2، 3، 8؛ معیارهای §1.3).
-- Windows فیزیکی با DPI 100/125/150/200٪ و دو مانیتور (Gate 7، UX-16).
-- سناریوهای دستی UX-03 تا UX-10 با چت واقعی مدل (Gate انتشار §9.2).
-- از Roadmap قبلی: E2E با دو چت واقعی، Companion روی گوشی واقعی.
+1. **یک پنجره.** هیچ صفحه‌ای Toplevel مستقل نیست؛ فقط دیالوگ‌های کوتاه و Modal، همه از `ui/layout.place_dialog`.
+2. **یک Theme و یک Settings.** `ui/theme` تنها منبع رنگ/فونت/فاصله است؛ تغییر تم/زبان/Mode همهٔ صفحات را بلافاصله عوض می‌کند. رنگ hard-code در Viewها ممنوع (تست).
+3. **هیچ بن‌بست.** هر وضعیت پروژه دقیقاً یک «قدم بعدی» دارد که یا پرامپت آماده است یا یک دکمهٔ تصمیم واقعی (تست ثابت).
+4. **ارتباط با مدل فقط Copy/Paste/File.** بدون API، بدون مرورگر داخلی، بدون لاگین.
+5. **خروجی مدل داده‌ی نامطمئن است.** Normalize → Parse → Review → Apply؛ هیچ چیز بدون بازبینی کاربر State یا فایل را عوض نمی‌کند.
+6. **سبک می‌ماند.** Python + Tk، بدون وابستگی pip در زمان اجرا؛ کتابخانه‌های کوچک فقط vendored با مجوز MIT/BSD. حجم Payload < 4MB.
+7. **قانون Checkpoint** (CONTRIBUTING): هر تغییر فایل → commit → push، بدون استثنا.
+8. **NOT RUN صریح.** آزمون روی Windows فیزیکی، گوشی واقعی و چت واقعی مدل که اجرا نشده PASS اعلام نمی‌شود.
 
-## ۴. اسناد
+## ۳. نسخه‌ها و Gateها
+
+| نسخه | عنوان | محتوا | Gate (شرط انتشار) | وضعیت |
+|---|---|---|---|---|
+| **3.0.0** | پوستهٔ واحد و ظاهر حرفه‌ای | پنجرهٔ واحد با Nav rail (Home، Project، Prompt، Inbox/Response، Tasks، Team، Timeline، Files، History، Run، Git، Settings)؛ Workbench به‌عنوان صفحه (نه Toplevel)؛ تم Fluent light/dark سراسری؛ Settings سراسری (تم، زبان، Mode)؛ Simple/Advanced سراسری؛ حذف رنگ‌های hard-code کلاسیک | smoke: هیچ Toplevel برای Workbench؛ تغییر تم همهٔ صفحات را عوض می‌کند؛ Simple صفحات پیشرفته را پنهان می‌کند؛ همهٔ تست‌های قبلی سبز | ⬜ |
+| **3.1.0** | Layout مقاوم و متقارن | `ui/layout.py`: `place_dialog` (clamp به Work area و مرکز والد)، `FlowBar` (Toolbar با wrap)، `ScrollPage`؛ تبدیل همهٔ دیالوگ‌ها و Toolbarها؛ Grid فاصله‌گذاری یکسان | smoke: در 1024×640، 1280×720 و 1920×1080 هیچ دکمه‌ای بیرون از پنجره نیست و هیچ دیالوگی از Work area بیرون نمی‌زند (همهٔ صفحات و دیالوگ‌ها) | ⬜ |
+| **3.2.0** | دریافت مطمئن خروجی مدل (GPT) | `intake/normalize.py` (BOM، NBSP، zero-width، CRLF، نقل‌قول هوشمند بیرون از رشته، escape مارک‌داون مارکرها، HTML entity، fence بیرونی، ویرگول انتهایی، کامنت JSON)؛ تشخیص بریدگی + پرامپت «ادامه از جایی که قطع شد»؛ قالب پیش‌فرض GPT = بلوک‌های AIWB بدون fence؛ یک ورودی Paste برای همه‌چیز با تشخیص خودکار نوع | پیکرهٔ ≥ ۳۰ نمونهٔ خرابی واقعی GPT/Gemini/Claude پاس؛ هیچ نمونهٔ سالم قبلی خراب نمی‌شود | ⬜ |
+| **3.3.0** | Project Charter | پرامپت «طراحی معماری کل پروژه»: معماری و ماژول‌ها، تعداد AI موازی و دلیل، پروتکل هماهنگی (مالکیت فایل/مسیر، قراردادهای مشترک، نقاط Sync، حل تعارض)، Roadmap با Milestone و نسخه، Task هر AI، پرامپت شروع هر AI؛ قرارداد `project-charter.v1` (schema + fixture)؛ Import یک‌جا با بازبینی → Agentها، Milestoneها، نسخه‌ها، Taskها | تست قرارداد و Import؛ پرامپت همهٔ بخش‌های الزامی را می‌خواهد (تست)؛ Charter ناقص با پیام دقیق و پرامپت اصلاح رد می‌شود | ⬜ |
+| **3.4.0** | حلقهٔ هدایت‌شده (بدون بن‌بست) | `v2/guide.py`: برای هر وضعیت یک Step با عنوان، توضیح، پرامپت آماده یا تصمیم؛ کارت «قدم بعدی» در Home و Project؛ صف هر AI؛ پرامپت Manager Update/Review/Repair/Continue خودکار؛ ثبت «کپی شد/ارسال شد» با یک کلیک | تست ثابت روی همهٔ وضعیت‌های قابل‌رسیدن: هیچ Step بدون عمل؛ E2E شبیه‌سازی‌شده از ایده تا نسخهٔ منتشرشده با پاسخ‌های اسکریپتی ۳ AI موازی | ⬜ |
+| **3.5.0** | Timeline تصویری | `ui/timeline_canvas.py`: محور افقی زمان، دایره با اندازهٔ اهمیت (minor/normal/major/critical)، خط عمودی هر نسخه (پیشنهادی خط‌چین، منتشرشده توپر)، Lane هر AI، Zoom/Pan، Tooltip، کلیک → Inspector | smoke: رندر ۲۰۰۰ رویداد < 300ms؛ اندازهٔ دایره و خط نسخه مطابق داده؛ RTL و Dark | ⬜ |
+| **3.6.0** + mobile **0.4.0** | اتصال موبایل با QR | QR روی Desktop (Canvas، بدون PIL)؛ URI `aiwb://pair?h=&p=&k=`؛ کد دستی ۱۶ نویسه (Base32، ۸۰ بیت، ۱۰ دقیقه، ۵ تلاش)؛ موبایل: اسکنر داخلی + Deep link از دوربین سیستم | تست واحد QR (decode با کتابخانهٔ مرجع در CI)، قرارداد کد کوتاه در هر دو طرف | ⬜ |
+| mobile **1.0.0** + **3.7.0** | موبایل مستقل | هستهٔ Kotlin: پروژه‌ها، Charter، پرامپت‌ها، Intake با همان Normalizer (پیکرهٔ مشترک در `packages/contracts/fixtures`)، Task، حلقهٔ هدایت‌شده، Timeline Canvas؛ Export/Import `aiwb-bundle.v1` بین Desktop و موبایل | تست‌های JVM روی پیکرهٔ مشترک؛ round-trip بسته | ⬜ |
+| **3.8.0** | Release Gate محصول | E2E کامل، Screenshotهای قبل/بعد، Performance، مستندات کاربر FA/EN | همهٔ Gateها؛ NOT RUNها صریح | ⬜ |
+
+## ۴. موارد NOT RUN که فقط مالک محصول می‌تواند اجرا کند
+
+- Windows فیزیکی با DPI 100/125/150/200٪.
+- سناریوی کامل با چت واقعی ChatGPT/Gemini (۳ AI موازی).
+- گوشی واقعی: اسکن QR، Pairing، حالت مستقل.
+
+## ۵. اسناد
 
 | سند | نقش |
 |---|---|
-| `docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md` | منبع جزئیات این Roadmap |
-| `docs/roadmap/archive/` | Roadmapهای کامل‌شدهٔ قبلی (superseded) |
-| `docs/adr/ADR-007-workspace-gui-technology-v2.3.0.md` | تصمیم Tkinter/ttk |
-| `docs/specs/*` دیگر | مشخصات رفتار موجود (مرجع، تغییر نمی‌کند) |
+| `docs/roadmap/archive/` | Roadmapهای قبلی (superseded) |
+| `docs/specs/GUI_DESIGN_SYSTEM_FA.md` | توکن‌ها (از 2.7.0؛ در 3.0.0 به تم Fluent نگاشت می‌شود) |
+| `docs/adr/ADR-009-*.md` | تصمیم پوستهٔ واحد و تم Fluent (3.0.0) |
+| `packages/contracts/schemas/` | قراردادها (از جمله `project-charter.v1`، `aiwb-bundle.v1`) |
