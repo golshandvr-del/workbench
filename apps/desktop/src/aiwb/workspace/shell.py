@@ -372,7 +372,10 @@ class WorkspaceWindow:
             ttk.Label(act, text=self.wc.event_text(rec), style="TLabel").pack(anchor=anchor)
         b = ttk.Frame(f, style="WS.TFrame")
         b.grid(row=7, column=0, sticky="ew", pady=6)
-        ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(side="right" if self.wc.rtl else "left")
+        ttk.Button(b, text=self.wc.tr(("Design the whole project…", "طراحی کل پروژه…")), style="WS.Primary.TButton",
+                   command=self.dialog_charter).pack(side="right" if self.wc.rtl else "left")
+        ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(
+            side="right" if self.wc.rtl else "left", padx=6)
 
     def dialog_change_request(self, task_id: str, request: str | None = None, route: str | None = None) -> Any:
         """One place for 'fix this task' vs 'new task' vs 're-plan' (spec §12.3). Never edits silently."""
@@ -559,6 +562,14 @@ class WorkspaceWindow:
         ttk.Button(box, text=self.wc.tr(("Save", "ذخیره")), command=self.save_team_settings).pack(side=side)
         ttk.Button(box, text=self.wc.tr(("Plan team & tasks…", "برنامه‌ریزی تیم و Taskها…")), style="WS.Primary.TButton",
                    command=self.dialog_plan_team).pack(side=side, padx=8)
+        ch = self.wc.ctl.charter()
+        if ch:
+            cb = ttk.LabelFrame(f, text="Project Charter — start prompts", padding=6)
+            cb.grid(row=row, column=0, sticky="se", pady=4)
+            agents = sorted(ch.get("start_prompts") or {})
+            self.charter_agent_var = tk.StringVar(value=agents[0] if agents else "")
+            ttk.Combobox(cb, textvariable=self.charter_agent_var, values=agents, width=24, state="readonly").pack(side=side)
+            ttk.Button(cb, text="Copy start prompt", command=self.copy_start_prompt).pack(side=side, padx=4)
 
     def save_team_settings(self, **override: Any) -> Any:
         changes = {"max_parallel_chats": override.get("max_parallel_chats", self.parallel_var.get()),
@@ -912,10 +923,39 @@ class WorkspaceWindow:
                                         "در کلیپ‌بورد کپی شد — این به معنی ارسال نیست.")))
         return text
 
+    def dialog_charter(self, project: dict[str, Any] | None = None) -> str:
+        """Project Charter (3.4.0): short brief → the 'design the whole project' prompt to copy."""
+        if project is None:
+            project = self._ask_project_brief()
+            if not project:
+                return ""
+        prompt = self._guard(lambda: self.wc.ctl.charter_prompt(project))
+        if not prompt:
+            return ""
+        self.last_prompt, self.last_handoff_id = prompt, ""
+        self.status_var.set("Project Charter prompt ready. Copy it to your project-manager chat, then paste the whole "
+                            "answer back here (not sent yet).")
+        self.show("tasks")
+        return prompt
+
+    def copy_start_prompt(self, agent_id: str = "") -> str:
+        agent_id = agent_id or (self.charter_agent_var.get() if hasattr(self, "charter_agent_var") else "")
+        prompt = self._guard(lambda: self.wc.ctl.charter_start_prompt(agent_id))
+        if not prompt:
+            return ""
+        self.last_prompt, self.last_handoff_id = prompt, ""
+        self.clipboard(prompt)
+        self.status_var.set(f"Start prompt for {agent_id} copied — paste it into that AI's own new chat.")
+        return prompt
+
     def do_import(self, text: str | None = None) -> Any:
         raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
+        if r.kind == "charter_rejected":
+            self.last_prompt, self.last_handoff_id = r.record.get("fix_prompt", ""), ""
+            self.show("tasks")
+            return r
         # proposals are reviewed in the Team view; context requests go to Files & Context (existing tool)
         self.show({"proposal": "team", "context_request": "files"}.get(r.kind, self.wc.section))
         return r
