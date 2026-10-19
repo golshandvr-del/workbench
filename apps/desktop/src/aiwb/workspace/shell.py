@@ -135,8 +135,16 @@ class WorkspaceWindow:
         self.next_var = tk.StringVar()
         self.next_label = ttk.Label(self.next_frame, textvariable=self.next_var, style="WS.Next.TLabel", wraplength=900)
         self.next_label.grid(row=0, column=0, sticky="w")
+        self.next_explain_var = tk.StringVar()
+        self.next_explain = ttk.Label(self.next_frame, textvariable=self.next_explain_var, style="WS.Muted.TLabel",
+                                      wraplength=900)
+        self.next_explain.grid(row=1, column=0, sticky="w")
         self.next_btn = ttk.Button(self.next_frame, text="", style="WS.Primary.TButton", command=self.do_next)
-        self.next_btn.grid(row=0, column=1, sticky="e", padx=(8, 0))
+        self.next_btn.grid(row=0, column=1, rowspan=2, sticky="e", padx=(8, 0))
+        self.next_menu = tk.Menu(self.next_frame, tearoff=False)
+        self.next_more = ttk.Menubutton(self.next_frame, text="More", menu=self.next_menu)
+        self.next_more.grid(row=0, column=2, rowspan=2, sticky="e", padx=(6, 0))
+        self.guide_step: dict[str, Any] = {}
         # Body: sidebar | center | inspector
         self.body = ttk.Frame(w, style="WS.TFrame")
         self.body.grid(row=2, column=0, sticky="nsew", padx=theme.SPACING["l"], pady=theme.SPACING["m"])
@@ -241,11 +249,21 @@ class WorkspaceWindow:
         bar = self.wc.project_bar()
         self.title_var.set(f"{bar['name']}" + (f" — {bar['goal'][:80]}" if bar["goal"] else ""))
         self.pub_var.set(bar["publish"])
-        ov = self.wc.overview()
-        nxt = ov["next"]
-        self.next_var.set(("← " if self.wc.rtl else "→ ") + nxt["summary"]
-                          + (f" ({nxt['reference_id']})" if nxt.get("reference_id") else ""))
-        self.next_btn.configure(text=self.wc.tr(("Do it", "انجام بده")))
+        steps = self.wc.guide_steps()
+        st = self.guide_step = steps[0]
+        who = "" if st["agent_id"] == "you" else f"  [{st['agent_id']}]"
+        self.next_var.set(("← " if self.wc.rtl else "→ ") + "Next step: " + st["title"] + who)
+        self.next_explain_var.set(st["explain"] + (f"  ({len(steps) - 1} more open)" if len(steps) > 1 else ""))
+        primary = next(a for a in st["actions"] if a["primary"])
+        self.next_btn.configure(text=primary["label"] + ("…" if primary["needs"] and not primary["label"].endswith("…") else ""))
+        self.next_menu.delete(0, "end")
+        for a in st["actions"]:
+            if not a["primary"]:
+                self.next_menu.add_command(label=a["label"], command=lambda k=st["key"], i=a["id"]: self.guide_action(k, i))
+        if len(st["actions"]) > 1:
+            self.next_more.grid()
+        else:
+            self.next_more.grid_remove()
         self.next_label.configure(anchor="e" if self.wc.rtl else "w", justify="right" if self.wc.rtl else "left")
         self._render_inspector()
 
@@ -297,21 +315,70 @@ class WorkspaceWindow:
             self.status_var.set(str(exc))
             return None
 
-    def do_next(self) -> None:
-        nxt = self.wc.overview()["next"]
-        t, ref = nxt.get("type"), nxt.get("reference_id", "")
-        if t in ("plan_project",):
-            self.show("overview")
-            self.do_plan()
-        elif t in ("start_task", "prepare_handoff", "review_delivery", "run_validation", "approve_task", "unblock_task",
-                   "review_task"):
-            self.wc.select("task", ref)
-            self.show("tasks")
-        elif t in ("copy_prompt", "import_response", "review_handoff", "review_proposal", "resolve_decision"):
-            self.show("tasks")
-            self.status_var.set(nxt["summary"])
-        else:
-            self.status_var.set(nxt["summary"])
+    def do_next(self) -> Any:
+        """Run the primary action of the guide's first step (3.5.0)."""
+        st = self.guide_step or self.wc.guide_steps()[0]
+        primary = next(a for a in st["actions"] if a["primary"])
+        return self.guide_action(st["key"], primary["id"])
+
+    INPUT_PROMPTS = {"goal": "What should this project achieve? (one or two sentences)", "note": "Note (optional)",
+                     "reason": "Reason", "rationale": "Why? (kept in the decision log)", "choice": "Your decision",
+                     "result": "Result: passed or failed", "run_id": "Run ID / build number (optional)",
+                     "commit_sha": "Commit SHA of the release", "tag": "Tag (optional, default v<version>)"}
+
+    def _ask_text(self, title: str) -> str:
+        """Multi-line paste box for a whole model answer."""
+        if hasattr(self, "answer_text") and self.answer_text.winfo_exists() and self.answer_text.get("1.0", "end-1c").strip():
+            return self.answer_text.get("1.0", "end-1c")
+        top = tk.Toplevel(self.win)
+        top.title(title)
+        top.transient(self.win)
+        box = tk.Text(top, width=90, height=22, wrap="word")
+        box.pack(fill="both", expand=True, padx=8, pady=8)
+        out = {"text": ""}
+
+        def ok() -> None:
+            out["text"] = box.get("1.0", "end-1c")
+            top.destroy()
+        ttk.Button(top, text="Use this answer", style="WS.Primary.TButton", command=ok).pack(pady=(0, 8))
+        ui_layout.place_dialog(top, self.win)
+        box.focus_set()
+        top.grab_set()
+        top.wait_window()
+        return out["text"]
+
+    def guide_action(self, key: str, action: str, inputs: dict[str, Any] | None = None) -> Any:
+        """Ask for the inputs an action needs (or take ``inputs``), perform it, show/copy the prompt it yields."""
+        step = next((s for s in self.wc.guide_steps() if s["key"] == key), None)
+        if step is None:
+            self.status_var.set("This step is no longer open.")
+            self.refresh()
+            return None
+        act = next((a for a in step["actions"] if a["id"] == action), None)
+        if act is None:
+            return None
+        inp = dict(inputs or {})
+        if inputs is None:
+            for need in act["needs"]:
+                if need == "text":
+                    inp["text"] = self._ask_text(act["label"])
+                    if not inp["text"].strip():
+                        return None
+                else:
+                    v = simpledialog.askstring(act["label"], self.INPUT_PROMPTS.get(need, need), parent=self.win)
+                    if v is None:
+                        return None
+                    inp[need] = v
+        out = self._guard(lambda: self.wc.guide_perform(key, action, **inp))
+        if out is None:
+            return None
+        if out.get("prompt"):
+            self.last_prompt, self.last_handoff_id = out["prompt"], out.get("handoff_id", "")
+            if action == "copy":
+                self.clipboard(out["prompt"])
+        self.show(self.wc.section)
+        self.status_var.set(out["message"])
+        return out
 
     # -- views
     def _heading(self, parent: ttk.Frame, text: str) -> None:
@@ -366,16 +433,43 @@ class WorkspaceWindow:
             ttk.Button(ab, text=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen).pack(side=side, padx=4)
             ttk.Button(ab, text=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
                        command=lambda: (self.wc.clear_seen(), self.show("overview"))).pack(side=side)
+        qf = ttk.LabelFrame(f, text="Queue of each AI (double-click a step to do it)", padding=6)
+        qf.grid(row=6, column=0, sticky="ew", pady=(0, 6))
+        self.queue_tree = ttk.Treeview(qf, columns=("step",), show="tree headings", style="WS.Treeview", height=6)
+        self.queue_tree.heading("#0", text="Who")
+        self.queue_tree.heading("step", text="Step")
+        self.queue_tree.column("#0", width=200, stretch=False)
+        self.queue_tree.column("step", width=540, stretch=True)
+        self.queues = self.wc.guide_queues()
+        for agent, steps in sorted(self.queues.items(), key=lambda kv: (kv[0] != "you", kv[0])):
+            node = self.queue_tree.insert("", "end", iid="q:" + agent, text="You" if agent == "you" else agent,
+                                          values=(f"{len(steps)} open",), open=True)
+            for st in steps:
+                self.queue_tree.insert(node, "end", iid=st["key"], text="", values=(st["title"],))
+        self.queue_tree.pack(fill="x")
+        self.queue_tree.bind("<Double-1>", lambda _e: self.do_queue_selected())
         act = ttk.LabelFrame(f, text=self.wc.tr(("Recent activity", "فعالیت اخیر")), padding=6)
-        act.grid(row=6, column=0, sticky="ew")
+        act.grid(row=7, column=0, sticky="ew")
         for rec in ov["recent"]:
             ttk.Label(act, text=self.wc.event_text(rec), style="TLabel").pack(anchor=anchor)
         b = ttk.Frame(f, style="WS.TFrame")
-        b.grid(row=7, column=0, sticky="ew", pady=6)
+        b.grid(row=8, column=0, sticky="ew", pady=6)
         ttk.Button(b, text=self.wc.tr(("Design the whole project…", "طراحی کل پروژه…")), style="WS.Primary.TButton",
                    command=self.dialog_charter).pack(side="right" if self.wc.rtl else "left")
         ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(
             side="right" if self.wc.rtl else "left", padx=6)
+
+    def do_queue_selected(self, key: str = "") -> Any:
+        """Primary action of the step selected in the per-AI queue."""
+        if not key:
+            sel = self.queue_tree.selection() if hasattr(self, "queue_tree") else ()
+            key = sel[0] if sel else ""
+        if not key or key.startswith("q:"):
+            return None
+        st = next((s for s in self.wc.guide_steps() if s["key"] == key), None)
+        if st is None:
+            return None
+        return self.guide_action(key, next(a["id"] for a in st["actions"] if a["primary"]))
 
     def dialog_change_request(self, task_id: str, request: str | None = None, route: str | None = None) -> Any:
         """One place for 'fix this task' vs 'new task' vs 're-plan' (spec §12.3). Never edits silently."""

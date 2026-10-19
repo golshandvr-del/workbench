@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "3.4.0",
+  "version": "3.5.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -122,6 +122,10 @@
       "source": "apps/desktop/tests/test_v2_charter.py"
     },
     {
+      "path": "test_v2_guide.py",
+      "source": "apps/desktop/tests/test_v2_guide.py"
+    },
+    {
       "path": "test_repair_diagnostics.py",
       "source": "apps/desktop/tests/test_repair_diagnostics.py"
     },
@@ -178,8 +182,8 @@
       "source": "apps/desktop/tests/test_single_shell.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v3.4.0.md",
-      "source": "docs/release/v3.4.0/WINDOWS_RELEASE_CHECKLIST_v3.4.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v3.5.0.md",
+      "source": "docs/release/v3.5.0/WINDOWS_RELEASE_CHECKLIST_v3.5.0.md"
     },
     {
       "path": "install.ps1",
@@ -456,6 +460,10 @@
     {
       "path": "aiwb/v2/charter.py",
       "source": "apps/desktop/src/aiwb/v2/charter.py"
+    },
+    {
+      "path": "aiwb/v2/guide.py",
+      "source": "apps/desktop/src/aiwb/v2/guide.py"
     },
     {
       "path": "aiwb/ui/__init__.py",

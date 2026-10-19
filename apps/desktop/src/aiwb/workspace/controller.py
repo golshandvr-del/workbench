@@ -495,6 +495,20 @@ class WorkspaceController:
     def start_warning(self, task_id: str) -> str:
         return self.ctl.start_warning(task_id)
 
+    # -- guided loop (3.5.0)
+    def guide(self) -> Any:
+        from ..v2.guide import Guide
+        return Guide(self.ctl)
+
+    def guide_steps(self) -> list[dict[str, Any]]:
+        return self.guide().steps()
+
+    def guide_queues(self) -> dict[str, list[dict[str, Any]]]:
+        return self.guide().queues()
+
+    def guide_perform(self, key: str, action: str, **inputs: Any) -> dict[str, Any]:
+        return self.guide().perform(key, action, **inputs)
+
     def run_action(self, action: str, ref: str = "") -> Any:
         """Inspector / next-action buttons; every one delegates to the existing controller."""
         kind, sel = self.selection
