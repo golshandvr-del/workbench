@@ -5383,7 +5383,7 @@ class WorkbenchApp:
         quick_row.pack(fill="x", pady=(0, 5))
         quick_menu = tk.Menu(self.root, tearoff=False)
         self.quick_instruction_menu = quick_menu
-        self.quick_instruction_button = ttk.Menubutton(quick_row, text="Add quick instruction ▾", menu=quick_menu)
+        self.quick_instruction_button = ttk.Menubutton(quick_row, text="Add quick instruction", menu=quick_menu)
         self.quick_instruction_button.pack(side="left")
         self._refresh_quick_instruction_menu()
         ttk.Label(out, text="Generated prompt (editable; quick instructions append at the end)", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(3, 0))
