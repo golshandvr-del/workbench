@@ -6892,18 +6892,20 @@ class WorkbenchApp:
             self.github_accounts_tree.heading(column, text=title)
             self.github_accounts_tree.column(column, width=width, minwidth=80, stretch=False)
         self.github_accounts_tree.pack(fill="x", expand=False)
-        toolbar = ttk.Frame(panel)
-        toolbar.pack(fill="x", pady=(6, 0))
-        self.github_add_button = ttk.Button(toolbar, text="Add PAT…", command=lambda: self._open_github_pat_dialog())
-        self.github_add_button.pack(side="left")
-        self.github_test_button = ttk.Button(toolbar, text="Test Connection", command=self._test_selected_github_account)
-        self.github_test_button.pack(side="left", padx=(6, 0))
-        self.github_replace_button = ttk.Button(toolbar, text="Replace Credential…", command=self._replace_selected_github_credential)
-        self.github_replace_button.pack(side="left", padx=(6, 0))
-        self.github_refresh_button = ttk.Button(toolbar, text="Refresh Accounts", command=self._refresh_github_accounts)
-        self.github_refresh_button.pack(side="left", padx=(6, 0))
-        self.github_disconnect_button = ttk.Button(toolbar, text="Disconnect", command=self._disconnect_selected_github_account)
-        self.github_disconnect_button.pack(side="right")
+        self.github_account_actions = ui_actions.bar(
+            panel,
+            primary=(("Add PAT…", lambda: self._open_github_pat_dialog(), "Primary.TButton"),
+                     ("Test Connection", self._test_selected_github_account),
+                     ("Refresh Accounts", self._refresh_github_accounts)),
+            more=(("Selected account", (("Replace Credential…", self._replace_selected_github_credential),
+                                        ("Disconnect", self._disconnect_selected_github_account))),),
+            pady=(6, 0))
+        h = self.github_account_actions.handle
+        self.github_add_button = h("Add PAT…")
+        self.github_test_button = h("Test Connection")
+        self.github_refresh_button = h("Refresh Accounts")
+        self.github_replace_button = h("Replace Credential…")
+        self.github_disconnect_button = h("Disconnect")
         if os.name != "nt":
             for button in (self.github_add_button, self.github_test_button, self.github_replace_button, self.github_refresh_button, self.github_disconnect_button):
                 button.configure(state="disabled")
@@ -6960,32 +6962,32 @@ class WorkbenchApp:
         ttk.Label(panel, textvariable=self.github_repository_status_var, style="Hint.TLabel", wraplength=1120).pack(anchor="w", pady=(5, 2))
         self.github_repository_binding_var = tk.StringVar(value="Project binding: no active project")
         ttk.Label(panel, textvariable=self.github_repository_binding_var, style="Accent.TLabel", wraplength=1120).pack(anchor="w", pady=(0, 5))
-        buttons = ttk.Frame(panel)
-        buttons.pack(fill="x")
-        self.github_repository_refresh_button = ttk.Button(buttons, text="Refresh Repositories", command=self._refresh_github_repositories)
-        self.github_repository_refresh_button.pack(side="left")
-        self.github_repository_link_button = ttk.Button(buttons, text="Link to Active Project…", command=self._link_selected_github_repository)
-        self.github_repository_link_button.pack(side="left", padx=(6, 0))
-        self.github_repository_unlink_button = ttk.Button(buttons, text="Unlink Project", command=self._unlink_active_github_repository)
-        self.github_repository_unlink_button.pack(side="left", padx=(6, 0))
-        self.github_repository_open_button = ttk.Button(buttons, text="Open on GitHub", command=self._open_selected_github_repository)
-        self.github_repository_open_button.pack(side="right")
-        advanced = ttk.Frame(panel)
-        advanced.pack(fill="x", pady=(5, 0))
-        self.github_repository_clone_button = ttk.Button(advanced, text="Clone Selected…", command=self._clone_selected_github_repository)
-        self.github_repository_clone_button.pack(side="left")
-        self.github_repository_initialize_button = ttk.Button(advanced, text="Initialize & Link Local…", command=self._initialize_and_link_active_project)
-        self.github_repository_initialize_button.pack(side="left", padx=(6, 0))
-        self.github_repository_review_button = ttk.Button(advanced, text="Initial Push Review…", command=self._review_initial_push_files)
-        self.github_repository_review_button.pack(side="left", padx=(6, 0))
-        self.github_repository_binding_settings_button = ttk.Button(advanced, text="Binding Settings…", command=self._configure_active_github_binding)
-        self.github_repository_binding_settings_button.pack(side="left", padx=(6, 0))
-        self.github_repository_metadata_button = ttk.Button(advanced, text="Refresh Binding Metadata", command=self._refresh_active_binding_metadata)
-        self.github_repository_metadata_button.pack(side="right")
-        self.github_build_center_button = ttk.Button(advanced, text="Build Center…", command=self.open_build_center)
-        self.github_build_center_button.pack(side="right", padx=(0, 6))
-        self.github_sync_build_button = ttk.Button(advanced, text="Sync & Build…", command=self.open_sync_build)
-        self.github_sync_build_button.pack(side="right", padx=(0, 6))
+        self.github_repository_actions = ui_actions.bar(
+            panel,
+            primary=(("Refresh Repositories", self._refresh_github_repositories),
+                     ("Link to Active Project…", self._link_selected_github_repository, "Primary.TButton"),
+                     ("Clone Selected…", self._clone_selected_github_repository),
+                     ("Sync & Build…", self.open_sync_build)),
+            more=(("Selected repository", (("Open on GitHub", self._open_selected_github_repository),)),
+                  ("Active project binding", (("Initialize & Link Local…", self._initialize_and_link_active_project),
+                                              ("Initial Push Review…", self._review_initial_push_files),
+                                              ("Binding Settings…", self._configure_active_github_binding),
+                                              ("Refresh Binding Metadata", self._refresh_active_binding_metadata),
+                                              ("Unlink Project", self._unlink_active_github_repository))),
+                  ("Builds", (("Build Center…", self.open_build_center),))),
+            pady=(0, 0))
+        h = self.github_repository_actions.handle
+        self.github_repository_refresh_button = h("Refresh Repositories")
+        self.github_repository_link_button = h("Link to Active Project…")
+        self.github_repository_clone_button = h("Clone Selected…")
+        self.github_sync_build_button = h("Sync & Build…")
+        self.github_repository_open_button = h("Open on GitHub")
+        self.github_repository_initialize_button = h("Initialize & Link Local…")
+        self.github_repository_review_button = h("Initial Push Review…")
+        self.github_repository_binding_settings_button = h("Binding Settings…")
+        self.github_repository_metadata_button = h("Refresh Binding Metadata")
+        self.github_repository_unlink_button = h("Unlink Project")
+        self.github_build_center_button = h("Build Center…")
         self._refresh_github_repository_account_choices()
         self._render_github_repository_binding_status()
         if os.name != "nt":
