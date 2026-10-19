@@ -114,6 +114,10 @@
       "source": "apps/desktop/tests/test_intake_normalize.py"
     },
     {
+      "path": "test_ui_actions.py",
+      "source": "apps/desktop/tests/test_ui_actions.py"
+    },
+    {
       "path": "test_repair_diagnostics.py",
       "source": "apps/desktop/tests/test_repair_diagnostics.py"
     },
@@ -500,6 +504,10 @@
     {
       "path": "aiwb/ui/layout.py",
       "source": "apps/desktop/src/aiwb/ui/layout.py"
+    },
+    {
+      "path": "aiwb/ui/actions.py",
+      "source": "apps/desktop/src/aiwb/ui/actions.py"
     },
     {
       "path": "aiwb/intake/__init__.py",
