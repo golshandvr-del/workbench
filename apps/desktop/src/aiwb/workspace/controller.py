@@ -46,24 +46,41 @@ UI_KEYS = ("ws_section", "ws_inspector", "ws_sidebar", "ws_theme", "ws_seen")
 
 
 class WorkspaceController:
-    def __init__(self, ctl: ProjectsController, *, tools: dict[str, Callable[[], Any]] | None = None) -> None:
+    def __init__(self, ctl: ProjectsController, *, tools: dict[str, Callable[[], Any]] | None = None,
+                 prefs: Any = None) -> None:
         self.ctl = ctl
         self.tools = tools or {}
+        # 3.0.0: theme / language / mode are application-wide (aiwb.ui.prefs.AppPrefs) when the
+        # workspace is embedded in the main window; the project only keeps its own view state.
+        self.prefs = prefs
+        if prefs is not None:
+            if ctl.lang != prefs.lang:
+                ctl.set_language(prefs.lang)
+            if ctl.mode != prefs.mode:
+                ctl.set_mode(prefs.mode)
         ui = ctl._load_ui()
         self.section = ui.get("ws_section") if ui.get("ws_section") in SECTIONS else "overview"
         self.inspector_open = ui.get("ws_inspector", True) is not False
         self.sidebar_open = ui.get("ws_sidebar", True) is not False
-        self.theme = ui.get("ws_theme") if ui.get("ws_theme") in ("light", "dark") else "light"
+        self._theme = ui.get("ws_theme") if ui.get("ws_theme") in ("light", "dark") else "light"
         self.selection: tuple[str, str] = ("", "")  # (kind, id)
 
     # -- language / view preferences (ui.json only; never project state)
     @property
     def lang(self) -> str:
-        return self.ctl.lang
+        return self.prefs.lang if self.prefs is not None else self.ctl.lang
+
+    @property
+    def theme(self) -> str:
+        return self.prefs.theme if self.prefs is not None else self._theme
+
+    @property
+    def mode(self) -> str:
+        return self.prefs.mode if self.prefs is not None else self.ctl.mode
 
     @property
     def rtl(self) -> bool:
-        return self.ctl.lang == "fa"
+        return self.lang == "fa"
 
     def tr(self, pair: tuple[str, str]) -> str:
         return pair[1] if self.lang == "fa" else pair[0]
@@ -88,14 +105,20 @@ class WorkspaceController:
     def set_theme(self, theme: str) -> None:
         if theme not in ("light", "dark"):
             raise ModelError("theme must be light or dark")
-        self.theme = theme
+        self._theme = theme
         self.ctl._save_ui(ws_theme=theme)
+        if self.prefs is not None:
+            self.prefs.set_theme(theme)
 
     def set_language(self, lang: str) -> None:
         self.ctl.set_language(lang)
+        if self.prefs is not None:
+            self.prefs.set_lang(lang)
 
     def set_mode(self, mode: str) -> None:
         self.ctl.set_mode(mode)
+        if self.prefs is not None:
+            self.prefs.set_mode(mode)
 
     def select(self, kind: str, ref: str) -> None:
         self.selection = (kind, ref)

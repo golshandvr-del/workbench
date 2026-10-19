@@ -35,7 +35,7 @@ def main() -> None:
             app.open_project_workbench()
             w = app.workspace_window
             ctl = w.wc.ctl
-            w.win.geometry("1366x768+0+0")
+            w.top.geometry("1366x768+0+0")
             w.show("team")
             root.update()
             for n in ("GPT paid — work", "Gemini", "Claude", "GPT free"):

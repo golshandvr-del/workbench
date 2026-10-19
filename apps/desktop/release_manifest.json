@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "2.7.0",
+  "version": "3.0.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -162,8 +162,12 @@
       "source": "apps/desktop/tests/test_gui_design_system.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v2.7.0.md",
-      "source": "docs/release/v2.7.0/WINDOWS_RELEASE_CHECKLIST_v2.7.0.md"
+      "path": "test_single_shell.py",
+      "source": "apps/desktop/tests/test_single_shell.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v3.0.0.md",
+      "source": "docs/release/v3.0.0/WINDOWS_RELEASE_CHECKLIST_v3.0.0.md"
     },
     {
       "path": "install.ps1",
@@ -436,6 +440,58 @@
     {
       "path": "aiwb/v2/changes.py",
       "source": "apps/desktop/src/aiwb/v2/changes.py"
+    },
+    {
+      "path": "aiwb/ui/__init__.py",
+      "source": "apps/desktop/src/aiwb/ui/__init__.py"
+    },
+    {
+      "path": "aiwb/ui/appearance.py",
+      "source": "apps/desktop/src/aiwb/ui/appearance.py"
+    },
+    {
+      "path": "aiwb/ui/prefs.py",
+      "source": "apps/desktop/src/aiwb/ui/prefs.py"
+    },
+    {
+      "path": "aiwb/ui/shell.py",
+      "source": "apps/desktop/src/aiwb/ui/shell.py"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/sv.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/sv.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/LICENSE",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/LICENSE"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/README.txt",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/README.txt"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/light.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/light.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/dark.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/dark.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/sprites_light.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/sprites_light.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/sprites_dark.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/sprites_dark.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/spritesheet_light.png",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/spritesheet_light.png"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/spritesheet_dark.png",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/spritesheet_dark.png"
     }
   ],
   "zip_timestamp": [

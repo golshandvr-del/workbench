@@ -18,28 +18,54 @@ from .controller import SECTIONS, WorkspaceController
 
 
 class WorkspaceWindow:
+    """The Project Workbench view.
+
+    3.0.0 (ADR-009): normally *embedded* as a page of the main window (``host`` = a frame
+    of the single shell) — no second window, no own theme/language/mode controls; those are
+    application-wide in Settings. The stand-alone Toplevel form is kept only for tests/tools.
+    """
+
     def __init__(self, parent: tk.Misc, wc: WorkspaceController, *, clipboard: Callable[[str], None],
-                 geometry: str = "") -> None:
+                 geometry: str = "", host: tk.Misc | None = None) -> None:
         self.wc = wc
         self.clipboard = clipboard
         self.last_prompt = ""
         self.last_handoff_id = ""
-        self.win = tk.Toplevel(parent)
-        self.win.title(f"{wc.ctl.root.name} — AI Workbench")
-        self.win.minsize(*theme.MIN_SIZE)
-        self.style = ttk.Style(self.win)
-        self.pal = theme.apply(self.style, wc.theme)
-        self.win.configure(background=self.pal["bg"])
-        self._place(geometry)
+        self.embedded = host is not None
+        if self.embedded:
+            self.win = ttk.Frame(host, style="WS.TFrame")
+            self.win.pack(fill="both", expand=True)
+            self.top = self.win.winfo_toplevel()
+            self.style = ttk.Style(self.win)
+            self.pal = theme.palette(wc.theme)
+        else:
+            self.win = tk.Toplevel(parent)
+            self.top = self.win
+            self.win.title(f"{wc.ctl.root.name} — AI Workbench")
+            self.win.minsize(*theme.MIN_SIZE)
+            self.style = ttk.Style(self.win)
+            self.pal = theme.apply(self.style, wc.theme)
+            self.win.configure(background=self.pal["bg"])
+            self._place(geometry)
         self.layout = theme.layout_for(theme.DEFAULT_SIZE[0])
         self._build()
         self.win.bind("<Configure>", self._on_configure, add="+")
-        self.win.bind("<Control-i>", lambda _e: self.toggle_inspector())
-        self.win.bind("<Control-b>", lambda _e: self.toggle_sidebar())
-        for i, key in enumerate(SECTIONS, start=1):
-            self.win.bind(f"<Alt-Key-{i}>", lambda _e, k=key: self.show(k))
-        self.win.protocol("WM_DELETE_WINDOW", self.close)
+        if not self.embedded:
+            self.win.bind("<Control-i>", lambda _e: self.toggle_inspector())
+            self.win.bind("<Control-b>", lambda _e: self.toggle_sidebar())
+            for i, key in enumerate(SECTIONS, start=1):
+                self.win.bind(f"<Alt-Key-{i}>", lambda _e, k=key: self.show(k))
+            self.win.protocol("WM_DELETE_WINDOW", self.close)
         self.show(wc.section)
+
+    def apply_prefs(self) -> None:
+        """Called by the shell after an application-wide theme/language/mode change."""
+        self.pal = theme.palette(self.wc.theme)
+        self.mode_var.set(self.wc.mode)
+        self.lang_var.set(self.wc.lang)
+        self.theme_var.set(self.wc.theme)
+        self._arrange()
+        self.show(self.wc.section)
 
     # -- geometry
     def _work_area(self) -> tuple[int, int, int, int]:
@@ -60,7 +86,7 @@ class WorkspaceWindow:
     def _on_configure(self, event: Any) -> None:
         if event.widget is not self.win:
             return
-        new = theme.layout_for(event.width)
+        new = theme.layout_for(self.top.winfo_width() if self.embedded else event.width)
         if new != self.layout:
             self.layout = new
             self._arrange()
@@ -84,15 +110,18 @@ class WorkspaceWindow:
         ctl.grid(row=0, column=2, rowspan=2, sticky="e")
         self.mode_var = tk.StringVar(value=self.wc.ctl.mode)
         self.mode_box = ttk.Combobox(ctl, textvariable=self.mode_var, values=["simple", "advanced"], width=9, state="readonly")
-        self.mode_box.pack(side="left", padx=4)
+        if not self.embedded:
+            self.mode_box.pack(side="left", padx=4)
         self.mode_box.bind("<<ComboboxSelected>>", lambda _e: self._set_mode())
         self.lang_var = tk.StringVar(value=self.wc.lang)
         self.lang_box = ttk.Combobox(ctl, textvariable=self.lang_var, values=list(i18n.LANGUAGES), width=4, state="readonly")
-        self.lang_box.pack(side="left", padx=4)
+        if not self.embedded:
+            self.lang_box.pack(side="left", padx=4)
         self.lang_box.bind("<<ComboboxSelected>>", lambda _e: self._set_lang())
         self.theme_var = tk.StringVar(value=self.wc.theme)
         self.theme_box = ttk.Combobox(ctl, textvariable=self.theme_var, values=list(theme.THEMES), width=6, state="readonly")
-        self.theme_box.pack(side="left", padx=4)
+        if not self.embedded:
+            self.theme_box.pack(side="left", padx=4)
         self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._set_theme())
         self.inspector_btn = ttk.Button(ctl, text="ⓘ", width=3, command=self.toggle_inspector)
         self.inspector_btn.pack(side="left", padx=4)
@@ -177,6 +206,8 @@ class WorkspaceWindow:
 
     def _set_theme(self) -> None:
         self.wc.set_theme(self.theme_var.get())
+        if self.embedded:
+            return  # the shell re-themes the whole application (AppPrefs observer)
         self.pal = theme.apply(self.style, self.wc.theme)
         self.win.configure(background=self.pal["bg"])
         self.show(self.wc.section)
@@ -545,7 +576,7 @@ class WorkspaceWindow:
     def _ask_project_brief(self) -> dict[str, Any]:
         dlg = tk.Toplevel(self.win)
         dlg.title(self.wc.tr(("Plan team & tasks", "برنامه‌ریزی تیم و Taskها")))
-        dlg.transient(self.win)
+        dlg.transient(self.top)
         fields = (("goal", ("Goal (required)", "هدف (الزامی)")), ("non_goals", ("Not in scope", "خارج از دامنه")),
                   ("success", ("Success criteria", "معیار موفقیت")), ("platform", ("Platform / technology", "پلتفرم / فناوری")),
                   ("constraints", ("Constraints", "محدودیت‌ها")), ("limits", ("Time / cost limits", "محدودیت زمان / هزینه")))
