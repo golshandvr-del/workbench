@@ -104,7 +104,7 @@ def main() -> None:
             assert c.selected == got["id"]
         finally:
             root.destroy()
-    print("PASS: visual timeline GUI smoke - 2000 events < 300ms, importance circles, version lines, dark, click → Inspector")
+    print("PASS: visual timeline GUI smoke - 2000 events < 300ms, importance circles, version lines, dark, click -> Inspector")
 
 
 if __name__ == "__main__":
