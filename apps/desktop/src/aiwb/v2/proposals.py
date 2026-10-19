@@ -25,7 +25,8 @@ from .tasks import TaskService, readiness, validate_graph
 BLOCK_RE = re.compile(r"(?s)<<<AIWB_MANAGER_PROPOSAL>>>\s*(.*?)\s*<<<AIWB_END_MANAGER_PROPOSAL>>>")
 OPERATIONS = ("create_task", "update_task", "add_dependency", "remove_dependency", "assign_agent", "propose_decision",
               "reorder_priority", "split_task", "close_or_cancel_task", "request_more_evidence", "change_scope",
-              "report_risk", "create_agent", "assign_account")  # last two: Team Proposal (2.4.0, spec §7.3)
+              "report_risk", "create_agent", "assign_account",  # Team Proposal (2.4.0, spec §7.3)
+              "create_milestone")  # Project Charter roadmap (3.4.0)
 INFO_ONLY = ("request_more_evidence", "report_risk")
 MAX_OPS = 60
 
@@ -69,6 +70,11 @@ class ProposalService:
         data = find_block(text)
         if data is None:
             raise ModelError("no AIWB_MANAGER_PROPOSAL block found; the answer is kept in the Inbox as analysis only")
+        return self.import_data(data, response_id=response_id, kind=kind)
+
+    def import_data(self, data: dict[str, Any], *, response_id: str = "", kind: str = "update",
+                    charter: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Import an already parsed proposal (also used for a Project Charter, 3.4.0)."""
         ops = data.get("operations")
         if not isinstance(ops, list) or not ops:
             raise ModelError("the proposal has no operations")
@@ -123,7 +129,7 @@ class ProposalService:
                  "stale_task_ids": sorted(set(changed)), "status": "pending", "source_response_id": response_id,
                  "assumptions": [str(a)[:500] for a in data.get("assumptions", []) or []][:30],
                  "team": team["team"], "team_issues": team["issues"], "team_counts": team["counts"],
-                 "is_team": team["is_team"],
+                 "is_team": team["is_team"], "charter": charter or None,
                  "created_at": now_utc(), "updated_at": now_utc(), "result": {}}
             s["proposals"][pid] = p
             emit(s, "proposal_imported", proposal_id=pid, operations=len(normalized), stale=stale)
@@ -160,6 +166,10 @@ class ProposalService:
             n_valid = sum(1 for op in p["operations"] if op["valid"])
             p["status"] = ("rejected" if not accepted else "accepted" if len(accepted) == n_valid else "partially_accepted")
             p["result"] = {**result, "note": note[:1000], "reviewed_at": now_utc()}
+            if accepted and p.get("charter"):
+                s["settings"]["charter"] = {**p["charter"], "proposal_id": proposal_id, "accepted_at": now_utc(),
+                                            "task_ids": dict(result["created"])}
+                emit(s, "charter_accepted", proposal_id=proposal_id)
             p["updated_at"] = now_utc()
             emit(s, "proposal_reviewed", proposal_id=proposal_id, status=p["status"], applied=sorted(accepted))
             return p
@@ -168,7 +178,7 @@ class ProposalService:
         ops = {o["index"]: o for o in p["operations"]}
         errors, applied, created, notes = [], [], {}, []
         # team operations first, so tasks may name agents created in the same proposal
-        order = {"create_agent": 0, "assign_account": 1}
+        order = {"create_agent": 0, "assign_account": 1, "create_milestone": 3}
         selected = sorted([ops[i] for i in sorted(set(accept)) if i in ops],
                           key=lambda o: (order.get(o["operation"], 2), o["index"]))
         selected_refs = {o.get("temporary_ref") for o in selected if o.get("temporary_ref")}
@@ -289,6 +299,8 @@ class ProposalService:
                                                "enabled": True, "confirmed_at": "", "created_at": now_utc(),
                                                "updated_at": now_utc()}
                     emit(s, "chat_binding_added", chat_binding_id=bid, agent_id=aid, account_profile_id=acc)
+                elif name == "create_milestone":
+                    notes += _apply_milestone(s, raw, created, p["proposal_id"])
                 elif name in INFO_ONLY:
                     notes.append(f"{name}: {str(raw.get('reason') or raw.get('description') or '')[:300]}")
                 applied.append(op["index"])
@@ -316,6 +328,43 @@ class ProposalService:
                 t["blocked_reason"] = readiness(t, s["tasks"])[1]
                 notes.append(f"{t['task_id']} is now blocked: {t['blocked_reason']}")
         return {"applied": applied, "created": created, "errors": errors, "notes": notes, "dry_run": dry_run}
+
+
+def _apply_milestone(s: dict[str, Any], raw: dict[str, Any], created: dict[str, str], proposal_id: str) -> list[str]:
+    """Charter milestone → Milestone (+ a proposed Version when it names one). Only accepted tasks are linked."""
+    from .timeline import _SEMVER
+    title = str(raw.get("title") or "").strip()[:200]
+    if not title:
+        raise ModelError("milestone title is required")
+    notes: list[str] = []
+    refs = [str(r) for r in raw.get("task_refs") or []]
+    task_ids = [created[r] for r in refs if r in created]
+    skipped = [r for r in refs if r not in created and not r.startswith("TASK-")]
+    task_ids += [r for r in refs if r.startswith("TASK-") and r in s["tasks"]]
+    mid = next_id(s, "milestone")
+    s["milestones"][mid] = {"schema_version": SCHEMA_VERSION, "milestone_id": mid, "title": title,
+                            "criteria": [str(c)[:500] for c in raw.get("criteria") or [] if str(c).strip()][:30],
+                            "task_ids": task_ids, "status": "planned", "target_date": "", "accepted_at": "",
+                            "proposal_id": proposal_id, "created_at": now_utc(), "updated_at": now_utc()}
+    emit(s, "milestone_created", milestone_id=mid, task_ids=task_ids)
+    if skipped:
+        notes.append(f"{mid}: tasks {', '.join(skipped)} were not accepted, so they are not linked")
+    label = str(raw.get("version") or "").strip()
+    if label:
+        if not _SEMVER.match(label):
+            raise ModelError(f"{label!r} is not a semantic version")
+        if any(v["label"] == label and v["status"] != "withdrawn" for v in s["versions"].values()):
+            notes.append(f"version {label} already exists; {mid} is not linked to a new version")
+        else:
+            vid = next_id(s, "version")
+            s["versions"][vid] = {"schema_version": SCHEMA_VERSION, "version_id": vid, "label": label, "policy": "semver",
+                                  "status": "proposed", "source": "model", "task_ids": list(task_ids),
+                                  "milestone_ids": [mid], "notes": f"Planned by the Project Charter ({proposal_id})",
+                                  "commit_sha": "", "tag": "", "run_id": "", "artifact": "", "artifact_sha256": "",
+                                  "history": [], "created_at": now_utc(), "updated_at": now_utc()}
+            emit(s, "version_proposed", version_id=vid, label=label, source="model")
+            notes.append(f"{mid} → version {label} ({vid}, proposed)")
+    return notes
 
 
 def _changed_since(state: dict[str, Any], task_id: str, base_revision: int) -> bool:
