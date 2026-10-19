@@ -433,16 +433,43 @@ class WorkspaceWindow:
             ttk.Button(ab, text=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen).pack(side=side, padx=4)
             ttk.Button(ab, text=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
                        command=lambda: (self.wc.clear_seen(), self.show("overview"))).pack(side=side)
+        qf = ttk.LabelFrame(f, text="Queue of each AI (double-click a step to do it)", padding=6)
+        qf.grid(row=6, column=0, sticky="ew", pady=(0, 6))
+        self.queue_tree = ttk.Treeview(qf, columns=("step",), show="tree headings", style="WS.Treeview", height=6)
+        self.queue_tree.heading("#0", text="Who")
+        self.queue_tree.heading("step", text="Step")
+        self.queue_tree.column("#0", width=200, stretch=False)
+        self.queue_tree.column("step", width=540, stretch=True)
+        self.queues = self.wc.guide_queues()
+        for agent, steps in sorted(self.queues.items(), key=lambda kv: (kv[0] != "you", kv[0])):
+            node = self.queue_tree.insert("", "end", iid="q:" + agent, text="You" if agent == "you" else agent,
+                                          values=(f"{len(steps)} open",), open=True)
+            for st in steps:
+                self.queue_tree.insert(node, "end", iid=st["key"], text="", values=(st["title"],))
+        self.queue_tree.pack(fill="x")
+        self.queue_tree.bind("<Double-1>", lambda _e: self.do_queue_selected())
         act = ttk.LabelFrame(f, text=self.wc.tr(("Recent activity", "فعالیت اخیر")), padding=6)
-        act.grid(row=6, column=0, sticky="ew")
+        act.grid(row=7, column=0, sticky="ew")
         for rec in ov["recent"]:
             ttk.Label(act, text=self.wc.event_text(rec), style="TLabel").pack(anchor=anchor)
         b = ttk.Frame(f, style="WS.TFrame")
-        b.grid(row=7, column=0, sticky="ew", pady=6)
+        b.grid(row=8, column=0, sticky="ew", pady=6)
         ttk.Button(b, text=self.wc.tr(("Design the whole project…", "طراحی کل پروژه…")), style="WS.Primary.TButton",
                    command=self.dialog_charter).pack(side="right" if self.wc.rtl else "left")
         ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(
             side="right" if self.wc.rtl else "left", padx=6)
+
+    def do_queue_selected(self, key: str = "") -> Any:
+        """Primary action of the step selected in the per-AI queue."""
+        if not key:
+            sel = self.queue_tree.selection() if hasattr(self, "queue_tree") else ()
+            key = sel[0] if sel else ""
+        if not key or key.startswith("q:"):
+            return None
+        st = next((s for s in self.wc.guide_steps() if s["key"] == key), None)
+        if st is None:
+            return None
+        return self.guide_action(key, next(a["id"] for a in st["actions"] if a["primary"]))
 
     def dialog_change_request(self, task_id: str, request: str | None = None, route: str | None = None) -> Any:
         """One place for 'fix this task' vs 'new task' vs 're-plan' (spec §12.3). Never edits silently."""
