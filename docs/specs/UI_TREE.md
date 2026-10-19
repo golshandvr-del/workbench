@@ -7,7 +7,7 @@ the user sees when the app opens, what each tab opens, and what each section sho
 
 1. **Rail = pages.** The left rail is the only top-level navigation. Simple mode shows Home, Project Workbench,
    Prompt, AI Response, Settings; Advanced adds Project Profile, History, Run & Report, Git / GitHub.
-2. **Each action bar shows at most 4 primary buttons**; everything else is in one grouped **More ▾** menu
+2. **Each action bar shows at most 4 primary buttons**; everything else is in one grouped **More** menu
    (`aiwb/ui/actions.py`, `ActionBar`). Group headers inside the menu say *when* to use the command
    (e.g. "If something went wrong", "After applying").
 3. **Each page/sub-tab shows at most 10 action buttons** in total (navigation entries excluded).
@@ -31,13 +31,13 @@ the user sees when the app opens, what each tab opens, and what each section sho
 
 ## What the user sees — page → section → button → menu item
 
-Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (inside the More ▾ menu above it).
+Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (inside the More menu above it).
 
 ## ⌂ Home
 - [+ New project]
 - [Open selected]
 - [Add existing folder…]
-- [More ▾]
+- [More]
     · Reveal folder
     · Remove from list
 
@@ -58,17 +58,17 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
 
 ## ✎ Prompt
 - [Select recommended context]
-- [More ▾]
+- [More]
     · Why these files?
     · Select all
     · Clear
 - ( ) Include project history in this prompt
 - [Build prompt]
 - [Copy prompt]
-- [More ▾]
+- [More]
     · Save prompt…
     · Add history to prompt
-- [Add quick instruction ▾]
+- [Add quick instruction]
     · Prioritize quality
     · Ask before risky assumptions
     · Windows-first delivery
@@ -85,7 +85,7 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
 - [Paste & detect format]
 - [Load response / ZIP…]
 - [Analyze / preview files…]
-- [More ▾]
+- [More]
     · Import diagnostics…
     · Response Inbox…
     · Context request…
@@ -108,7 +108,7 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
 
 ## ↺ History  *(Advanced)*
 - [Project versions…]
-- [More ▾]
+- [More]
     · Refresh
     · Report error…
 - [Search]
@@ -116,13 +116,13 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
 - ( ) Saved only
 - **Editable entry metadata**
   - [Save metadata / notes]
-  - [More ▾]
+  - [More]
       · Delete selected entry…
 - tab: **Generated prompt**
 - tab: **Model output**
 - tab: **Errors / context requests**
 - [Copy prompt]
-- [More ▾]
+- [More]
     · Edit prompt as new revision…
     · Create repair prompt from this step
 - [Copy model output]
@@ -135,11 +135,11 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
 - **Model-proposed action queue**
   - [Run selected / retry…]
   - [Run all pending…]
-  - [More ▾]
+  - [More]
       · Remove selected
       · Repair prompt from latest failure…
   - [Build continuation handoff…]
-- [More ▾]
+- [More]
     · Refresh report
     · Save report…
 - [Copy report]
@@ -150,7 +150,7 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
   - [Commit changes…]
   - [Push to GitHub…]
   - [Review & Sync…]
-  - [More ▾]
+  - [More]
       · Create work branch
       · Check Git
       · Install Git
@@ -160,7 +160,7 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
     - [Refresh Repositories]
     - [Clone Selected…]
     - [Sync & Build…]
-    - [More ▾]
+    - [More]
         · Open on GitHub
         · Initialize & Link Local…
         · Initial Push Review…
@@ -173,7 +173,7 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
   - **GitHub Accounts · REST API**
     - [Test Connection]
     - [Refresh Accounts]
-    - [More ▾]
+    - [More]
         · Replace Credential…
         · Disconnect
     - [Add PAT…]
@@ -185,7 +185,7 @@ Legend: `[Button]`, `( ) option`, `**section / sub-tab**`, `· menu item` (insid
 - ( ) Advanced
 - [Mobile Companion…]
 - [Restore Manager…]
-- [More ▾]
+- [More]
     · Validation Profiles…
     · Export redacted diagnostics…
     · Open application data folder
