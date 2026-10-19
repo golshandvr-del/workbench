@@ -16,7 +16,7 @@ from typing import Any, Callable, Iterable, Sequence
 
 MAX_PRIMARY = 4
 MAX_VISIBLE_PER_VIEW = 10
-MORE_LABEL = "More ▾"
+MORE_LABEL = "More"
 BUTTON_CLASSES = ("TButton", "Button", "TMenubutton", "Menubutton")
 
 # (label, command) or (label, command, style) ; None = separator
