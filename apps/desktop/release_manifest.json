@@ -436,6 +436,58 @@
     {
       "path": "aiwb/v2/changes.py",
       "source": "apps/desktop/src/aiwb/v2/changes.py"
+    },
+    {
+      "path": "aiwb/ui/__init__.py",
+      "source": "apps/desktop/src/aiwb/ui/__init__.py"
+    },
+    {
+      "path": "aiwb/ui/appearance.py",
+      "source": "apps/desktop/src/aiwb/ui/appearance.py"
+    },
+    {
+      "path": "aiwb/ui/prefs.py",
+      "source": "apps/desktop/src/aiwb/ui/prefs.py"
+    },
+    {
+      "path": "aiwb/ui/shell.py",
+      "source": "apps/desktop/src/aiwb/ui/shell.py"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/sv.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/sv.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/LICENSE",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/LICENSE"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/README.txt",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/README.txt"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/light.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/light.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/dark.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/dark.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/sprites_light.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/sprites_light.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/sprites_dark.tcl",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/sprites_dark.tcl"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/spritesheet_light.png",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/spritesheet_light.png"
+    },
+    {
+      "path": "aiwb/ui/sv_theme/theme/spritesheet_dark.png",
+      "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/spritesheet_dark.png"
     }
   ],
   "zip_timestamp": [
