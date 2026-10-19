@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from aiwb.companion import crypto  # noqa: E402
+from aiwb.companion import crypto, pairing  # noqa: E402
 from aiwb.companion.server import PATH, CompanionServer  # noqa: E402
 from aiwb.companion.service import CompanionError, CompanionService, DeviceRegistry  # noqa: E402
 from aiwb.v2.controller import ProjectsController  # noqa: E402
@@ -25,8 +25,8 @@ class Phone:
     """Minimal client mirroring the Android implementation."""
 
     def __init__(self, svc: CompanionService, uri: str) -> None:
-        _, self.host, self.port, self.pid, secret = uri.split(":")
-        self.secret = crypto.b64d(secret)
+        self.host, self.port, raw = pairing.parse_uri(uri)
+        self.pid, self.secret = pairing.pairing_id(raw), pairing.master_key(raw)
         self.svc = svc
         self.key = os.urandom(32)
         self.device_id = ""
