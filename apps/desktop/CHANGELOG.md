@@ -1,3 +1,19 @@
+## [3.1.0] - 2026-10-19
+
+### Robust, symmetric layout (Roadmap 3.x, Gate 3.1.0, problem P2)
+
+- New `aiwb/ui/layout.py`: `place_dialog` / `keep_on_screen` (dialogs fitted to the screen work area, minimum size never larger than the screen), `FlowBar` (toolbars wrap onto new rows instead of pushing buttons out of the window; mirrored in Persian/RTL), `auto_flow` (converts every existing button row automatically), `ScrollPage` (scrollable page bodies), a shared 4 px spacing grid, and an overflow probe used by the tests.
+- Every dialog is fitted to the work area the first time it is shown.
+- Prompt page: the task setup scrolls and the generated prompt keeps its own resizable pane, so it is usable at 1024×640.
+- Settings page and the Workbench overview/versions/settings views scroll instead of being cut off.
+- Cards are flat surfaces with a 1 px border; button rows inside cards share the card colour (light and dark).
+
+### Validation
+
+- `gui_layout_smoke.py` (Gate 3.1.0): no squeezed or clipped button on any page at 1024×640, 1280×720 and 1920×1080, in English and Persian; an oversized dialog is fitted to the work area. The same probe reports 18 overflow cases on 3.0.0.
+- All 491 unit tests and the previous GUI smoke tests pass.
+- NOT RUN: physical Windows at 125/150/200 % DPI.
+
 ## [3.0.0] - 2026-10-19
 
 ### One application: single shell, one theme, one settings page (Roadmap 3.x, Gate 3.0.0, ADR-009)
