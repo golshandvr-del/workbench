@@ -6725,7 +6725,7 @@ class WorkbenchApp:
         self.git_subtabs.add(accounts_tab, text="GitHub accounts")
         self._make_github_accounts_panel(accounts_tab)
         self._make_github_repository_panel(repos_tab)
-        ttk.Label(tab, text="Git fetch/push authentication continues to use Git's configured credential helper (for example Git Credential Manager). The PAT stored above is for GitHub REST API only and is never inserted into a Git remote URL.", wraplength=1100).pack(anchor="w", pady=(3, 6))
+        ttk.Label(tab, text="Git fetch/push authentication continues to use Git's configured credential helper (for example Git Credential Manager). The PAT stored under the GitHub accounts tab is for the GitHub REST API only and is never inserted into a Git remote URL.", wraplength=1100).pack(anchor="w", pady=(3, 6))
         info_frame = ttk.Frame(tab)
         info_frame.pack(fill="x", pady=(0, 5))
         ttk.Label(info_frame, textvariable=self.git_branch_var, font=("Segoe UI", 9, "bold")).pack(anchor="w")
