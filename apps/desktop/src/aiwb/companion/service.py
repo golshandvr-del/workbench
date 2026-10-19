@@ -20,10 +20,11 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
-from . import crypto
+from . import crypto, pairing as pairing_code
 from .crypto import EnvelopeError, b64d, b64e
 
 PAIRING_TTL_SECONDS = 600
+PAIRING_MAX_FAILURES = 5
 PERMISSIONS = ("view_project", "create_task", "submit_response")
 DEFAULT_PERMISSIONS = ("view_project",)
 MAX_TEXT = 300_000
@@ -107,6 +108,7 @@ class CompanionService:
         self.pairing: dict[str, Any] | None = None
         self.pending: dict[str, dict[str, Any]] = {}   # pairing_id -> request awaiting desktop approval
         self._seen: dict[str, float] = {}               # nonce -> ts (replay protection)
+        self._locked = False                             # last pairing was cancelled after 5 failed attempts
 
     @property
     def on_change(self) -> Callable[[], None]:
@@ -123,17 +125,47 @@ class CompanionService:
 
     # -- pairing (desktop side)
     def start_pairing(self, host: str, port: int) -> str:
+        """Starts a new 10-minute pairing and returns its ``aiwb://pair?h=&p=&k=`` URI (shown as a QR code).
+        The same secret is also available as a 16-character manual code (:meth:`pairing_code`)."""
         with self._lock:
-            pid = "pair-" + secrets.token_hex(6)
-            secret = secrets.token_bytes(32)
-            self.pairing = {"pairing_id": pid, "secret": secret, "expires": self.clock() + PAIRING_TTL_SECONDS,
-                            "used": False, "result": None}
-            return f"aiwb1:{host}:{port}:{pid}:{b64e(secret)}"
+            raw = pairing_code.new_secret()
+            self.pairing = {"pairing_id": pairing_code.pairing_id(raw), "secret": pairing_code.master_key(raw),
+                            "code": pairing_code.code_from_secret(raw), "expires": self.clock() + PAIRING_TTL_SECONDS,
+                            "used": False, "result": None, "failures": 0,
+                            "uri": pairing_code.build_uri(host, port, raw)}
+            self.pending.clear()
+            return self.pairing["uri"]
+
+    def pairing_code(self) -> str:
+        """The manual code of the active pairing, grouped ``ABCD-EFGH-IJKL-MNOP`` ('' if none)."""
+        with self._lock:
+            p = self.pairing
+            return pairing_code.format_code(p["code"]) if p else ""
+
+    def pairing_state(self) -> dict[str, Any]:
+        """For the UI: active / expired / locked (too many failed attempts) / none, and seconds left."""
+        with self._lock:
+            p = self.pairing
+            if not p:
+                return {"state": "locked" if self._locked else "none", "seconds_left": 0}
+            left = max(0, int(p["expires"] - self.clock()))
+            return {"state": "active" if left else "expired", "seconds_left": left, "used": p["used"]}
+
+    def _pair_failure(self) -> None:
+        p = self.pairing
+        if p and not p["used"]:
+            p["failures"] += 1
+            if p["failures"] >= PAIRING_MAX_FAILURES:
+                self.pairing = None
+                self.pending.clear()
+                self._locked = True
+                self.on_change()
 
     def cancel_pairing(self) -> None:
         with self._lock:
             self.pairing = None
             self.pending.clear()
+            self._locked = False
 
     def pending_requests(self) -> list[dict[str, Any]]:
         with self._lock:
@@ -175,7 +207,11 @@ class CompanionService:
                 kid = env["kid"]
                 if kid.startswith("pair-"):
                     p = self.pairing
-                    if not p or p["pairing_id"] != kid or self.clock() > p["expires"]:
+                    if not p or self.clock() > p["expires"]:
+                        return 403, {"error": "pairing_expired"}
+                    if p["pairing_id"] != kid:
+                        # wrong manual code: counts toward the 5-attempt limit
+                        self._pair_failure()
                         return 403, {"error": "pairing_expired"}
                     key = p["secret"]
                 else:
@@ -186,6 +222,8 @@ class CompanionService:
                 req = crypto.open_json(key, env, now=self.clock())
                 self._replay(env)
             except EnvelopeError:
+                if env["kid"].startswith("pair-"):
+                    self._pair_failure()
                 return 401, {"error": "unauthenticated"}
             try:
                 out = self._dispatch(kid, req)

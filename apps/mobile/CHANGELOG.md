@@ -1,5 +1,24 @@
 # AI Workbench Mobile — Changelog
 
+## [0.4.0] - 2026-10-19
+
+### Pairing with QR (roadmap 3.7.0 + mobile 0.4.0)
+- **Built-in QR scanner** (Camera2 + ZXing core): Mobile Companion → *Scan QR code* reads the code shown in
+  Workbench Desktop 3.7.0 → Mobile Companion and pairs at once. The camera permission is optional.
+- **Deep link** `aiwb://pair?h=<ipv4>&p=<port>&k=<code>`: scanning the desktop QR with the system camera opens
+  the app directly on the pairing step.
+- **Short manual code**: desktop address + 16 Base32 characters (`ABCD-EFGH-IJKL-MNOP`, 80 bits; case, spaces and
+  dashes are ignored; 0/1/8 are read as O/I/B). Valid 10 minutes, single use; the desktop cancels it after 5 wrong
+  attempts.
+- The raw code never travels over the network: the envelope key and the pairing id are derived from it with
+  HMAC-SHA256 (`companion-pairing.v2`). The old `aiwb1:` codes are no longer accepted (desktop 3.7.0 required).
+
+### Validation
+- `PairingContractTest`: the shared `packages/contracts/vectors/companion-pairing.v2.json` vectors (same as the
+  desktop's `test_qr_pairing`), invalid codes/links, and ZXing decoding of the QR matrix produced by the desktop's
+  pure-Python encoder (several scales and a padded camera row stride).
+- NOT RUN: scanning on a physical phone.
+
 ## [0.3.0] - 2026-10-18
 
 ### Mobile Companion (Integration Spec §11, P3.1–P3.3)

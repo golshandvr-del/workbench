@@ -80,6 +80,8 @@ android {
 }
 
 dependencies {
+    // ZXing core (pure Java, Apache-2.0): QR decoding for the built-in pairing scanner. No camera UI library.
+    implementation("com.google.zxing:core:3.5.3")
     testImplementation("junit:junit:4.13.2")
     // Real org.json on the JVM test classpath (android.jar only ships stubs).
     testImplementation("org.json:json:20260814")

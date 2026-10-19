@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -162,6 +162,10 @@
       "source": "apps/desktop/tests/test_companion.py"
     },
     {
+      "path": "test_qr_pairing.py",
+      "source": "apps/desktop/tests/test_qr_pairing.py"
+    },
+    {
       "path": "test_workspace.py",
       "source": "apps/desktop/tests/test_workspace.py"
     },
@@ -186,8 +190,8 @@
       "source": "apps/desktop/tests/test_single_shell.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v3.6.0.md",
-      "source": "docs/release/v3.6.0/WINDOWS_RELEASE_CHECKLIST_v3.6.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v3.7.0.md",
+      "source": "docs/release/v3.7.0/WINDOWS_RELEASE_CHECKLIST_v3.7.0.md"
     },
     {
       "path": "install.ps1",
@@ -406,6 +410,10 @@
       "source": "apps/desktop/src/aiwb/companion/crypto.py"
     },
     {
+      "path": "aiwb/companion/pairing.py",
+      "source": "apps/desktop/src/aiwb/companion/pairing.py"
+    },
+    {
       "path": "aiwb/companion/service.py",
       "source": "apps/desktop/src/aiwb/companion/service.py"
     },
@@ -532,6 +540,10 @@
     {
       "path": "aiwb/ui/timeline_canvas.py",
       "source": "apps/desktop/src/aiwb/ui/timeline_canvas.py"
+    },
+    {
+      "path": "aiwb/ui/qr.py",
+      "source": "apps/desktop/src/aiwb/ui/qr.py"
     },
     {
       "path": "aiwb/intake/__init__.py",

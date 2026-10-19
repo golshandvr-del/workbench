@@ -31,14 +31,39 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <Button
+                android:id="@+id/scan_button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/scan_button" />
+
+            <TextView
+                android:id="@+id/manual_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/manual_label"
+                android:textSize="14sp" />
+
+            <EditText
+                android:id="@+id/pair_address"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:autofillHints=""
+                android:hint="@string/pair_address_hint"
+                android:inputType="textUri"
+                android:minHeight="48dp" />
+
             <EditText
                 android:id="@+id/pair_code"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
                 android:autofillHints=""
                 android:hint="@string/pair_code_hint"
-                android:inputType="textNoSuggestions|textVisiblePassword"
+                android:inputType="textNoSuggestions|textVisiblePassword|textCapCharacters"
+                android:maxLength="19"
                 android:minHeight="48dp" />
 
             <Button

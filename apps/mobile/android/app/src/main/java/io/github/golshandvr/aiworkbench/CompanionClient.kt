@@ -2,22 +2,80 @@ package io.github.golshandvr.aiworkbench
 
 import org.json.JSONObject
 
-/** Parsed one-time pairing code `aiwb1:<host>:<port>:<pairing_id>:<secret>` shown by the desktop. */
+/**
+ * Pairing code v2 (roadmap 3.7.0 / mobile 0.4.0), same rules as aiwb/companion/pairing.py:
+ * a 10-byte secret shown as a 16-character Base32 code (`ABCD-EFGH-IJKL-MNOP`) or inside the QR /
+ * deep link `aiwb://pair?h=<ipv4>&p=<port>&k=<code>`. The phone derives
+ *   secret (envelope key) = HMAC-SHA256(raw, "aiwb-pair-key-v2")
+ *   pairingId            = "pair-" + hex(HMAC-SHA256(raw, "aiwb-pair-id-v2"))[:12]
+ * so the raw code itself never travels over the network.
+ */
 data class PairingCode(val host: String, val port: Int, val pairingId: String, val secret: ByteArray) {
     companion object {
         private val HOST = Regex("""^(\d{1,3}\.){3}\d{1,3}$""")
-        private val PID = Regex("""^pair-[0-9a-f]{12}$""")
+        const val CODE_LEN = 16
+        private const val ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
-        /** Only private-LAN / loopback IPv4 hosts are accepted: the companion never talks to the internet. */
+        /** Parses a scanned/opened `aiwb://pair?...` link. Only private-LAN / loopback IPv4 hosts are accepted. */
         fun parse(text: String): PairingCode? {
-            val p = text.trim().split(":")
-            if (p.size != 5 || p[0] != "aiwb1" || !HOST.matches(p[1]) || !PID.matches(p[3])) return null
-            if (!isPrivateLan(p[1])) return null
-            val port = p[2].toIntOrNull()?.takeIf { it in 1..65535 } ?: return null
-            val secret = try { B64Url.decode(p[4]) } catch (e: EnvelopeException) { return null }
-            if (secret.size != 32) return null
-            return PairingCode(p[1], port, p[3], secret)
+            val t = text.trim()
+            if (!t.startsWith("aiwb://pair?")) return null
+            val q = HashMap<String, String>()
+            for (part in t.removePrefix("aiwb://pair?").split("&")) {
+                val i = part.indexOf('=')
+                if (i <= 0) return null
+                q[part.substring(0, i)] = java.net.URLDecoder.decode(part.substring(i + 1), "UTF-8")
+            }
+            return manual(q["h"] ?: return null, q["p"] ?: return null, q["k"] ?: return null)
         }
+
+        /** Manual entry: desktop address (`192.168.1.20` + port) and the 16-character code. */
+        fun manual(host: String, port: String, code: String): PairingCode? {
+            val h = host.trim()
+            if (!HOST.matches(h) || !isPrivateLan(h)) return null
+            val p = port.trim().toIntOrNull()?.takeIf { it in 1..65535 } ?: return null
+            val raw = secretFromCode(code) ?: return null
+            return fromSecret(h, p, raw)
+        }
+
+        /** Accepts `host:port` in one field (what the desktop window shows). */
+        fun manual(address: String, code: String): PairingCode? {
+            val a = address.trim()
+            val i = a.lastIndexOf(':')
+            if (i <= 0) return null
+            return manual(a.substring(0, i), a.substring(i + 1), code)
+        }
+
+        fun fromSecret(host: String, port: Int, raw: ByteArray): PairingCode {
+            val id = CompanionCrypto.hmac(raw, "aiwb-pair-id-v2".toByteArray()).joinToString("") { "%02x".format(it) }.take(12)
+            return PairingCode(host, port, "pair-$id", CompanionCrypto.hmac(raw, "aiwb-pair-key-v2".toByteArray()))
+        }
+
+        /** Case, spaces and dashes are ignored; 0→O, 1→I, 8→B are accepted as typing mistakes. */
+        fun normalizeCode(text: String): String? {
+            val c = text.uppercase().filter { it !in " -_\t\r\n" }
+                .map { when (it) { '0' -> 'O'; '1' -> 'I'; '8' -> 'B'; else -> it } }.joinToString("")
+            return if (c.length == CODE_LEN && c.all { it in ALPHABET }) c else null
+        }
+
+        fun secretFromCode(text: String): ByteArray? {
+            val c = normalizeCode(text) ?: return null
+            val out = ByteArray(10)
+            var buf = 0L
+            var bits = 0
+            var n = 0
+            for (ch in c) {
+                buf = (buf shl 5) or ALPHABET.indexOf(ch).toLong()
+                bits += 5
+                if (bits >= 8) {
+                    bits -= 8
+                    out[n++] = ((buf shr bits) and 0xFF).toByte()
+                }
+            }
+            return out
+        }
+
+        fun formatCode(code: String): String? = normalizeCode(code)?.chunked(4)?.joinToString("-")
 
         fun isPrivateLan(ip: String): Boolean {
             val o = ip.split(".").map { it.toIntOrNull() ?: return false }

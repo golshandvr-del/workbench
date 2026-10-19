@@ -1,3 +1,24 @@
+## [3.7.0] - 2026-10-19
+
+### Pairing with QR (Roadmap 3.x, Gate 3.7.0 + mobile 0.4.0)
+- New `aiwb/ui/qr.py`: a pure-Python QR Code encoder (ISO/IEC 18004 byte mode, versions 1-10, levels L/M/Q/H,
+  all 8 masks with penalty scoring) drawn on a Tk Canvas - no PIL, no third-party code. The code is always black
+  on white, also in the dark theme, so phone cameras can read it.
+- New `aiwb/companion/pairing.py` (pairing code v2): one 80-bit secret shown as a QR / deep link
+  `aiwb://pair?h=<ipv4>&p=<port>&k=<code>` and as a 16-character Base32 manual code `ABCD-EFGH-IJKL-MNOP`.
+  The envelope key and the pairing id are derived from the secret with HMAC-SHA256, so the code never travels.
+- Pairing is valid 10 minutes, single use, and is cancelled after 5 failed attempts (wrong code or forged
+  envelope); the window shows a countdown and the lockout.
+- Mobile Companion window: QR code, manual code, desktop address, *Copy link*.
+- Breaking: the old `aiwb1:` pairing codes are replaced; pair phones with AI Workbench Mobile 0.4.0.
+
+### Validation
+- `test_qr_pairing.py`: Reed-Solomon reference vector, structure, version selection, every version 1-10 x level
+  x mask decoded by the reference decoder zbar (required on CI Linux via `AIWB_REQUIRE_QR_DECODER=1`), shared
+  `companion-pairing.v2` vectors, 5-attempt lockout, expiry.
+- `gui_companion_smoke.py`: QR drawn and manual code shown; pairing over the real LAN endpoint with the v2 code.
+- NOT RUN: scanning the code with a physical phone.
+
 ## [3.6.0] - 2026-10-19
 
 ### Visual timeline (Roadmap 3.x, Gate 3.6.0)
