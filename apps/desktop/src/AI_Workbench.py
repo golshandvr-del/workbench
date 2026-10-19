@@ -52,6 +52,8 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.intake import normalize as intake_normalize
+from aiwb.intake import continue_prompt as intake_continue_prompt, truncation_report as intake_truncation_report
 from aiwb.ui import layout as ui_layout
 from aiwb.workspace import theme as tokens
 from aiwb.ui.prefs import AppPrefs
@@ -71,7 +73,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "3.1.0"
+APP_VERSION = "3.2.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -82,8 +84,9 @@ GEMINI_BLOCK_PROTOCOL = "workbench-files-v1"
 GEMINI_ACTION_PROTOCOL = "workbench-actions-v1"
 OUTPUT_FORMAT_JSON = "Strict JSON manifest (GPT / general)"
 OUTPUT_FORMAT_GPT_ZIP = "GPT downloadable ZIP + usage guide"
-OUTPUT_FORMAT_GEMINI = "Gemini named code blocks"
-OUTPUT_FORMAT_OPTIONS = (OUTPUT_FORMAT_GPT_ZIP, OUTPUT_FORMAT_JSON, OUTPUT_FORMAT_GEMINI)
+OUTPUT_FORMAT_GEMINI = "AIWB file blocks — any chat (recommended)"
+OUTPUT_FORMAT_GEMINI_LEGACY = "Gemini named code blocks"
+OUTPUT_FORMAT_OPTIONS = (OUTPUT_FORMAT_GEMINI, OUTPUT_FORMAT_GPT_ZIP, OUTPUT_FORMAT_JSON)
 WORKFLOW_STAGES = (
     "Draft", "Prompt Ready", "Response Received", "Validated", "Files Applied",
     "Actions Completed", "Tests Run", "Verified", "Import Failed", "Apply Failed",
@@ -985,7 +988,7 @@ def _looks_like_json_response(raw_text: str) -> bool:
     )
 
 
-def validate_any_model_response(raw_text: str, root: Path) -> tuple[dict[str, Any], list[FileChange], str]:
+def _validate_any_model_response_raw(raw_text: str, root: Path) -> tuple[dict[str, Any], list[FileChange], str]:
     """Auto-detect versioned JSON or explicit AIWB file/action blocks, then validate everything."""
     if has_top_level_aiwb_file_marker(raw_text):
         payload = parse_aiwb_file_blocks(raw_text)
@@ -1205,7 +1208,7 @@ def parse_model_zip_archive(archive_path: Path | str, root: Path) -> tuple[dict[
     return validated, changes, artifact_info
 
 
-def detect_model_response_format(raw_text: str) -> str:
+def _detect_model_response_format_raw(raw_text: str) -> str:
     """Lightweight response classification for feedback immediately after pasting."""
     if not isinstance(raw_text, str) or not raw_text.strip():
         raise WorkbenchError("The clipboard has no text response.")
@@ -1237,6 +1240,34 @@ def detect_model_response_format(raw_text: str) -> str:
         raise
     return f"labeled Markdown code blocks ({len(payload['files'])} file(s); paths require review)"
 
+
+
+def validate_any_model_response(raw_text: str, root: Path) -> tuple[dict[str, Any], list[FileChange], str]:
+    """Raw first; if that fails, retry once on the chat-copy-normalized text (3.2.0)."""
+    try:
+        return _validate_any_model_response_raw(raw_text, root)
+    except WorkbenchError as first_error:
+        cleaned = intake_normalize(raw_text) if isinstance(raw_text, str) else None
+        if cleaned is None or not cleaned.changed:
+            raise
+        try:
+            payload, changes, format_name = _validate_any_model_response_raw(cleaned.text, root)
+        except WorkbenchError:
+            raise first_error from None
+        return payload, changes, f"{format_name} (cleaned: {', '.join(f.split(':')[0] for f in cleaned.fixes)})"
+
+
+def detect_model_response_format(raw_text: str) -> str:
+    try:
+        return _detect_model_response_format_raw(raw_text)
+    except WorkbenchError as first_error:
+        cleaned = intake_normalize(raw_text) if isinstance(raw_text, str) else None
+        if cleaned is None or not cleaned.changed:
+            raise
+        try:
+            return _detect_model_response_format_raw(cleaned.text) + " — cleaned copy artefacts"
+        except WorkbenchError:
+            raise first_error from None
 
 def validate_model_response(raw_text: str | dict[str, Any], root: Path, *, allow_empty_files: bool = False) -> tuple[dict[str, Any], list[FileChange]]:
     """Validate model text; only trusted ZIP adapter may allow empty text list for binary artifacts."""
@@ -3162,7 +3193,7 @@ def response_delivery_rule(format_hint: str) -> str:
             "it is control metadata and must not be placed in the project. Do not use Base64 or claim a nonexistent attachment. "
             "The ZIP transport supports reviewed writes/binary artifacts, not typed Delete/Rename/Move. If those operations are required or a real ZIP cannot be attached, use one strict workbench-v3 JSON object; workbench-v2 remains supported for write-only text responses."
         )
-    if "gemini" in hint or "ai workbench file/action blocks" in hint or GEMINI_BLOCK_PROTOCOL.casefold() in hint or "named code blocks" in hint:
+    if "gemini" in hint or "aiwb file blocks" in hint or "ai workbench file/action blocks" in hint or GEMINI_BLOCK_PROTOCOL.casefold() in hint or "named code blocks" in hint:
         return (
             'Return complete text files using <<<AIWB_FILE path="relative/path.ext" action="write" body="raw">>> blocks. '
             "PREFERRED v1.10 BLOCK FORM: put the exact raw file text immediately after the header, with NO Markdown fence, "
@@ -4326,9 +4357,11 @@ class WorkbenchApp:
         self.github_repository_page_count = 0
         self.github_repository_account_choices: dict[str, str] = {}
         self.github_binding_migration_notice: str | None = None
-        saved_output_format = self.settings_data.get("output_format", OUTPUT_FORMAT_GPT_ZIP)
+        saved_output_format = self.settings_data.get("output_format", OUTPUT_FORMAT_GEMINI)
+        if saved_output_format == OUTPUT_FORMAT_GEMINI_LEGACY:
+            saved_output_format = OUTPUT_FORMAT_GEMINI
         if saved_output_format not in OUTPUT_FORMAT_OPTIONS:
-            saved_output_format = OUTPUT_FORMAT_GPT_ZIP
+            saved_output_format = OUTPUT_FORMAT_GEMINI
         self.output_format_var = tk.StringVar(value=saved_output_format)
         self.project_history_context_var = tk.BooleanVar(value=False)
         self.last_workspace: str | None = self.settings_data.get("last_workspace")
@@ -5326,7 +5359,7 @@ class WorkbenchApp:
         ttk.Label(playbook_row, text="Adds a review-first workflow and acceptance rules to the prompt.", style="Hint.TLabel").pack(side="left", padx=(8, 0))
         ttk.Label(
             right,
-            text="Recommended: GPT ZIP for multi-file projects when downloadable artifacts are available; the ZIP should include README.md and AIWB_RESPONSE.json control metadata (actions may be empty). Choose Gemini named blocks for write-only file replies, or strict workbench-v3 JSON when typed Delete/Rename/Move operations may be needed. Planning stages always use JSON.",
+            text="Recommended: AIWB file blocks — plain text that survives copy/paste from ChatGPT, Gemini and Claude. Use GPT ZIP when the chat can attach a real downloadable ZIP, or strict workbench-v3 JSON when typed Delete/Rename/Move operations are needed. Planning stages always use JSON.",
             style="Hint.TLabel", wraplength=700, justify="left",
         ).pack(anchor="w", pady=(0, 5))
         task_buttons = ttk.Frame(setup.body)
@@ -8813,6 +8846,11 @@ class WorkbenchApp:
             hints = context_request_service.free_text_hints(raw) if not archive_selected else []
             if hints:
                 inbox_note += " The answer seems to ask for: " + ", ".join(hints[:5]) + " (suggestion only; use Context request… to prepare them)."
+            if not archive_selected and self._offer_continue_prompt(raw):
+                self.set_status("The answer was cut off: a 'continue' prompt is on the clipboard — paste it into the same chat. No project files were applied." + inbox_note)
+                self.refresh_workflow_status()
+                self.show_import_diagnostics(error_override=str(exc))
+                return
             self.set_status("Response rejected; diagnostics are available and no project files were applied." + inbox_note)
             self.refresh_workflow_status()
             self.show_import_diagnostics(error_override=str(exc))
@@ -8847,6 +8885,24 @@ class WorkbenchApp:
             messagebox.showwarning("Response history not saved", f"The response parsed successfully, but its exact snapshot/history could not be saved. Workbench will block applying this response until it can record it reliably. Resolve the storage problem and analyze the response again.\n\n{exc}")
         self.refresh_workflow_status()
         self._show_diff_window(payload, changes, format_name)
+
+    def _offer_continue_prompt(self, raw: str) -> bool:
+        """Truncated answer → copy a precise 'continue from where you stopped' prompt (3.2.0)."""
+        try:
+            report = intake_truncation_report(raw)
+        except Exception as exc:
+            log_exception(type(exc), exc, exc.__traceback__)
+            return False
+        if not report.truncated:
+            return False
+        prompt = intake_continue_prompt(report)
+        self.last_continue_prompt = prompt
+        try:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(prompt)
+        except tk.TclError:
+            pass
+        return True
 
     def make_projects_controller(self, root: Path) -> ProjectsController:
         """V2 controller for this project; the state publisher is bound only when a GitHub binding exists."""

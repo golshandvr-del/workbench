@@ -1,3 +1,14 @@
+## [3.2.0] - 2026-10-19
+### Reliable intake of model output (Roadmap 3.x, Gate 3.2.0, problem P7)
+- New `aiwb/intake/normalize.py`, used as a fallback before every parser (raw text is always tried first, so an answer that parsed before can never be broken): BOM, NBSP, zero-width characters, CR/CRLF; smart quotes, Markdown escapes (`\<\<\<AIWB\_FILE`), HTML entities, bold/backtick wrappers and stray spaces on AIWB marker lines only (file bodies untouched); an outer fence around the blocks, even after leading prose; JSON comments, trailing commas, smart quotes and Python literals outside strings.
+- Truncation detection: unclosed block, unbalanced fence, cut JSON. A precise "continue from where you stopped" prompt (listing complete files) is copied to the clipboard; nothing is applied.
+- The default output format is now "AIWB file blocks — any chat (recommended)"; the old "Gemini named code blocks" setting is migrated.
+- Language policy: the UI is English-only for now (Desktop and Android).
+
+### Validation
+- Shared corpus `packages/contracts/fixtures/intake/chat-copy-corpus.v1.json`: 36 real breakage cases, 6 healthy cases (stay unchanged), 3 truncated cases. `test_intake_normalize.py` and `gui_intake_smoke.py` (Gate 3.2.0).
+- NOT RUN: a live paste from real ChatGPT/Gemini/Claude chats.
+
 ## [3.1.0] - 2026-10-19
 
 ### Robust, symmetric layout (Roadmap 3.x, Gate 3.1.0, problem P2)
