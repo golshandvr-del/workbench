@@ -66,6 +66,7 @@ def apply(root: tk.Misc, theme_name: str) -> dict[str, str]:
         style.theme_use("clam")
     p = tokens.palette(name)
     _configure_shared(style, p)
+    _rail_elements(style, name, p)
     tokens.apply(style, name)  # WS.* styles (keeps the active element theme)
     try:
         root.winfo_toplevel().configure(background=p["bg"])
@@ -134,6 +135,29 @@ def _configure_shared(style: ttk.Style, p: dict[str, str]) -> None:
     style.configure("CardTitle.TLabel", background=p["surface"], foreground=p["text"], font=f("section_title"))
     style.configure("Card.TRadiobutton", background=p["surface"], foreground=p["text"])
     style.configure("Card.TCheckbutton", background=p["surface"], foreground=p["text"])
+
+
+def _rail_elements(style: ttk.Style, name: str, p: dict[str, str]) -> None:
+    """Navigation items: a Fluent pill — subtle on hover, filled when selected, accent text."""
+    ns = "sv_light" if name == "light" else "sv_dark"
+    try:
+        if not str(style.theme_use()).startswith("sun-valley"):
+            raise tk.TclError("no fluent")
+        img = lambda key: style.tk.eval(f"set ::ttk::theme::{ns}::I({key})")  # noqa: E731
+        elem = f"Rail{name.title()}.button"
+        if elem not in style.element_names():
+            style.element_create(elem, "image", img("empty"),
+                                 ("selected", "active", img("button-pressed")), ("selected", img("button-hover")),
+                                 ("active", img("button-hover")), border=4, sticky="nsew")
+        for st in ("Rail.Toolbutton", "Pivot.Toolbutton"):
+            style.layout(st, [(elem, {"sticky": "nswe", "children": [
+                ("Toolbutton.padding", {"sticky": "nswe", "children": [
+                    ("Toolbutton.label", {"side": "left", "expand": 1})]})]})])
+    except tk.TclError:
+        pass
+    style.map("Rail.Toolbutton", foreground=[("selected", p["accent"])],
+              font=[("selected", (*tokens.font("body")[:2], "bold"))])
+    style.map("Pivot.Toolbutton", foreground=[("selected", p["accent"])])
 
 
 def classic_options(widget: tk.Misc, theme_name: str) -> dict[str, Any]:
