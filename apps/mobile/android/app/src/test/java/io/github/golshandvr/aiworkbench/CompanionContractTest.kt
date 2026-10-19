@@ -51,15 +51,14 @@ class CompanionContractTest {
 
     @Test fun pairingCodeOnlyForLocalNetwork() {
         val s = B64Url.encode(ByteArray(32))
-        assertNotNull(PairingCode.parse("aiwb1:192.168.1.20:47821:pair-0123456789ab:$s"))
-        assertNotNull(PairingCode.parse("aiwb1:10.0.0.5:47821:pair-0123456789ab:$s"))
-        assertNotNull(PairingCode.parse("aiwb1:172.20.1.1:1:pair-0123456789ab:$s"))
-        assertNull(PairingCode.parse("aiwb1:8.8.8.8:47821:pair-0123456789ab:$s"), "public IP refused")
-        assertNull(PairingCode.parse("aiwb1:172.32.0.1:47821:pair-0123456789ab:$s"))
-        assertNull(PairingCode.parse("aiwb1:192.168.1.20:0:pair-0123456789ab:$s"))
-        assertNull(PairingCode.parse("aiwb1:192.168.1.20:47821:pair-xyz:$s"))
-        assertNull(PairingCode.parse("aiwb1:192.168.1.20:47821:pair-0123456789ab:" + B64Url.encode(ByteArray(16))))
-        assertNull(PairingCode.parse("aiwb2:192.168.1.20:47821:pair-0123456789ab:$s"))
+        val k = "AAISEM2EKVTHPCEZ"
+        assertNotNull(PairingCode.parse("aiwb://pair?h=192.168.1.20&p=47821&k=$k"))
+        assertNotNull(PairingCode.parse("aiwb://pair?h=10.0.0.5&p=47821&k=$k"))
+        assertNotNull(PairingCode.parse("aiwb://pair?h=172.20.1.1&p=1&k=$k"))
+        assertNull(PairingCode.parse("aiwb://pair?h=8.8.8.8&p=47821&k=$k"), "public IP refused")
+        assertNull(PairingCode.parse("aiwb1:192.168.1.20:47821:pair-0123456789ab:$s"), "v1 codes are no longer accepted")
+        assertNotNull(PairingCode.manual("192.168.1.20:47821", "aais-em2e-kvth-pcez"))
+        assertNull(PairingCode.manual("192.168.1.20", "AAIS-EM2E-KVTH-PCEZ"), "port required")
         val p = Pairing("192.168.1.20", 47821, "dev-abc", ByteArray(32) { 7 })
         assertEquals(p.deviceId, Pairing.decode(p.encode())!!.deviceId)
         assertNull(Pairing.decode("{\"host\":\"1.2.3.4\",\"port\":1,\"device_id\":\"d\",\"key\":\"$s\"}"))
@@ -99,7 +98,7 @@ class CompanionContractTest {
     }
 
     @Test fun fullFlowPairApproveViewCreateAndRefusals() {
-        val code = PairingCode.parse("aiwb1:192.168.1.20:47821:pair-0123456789ab:" + B64Url.encode(CompanionCrypto.randomBytes(32)))!!
+        val code = PairingCode.fromSecret("192.168.1.20", 47821, CompanionCrypto.randomBytes(10))
         val desk = FakeDesktop(code)
         val client = CompanionClient({ _, _, body -> desk.handle(body) }, now = { 1_792_300_000L })
         val dk = CompanionCrypto.randomBytes(32)
