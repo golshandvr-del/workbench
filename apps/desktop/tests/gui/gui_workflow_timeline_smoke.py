@@ -34,7 +34,7 @@ def main() -> None:
             app.open_project_workbench()
             w = app.workspace_window
             ctl = w.wc.ctl
-            w.win.geometry("1366x768+0+0")
+            w.top.geometry("1366x768+0+0")
             p = ctl.project
             acc = p.resources.add_account({"display_name": "GPT paid", "provider": "GPT"})
             p.resources.bind_chat("agent-implementer", acc["account_profile_id"], chat_name="impl chat")

@@ -53,7 +53,7 @@ def main() -> None:
             assert w.dialog_bind_chat("agent-implementer", "ACC-0001", "impl chat")
             rev, n = ctl.project.store.revision, ctl.project.store.ledger.count()
             for (wd, ht) in SIZES:
-                w.win.geometry(f"{wd}x{ht}+0+0")
+                w.top.geometry(f"{wd}x{ht}+0+0")
                 for _ in range(5):
                     root.update()
                 for s in SECTIONS:
@@ -64,7 +64,7 @@ def main() -> None:
                         assert inside(w.inspector, w.win), (wd, ht, s, "inspector out of window")
                 # The window manager may clamp the requested size to the screen (CI runners are small):
                 # the layout must follow the *actual* width, which is what users see.
-                real = w.win.winfo_width()
+                real = w.top.winfo_width()
                 expect = "side" if real >= 1100 else "stacked"
                 assert w.layout["inspector"] == expect, (wd, real, w.layout)
             # inspector + sidebar collapse
@@ -77,7 +77,7 @@ def main() -> None:
             assert not w.sidebar.winfo_ismapped()
             w.toggle_sidebar()
             # task selection → inspector actions → prompt (not sent)
-            w.win.geometry("1366x768+0+0")
+            w.top.geometry("1366x768+0+0")
             wc.select("task", t["task_id"])
             w.show("tasks")
             root.update()

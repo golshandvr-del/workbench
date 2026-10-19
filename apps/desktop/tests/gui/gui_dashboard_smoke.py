@@ -41,7 +41,7 @@ def main() -> None:
             fx_data = fx.build_into(ctl)
             sp = fx_data["special"]
             for size in ("1366x768+0+0", "1280x720+0+0"):
-                w.win.geometry(size)
+                w.top.geometry(size)
                 w.show("team")
                 root.update()
                 assert w.team_attention_only.get(), "10 agents should start with 'needs action only'"
@@ -51,7 +51,7 @@ def main() -> None:
                 assert len(w.fill_team()) >= 10
                 assert "needs action" in w.team_status_var.get()
                 # the team view must not force the window wider than requested (a virtual screen may be smaller)
-                assert w.win.winfo_width() <= int(size.split("x")[0]) + 2, (size, w.win.winfo_width())
+                assert w.top.winfo_width() <= int(size.split("x")[0]) + 2, (size, w.top.winfo_width())
             rev = ctl.state()["state_revision"]
             events = ctl.project.store.ledger.count()
             w.show("overview")
