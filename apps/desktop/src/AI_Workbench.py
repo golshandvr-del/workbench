@@ -6682,20 +6682,21 @@ class WorkbenchApp:
         self.action_tree.configure(yscrollcommand=queue_scroll.set)
         self.action_tree.pack(side="left", fill="x", expand=True)
         queue_scroll.pack(side="right", fill="y")
-        queue_buttons = ttk.Frame(queue_box)
-        queue_buttons.pack(fill="x", pady=(5, 0))
-        ttk.Button(queue_buttons, text="Run selected / retry…", command=lambda: self.run_queued_actions(all_pending=False)).pack(side="left")
-        ttk.Button(queue_buttons, text="Run all pending…", command=lambda: self.run_queued_actions(all_pending=True)).pack(side="left", padx=(6, 0))
-        ttk.Button(queue_buttons, text="Remove selected", command=self.remove_selected_actions).pack(side="left", padx=(6, 0))
-        ttk.Button(queue_buttons, text="Repair prompt from latest failure…", command=self.show_latest_repair_prompt).pack(side="right", padx=(0, 6))
-        ttk.Button(queue_buttons, text="Build continuation handoff…", style="Primary.TButton", command=self.show_continuation_handoff).pack(side="right")
+        self.queue_actions = ui_actions.bar(
+            queue_box,
+            primary=(("Run selected / retry…", lambda: self.run_queued_actions(all_pending=False)),
+                     ("Run all pending…", lambda: self.run_queued_actions(all_pending=True)),
+                     ("Build continuation handoff…", self.show_continuation_handoff, "Primary.TButton")),
+            more=(("Queue", (("Remove selected", self.remove_selected_actions),)),
+                  ("After a failure", (("Repair prompt from latest failure…", self.show_latest_repair_prompt),))),
+            pady=(5, 0))
 
         report_toolbar = ttk.Frame(tab)
         report_toolbar.pack(fill="x", pady=(0, 4))
         ttk.Label(report_toolbar, text="Execution report & latest results", font=("Segoe UI", 10, "bold")).pack(side="left")
-        ttk.Button(report_toolbar, text="Refresh report", command=self.refresh_report).pack(side="right")
-        ttk.Button(report_toolbar, text="Save report…", command=self.save_report).pack(side="right", padx=(0, 6))
-        ttk.Button(report_toolbar, text="Copy report", command=self.copy_report).pack(side="right", padx=(0, 6))
+        ui_actions.ActionBar(report_toolbar, primary=(("Copy report", self.copy_report),),
+                             more=(("Report", (("Refresh report", self.refresh_report), ("Save report…", self.save_report))),),
+                             side="right").pack(side="right")
         report_frame = ttk.Frame(tab)
         report_frame.pack(fill="both", expand=True)
         self.report_text = tk.Text(report_frame, wrap="word", font=("Consolas", 9), state="normal")
