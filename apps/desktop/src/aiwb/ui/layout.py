@@ -122,11 +122,6 @@ def row_style(frame: tk.Misc) -> str:
         parent = str(frame.cget("style")) or frame.winfo_class()
         style = ttk.Style(frame)
         bg = style.lookup(parent, "background") or style.lookup("TFrame", "background")
-        try:  # image-drawn frames (Fluent Card.field) show the page background, not the configured one
-            if "Card.field" in str(style.layout(parent)):
-                bg = style.lookup("TFrame", "background") or bg
-        except tk.TclError:
-            pass
         name = f"FlowRow{abs(hash(parent)) % 10_000}.TFrame"
         style.configure(name, background=bg, borderwidth=0, relief="flat", padding=0)
         return name
