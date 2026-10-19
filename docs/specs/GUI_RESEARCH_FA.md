@@ -1,6 +1,6 @@
 # تحقیق طراحی GUI — موج اول تا سوم (GUI roadmap، مراحل 1، 2 و 4)
 
-**تاریخ:** 2026-10-19 · **مرجع:** `docs/specs/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md` §2 و §5 · **ورودی:** `docs/audit/GUI_AUDIT_FA.md`
+**تاریخ:** 2026-10-19 · **مرجع:** `docs/roadmap/archive/AI_Workbench_GUI_Only_Roadmap_FA_v1.0.md` §2 و §5 · **ورودی:** `docs/audit/GUI_AUDIT_FA.md`
 
 این سند منابع را به تصمیم‌های مشخص برای Workbench تبدیل می‌کند. هر اصل به مشکل مشخصی از ممیزی (`IA-*`، `VH-*`، `CC-*`، `RA-*`) وصل است. چیدمان و برند هیچ مرجعی کپی نمی‌شود.
 
