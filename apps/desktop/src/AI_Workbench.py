@@ -51,6 +51,9 @@ from aiwb import context_request as context_request_service
 from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
+from aiwb.ui import appearance
+from aiwb.ui.prefs import AppPrefs
+from aiwb.ui.shell import AppShell, build_settings_page
 from aiwb.v2.publisher import GitHubStateClient, StatePublisher
 from aiwb.git.service import parse_git_status_porcelain as _parse_git_status_porcelain
 from aiwb.github import (
@@ -4368,38 +4371,15 @@ class WorkbenchApp:
             self.root.after(700, lambda value=notice: messagebox.showwarning("Repository binding migration", value))
 
     def _configure_styles(self) -> None:
-        """Apply a restrained, consistent desktop theme using only ttk/Tk."""
-        style = ttk.Style(self.root)
+        """3.0.0 (ADR-009): one application-wide Fluent appearance from aiwb.ui.appearance.
+
+        The theme preference is read early from settings.json; the AppShell owns later changes."""
         try:
-            if "clam" in style.theme_names():
-                style.theme_use("clam")
-        except tk.TclError:
-            pass
-        self.root.configure(background="#F3F6FB")
-        style.configure("TFrame", background="#F3F6FB")
-        style.configure("Card.TFrame", background="#FFFFFF", relief="flat")
-        style.configure("Header.TFrame", background="#132238")
-        style.configure("TLabel", background="#F3F6FB", foreground="#1F2937", font=("Segoe UI", 9))
-        style.configure("HeaderTitle.TLabel", background="#132238", foreground="#FFFFFF", font=("Segoe UI", 19, "bold"))
-        style.configure("HeaderSub.TLabel", background="#132238", foreground="#C5D1E0", font=("Segoe UI", 9))
-        style.configure("SectionTitle.TLabel", font=("Segoe UI", 13, "bold"), foreground="#172B4D", background="#F3F6FB")
-        style.configure("Hint.TLabel", font=("Segoe UI", 8), foreground="#667085", background="#F3F6FB")
-        style.configure("CardHint.TLabel", font=("Segoe UI", 8), foreground="#667085", background="#FFFFFF")
-        style.configure("FieldTitle.TLabel", font=("Segoe UI", 9, "bold"), foreground="#24364B", background="#FFFFFF")
-        style.configure("Tooltip.TLabel", background="#172B4D", foreground="#FFFFFF", font=("Segoe UI", 9))
-        style.configure("Primary.TButton", font=("Segoe UI", 9, "bold"), padding=(12, 7), background="#2563EB", foreground="#FFFFFF")
-        style.map("Primary.TButton", background=[("active", "#1D4ED8"), ("pressed", "#1E40AF")], foreground=[("disabled", "#D0D5DD")])
-        style.configure("TButton", font=("Segoe UI", 9), padding=(9, 6))
-        style.configure("TEntry", padding=(6, 5))
-        style.configure("TCombobox", padding=(5, 4))
-        style.configure("TNotebook", background="#F3F6FB", borderwidth=0, tabmargins=(2, 5, 2, 0))
-        style.configure("TNotebook.Tab", padding=(13, 8), font=("Segoe UI", 9, "bold"), background="#E7ECF4")
-        style.map("TNotebook.Tab", background=[("selected", "#FFFFFF"), ("active", "#DCE7F7")], foreground=[("selected", "#1D4ED8")])
-        style.configure("Treeview", font=("Segoe UI", 9), rowheight=29, background="#FFFFFF", fieldbackground="#FFFFFF", bordercolor="#D9E1EC")
-        style.configure("Treeview.Heading", font=("Segoe UI", 9, "bold"), background="#E9EEF6", foreground="#344054", padding=(7, 7))
-        style.map("Treeview", background=[("selected", "#D9E8FF")], foreground=[("selected", "#172B4D")])
-        style.configure("TLabelframe", background="#F3F6FB", bordercolor="#D9E1EC")
-        style.configure("TLabelframe.Label", background="#F3F6FB", foreground="#344054", font=("Segoe UI", 9, "bold"))
+            data = load_settings_with_recovery(app_data_dir() / "settings.json")
+        except Exception:  # noqa: BLE001 - appearance must never block start-up
+            data = {}
+        theme_name = data.get("ui_theme") if data.get("ui_theme") in ("light", "dark") else "light"
+        appearance.apply(self.root, theme_name)
 
     def _load_settings(self) -> dict[str, Any]:
         return load_settings_with_recovery(self.settings_path)
@@ -4569,56 +4549,99 @@ class WorkbenchApp:
         self.root.config(menu=menu)
 
     def _make_ui(self) -> None:
-        outer = ttk.Frame(self.root, padding=(13, 10, 13, 8))
-        outer.pack(fill="both", expand=True)
-        hero = ttk.Frame(outer, style="Header.TFrame", padding=(18, 13))
-        hero.pack(fill="x", pady=(0, 10))
-        left_head = ttk.Frame(hero, style="Header.TFrame")
-        left_head.pack(side="left", fill="x", expand=True)
-        ttk.Label(left_head, text="AI Workbench", style="HeaderTitle.TLabel").pack(anchor="w")
-        ttk.Label(left_head, text="PROJECT STUDIO  ·  Manual AI handoff  ·  Reviewed local changes", style="HeaderSub.TLabel").pack(anchor="w", pady=(3, 0))
-        hero_actions = ttk.Frame(hero, style="Header.TFrame")
-        hero_actions.pack(side="right", padx=(10, 0))
-        ttk.Button(hero_actions, text="+ New Project", style="Primary.TButton", command=self.new_project).pack(side="left", padx=(0, 6))
-        ttk.Button(hero_actions, text="Open Existing…", command=self.add_existing_project).pack(side="left")
+        """One window (roadmap 3.0.0, ADR-009): navigation rail + page stack + status bar.
 
-        active = ttk.Frame(outer, style="Card.TFrame", padding=(12, 8))
-        active.pack(fill="x", pady=(0, 9))
-        ttk.Label(active, text="ACTIVE PROJECT", font=("Segoe UI", 8, "bold"), foreground="#667085", background="#FFFFFF").pack(side="left")
-        ttk.Label(active, textvariable=self.workspace_var, foreground="#1D4ED8", background="#FFFFFF", font=("Segoe UI", 9, "bold")).pack(side="left", padx=(10, 0), fill="x", expand=True)
-        ttk.Button(active, text="Open folder", command=self.open_workspace).pack(side="right")
-        ttk.Button(active, text="Refresh files", command=self.refresh_files).pack(side="right", padx=(0, 6))
-
-        self.notebook = ttk.Notebook(outer)
-        self.notebook.pack(fill="both", expand=True)
-        self.manager_tab = ttk.Frame(self.notebook, padding=12)
-        self.profile_tab = ttk.Frame(self.notebook, padding=10)
-        self.project_tab = ttk.Frame(self.notebook, padding=8)
-        self.response_tab = ttk.Frame(self.notebook, padding=8)
-        self.run_tab = ttk.Frame(self.notebook, padding=8)
-        self.git_tab = ttk.Frame(self.notebook, padding=8)
-        self.history_tab = ttk.Frame(self.notebook, padding=8)
-        self.notebook.add(self.manager_tab, text="Projects")
-        self.notebook.add(self.profile_tab, text="Project Profile")
-        self.notebook.add(self.project_tab, text="Workspace & Prompt")
-        self.notebook.add(self.response_tab, text="AI Response")
-        self.notebook.add(self.history_tab, text="Prompt History")
-        self.notebook.add(self.run_tab, text="Run & Report")
-        self.notebook.add(self.git_tab, text="Git / GitHub")
+        Every former tab — and the Project Workbench — is a page of this window. Theme,
+        language and Simple/Advanced are application-wide and live on the Settings page."""
+        self.prefs = AppPrefs(self.settings_data, save=self._save_prefs)
+        self.shell = AppShell(self.root, self.prefs, title=APP_NAME, version=APP_VERSION)
+        self.notebook = self.shell.notebook
+        self.notebook.bind("<<NotebookTabChanged>>", lambda _e: self.shell.sync_from_notebook(), add="+")
+        actions = self.shell.actions
+        self.title_new_btn = ttk.Button(actions, text="+ New project", style="Primary.TButton", command=self.new_project)
+        self.title_new_btn.pack(side="left", padx=(0, 6))
+        self.title_open_btn = ttk.Button(actions, text="Open folder", command=self.open_workspace)
+        self.title_open_btn.pack(side="left", padx=(0, 6))
+        self.title_refresh_btn = ttk.Button(actions, text="Refresh files", command=self.refresh_files)
+        self.title_refresh_btn.pack(side="left")
+        self.shell.project_label.configure(textvariable=self.workspace_var)
+        self.manager_tab = self.shell.add_page("home", padding=(8, 8))
+        self.workbench_tab = self.shell.add_page("workbench", padding=0, on_show=self._show_workbench_page)
+        self.project_tab = self.shell.add_page("prompt", padding=8)
+        self.response_tab = self.shell.add_page("response", padding=8)
+        self.profile_tab = self.shell.add_page("profile", padding=10)
+        self.history_tab = self.shell.add_page("history", padding=8)
+        self.run_tab = self.shell.add_page("run", padding=8)
+        self.git_tab = self.shell.add_page("git", padding=8)
+        self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
         self._make_projects_dashboard()
+        self._make_workbench_placeholder()
         self._make_profile_tab()
         self._make_project_tab()
         self._make_response_tab()
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
-        bottom = ttk.Frame(outer, style="Card.TFrame", padding=(10, 6))
-        bottom.pack(fill="x", pady=(8, 0))
-        ttk.Label(bottom, textvariable=self.status_var, background="#FFFFFF", foreground="#475467").pack(side="left", fill="x", expand=True)
+        self.settings_widgets = build_settings_page(self.shell, self.settings_tab, extra=self._settings_app_section)
+        bottom = self.shell.statusbar
+        ttk.Label(bottom, textvariable=self.status_var, style="StatusBar.TLabel").grid(row=0, column=0, sticky="ew")
         self.activity_progress = ttk.Progressbar(bottom, mode="indeterminate", length=100)
-        self.activity_progress.pack(side="right", padx=(8, 12))
-        self.activity_progress.pack_forget()
-        ttk.Label(bottom, text=f"v{APP_VERSION}", background="#FFFFFF", foreground="#98A2B3").pack(side="right")
+        self.activity_progress.grid(row=0, column=1, padx=(8, 12))
+        self.activity_progress.grid_remove()
+        ttk.Label(bottom, text=f"v{APP_VERSION}", style="StatusBar.TLabel").grid(row=0, column=2)
+        self.shell.on_pref(self._on_app_pref)
+        self.shell.show("home")
+
+    def _save_prefs(self, values: dict[str, str]) -> None:
+        self.settings_data.update(values)
+        self._save_settings()
+
+    def _on_app_pref(self, key: str) -> None:
+        if key in ("lang", "mode") and getattr(self, "workspace_window", None) is not None:
+            ctl = self.workspace_window.wc.ctl
+            try:
+                if key == "lang" and ctl.lang != self.prefs.lang:
+                    ctl.set_language(self.prefs.lang)
+                if key == "mode" and ctl.mode != self.prefs.mode:
+                    ctl.set_mode(self.prefs.mode)
+            except Exception:  # noqa: BLE001 - a view preference must never break the shell
+                pass
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None:
+            try:
+                ws.apply_prefs()
+            except tk.TclError:
+                pass
+
+    def _settings_app_section(self, card: ttk.Frame) -> None:
+        row = ttk.Frame(card, style="Card.TFrame")
+        row.grid(row=2, column=0, sticky="w")
+        for text, cmd in (("Mobile Companion…", self.open_companion),
+                          ("Validation Profiles…", self.manage_validation_profiles),
+                          ("Restore Manager…", self.open_restore_manager),
+                          ("Export redacted diagnostics…", self.export_redacted_diagnostics),
+                          ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))):
+            ttk.Button(row, text=text, command=cmd).pack(side="left", padx=(0, 6), pady=2)
+
+    def _make_workbench_placeholder(self) -> None:
+        tab = self.workbench_tab
+        self.workbench_empty = ttk.Frame(tab, padding=24)
+        self.workbench_empty.pack(fill="both", expand=True)
+        ttk.Label(self.workbench_empty, text="Open a project to use the Project Workbench.",
+                  style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(self.workbench_empty, text="The Workbench plans the whole project with your AI chats, shows the "
+                  "next step with a ready prompt, and tracks tasks, team and versions.", style="Hint.TLabel",
+                  wraplength=720).pack(anchor="w", pady=(4, 12))
+        ttk.Button(self.workbench_empty, text="Go to Home", style="Primary.TButton",
+                   command=lambda: self.shell.show("home")).pack(anchor="w")
+
+    def _show_workbench_page(self) -> None:
+        ws = getattr(self, "workspace_window", None)
+        if self.workspace is None:
+            return
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            return
+        self.root.after_idle(self.open_project_workbench)
 
     def _make_projects_dashboard(self) -> None:
         tab = self.manager_tab
