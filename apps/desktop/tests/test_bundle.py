@@ -135,6 +135,21 @@ class BundleTests(unittest.TestCase):
         root.mkdir(parents=True)
         self.assertTrue(ProjectsController(root).import_bundle(SHARED.read_bytes())["imported"])
 
+    def test_mobile_fixture_imports_as_newer(self) -> None:
+        mobile = SHARED.parent / "todo.mobile.aiwb-bundle.json"
+        if not mobile.exists():
+            self.skipTest("mobile bundle fixture missing")
+        b, st = bundle.read_bundle(mobile.read_bytes())
+        self.assertEqual(b["producer"]["app"], bundle.MOBILE_APP)
+        self.assertEqual(st["tasks"]["TASK-0001"]["status"], "in_progress")
+        root = self.base / "desk" / "todo"
+        root.mkdir(parents=True)
+        ctl = ProjectsController(root)
+        ctl.import_bundle(SHARED.read_bytes())
+        self.assertEqual(ctl.plan_bundle_import(mobile.read_bytes())["kind"], "newer")
+        self.assertTrue(ctl.import_bundle(mobile.read_bytes())["imported"])
+        self.assertEqual(ctl.state()["tasks"]["TASK-0001"]["status"], "in_progress")
+
 
 if __name__ == "__main__":
     unittest.main()
