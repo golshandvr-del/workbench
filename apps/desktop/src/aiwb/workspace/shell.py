@@ -14,7 +14,8 @@ from typing import Any, Callable
 from .. import i18n
 from ..v2.models import ModelError
 from . import theme
-from .controller import SECTIONS, WorkspaceController
+from . import components
+from .controller import NAV_ORDER, SECTIONS, WorkspaceController
 
 
 class WorkspaceWindow:
@@ -30,14 +31,18 @@ class WorkspaceWindow:
         self.style = ttk.Style(self.win)
         self.pal = theme.apply(self.style, wc.theme)
         self.win.configure(background=self.pal["bg"])
+        # display preferences (shown in Settings, stored in ui.json only)
+        self.mode_var = tk.StringVar(value=self.wc.ctl.mode)
+        self.lang_var = tk.StringVar(value=self.wc.lang)
+        self.theme_var = tk.StringVar(value=self.wc.theme)
         self._place(geometry)
         self.layout = theme.layout_for(theme.DEFAULT_SIZE[0])
         self._build()
         self.win.bind("<Configure>", self._on_configure, add="+")
         self.win.bind("<Control-i>", lambda _e: self.toggle_inspector())
         self.win.bind("<Control-b>", lambda _e: self.toggle_sidebar())
-        for i, key in enumerate(SECTIONS, start=1):
-            self.win.bind(f"<Alt-Key-{i}>", lambda _e, k=key: self.show(k))
+        for i, key in enumerate(NAV_ORDER, start=1):
+            self.win.bind(f"<Alt-Key-{i}>", lambda _e, k=key: self.navigate(k))
         self.win.protocol("WM_DELETE_WINDOW", self.close)
         self.show(wc.section)
 
@@ -65,97 +70,111 @@ class WorkspaceWindow:
             self.layout = new
             self._arrange()
 
-    # -- structure
+    # -- structure (wireframes §1)
     def _build(self) -> None:
         w = self.win
+        sp = theme.space
         w.columnconfigure(0, weight=1)
-        w.rowconfigure(2, weight=1)
-        # Project bar
-        self.bar = ttk.Frame(w, style="WS.TFrame", padding=(theme.SPACING["l"], theme.SPACING["m"]))
+        w.rowconfigure(1, weight=1)
+        # Project bar: identity and project-wide state only (IA-7)
+        self.bar = ttk.Frame(w, style="WS.TFrame", padding=(sp(3), sp(2)))
         self.bar.grid(row=0, column=0, sticky="ew")
-        self.bar.columnconfigure(1, weight=1)
-        self.sidebar_btn = ttk.Button(self.bar, text="☰", width=3, command=self.toggle_sidebar)
-        self.sidebar_btn.grid(row=0, column=0, padx=(0, 8))
+        self.sidebar_btn = ttk.Button(self.bar, text="☰", width=3, style="WS.Quiet.TButton", command=self.toggle_sidebar)
         self.title_var = tk.StringVar()
-        ttk.Label(self.bar, textvariable=self.title_var, style="WS.Title.TLabel").grid(row=0, column=1, sticky="w")
+        self.title_label = ttk.Label(self.bar, textvariable=self.title_var, style="WS.Section.TLabel")
         self.pub_var = tk.StringVar()
-        ttk.Label(self.bar, textvariable=self.pub_var, style="WS.Muted.TLabel").grid(row=1, column=1, sticky="w")
-        ctl = ttk.Frame(self.bar, style="WS.TFrame")
-        ctl.grid(row=0, column=2, rowspan=2, sticky="e")
-        self.mode_var = tk.StringVar(value=self.wc.ctl.mode)
-        self.mode_box = ttk.Combobox(ctl, textvariable=self.mode_var, values=["simple", "advanced"], width=9, state="readonly")
-        self.mode_box.pack(side="left", padx=4)
-        self.mode_box.bind("<<ComboboxSelected>>", lambda _e: self._set_mode())
-        self.lang_var = tk.StringVar(value=self.wc.lang)
-        self.lang_box = ttk.Combobox(ctl, textvariable=self.lang_var, values=list(i18n.LANGUAGES), width=4, state="readonly")
-        self.lang_box.pack(side="left", padx=4)
-        self.lang_box.bind("<<ComboboxSelected>>", lambda _e: self._set_lang())
-        self.theme_var = tk.StringVar(value=self.wc.theme)
-        self.theme_box = ttk.Combobox(ctl, textvariable=self.theme_var, values=list(theme.THEMES), width=6, state="readonly")
-        self.theme_box.pack(side="left", padx=4)
-        self.theme_box.bind("<<ComboboxSelected>>", lambda _e: self._set_theme())
-        self.inspector_btn = ttk.Button(ctl, text="ⓘ", width=3, command=self.toggle_inspector)
-        self.inspector_btn.pack(side="left", padx=4)
-        # Next action strip
-        self.next_frame = ttk.Frame(w, style="WS.Surface.TFrame", padding=(theme.SPACING["l"], theme.SPACING["m"]))
-        self.next_frame.grid(row=1, column=0, sticky="ew", padx=theme.SPACING["l"])
+        self.pub_label = ttk.Label(self.bar, textvariable=self.pub_var, style="WS.Muted.TLabel")
+        self.inspector_btn = ttk.Button(self.bar, text="ⓘ", width=3, style="WS.Quiet.TButton", command=self.toggle_inspector)
+        ttk.Separator(w, orient="horizontal", style="WS.TSeparator").grid(row=0, column=0, sticky="sew")
+        # Body: sidebar | center | inspector (mirrored in RTL)
+        self.body = ttk.Frame(w, style="WS.TFrame")
+        self.body.grid(row=1, column=0, sticky="nsew")
+        self.body.rowconfigure(0, weight=1)
+        self.sidebar = ttk.Frame(self.body, style="WS.Sidebar.TFrame", padding=(sp(2), sp(3)))
+        self.nav: dict[str, ttk.Button] = {}
+        for key in NAV_ORDER:
+            b = ttk.Button(self.sidebar, style="WS.Nav.TButton", command=lambda k=key: self.navigate(k))
+            self.nav[key] = b
+        self.center = ttk.Frame(self.body, style="WS.TFrame", padding=(sp(4), sp(3)))
+        self.center.rowconfigure(2, weight=1)
+        self.center.columnconfigure(0, weight=1)
+        # in-page banner (messages that change what the user believes — CC-5)
+        self.banner_slot = ttk.Frame(self.center, style="WS.TFrame")
+        self.banner_slot.grid(row=0, column=0, sticky="ew")
+        self.banner_slot.columnconfigure(0, weight=1)
+        self.banner_box: ttk.Frame | None = None
+        # next step: Overview only (wireframe decision L1); built once so it can be inspected
+        self.next_frame = ttk.Frame(self.center, style="WS.Alt.TFrame", padding=(sp(3), sp(2)))
         self.next_frame.columnconfigure(0, weight=1)
         self.next_var = tk.StringVar()
-        self.next_label = ttk.Label(self.next_frame, textvariable=self.next_var, style="WS.Next.TLabel", wraplength=900)
-        self.next_label.grid(row=0, column=0, sticky="w")
+        self.next_label = ttk.Label(self.next_frame, textvariable=self.next_var, style="WS.Next.TLabel", wraplength=640)
         self.next_btn = ttk.Button(self.next_frame, text="", style="WS.Primary.TButton", command=self.do_next)
-        self.next_btn.grid(row=0, column=1, sticky="e", padx=(8, 0))
-        # Body: sidebar | center | inspector
-        self.body = ttk.Frame(w, style="WS.TFrame")
-        self.body.grid(row=2, column=0, sticky="nsew", padx=theme.SPACING["l"], pady=theme.SPACING["m"])
-        self.body.rowconfigure(0, weight=1)
-        self.sidebar = ttk.Frame(self.body, style="WS.Sidebar.TFrame", padding=theme.SPACING["s"])
-        self.nav: dict[str, ttk.Button] = {}
-        for key in SECTIONS:
-            b = ttk.Button(self.sidebar, style="WS.Nav.TButton", command=lambda k=key: self.show(k))
-            b.pack(fill="x", pady=1)
-            self.nav[key] = b
-        self.center = ttk.Frame(self.body, style="WS.TFrame")
-        self.center.rowconfigure(0, weight=1)
-        self.center.columnconfigure(0, weight=1)
-        self.inspector = ttk.Frame(self.body, style="WS.Surface.TFrame", padding=theme.SPACING["m"])
+        # inspector
+        self.inspector = ttk.Frame(self.body, style="WS.Surface.TFrame", padding=(sp(3), sp(3)))
         self.inspector.columnconfigure(0, weight=1)
         self.insp_title = tk.StringVar()
-        ttk.Label(self.inspector, textvariable=self.insp_title, style="WS.Next.TLabel", wraplength=300).grid(row=0, column=0, sticky="w")
-        self.insp_text = tk.Text(self.inspector, height=12, width=36, wrap="word", relief="flat")
-        self.insp_text.grid(row=1, column=0, sticky="nsew", pady=4)
+        self.insp_title_label = ttk.Label(self.inspector, textvariable=self.insp_title, style="WS.InspTitle.TLabel",
+                                          wraplength=260)
+        self.insp_title_label.grid(row=0, column=0, sticky="ew")
+        self.insp_text = components.style_text(tk.Text(self.inspector, height=12, width=34, wrap="word"), self.wc.theme)
+        self.insp_text.grid(row=1, column=0, sticky="nsew", pady=(sp(2), sp(2)))
         self.inspector.rowconfigure(1, weight=1)
         self.insp_actions = ttk.Frame(self.inspector, style="WS.Surface.TFrame")
         self.insp_actions.grid(row=2, column=0, sticky="ew")
-        # Footer
+        # status line
         self.status_var = tk.StringVar()
-        ttk.Label(w, textvariable=self.status_var, style="WS.Muted.TLabel", padding=(theme.SPACING["l"], 2)).grid(
-            row=3, column=0, sticky="ew")
+        self.status_label = ttk.Label(w, textvariable=self.status_var, style="WS.Muted.TLabel", padding=(sp(3), sp(1)))
+        self.status_label.grid(row=2, column=0, sticky="ew")
         self.views: dict[str, ttk.Frame] = {}
         self._arrange()
 
     def _arrange(self) -> None:
-        """Place sidebar / center / inspector for the current width breakpoint and open/closed panels."""
+        """Place bar items, sidebar / center / inspector for the current width, direction and open panels."""
+        rtl = self.wc.rtl
+        sp = theme.space
+        for child in (self.sidebar_btn, self.title_label, self.pub_label, self.inspector_btn):
+            child.pack_forget()
+        start, end = components.side(rtl), components.end_side(rtl)
+        self.sidebar_btn.pack(side=start, padx=(0, sp(2)) if not rtl else (sp(2), 0))
+        self.title_label.pack(side=start)
+        self.pub_label.pack(side=start, padx=sp(3))
+        self.inspector_btn.pack(side=end)
         for child in (self.sidebar, self.center, self.inspector):
             child.grid_forget()
         for c in range(3):
-            self.body.columnconfigure(c, weight=0)
+            self.body.columnconfigure(c, weight=0, minsize=0)
         self.body.rowconfigure(1, weight=0)
-        col = 0
-        if self.wc.sidebar_open:
-            self.sidebar.grid(row=0, column=0, sticky="ns", padx=(0, theme.SPACING["m"]), rowspan=2)
-            col = 1
-        self.center.grid(row=0, column=col, sticky="nsew")
-        self.body.columnconfigure(col, weight=1)
-        if self.wc.inspector_open:
-            if self.layout["inspector"] == "side":
-                self.inspector.grid(row=0, column=col + 1, sticky="nsew", padx=(theme.SPACING["m"], 0))
-            else:
-                self.inspector.grid(row=1, column=col, sticky="nsew", pady=(theme.SPACING["m"], 0))
-                self.body.rowconfigure(1, weight=0)
+        cols = ["sidebar", "center", "inspector"]
+        if rtl:
+            cols.reverse()
+        side_insp = self.wc.inspector_open and self.layout["inspector"] == "side"
+        placed = [c for c in cols if (c != "sidebar" or self.wc.sidebar_open) and (c != "inspector" or side_insp)]
+        for col, name in enumerate(placed):
+            widget = getattr(self, name)
+            widget.grid(row=0, column=col, sticky="nsew")
+            if name == "center":
+                self.body.columnconfigure(col, weight=1, minsize=theme.LAYOUT["content_min_width"])
+                center_col = col
+        if self.wc.inspector_open and not side_insp:
+            # narrow window: inspector below the content with a bounded height (wireframe L5)
+            self.inspector.grid(row=1, column=center_col, sticky="nsew")
+            self.insp_text.configure(height=4)
+        else:
+            self.insp_text.configure(height=12)
+        self.insp_title_label.configure(anchor=components.anchor(rtl), justify=components.justify(rtl))
         compact = self.layout["sidebar"] == "compact"
-        for key, b in self.nav.items():
+        for b in self.nav.values():
+            b.pack_forget()
+        for key in NAV_ORDER:
+            b = self.nav[key]
             b.configure(text=self.wc.section_label(key, compact=compact))
+            b.configure(style="WS.NavActive.TButton" if key == self.wc.section else "WS.Nav.TButton")
+            if key == "settings":
+                ttk.Frame(self.sidebar, style="WS.Sidebar.TFrame").pack(fill="y", expand=True) \
+                    if not getattr(self, "_nav_spacer", None) else None
+                self._nav_spacer = True
+            b.pack(fill="x", pady=1, side="bottom" if key == "settings" else "top")
+        self.status_label.configure(anchor=components.anchor(rtl))
 
     # -- preferences (ui.json only)
     def toggle_inspector(self) -> None:
@@ -179,9 +198,31 @@ class WorkspaceWindow:
         self.wc.set_theme(self.theme_var.get())
         self.pal = theme.apply(self.style, self.wc.theme)
         self.win.configure(background=self.pal["bg"])
+        components.style_text(self.insp_text, self.wc.theme)
         self.show(self.wc.section)
 
+    # -- feedback
+    def notify(self, level: str, text: str) -> None:
+        """Important message in the page (banner) and in the status line. Cleared on navigation."""
+        self.status_var.set(text)
+        self.clear_banner()
+        self.banner_box = components.banner(self.banner_slot, level, text, rtl=self.wc.rtl, on_close=self.clear_banner)
+        self.banner_box.grid(row=0, column=0, sticky="ew", pady=(0, theme.space(3)))
+
+    def clear_banner(self) -> None:
+        if self.banner_box is not None:
+            try:
+                self.banner_box.destroy()
+            except tk.TclError:
+                pass
+            self.banner_box = None
+
     # -- navigation
+    def navigate(self, key: str) -> None:
+        """User navigation (sidebar, Alt+N): clears the banner, then shows the section."""
+        self.clear_banner()
+        self.show(key)
+
     def show(self, key: str) -> None:
         self.wc.set_section(key)
         for k, b in self.nav.items():
@@ -189,34 +230,51 @@ class WorkspaceWindow:
         for v in self.views.values():
             v.destroy()
         self.views = {}
+        if key == "overview":
+            self.next_frame.grid(row=1, column=0, sticky="ew", pady=(0, theme.space(3)))
+        else:
+            self.next_frame.grid_remove()
         frame = ttk.Frame(self.center, style="WS.TFrame")
-        frame.grid(row=0, column=0, sticky="nsew")
+        frame.grid(row=2, column=0, sticky="nsew")
         frame.columnconfigure(0, weight=1)
         self.views[key] = frame
         getattr(self, f"_view_{key}")(frame)
+        components.theme_tree(frame, self.wc.theme)
         self.refresh()
 
     def refresh(self) -> None:
         bar = self.wc.project_bar()
+        rtl = self.wc.rtl
         self.title_var.set(f"{bar['name']}" + (f" — {bar['goal'][:80]}" if bar["goal"] else ""))
         self.pub_var.set(bar["publish"])
         ov = self.wc.overview()
         nxt = ov["next"]
-        self.next_var.set(("← " if self.wc.rtl else "→ ") + nxt["summary"]
+        self.next_var.set(("← " if rtl else "→ ") + nxt["summary"]
                           + (f" ({nxt['reference_id']})" if nxt.get("reference_id") else ""))
-        self.next_btn.configure(text=self.wc.tr(("Do it", "انجام بده")))
-        self.next_label.configure(anchor="e" if self.wc.rtl else "w", justify="right" if self.wc.rtl else "left")
+        label = self.wc.next_button_label(nxt)
+        self.next_btn.configure(text=label or self.wc.tr(("Open tasks", "باز کردن Taskها")))
+        self.next_label.grid_forget()
+        self.next_btn.grid_forget()
+        self.next_label.grid(row=0, column=1 if rtl else 0, sticky="ew")
+        self.next_btn.grid(row=0, column=0 if rtl else 1, sticky="e", padx=(theme.space(3), 0) if not rtl else (0, theme.space(3)))
+        self.next_frame.columnconfigure(0, weight=0 if rtl else 1)
+        self.next_frame.columnconfigure(1, weight=1 if rtl else 0)
+        self.next_label.configure(anchor="e" if rtl else "w", justify="right" if rtl else "left")
         self._render_inspector()
 
     def _render_inspector(self) -> None:
         data = self.wc.inspector()
         self.insp_title.set(data["title"])
+        self.insp_text.configure(state="normal")
         self.insp_text.delete("1.0", "end")
         self.insp_text.insert("1.0", data["text"])
+        self.insp_text.tag_configure("dir", justify="right" if self.wc.rtl else "left")
+        self.insp_text.tag_add("dir", "1.0", "end")
         for c in self.insp_actions.winfo_children():
             c.destroy()
-        for key, label in data["actions"]:
-            ttk.Button(self.insp_actions, text=label, command=lambda k=key: self.inspector_action(k)).pack(fill="x", pady=1)
+        for i, (key, label) in enumerate(data["actions"]):
+            ttk.Button(self.insp_actions, text=label, style="WS.TButton",
+                       command=lambda k=key: self.inspector_action(k)).pack(fill="x", pady=(0 if i == 0 else 2, 0))
 
     def inspector_action(self, key: str, confirm: bool | None = None) -> Any:
         if key == "bind_chat":
