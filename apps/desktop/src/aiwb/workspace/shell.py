@@ -86,7 +86,7 @@ class WorkspaceWindow:
     def _on_configure(self, event: Any) -> None:
         if event.widget is not self.win:
             return
-        new = theme.layout_for(event.width + (240 if self.embedded else 0))
+        new = theme.layout_for(self.top.winfo_width() if self.embedded else event.width)
         if new != self.layout:
             self.layout = new
             self._arrange()
@@ -576,7 +576,7 @@ class WorkspaceWindow:
     def _ask_project_brief(self) -> dict[str, Any]:
         dlg = tk.Toplevel(self.win)
         dlg.title(self.wc.tr(("Plan team & tasks", "برنامه‌ریزی تیم و Taskها")))
-        dlg.transient(self.win)
+        dlg.transient(self.top)
         fields = (("goal", ("Goal (required)", "هدف (الزامی)")), ("non_goals", ("Not in scope", "خارج از دامنه")),
                   ("success", ("Success criteria", "معیار موفقیت")), ("platform", ("Platform / technology", "پلتفرم / فناوری")),
                   ("constraints", ("Constraints", "محدودیت‌ها")), ("limits", ("Time / cost limits", "محدودیت زمان / هزینه")))
