@@ -72,6 +72,6 @@ class PairingContractTest {
         val padded = ByteArray(stride * h) { 0x7F }
         for (r in 0 until h) System.arraycopy(img, r * w, padded, r * stride, w)
         assertEquals(q.getString("text"), QrDecode.luminance(padded, w, h, stride))
-        assertNull(QrDecode.luminance(ByteArray(w * h) { 0xFF.toByte() }, w, h), "blank frame")
+        assertNull("blank frame", QrDecode.luminance(ByteArray(w * h) { 0xFF.toByte() }, w, h))
     }
 }
