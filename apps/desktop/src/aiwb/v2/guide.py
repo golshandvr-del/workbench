@@ -76,7 +76,7 @@ def repair_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str, Any] 
     fresh handoff/attempt the answer must name (defaults to ``h``)."""
     t = state["tasks"][h["task_id"]]
     n = new or h
-    done = [a["logical_path"] for a in h.get("artifact_refs", [])]
+    done = [a["logical_path"] for a in h.get("artifact_refs", [])] or list(h.get("completed_items", []))
     missing = [x for x in h.get("unresolved_items", [])]
     lines = [f"AIWB_ATTEMPT_ID: {n['attempt_id']}", "(Repeat the line above as the first line of your answer.)", "",
              f"# AI Workbench — repair request for {h['handoff_id']} ({t['task_id']} {t['title']})",
@@ -307,9 +307,12 @@ class Guide:
                 return s
         raise ModelError(f"step {key} is no longer open")
 
-    def _set_guide(self, **kw: Any) -> None:
+    def _set_guide(self, *, seen: bool = False, **kw: Any) -> None:
+        """Update settings.guide; ``seen`` records that the manager has seen this very revision."""
         with self.p.store.transaction("guide") as s:
             g = s["settings"].setdefault("guide", {})
+            if seen:
+                g["manager_seen_revision"] = int(s["state_revision"]) + 1
             for k, v in kw.items():
                 if v is None:
                     g.pop(k, None)
@@ -338,7 +341,7 @@ class Guide:
             if kind == "handoff":
                 c.confirm_sent(ref)
             else:
-                self._set_guide(manager_seen_revision=int(c.state().get("state_revision", 0)), manager_sent_at=now_utc())
+                self._set_guide(seen=True, manager_sent_at=now_utc())
             return {"message": "Recorded as sent. Paste the answer when you have it."}
         if action == "dismiss":
             self._set_guide(**{"continue": None})
@@ -458,7 +461,7 @@ class Guide:
         if r.kind in ("proposal", "handoff", "charter_rejected"):
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):
-                self._set_guide(manager_seen_revision=int(self.ctl.state().get("state_revision", 0)))
+                self._set_guide(seen=True)
             if r.kind == "handoff" and rep.truncated:
                 out["message"] += " The answer looks cut off — use 'Ask only for what is missing'."
             return out
