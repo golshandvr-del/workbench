@@ -493,6 +493,29 @@ class ProjectsController:
         self._dirty("decision")
         return out
 
+    # -- project bundle (aiwb-bundle.v1, roadmap 3.8.0): move the project to/from the phone
+    def export_bundle(self, *, version: str = "") -> str:
+        """The whole project as one ``aiwb-bundle.v1`` JSON text (nothing local changes)."""
+        from . import bundle
+        if not version:
+            from .. import __version__ as version
+        return bundle.dumps(bundle.export_bundle(self.state(), name=self.root.name, version=version))
+
+    def plan_bundle_import(self, data: str | bytes) -> dict[str, Any]:
+        """What importing this bundle would do (new / same / newer / older / diverged / other_project)."""
+        from . import bundle
+        _b, incoming = bundle.read_bundle(data)
+        local = self.project.store.load() if self.project.store.path.exists() else None
+        return bundle.plan_import(local, incoming)
+
+    def import_bundle(self, data: str | bytes, *, force: bool = False) -> dict[str, Any]:
+        """Replace the project state with the bundle (backup first; unsafe kinds need ``force``)."""
+        from . import bundle
+        out = bundle.import_into(self.project.store, data, force=force)
+        if out.get("imported"):
+            self._dirty("project bundle imported")
+        return out
+
     def publish_now(self) -> dict[str, Any]:
         if self.publisher is None:
             return {"status": "disabled", "message": "No GitHub repository is bound; state is kept locally."}
