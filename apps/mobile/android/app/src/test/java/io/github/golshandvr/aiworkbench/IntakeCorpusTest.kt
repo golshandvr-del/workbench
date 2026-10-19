@@ -23,7 +23,7 @@ class IntakeCorpusTest {
 
     private fun expected(case: JSONObject): Map<String, String> {
         val e = case.getJSONObject("expect_files")
-        return e.keySet().associateWith { e.getString(it) }
+        return e.keys().asSequence().toList().associateWith { e.getString(it) }
     }
 
     private fun each(group: String, f: (JSONObject) -> Unit) {
@@ -50,8 +50,9 @@ class IntakeCorpusTest {
     @Test fun normalizeOnlyCases() = each("normalize_only") { c ->
         val got = StrictJson.parse(Normalize.normalize(c.getString("text")).text) as Map<*, *>
         val want = c.getJSONObject("expect_json")
-        assertEquals(want.keySet(), got.keys)
-        for (k in want.keySet()) assertEquals(k, if (want.isNull(k)) null else want.get(k), got[k])
+        val wantKeys = want.keys().asSequence().toSet()
+        assertEquals(wantKeys, got.keys)
+        for (k in wantKeys) assertEquals(k, if (want.isNull(k)) null else want.get(k), got[k])
     }
 
     @Test fun truncatedCasesDetectedWithContinuePrompt() = each("truncated") { c ->
