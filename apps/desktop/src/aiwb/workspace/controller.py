@@ -19,13 +19,15 @@ from ..v2.workflow import stage_label, task_stage
 from ..v2.resources import binding_readiness, current_binding
 
 SECTIONS = ("overview", "timeline", "tasks", "team", "files", "versions", "settings")
+# Sidebar order (IA §2, wireframe decision L6). Keys stay the same for ui.json compatibility.
+NAV_ORDER = ("overview", "tasks", "team", "timeline", "files", "versions", "settings")
 SECTION_LABELS = {
     "overview": ("Overview", "نمای کلی"), "timeline": ("Timeline", "تاریخچه"), "tasks": ("Tasks", "وظایف"),
-    "team": ("Team", "تیم AI"), "files": ("Files & Context", "فایل‌ها و زمینه"),
-    "versions": ("Versions & Builds", "نسخه‌ها و ساخت‌ها"), "settings": ("Settings", "تنظیمات"),
+    "team": ("Team", "تیم"), "files": ("Files & Context", "فایل‌ها و زمینه"),
+    "versions": ("Deliveries", "تحویل‌ها"), "settings": ("Settings", "تنظیمات"),
 }
 SHORT_LABELS = {"overview": ("Home", "خانه"), "timeline": ("Time", "زمان"), "tasks": ("Tasks", "وظایف"),
-                "team": ("Team", "تیم"), "files": ("Files", "فایل"), "versions": ("Ver.", "نسخه"),
+                "team": ("Team", "تیم"), "files": ("Files", "فایل"), "versions": ("Deliv.", "تحویل"),
                 "settings": ("Set.", "تنظیم")}
 # Existing tools reachable from the workspace (no second implementation, spec §18 stage 3)
 TOOLS = {
@@ -41,6 +43,16 @@ TOOL_LABELS = {
     "sync_build": ("Sync & Build…", "همگام‌سازی و Build…"),
     "companion": ("Mobile Companion…", "همراه موبایل…"),
     "classic": ("Projects window (classic)…", "پنجرهٔ پروژه‌ها (کلاسیک)…"),
+}
+# Verb + object for the next-step button (Design System §5: the label says the result, never "Do it").
+NEXT_VERBS = {
+    "plan_project": ("Plan the project", "برنامه‌ریزی پروژه"), "review_proposal": ("Review the proposal", "بازبینی پیشنهاد"),
+    "resolve_decision": ("Make the decision", "تصمیم‌گیری"), "start_task": ("Prepare the prompt", "آماده‌سازی پرامپت"),
+    "prepare_handoff": ("Prepare the prompt", "آماده‌سازی پرامپت"), "copy_prompt": ("Open the prompt", "باز کردن پرامپت"),
+    "import_response": ("Paste the answer", "Paste پاسخ"), "review_handoff": ("Review the delivery", "بازبینی تحویل"),
+    "review_delivery": ("Review the delivery", "بازبینی تحویل"), "run_validation": ("Open the task", "باز کردن Task"),
+    "approve_task": ("Review and approve", "بازبینی و تأیید"), "unblock_task": ("Open the task", "باز کردن Task"),
+    "review_task": ("Review the task", "بازبینی Task"),
 }
 UI_KEYS = ("ws_section", "ws_inspector", "ws_sidebar", "ws_theme", "ws_seen")
 
@@ -109,6 +121,14 @@ class WorkspaceController:
         if fn is None:
             raise ModelError(f"tool {key!r} is not available here")
         return fn()
+
+    def next_button_label(self, nxt: dict[str, Any]) -> str:
+        """Button text for the next step, e.g. "Review the delivery HO-0002" (empty when nothing is actionable)."""
+        pair = NEXT_VERBS.get(str(nxt.get("type", "")))
+        if not pair:
+            return ""
+        ref = nxt.get("reference_id") or ""
+        return self.tr(pair) + (f" {ref}" if ref else "")
 
     # -- project bar / footer
     def project_bar(self) -> dict[str, Any]:
