@@ -83,7 +83,8 @@ def _fix_structural_lines(s: str, fixes: list[str]) -> str:
     lines = s.split("\n")
     n = 0
     for i, line in enumerate(lines):
-        if _STRUCTURAL.match(line) or (("AIWB" in line) and line.lstrip().startswith(("<<<", "&lt;", "\\<"))):
+        probe = re.sub(r"^\s*(?:\*\*|__|`)+", "", line)
+        if _STRUCTURAL.match(probe) or (("AIWB" in probe) and probe.lstrip().startswith(("<<<", "&lt;", "\\<"))):
             fixed = _fix_marker_line(line)
             if fixed != line:
                 lines[i] = fixed
