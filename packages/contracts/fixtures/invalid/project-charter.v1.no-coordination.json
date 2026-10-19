@@ -1,0 +1,200 @@
+{
+  "schema_version": "1.0",
+  "charter_type": "project_charter",
+  "base_state_revision": 3,
+  "project": {
+    "name": "Todo",
+    "goal": "An offline todo app for desktop and mobile",
+    "summary": "A small offline-first todo app with a shared core and two UIs."
+  },
+  "architecture": {
+    "summary": "A pure core library with storage, used by a desktop UI and a mobile UI.",
+    "modules": [
+      {
+        "id": "core",
+        "name": "Core logic",
+        "purpose": "Tasks, lists and storage",
+        "paths": [
+          "src/core/**"
+        ],
+        "depends_on": []
+      },
+      {
+        "id": "desktop",
+        "name": "Desktop UI",
+        "purpose": "Tk desktop app",
+        "paths": [
+          "src/desktop/**"
+        ],
+        "depends_on": [
+          "core"
+        ]
+      },
+      {
+        "id": "mobile",
+        "name": "Mobile UI",
+        "purpose": "Android app",
+        "paths": [
+          "mobile/**"
+        ],
+        "depends_on": [
+          "core"
+        ]
+      }
+    ]
+  },
+  "team": {
+    "pm_counted": true,
+    "total_agents": 4,
+    "parallel_chats": 2,
+    "rationale": "Core first, then the two UIs can be built at the same time by two chats.",
+    "simpler_alternative": "One implementer doing everything in order: slower, no coordination cost.",
+    "agents": [
+      {
+        "agent_id": "agent-project-manager",
+        "role": "project_manager",
+        "name": "Project manager",
+        "purpose": "Plans and reviews",
+        "owns_modules": []
+      },
+      {
+        "agent_id": "agent-core-dev",
+        "role": "implementer",
+        "name": "Core developer",
+        "purpose": "Builds the core",
+        "owns_modules": [
+          "core"
+        ]
+      },
+      {
+        "agent_id": "agent-desktop-dev",
+        "role": "implementer",
+        "name": "Desktop developer",
+        "purpose": "Builds the desktop UI",
+        "owns_modules": [
+          "desktop"
+        ]
+      },
+      {
+        "agent_id": "agent-mobile-dev",
+        "role": "implementer",
+        "name": "Mobile developer",
+        "purpose": "Builds the mobile UI",
+        "owns_modules": [
+          "mobile"
+        ]
+      }
+    ]
+  },
+  "roadmap": {
+    "milestones": [
+      {
+        "ref": "m1",
+        "title": "Core ready",
+        "version": "0.1.0",
+        "criteria": [
+          "Core API documented",
+          "Core tests pass"
+        ],
+        "task_refs": [
+          "t1"
+        ]
+      },
+      {
+        "ref": "m2",
+        "title": "Both apps usable",
+        "version": "0.2.0",
+        "criteria": [
+          "Add, edit and finish a todo on both apps"
+        ],
+        "task_refs": [
+          "t2",
+          "t3"
+        ]
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "ref": "t1",
+      "title": "Core library",
+      "objective": "Todo model, storage and the documented core API",
+      "milestone_ref": "m1",
+      "depends_on_refs": [],
+      "parallel_group": "A",
+      "scope": {
+        "include": [
+          "src/core/**"
+        ],
+        "exclude": []
+      },
+      "acceptance_criteria": [
+        "Unit tests pass",
+        "docs/contracts/core-api.md written"
+      ],
+      "priority": "high"
+    },
+    {
+      "ref": "t2",
+      "title": "Desktop UI",
+      "objective": "Tk window using the core API",
+      "owner_agent_id": "agent-desktop-dev",
+      "milestone_ref": "m2",
+      "depends_on_refs": [
+        "t1"
+      ],
+      "parallel_group": "B",
+      "scope": {
+        "include": [
+          "src/desktop/**"
+        ],
+        "exclude": []
+      },
+      "acceptance_criteria": [
+        "Add, edit, finish a todo"
+      ],
+      "priority": "medium"
+    },
+    {
+      "ref": "t3",
+      "title": "Mobile UI",
+      "objective": "Android screens using the core API",
+      "owner_agent_id": "agent-mobile-dev",
+      "milestone_ref": "m2",
+      "depends_on_refs": [
+        "t1"
+      ],
+      "parallel_group": "B",
+      "scope": {
+        "include": [
+          "mobile/**"
+        ],
+        "exclude": []
+      },
+      "acceptance_criteria": [
+        "Add, edit, finish a todo"
+      ],
+      "priority": "medium"
+    }
+  ],
+  "start_prompts": [
+    {
+      "agent_id": "agent-core-dev",
+      "prompt": "You are the core developer of an offline todo app. Build the core library under src/core and document its API in docs/contracts/core-api.md."
+    },
+    {
+      "agent_id": "agent-desktop-dev",
+      "prompt": "You are the desktop developer of an offline todo app. Build a Tk UI under src/desktop that uses only the documented core API."
+    },
+    {
+      "agent_id": "agent-mobile-dev",
+      "prompt": "You are the mobile developer of an offline todo app. Build Android screens under mobile/ that use only the documented core API."
+    }
+  ],
+  "risks": [
+    "The core API may change after the UIs started."
+  ],
+  "questions_for_user": [
+    "Should todos sync between devices later?"
+  ]
+}

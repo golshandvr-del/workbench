@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/golshandvr-del/workbench/packages/contracts/schemas/project-charter.v1.schema.json",
+  "title": "AI Workbench Project Charter (AIWB_PROJECT_CHARTER block, roadmap 3.4.0)",
+  "description": "The whole-project design returned by the project-manager chat: architecture, parallel team, coordination protocol, roadmap with versions, tasks and a start prompt per AI. Cross-references (owners, refs, overlapping ownership, cycles) are checked by aiwb.v2.charter.validate_charter.",
+  "type": "object",
+  "required": ["schema_version", "base_state_revision", "architecture", "team", "coordination", "roadmap", "tasks", "start_prompts"],
+  "$defs": {
+    "text": {"type": "string", "minLength": 1},
+    "texts": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "agentId": {"type": "string", "pattern": "^agent-[a-z0-9-]{1,40}$"},
+    "ref": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,39}$"},
+    "semver": {"type": "string", "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$"}
+  },
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "charter_type": {"const": "project_charter"},
+    "base_state_revision": {"type": "integer", "minimum": 0},
+    "project": {"type": "object", "properties": {"name": {"type": "string"}, "goal": {"type": "string"}, "summary": {"type": "string"}}},
+    "architecture": {
+      "type": "object", "required": ["summary", "modules"],
+      "properties": {
+        "summary": {"$ref": "#/$defs/text"},
+        "modules": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["id", "purpose", "paths"],
+          "properties": {"id": {"$ref": "#/$defs/text"}, "name": {"type": "string"}, "purpose": {"$ref": "#/$defs/text"},
+                         "paths": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                         "depends_on": {"$ref": "#/$defs/texts"}}}}
+      }
+    },
+    "team": {
+      "type": "object", "required": ["pm_counted", "total_agents", "parallel_chats", "rationale", "agents"],
+      "properties": {
+        "pm_counted": {"type": "boolean"},
+        "total_agents": {"type": "integer", "minimum": 1},
+        "parallel_chats": {"type": "integer", "minimum": 1},
+        "rationale": {"$ref": "#/$defs/text"},
+        "simpler_alternative": {"type": "string"},
+        "agents": {"type": "array", "minItems": 1, "maxItems": 12, "items": {
+          "type": "object", "required": ["agent_id", "role", "purpose"],
+          "properties": {"agent_id": {"$ref": "#/$defs/agentId"},
+                         "role": {"enum": ["project_manager", "architect", "implementer", "reviewer", "researcher"]},
+                         "name": {"type": "string"}, "purpose": {"$ref": "#/$defs/text"},
+                         "owns_modules": {"$ref": "#/$defs/texts"}}}}
+      }
+    },
+    "coordination": {
+      "type": "object", "required": ["file_ownership", "conflict_resolution"],
+      "properties": {
+        "file_ownership": {"type": "array", "minItems": 1, "items": {
+          "type": "object", "required": ["agent_id", "paths"],
+          "properties": {"agent_id": {"$ref": "#/$defs/agentId"},
+                         "paths": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}}}},
+        "shared_contracts": {"type": "array", "items": {
+          "type": "object", "required": ["name", "owner_agent_id"],
+          "properties": {"name": {"$ref": "#/$defs/text"}, "path": {"type": "string"},
+                         "owner_agent_id": {"$ref": "#/$defs/agentId"},
+                         "consumers": {"type": "array", "items": {"$ref": "#/$defs/agentId"}}}}},
+        "sync_points": {"type": "array", "items": {
+          "type": "object", "required": ["description"],
+          "properties": {"after_milestone": {"$ref": "#/$defs/ref"}, "description": {"$ref": "#/$defs/text"}}}},
+        "conflict_resolution": {"$ref": "#/$defs/text"}
+      }
+    },
+    "roadmap": {
+      "type": "object", "required": ["milestones"],
+      "properties": {"milestones": {"type": "array", "minItems": 1, "maxItems": 12, "items": {
+        "type": "object", "required": ["ref", "title", "version", "criteria"],
+        "properties": {"ref": {"$ref": "#/$defs/ref"}, "title": {"$ref": "#/$defs/text"}, "version": {"$ref": "#/$defs/semver"},
+                       "criteria": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+                       "task_refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}}}}}}
+    },
+    "tasks": {"type": "array", "minItems": 1, "maxItems": 40, "items": {
+      "type": "object", "required": ["ref", "title", "objective", "owner_agent_id", "milestone_ref", "scope", "acceptance_criteria"],
+      "properties": {
+        "ref": {"$ref": "#/$defs/ref"}, "title": {"$ref": "#/$defs/text"}, "objective": {"$ref": "#/$defs/text"},
+        "owner_agent_id": {"$ref": "#/$defs/agentId"}, "reviewer_agent_id": {"$ref": "#/$defs/agentId"},
+        "milestone_ref": {"$ref": "#/$defs/ref"},
+        "depends_on_refs": {"type": "array", "items": {"$ref": "#/$defs/ref"}},
+        "parallel_group": {"type": "string", "maxLength": 20},
+        "scope": {"type": "object", "required": ["include"],
+                  "properties": {"include": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+                                 "exclude": {"type": "array", "items": {"type": "string"}}}},
+        "acceptance_criteria": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "priority": {"enum": ["low", "medium", "high", "critical"]}
+      }}},
+    "start_prompts": {"type": "array", "minItems": 1, "items": {
+      "type": "object", "required": ["agent_id", "prompt"],
+      "properties": {"agent_id": {"$ref": "#/$defs/agentId"}, "prompt": {"type": "string", "minLength": 40}}}},
+    "risks": {"$ref": "#/$defs/texts"},
+    "questions_for_user": {"$ref": "#/$defs/texts"}
+  }
+}
