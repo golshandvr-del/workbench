@@ -812,6 +812,14 @@ class WorkspaceWindow:
     def _view_timeline(self, f: ttk.Frame) -> None:
         self._heading(f, self.wc.section_label("timeline"))
         f.rowconfigure(2, weight=1)
+        # 3.6.0: visual timeline above the event list (lanes per AI, importance circles, version lines)
+        from ..ui.timeline_canvas import TimelineCanvas
+        vis = ttk.LabelFrame(f, text="Timeline (wheel or +/- to zoom, drag to pan, click an event)", padding=4)
+        vis.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(4, 0))
+        self.tl_canvas = TimelineCanvas(vis, palette=getattr(self, "pal", None), height=180,
+                                        on_select=self.select_timeline_event)
+        self.tl_canvas.pack(fill="x", expand=True)
+        self.tl_canvas.set_model(self.wc.timeline_model())
         flt = ttk.Frame(f, style="WS.TFrame")
         flt.grid(row=1, column=0, sticky="ew")
         self.tl_family = tk.StringVar(value="")
@@ -985,6 +993,13 @@ class WorkspaceWindow:
                                      "Ctrl+B نوار کناری · Ctrl+I بازرس · Alt+1…7 بخش‌ها. نما، زبان و تم دادهٔ پروژه را تغییر نمی‌دهند.")),
                   wraplength=700).grid(row=1, column=0, sticky="w")
         self._tools(f, "settings", 2)
+
+    def select_timeline_event(self, event_id: str) -> None:
+        """Canvas click → Inspector (and the same row in the event list when it is on this page)."""
+        self.wc.select("event", event_id)
+        if hasattr(self, "tl_tree") and self.tl_tree.winfo_exists() and self.tl_tree.exists(event_id):
+            self.tl_tree.see(event_id)
+        self._render_inspector()
 
     def _select_from(self, tree: ttk.Treeview, kind: str) -> None:
         sel = tree.selection()
