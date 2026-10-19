@@ -95,21 +95,43 @@ def _fix_structural_lines(s: str, fixes: list[str]) -> str:
 
 
 def _unwrap_outer_fence(s: str, fixes: list[str]) -> str:
-    """One fence around the whole answer that itself contains AIWB markers → drop it."""
+    """Drop a fence that wraps AIWB blocks (the whole answer, or blocks after some prose).
+
+    Only a fence whose first non-empty inner line is an AIWB header, and whose matching
+    closing fence comes right after an AIWB end marker, is removed. Fences *inside*
+    file bodies are never touched because they never start with an AIWB header.
+    """
     lines = s.split("\n")
-    idx = [i for i, ln in enumerate(lines) if ln.strip()]
-    if len(idx) < 3:
-        return s
-    first, last = idx[0], idx[-1]
-    m = _FENCE.match(lines[first])
-    if not m or lines[last].strip() != m.group(1):
-        return s
-    inner = lines[first + 1:last]
-    first_inner = next((ln for ln in inner if ln.strip()), "")
-    if not re.match(r"^\s*<<<AIWB_", first_inner):
+    out: list[str] = []
+    i, removed = 0, 0
+    while i < len(lines):
+        m = _FENCE.match(lines[i])
+        if m:
+            j = i + 1
+            while j < len(lines) and not lines[j].strip():
+                j += 1
+            if j < len(lines) and re.match(r"^\s*<<<AIWB_(?:FILE|COMMAND)\b", lines[j]):
+                fence = m.group(1)
+                close = None
+                for k in range(len(lines) - 1, j, -1):
+                    if lines[k].strip() == fence:
+                        prev = k - 1
+                        while prev > j and not lines[prev].strip():
+                            prev -= 1
+                        if re.match(r"^\s*<<<AIWB_END_(?:FILE|COMMAND)>>>\s*$", lines[prev]):
+                            close = k
+                        break
+                if close is not None:
+                    out.extend(lines[i + 1:close])
+                    removed += 1
+                    i = close + 1
+                    continue
+        out.append(lines[i])
+        i += 1
+    if not removed:
         return s
     fixes.append("outer_fence")
-    return "\n".join(inner) + "\n"
+    return "\n".join(out)
 
 
 def normalize(text: str | bytes) -> NormalizeResult:
