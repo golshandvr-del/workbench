@@ -82,6 +82,8 @@ class VerifyStepTests(unittest.TestCase):
 
     def test_waiver_is_refused_outside_checking(self) -> None:
         self.g.perform(f"task:{self.tid}", "validation_passed")
+        self.g.perform(f"task:{self.tid}", "approve")
+        self.assertEqual(self.c.state()["tasks"][self.tid]["status"], "done")
         with self.assertRaises(ModelError):
             self.g.waive_validation(self.tid, "late")
 
