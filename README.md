@@ -7,7 +7,7 @@ Git/GitHub for the project. The Android companion app in `apps/mobile` pairs wit
 
 | App | Path | Current | Download |
 |---|---|---|---|
-| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **3.0.0** (single window, Fluent theme, global Settings and Simple/Advanced) | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
+| Desktop (Windows 10/11, Python + Tk) | `apps/desktop` | **3.1.0** (single window, Fluent theme, robust wrapping layout) | [Releases → `desktop-v*`](https://github.com/golshandvr-del/workbench/releases) |
 | Mobile (Android 7.0+) | `apps/mobile` | **0.3.0** (Companion) | [Releases → `mobile-v*`](https://github.com/golshandvr-del/workbench/releases) |
 
 ## Repository layout
@@ -72,6 +72,8 @@ cd apps/mobile/android && ./gradlew testDebugUnitTest assembleDebug
 ```
 
 ## Status / roadmap
+
+> **Language policy:** the app UI is **English-only** for now (Desktop and Android). Persian will be added only when the product owner explicitly requests it in a later version.
 
 **[`ROADMAP.md`](ROADMAP.md)** is the master plan (3.x product rebuild: single shell, reliable intake, project charter, guided loop, visual timeline, QR pairing, standalone mobile). Previous roadmaps are in `docs/roadmap/archive/`.
 Previous roadmap (desktop 1.14.1–2.2.0, mobile 0.1.0–0.3.0) is archived in `docs/roadmap/archive/`. Audit: [`docs/audit/IMPLEMENTATION_AUDIT_FA.md`](docs/audit/IMPLEMENTATION_AUDIT_FA.md).

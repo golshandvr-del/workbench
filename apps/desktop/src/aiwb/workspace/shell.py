@@ -13,8 +13,11 @@ from typing import Any, Callable
 
 from .. import i18n
 from ..v2.models import ModelError
+from ..ui import layout as ui_layout
 from . import theme
 from .controller import SECTIONS, WorkspaceController
+
+SCROLL_VIEWS = {"overview", "settings", "versions"}
 
 
 class WorkspaceWindow:
@@ -220,10 +223,17 @@ class WorkspaceWindow:
         for v in self.views.values():
             v.destroy()
         self.views = {}
-        frame = ttk.Frame(self.center, style="WS.TFrame")
-        frame.grid(row=0, column=0, sticky="nsew")
+        if key in SCROLL_VIEWS:  # content-height views scroll instead of being cut off (3.1.0)
+            holder = ui_layout.ScrollPage(self.center, style="WS.TFrame")
+            holder.grid(row=0, column=0, sticky="nsew")
+            frame = holder.body
+            frame.configure(style="WS.TFrame")
+            self.views[key] = holder
+        else:
+            frame = ttk.Frame(self.center, style="WS.TFrame")
+            frame.grid(row=0, column=0, sticky="nsew")
+            self.views[key] = frame
         frame.columnconfigure(0, weight=1)
-        self.views[key] = frame
         getattr(self, f"_view_{key}")(frame)
         self.refresh()
 

@@ -52,6 +52,7 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.ui import layout as ui_layout
 from aiwb.workspace import theme as tokens
 from aiwb.ui.prefs import AppPrefs
 from aiwb.ui.shell import AppShell, build_settings_page
@@ -70,7 +71,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "3.0.0"
+APP_VERSION = "3.1.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4582,7 +4583,9 @@ class WorkbenchApp:
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
-        self.settings_widgets = build_settings_page(self.shell, self.settings_tab, extra=self._settings_app_section)
+        self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
+        self.settings_scroll.pack(fill="both", expand=True)
+        self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
         bottom = self.shell.statusbar
         ttk.Label(bottom, textvariable=self.status_var, style="StatusBar.TLabel").grid(row=0, column=0, sticky="ew")
         self.activity_progress = ttk.Progressbar(bottom, mode="indeterminate", length=100)
@@ -4590,6 +4593,11 @@ class WorkbenchApp:
         self.activity_progress.grid_remove()
         ttk.Label(bottom, text=f"v{APP_VERSION}", style="StatusBar.TLabel").grid(row=0, column=2)
         self.shell.on_pref(self._on_app_pref)
+        ui_layout.install(self.root)
+        ui_layout.set_direction(self.prefs.rtl)
+        for page in self.shell.pages.values():
+            ui_layout.auto_flow(page)
+        ui_layout.flow(self.shell.actions)
         self.shell.show("home")
 
     def _save_prefs(self, values: dict[str, str]) -> None:
@@ -4614,8 +4622,8 @@ class WorkbenchApp:
                 pass
 
     def _settings_app_section(self, card: ttk.Frame) -> None:
-        row = ttk.Frame(card, style="Card.TFrame")
-        row.grid(row=2, column=0, sticky="w")
+        row = ttk.Frame(card, style=ui_layout.row_style(card))
+        row.grid(row=2, column=0, sticky="ew")
         for text, cmd in (("Mobile Companion…", self.open_companion),
                           ("Validation Profiles…", self.manage_validation_profiles),
                           ("Restore Manager…", self.open_restore_manager),
@@ -5287,17 +5295,24 @@ class WorkbenchApp:
         ttk.Button(left_buttons, text="Select all", command=self.select_all_files).pack(side="left", padx=(5, 0))
         ttk.Button(left_buttons, text="Clear", command=lambda: self.file_tree.selection_remove(self.file_tree.selection())).pack(side="left", padx=(5, 0))
 
-        ttk.Label(right, text="Task for GPT or Gemini", font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        ttk.Label(right, text="State the outcome, important constraints, and what ‘done’ means. The selected project profile and chosen source files are added automatically.", style="Hint.TLabel", wraplength=700).pack(anchor="w", pady=(2, 0))
-        self.task_text = tk.Text(right, height=5, wrap="word", undo=True, font=("Segoe UI", 10))
+        vpane = ttk.Panedwindow(right, orient="vertical")
+        vpane.pack(fill="both", expand=True)
+        setup = ui_layout.ScrollPage(vpane)
+        out = ttk.Frame(vpane)
+        vpane.add(setup, weight=3)
+        vpane.add(out, weight=2)
+        self.prompt_setup_page = setup
+        ttk.Label(setup.body, text="Task for GPT or Gemini", font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        ttk.Label(setup.body, text="State the outcome, important constraints, and what ‘done’ means. The selected project profile and chosen source files are added automatically.", style="Hint.TLabel", wraplength=700).pack(anchor="w", pady=(2, 0))
+        self.task_text = tk.Text(setup.body, height=5, wrap="word", undo=True, font=("Segoe UI", 10))
         self.task_text.pack(fill="x", pady=(4, 8))
-        output_row = ttk.Frame(right)
+        output_row = ttk.Frame(setup.body)
         output_row.pack(fill="x", pady=(0, 3))
         ttk.Label(output_row, text="Target model response format:").pack(side="left")
         output_combo = ttk.Combobox(output_row, textvariable=self.output_format_var, values=OUTPUT_FORMAT_OPTIONS, state="readonly", width=42)
         output_combo.pack(side="left", padx=(7, 0))
         output_combo.bind("<<ComboboxSelected>>", lambda _event: self._save_settings())
-        playbook_row = ttk.Frame(right)
+        playbook_row = ttk.Frame(setup.body)
         playbook_row.pack(fill="x", pady=(1, 4))
         ttk.Label(playbook_row, text="Task playbook:").pack(side="left")
         playbook_catalog = task_playbooks_service.playbook_catalog()
@@ -5314,7 +5329,7 @@ class WorkbenchApp:
             text="Recommended: GPT ZIP for multi-file projects when downloadable artifacts are available; the ZIP should include README.md and AIWB_RESPONSE.json control metadata (actions may be empty). Choose Gemini named blocks for write-only file replies, or strict workbench-v3 JSON when typed Delete/Rename/Move operations may be needed. Planning stages always use JSON.",
             style="Hint.TLabel", wraplength=700, justify="left",
         ).pack(anchor="w", pady=(0, 5))
-        task_buttons = ttk.Frame(right)
+        task_buttons = ttk.Frame(setup.body)
         task_buttons.pack(fill="x", pady=(0, 5))
         ttk.Button(task_buttons, text="Build prompt", command=self.build_prompt).pack(side="left")
         ttk.Button(task_buttons, text="Copy prompt", command=self.copy_prompt).pack(side="left", padx=(6, 0))
@@ -5324,7 +5339,7 @@ class WorkbenchApp:
             variable=self.project_history_context_var,
         ).pack(side="left", padx=(10, 0))
         ttk.Button(task_buttons, text="Add history to prompt", command=self.include_project_history_in_next_prompt).pack(side="left", padx=(6, 0))
-        quick_row = ttk.Frame(right)
+        quick_row = ttk.Frame(setup.body)
         quick_row.pack(fill="x", pady=(0, 5))
         quick_menu = tk.Menu(self.root, tearoff=False)
         self.quick_instruction_menu = quick_menu
@@ -5339,8 +5354,8 @@ class WorkbenchApp:
             ttk.Button(quick_row, text=label, command=lambda item=dict(instruction): self.append_quick_instruction(item)).pack(side="left", padx=(6, 0))
         ttk.Button(quick_row, text="Manage…", command=self.manage_quick_instructions).pack(side="left", padx=(6, 0))
         self._refresh_quick_instruction_menu()
-        ttk.Label(right, text="Generated prompt (editable; quick instructions append at the end)", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(3, 0))
-        prompt_frame = ttk.Frame(right)
+        ttk.Label(out, text="Generated prompt (editable; quick instructions append at the end)", font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(3, 0))
+        prompt_frame = ttk.Frame(out)
         prompt_frame.pack(fill="both", expand=True, pady=(4, 0))
         self.prompt_output = tk.Text(prompt_frame, wrap="word", undo=True, font=("Consolas", 9))
         prompt_scroll = ttk.Scrollbar(prompt_frame, orient="vertical", command=self.prompt_output.yview)
@@ -5417,8 +5432,8 @@ class WorkbenchApp:
         filter_row.pack(fill="x", pady=(0, 5))
         ttk.Label(filter_row, text="Filter history").pack(side="left", padx=(0, 5))
         self.history_filter_var = tk.StringVar()
-        self.history_filter_entry = ttk.Entry(filter_row, textvariable=self.history_filter_var)
-        self.history_filter_entry.pack(side="left", fill="x", expand=True)
+        self.history_filter_entry = ttk.Entry(filter_row, textvariable=self.history_filter_var, width=22)
+        self.history_filter_entry.pack(side="left")
         self.history_filter_entry.bind("<Return>", lambda _event: self._refresh_history_view())
         ttk.Button(filter_row, text="Search", command=self._refresh_history_view).pack(side="left", padx=(4, 0))
         ttk.Button(filter_row, text="Clear", command=self._clear_history_filter).pack(side="left", padx=(4, 0))
