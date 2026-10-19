@@ -348,23 +348,32 @@ class ScrollPage(ttk.Frame):
             pass
 
 
+def _rect(w: tk.Misc) -> tuple[int, int, int, int]:
+    x, y = w.winfo_rootx(), w.winfo_rooty()
+    return x, y, x + w.winfo_width(), y + w.winfo_height()
+
+
 def outside_window(top: tk.Misc, classes: tuple[str, ...] = ("TButton", "Button", "TCheckbutton", "TRadiobutton", "TMenubutton")) -> list[str]:
-    """Names of mapped controls (outside scrollable canvases) that are not fully inside ``top``."""
+    """Mapped controls that are cut off: squeezed below their requested width, or not fully
+    visible inside every ancestor up to ``top``. Content of scrollable canvases is skipped."""
     top.update_idletasks()
-    x0, y0 = top.winfo_rootx(), top.winfo_rooty()
-    x1, y1 = x0 + top.winfo_width(), y0 + top.winfo_height()
     bad: list[str] = []
-    stack: list[tk.Misc] = list(top.winfo_children())
+    stack: list[tuple[tk.Misc, tuple[int, int, int, int]]] = [(c, _rect(top)) for c in top.winfo_children()]
     while stack:
-        w = stack.pop()
+        w, clip = stack.pop()
         try:
-            if isinstance(w, tk.Toplevel) or w.winfo_class() in ("Canvas", "Menu") or not w.winfo_ismapped():
+            if isinstance(w, tk.Toplevel) or w.winfo_class() in ("Canvas", "Menu", "Text", "Treeview", "Listbox") or not w.winfo_ismapped():
                 continue
+            r = _rect(w)
             if w.winfo_class() in classes:
-                wx, wy = w.winfo_rootx(), w.winfo_rooty()
-                if wx < x0 - 1 or wy < y0 - 1 or wx + w.winfo_width() > x1 + 1 or wy + w.winfo_height() > y1 + 1:
-                    bad.append(f"{w} ({w.cget('text') if 'text' in w.keys() else ''})")
-            stack.extend(w.winfo_children())
+                squeezed = w.winfo_width() + 2 < w.winfo_reqwidth()
+                outside = r[0] < clip[0] - 1 or r[1] < clip[1] - 1 or r[2] > clip[2] + 1 or r[3] > clip[3] + 1
+                if squeezed or outside:
+                    label = w.cget("text") if "text" in w.keys() else ""
+                    bad.append(f"{label or w} [{'squeezed' if squeezed else 'clipped'}]")
+                continue
+            inner = (max(clip[0], r[0]), max(clip[1], r[1]), min(clip[2], r[2]), min(clip[3], r[3]))
+            stack.extend((c, inner) for c in w.winfo_children())
         except tk.TclError:
             continue
     return bad
