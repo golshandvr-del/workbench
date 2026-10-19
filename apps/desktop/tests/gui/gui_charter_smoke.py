@@ -81,7 +81,7 @@ def main() -> None:
             assert root.clipboard_get() == sp and "mobile/**" in sp and "NO access" in sp
         finally:
             root.destroy()
-    print("PASS: Project Charter GUI smoke — prompt, refusal with fix prompt, tolerant import, review, start prompts")
+    print("PASS: Project Charter GUI smoke - prompt, refusal with fix prompt, tolerant import, review, start prompts")
 
 
 def _all(w: tk.Misc):
