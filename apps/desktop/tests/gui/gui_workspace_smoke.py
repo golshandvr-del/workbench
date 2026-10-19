@@ -59,9 +59,9 @@ def main() -> None:
                 for s in SECTIONS:
                     w.show(s)
                     root.update()
-                    assert inside(w.next_btn, w.win), (wd, ht, s, "next action button out of window")
+                    assert inside(w.next_btn, w.top), (wd, ht, s, "next action button out of window")
                     if wc.inspector_open:
-                        assert inside(w.inspector, w.win), (wd, ht, s, "inspector out of window")
+                        assert inside(w.inspector, w.top), (wd, ht, s, "inspector out of window")
                 # The window manager may clamp the requested size to the screen (CI runners are small):
                 # the layout must follow the *actual* width, which is what users see.
                 real = w.top.winfo_width()
