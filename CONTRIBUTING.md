@@ -22,3 +22,4 @@ cd ../.. && python tools/check_installer_manifest.py && python -m unittest tools
 - No model output writes files or runs commands without preview and explicit user approval.
 - No force push / hard reset / auto-commit in normal flows; push to `main`/`master` from the app stays blocked.
 - Anything not actually run (e.g. native Windows checks) is reported as **NOT RUN**, never PASS.
+- **Language policy:** the user interface is **English-only** for now, on both Desktop (Windows) and Android. Do not add or extend Persian (or any other) translations, RTL work or Persian-specific tests until the product owner explicitly asks for it in a later version. Gates run in English.
