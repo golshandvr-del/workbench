@@ -8847,8 +8847,9 @@ class WorkbenchApp:
             if hints:
                 inbox_note += " The answer seems to ask for: " + ", ".join(hints[:5]) + " (suggestion only; use Context request… to prepare them)."
             if not archive_selected and self._offer_continue_prompt(raw):
-                self.set_status("Response was cut off; a 'continue' prompt is on the clipboard. No project files were applied." + inbox_note)
+                self.set_status("The answer was cut off: a 'continue' prompt is on the clipboard — paste it into the same chat. No project files were applied." + inbox_note)
                 self.refresh_workflow_status()
+                self.show_import_diagnostics(error_override=str(exc))
                 return
             self.set_status("Response rejected; diagnostics are available and no project files were applied." + inbox_note)
             self.refresh_workflow_status()
@@ -8901,16 +8902,6 @@ class WorkbenchApp:
             self.root.clipboard_append(prompt)
         except tk.TclError:
             pass
-        if getattr(self, "suppress_dialogs", False):
-            return True
-        done = ", ".join(report.completed_paths) or "none"
-        messagebox.showinfo(
-            "The answer was cut off",
-            "The model's answer ends in the middle"
-            + (f" of {report.open_path}" if report.open_path else "") + ".\n\n"
-            f"Complete files: {done}.\n\n"
-            "A 'continue' prompt is now on your clipboard. Paste it into the same chat, "
-            "then paste the new answer here. Nothing was applied.")
         return True
 
     def make_projects_controller(self, root: Path) -> ProjectsController:
