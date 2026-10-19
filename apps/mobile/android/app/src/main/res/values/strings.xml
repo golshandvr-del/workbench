@@ -48,4 +48,24 @@
     <string name="not_allowed">Not allowed by the desktop: %1$s</string>
     <string name="companion_error">Companion error: %1$s</string>
     <string name="companion_note">Works only on the same local network as the desktop. Messages are end-to-end encrypted; GitHub tokens never leave the desktop. Preview, Apply and commands stay on the desktop.</string>
+    <string name="standalone_open">Standalone mode (work on this phone)</string>
+    <string name="standalone_title">AI Workbench — Standalone</string>
+    <string name="standalone_projects">Projects on this phone</string>
+    <string name="standalone_no_projects">No project yet. Create one or import a bundle exported from the desktop.</string>
+    <string name="standalone_new_project">New project</string>
+    <string name="standalone_import_bundle">Import project bundle</string>
+    <string name="standalone_export_bundle">Export project bundle</string>
+    <string name="standalone_project_name">Project name</string>
+    <string name="standalone_goal">What do you want to build? (optional)</string>
+    <string name="standalone_name_required">A project name is required.</string>
+    <string name="standalone_exists">Project %1$s already exists.</string>
+    <string name="standalone_other_steps">Other open steps</string>
+    <string name="standalone_paste_answer">Paste an AI answer</string>
+    <string name="standalone_paste_hint">Paste the full answer from the chat here</string>
+    <string name="standalone_route">Read answer</string>
+    <string name="standalone_timeline">Timeline</string>
+    <string name="standalone_back">All projects</string>
+    <string name="standalone_exported">Bundle saved.</string>
+    <string name="standalone_replace">Replace (a backup is kept)</string>
+    <string name="standalone_error">Error: %1$s</string>
 </resources>
