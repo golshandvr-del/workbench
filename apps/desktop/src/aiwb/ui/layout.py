@@ -129,6 +129,20 @@ def row_style(frame: tk.Misc) -> str:
         return "TFrame"
 
 
+def refresh_styles(root: tk.Misc) -> None:
+    """Re-derive every flow-row background after a theme change."""
+    seen: set[str] = set()
+    for bar in list(_BARS):
+        try:
+            if bar.frame.winfo_exists():
+                name = row_style(bar.frame)
+                if name not in seen:
+                    seen.add(name)
+        except tk.TclError:
+            continue
+    _ = root
+
+
 def no_flow(frame: tk.Misc) -> tk.Misc:
     """Mark a frame whose children are laid out by its owner (never converted)."""
     frame._aiwb_noflow = True  # type: ignore[attr-defined]
