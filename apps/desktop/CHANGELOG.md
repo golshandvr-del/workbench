@@ -1,3 +1,19 @@
+## [3.9.0] - 2026-10-19
+
+### Product Release Gate (Roadmap 3.x, Gate 3.9.0)
+- `tests/test_release_gate.py`: one end-to-end run — a dirty chat copy of the Project Charter is normalised and
+  imported, the guided loop alone takes three AIs to two released versions without a dead end, the project goes
+  desktop → phone → desktop as `aiwb-bundle.v1` (plans `new` then `same`), the Kotlin-produced bundle is accepted,
+  and open / guide / export stay inside performance budgets.
+- `tools/gui_screenshots_3x.py` and `docs/audit/screens/v3.9.0/`: after-screenshots of every rail page and every
+  Workbench view in light and dark (before: `docs/audit/screens/v2.6.0/`).
+- `docs/USER_GUIDE.md`: English user guide for desktop and phone.
+- `docs/release/v3.9.0/RELEASE_GATE_v3.9.0.md`: every 3.x gate, measured performance, explicit NOT RUN list.
+
+### Validation
+- Performance (Linux CI-class machine): main window 545 ms, open 200 tasks / 2000 events 155 ms, payload 2.51 MB.
+- NOT RUN: physical Windows DPI scaling, real chat models, a physical phone.
+
 ## [3.8.0] - 2026-10-19
 
 ### Project bundles between desktop and phone (Roadmap 3.x, Gate mobile 1.0.0 + 3.8.0)

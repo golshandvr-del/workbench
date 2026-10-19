@@ -3,8 +3,8 @@
 > **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر PR باید به یک گام همین فایل اشاره کند.
 > Roadmapهای قبلی در `docs/roadmap/archive/` بایگانی شده‌اند (superseded): `ROADMAP_v2.7-v2.10_GUI-only_FA.md`، `ROADMAP_v2.3-v2.6_FA.md`، `ROADMAP_v1.14-v2.2_FA.md`.
 
-**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v3.8.0` · **Mobile منتشرشده:** `mobile-v1.0.0`
-**گام فعال:** 3.9.0 — Release Gate محصول
+**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v3.9.0` · **Mobile منتشرشده:** `mobile-v1.0.0`
+**گام فعال:** — (Master Roadmap 3.x کامل شد؛ گام بعدی فقط با تصمیم مالک محصول)
 
 راهنما: ✅ کامل (Gate پاس) · 🟡 بخشی · ⬜ شروع‌نشده · NOT RUN = اجرا نشده
 
@@ -58,7 +58,7 @@
 | **3.6.0** | Timeline تصویری | `ui/timeline_canvas.py`: محور افقی زمان، دایره با اندازهٔ اهمیت (minor/normal/major/critical)، خط عمودی هر نسخه (پیشنهادی خط‌چین، منتشرشده توپر)، Lane هر AI، Zoom/Pan، Tooltip، کلیک → Inspector | smoke: رندر ۲۰۰۰ رویداد < 300ms؛ اندازهٔ دایره و خط نسخه مطابق داده؛ Dark (فقط انگلیسی) | ✅ (`test_timeline_canvas`، `gui_timeline_smoke`) |
 | **3.7.0** + mobile **0.4.0** | اتصال موبایل با QR | QR روی Desktop (Canvas، بدون PIL)؛ URI `aiwb://pair?h=&p=&k=`؛ کد دستی ۱۶ نویسه (Base32، ۸۰ بیت، ۱۰ دقیقه، ۵ تلاش)؛ موبایل: اسکنر داخلی + Deep link از دوربین سیستم | تست واحد QR (decode با کتابخانهٔ مرجع در CI)، قرارداد کد کوتاه در هر دو طرف | ✅ (`test_qr_pairing` با zbar، `PairingContractTest` با ZXing، `companion-pairing.v2`) |
 | mobile **1.0.0** + **3.8.0** | موبایل مستقل | هستهٔ Kotlin: پروژه‌ها، Charter، پرامپت‌ها، Intake با همان Normalizer (پیکرهٔ مشترک در `packages/contracts/fixtures`)، Task، حلقهٔ هدایت‌شده، Timeline Canvas؛ Export/Import `aiwb-bundle.v1` بین Desktop و موبایل | تست‌های JVM روی پیکرهٔ مشترک؛ round-trip بسته | ✅ (`IntakeCorpusTest`، `BundleContractTest`، `StandaloneLoopTest`، `test_bundle`؛ `fixtures/bundle/`) |
-| **3.9.0** | Release Gate محصول | E2E کامل، Screenshotهای قبل/بعد، Performance، مستندات کاربر EN | همهٔ Gateها؛ NOT RUNها صریح | ⬜ |
+| **3.9.0** | Release Gate محصول | E2E کامل، Screenshotهای قبل/بعد، Performance، مستندات کاربر EN | همهٔ Gateها؛ NOT RUNها صریح | ✅ (`test_release_gate`، `docs/release/v3.9.0/RELEASE_GATE_v3.9.0.md`، `docs/audit/screens/v3.9.0/`، `docs/USER_GUIDE.md`) |
 
 ## ۴. موارد NOT RUN که فقط مالک محصول می‌تواند اجرا کند
 

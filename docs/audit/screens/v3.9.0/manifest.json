@@ -1,0 +1,236 @@
+{
+ "label": "3.9.0 after (single window, Fluent theme)",
+ "before": "docs/audit/screens/v2.6.0",
+ "dataset": "tests/fixtures_ten_agents.py (10 agents, 2 tasks each)",
+ "tk_scaling": 1.0802764486975012,
+ "mode": "advanced",
+ "language": "en",
+ "capture": "Xvfb + ImageMagick import (Linux, not physical Windows)",
+ "machine": "Linux 6.1.155 Python 3.13.14",
+ "shots": [
+  {
+   "file": "home_light_1280x720.png",
+   "page": "home",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_overview_light_1280x720.png",
+   "page": "workbench",
+   "view": "overview",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_timeline_light_1280x720.png",
+   "page": "workbench",
+   "view": "timeline",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_tasks_light_1280x720.png",
+   "page": "workbench",
+   "view": "tasks",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_team_light_1280x720.png",
+   "page": "workbench",
+   "view": "team",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_files_light_1280x720.png",
+   "page": "workbench",
+   "view": "files",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_versions_light_1280x720.png",
+   "page": "workbench",
+   "view": "versions",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "prompt_light_1280x720.png",
+   "page": "prompt",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "response_light_1280x720.png",
+   "page": "response",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "profile_light_1280x720.png",
+   "page": "profile",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "history_light_1280x720.png",
+   "page": "history",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "run_light_1280x720.png",
+   "page": "run",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "git_light_1280x720.png",
+   "page": "git",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "settings_light_1280x720.png",
+   "page": "settings",
+   "view": "",
+   "theme": "light",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "home_dark_1280x720.png",
+   "page": "home",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_overview_dark_1280x720.png",
+   "page": "workbench",
+   "view": "overview",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_timeline_dark_1280x720.png",
+   "page": "workbench",
+   "view": "timeline",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_tasks_dark_1280x720.png",
+   "page": "workbench",
+   "view": "tasks",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_team_dark_1280x720.png",
+   "page": "workbench",
+   "view": "team",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_files_dark_1280x720.png",
+   "page": "workbench",
+   "view": "files",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "workbench_versions_dark_1280x720.png",
+   "page": "workbench",
+   "view": "versions",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "prompt_dark_1280x720.png",
+   "page": "prompt",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "response_dark_1280x720.png",
+   "page": "response",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "profile_dark_1280x720.png",
+   "page": "profile",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "history_dark_1280x720.png",
+   "page": "history",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "run_dark_1280x720.png",
+   "page": "run",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "git_dark_1280x720.png",
+   "page": "git",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  },
+  {
+   "file": "settings_dark_1280x720.png",
+   "page": "settings",
+   "view": "",
+   "theme": "dark",
+   "size": "1280x720",
+   "actual": "1280x720"
+  }
+ ]
+}
