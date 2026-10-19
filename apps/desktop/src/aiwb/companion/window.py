@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from typing import Callable
 
+from ..ui import qr
 from .server import CompanionServer
 from .service import DEFAULT_PERMISSIONS, PERMISSIONS, CompanionService
 
@@ -17,7 +18,7 @@ class CompanionWindow:
         self.confirm = confirm or (lambda title, msg: messagebox.askyesno(title, msg, parent=self.win, default="no"))
         self.win = tk.Toplevel(parent)
         self.win.title("Mobile Companion")
-        self.win.geometry("760x520")
+        self.win.geometry("760x680")
         self.win.protocol("WM_DELETE_WINDOW", self.close)
         top = ttk.Frame(self.win, padding=8)
         top.pack(fill="x")
@@ -32,13 +33,25 @@ class CompanionWindow:
         ttk.Label(self.win, text=note, wraplength=720, padding=(8, 0)).pack(anchor="w")
         pf = ttk.LabelFrame(self.win, text="Pairing", padding=8)
         pf.pack(fill="x", padx=8, pady=6)
-        self.code = tk.Text(pf, height=2, wrap="char")
-        self.code.pack(fill="x")
+        body = ttk.Frame(pf)
+        body.pack(fill="x")
+        # The QR code is always black on white (also in the dark theme) so phone cameras can read it.
+        self.qr_canvas = tk.Canvas(body, width=240, height=240, highlightthickness=0, background="#ffffff")
+        self.qr_canvas.pack(side="left")
+        side = ttk.Frame(body, padding=(12, 0))
+        side.pack(side="left", fill="both", expand=True)
+        ttk.Label(side, text="Scan with the phone camera or the AI Workbench app, or type this code:",
+                  wraplength=420).pack(anchor="w")
+        self.code_var = tk.StringVar(value="")
+        ttk.Label(side, textvariable=self.code_var, font=("Consolas", 20, "bold")).pack(anchor="w", pady=(6, 6))
+        self.timer_var = tk.StringVar(value="")
+        ttk.Label(side, textvariable=self.timer_var).pack(anchor="w")
+        self.uri = ""
         self.pair_var = tk.StringVar(value="No pairing in progress.")
         ttk.Label(pf, textvariable=self.pair_var, wraplength=700).pack(anchor="w", pady=(4, 0))
         row = ttk.Frame(pf)
         row.pack(fill="x", pady=(4, 0))
-        ttk.Button(row, text="Copy code", command=self.do_copy).pack(side="left")
+        ttk.Button(row, text="Copy link", command=self.do_copy).pack(side="left")
         self.approve_btn = ttk.Button(row, text="Approve device", command=lambda: self.do_decide(True), state="disabled")
         self.approve_btn.pack(side="left", padx=6)
         self.deny_btn = ttk.Button(row, text="Deny", command=lambda: self.do_decide(False), state="disabled")
@@ -77,6 +90,17 @@ class CompanionWindow:
         if pend:
             self.pair_var.set(f"Device '{pend[0]['device_name']}' asks to pair. Approve only if this is your phone.")
         st = "normal" if pend else "disabled"
+        ps = self.svc.pairing_state()
+        if ps["state"] == "active":
+            m, sec = divmod(ps["seconds_left"], 60)
+            self.timer_var.set("Code used - waiting for your approval." if ps.get("used")
+                               else f"Valid for {m}:{sec:02d} - single use, 5 attempts.")
+        elif ps["state"] == "expired":
+            self.timer_var.set("Code expired. Click 'Pair new device…' for a new one.")
+            self._clear_code()
+        elif ps["state"] == "locked":
+            self.timer_var.set("Too many wrong attempts - the code was cancelled. Create a new one.")
+            self._clear_code()
         self.approve_btn.configure(state=st)
         self.deny_btn.configure(state=st)
         sel = self.tree.selection()
@@ -98,14 +122,24 @@ class CompanionWindow:
         if not self.server.running:
             self.server.start()
         uri = self.svc.start_pairing(self.server.host, self.server.port)
-        self.code.delete("1.0", "end")
-        self.code.insert("1.0", uri)
-        self.pair_var.set("Enter this one-time code in the AI Workbench app on your phone (valid 10 minutes).")
+        self.uri = uri
+        self.code_var.set(self.svc.pairing_code())
+        matrix = qr.encode(uri, "M")
+        module = max(2, 240 // (len(matrix) + 8))
+        qr.draw(self.qr_canvas, matrix, module=module)
+        self.pair_var.set("Scan the QR code or type the 16-character code in the AI Workbench app (valid 10 minutes).")
         self.refresh()
         return uri
 
+    def _clear_code(self) -> None:
+        if self.uri:
+            self.uri = ""
+            self.code_var.set("")
+            self.qr_canvas.delete("qr")
+
     def do_copy(self) -> None:
-        self.clipboard(self.code.get("1.0", "end-1c"))
+        if self.uri:
+            self.clipboard(self.uri)
 
     def do_decide(self, approve: bool) -> None:
         pend = self.svc.pending_requests()
