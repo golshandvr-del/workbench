@@ -116,6 +116,19 @@ def set_direction(rtl: bool) -> None:
         bar.reflow(force=True)
 
 
+def row_style(frame: tk.Misc) -> str:
+    """A border-less frame style with the background of ``frame`` (rows inside cards)."""
+    try:
+        parent = str(frame.cget("style")) or frame.winfo_class()
+        style = ttk.Style(frame)
+        bg = style.lookup(parent, "background") or style.lookup("TFrame", "background")
+        name = f"FlowRow{abs(hash(parent)) % 10_000}.TFrame"
+        style.configure(name, background=bg, borderwidth=0, relief="flat", padding=0)
+        return name
+    except tk.TclError:
+        return "TFrame"
+
+
 def no_flow(frame: tk.Misc) -> tk.Misc:
     """Mark a frame whose children are laid out by its owner (never converted)."""
     frame._aiwb_noflow = True  # type: ignore[attr-defined]
@@ -196,11 +209,7 @@ class FlowBar:
         if rows == self._rows and not force:
             return
         self._rows = rows
-        bg_style = "TFrame"
-        try:
-            bg_style = self.frame.cget("style") or "TFrame"
-        except tk.TclError:
-            pass
+        bg_style = row_style(self.frame)
         while len(self._row_frames) < len(rows):
             rf = ttk.Frame(self.frame, style=bg_style)
             self._row_frames.append(rf)
