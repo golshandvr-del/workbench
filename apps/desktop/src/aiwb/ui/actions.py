@@ -121,9 +121,12 @@ def _menu_labels(menu: tk.Menu) -> list[str]:
     if end is None:
         return out
     for i in range(int(end) + 1):
-        if menu.type(i) == "command" and str(menu.entrycget(i, "state")) != "disabled" or (
-                menu.type(i) == "command" and not menu.entrycget(i, "label").isupper()):
-            out.append(str(menu.entrycget(i, "label")))
+        if menu.type(i) != "command":
+            continue
+        label = str(menu.entrycget(i, "label"))
+        if str(menu.entrycget(i, "state")) == "disabled" and label.isupper():
+            continue  # group header
+        out.append(label)
     return out
 
 
