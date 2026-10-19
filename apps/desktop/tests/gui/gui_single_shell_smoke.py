@@ -23,11 +23,11 @@ from gui_smoke_helpers import wait_for_project_ready
 
 
 def toplevels(root: tk.Misc) -> list[tk.Misc]:
-    out, stack = [], list(root.winfo_children())
+    out, stack = [], list(root.winfo_children())  # Toplevel windows (combobox popdowns excluded)
     while stack:
         w = stack.pop()
-        if isinstance(w, tk.Toplevel):
-            out.append(w)
+        if isinstance(w, tk.Toplevel) and w.winfo_class() != "ComboboxPopdown" and "popdown" not in str(w):
+            out.append(str(w))
         stack.extend(w.winfo_children())
     return out
 
@@ -55,7 +55,7 @@ def main() -> None:
                 root.update()
             w = app.workspace_window
             assert w is not None and w.embedded, "Workbench must be embedded"
-            assert len(toplevels(root)) == before, "opening the Workbench created a window"
+            assert len(toplevels(root)) == before, ("opening the Workbench created a window", toplevels(root))
             assert w.win.winfo_toplevel() is root
             assert not w.mode_box.winfo_ismapped() and not w.lang_box.winfo_ismapped() and not w.theme_box.winfo_ismapped()
             ctl = w.wc.ctl
