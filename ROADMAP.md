@@ -3,8 +3,8 @@
 > **این فایل تنها مرجع اجرایی ترتیب توسعه است.** هر PR باید به یک گام همین فایل اشاره کند.
 > Roadmapهای قبلی در `docs/roadmap/archive/` بایگانی شده‌اند (superseded): `ROADMAP_v2.7-v2.10_GUI-only_FA.md`، `ROADMAP_v2.3-v2.6_FA.md`، `ROADMAP_v1.14-v2.2_FA.md`.
 
-**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v3.1.0` · **Mobile منتشرشده:** `mobile-v0.3.0`
-**گام فعال:** 3.2.0 — دریافت مطمئن خروجی مدل (GPT)
+**آخرین به‌روزرسانی:** 2026-10-19 · **Desktop منتشرشده:** `desktop-v3.2.0` · **Mobile منتشرشده:** `mobile-v0.3.0`
+**گام فعال:** 3.3.0 — Project Charter
 
 راهنما: ✅ کامل (Gate پاس) · 🟡 بخشی · ⬜ شروع‌نشده · NOT RUN = اجرا نشده
 
@@ -51,7 +51,7 @@
 |---|---|---|---|---|
 | **3.0.0** | پوستهٔ واحد و ظاهر حرفه‌ای | پنجرهٔ واحد با Nav rail (Home، Project، Prompt، Inbox/Response، Tasks، Team، Timeline، Files، History، Run، Git، Settings)؛ Workbench به‌عنوان صفحه (نه Toplevel)؛ تم Fluent light/dark سراسری؛ Settings سراسری (تم، زبان، Mode)؛ Simple/Advanced سراسری؛ حذف رنگ‌های hard-code کلاسیک | smoke: هیچ Toplevel برای Workbench؛ تغییر تم همهٔ صفحات را عوض می‌کند؛ Simple صفحات پیشرفته را پنهان می‌کند؛ همهٔ تست‌های قبلی سبز | ✅ (`gui_single_shell_smoke`، ADR-009) |
 | **3.1.0** | Layout مقاوم و متقارن | `ui/layout.py`: `place_dialog` (clamp به Work area و مرکز والد)، `FlowBar` (Toolbar با wrap)، `ScrollPage`؛ تبدیل همهٔ دیالوگ‌ها و Toolbarها؛ Grid فاصله‌گذاری یکسان | smoke: در 1024×640، 1280×720 و 1920×1080 هیچ دکمه‌ای بیرون از پنجره نیست و هیچ دیالوگی از Work area بیرون نمی‌زند (همهٔ صفحات و دیالوگ‌ها) | ✅ (`gui_layout_smoke`) |
-| **3.2.0** | دریافت مطمئن خروجی مدل (GPT) | `intake/normalize.py` (BOM، NBSP، zero-width، CRLF، نقل‌قول هوشمند بیرون از رشته، escape مارک‌داون مارکرها، HTML entity، fence بیرونی، ویرگول انتهایی، کامنت JSON)؛ تشخیص بریدگی + پرامپت «ادامه از جایی که قطع شد»؛ قالب پیش‌فرض GPT = بلوک‌های AIWB بدون fence؛ یک ورودی Paste برای همه‌چیز با تشخیص خودکار نوع | پیکرهٔ ≥ ۳۰ نمونهٔ خرابی واقعی GPT/Gemini/Claude پاس؛ هیچ نمونهٔ سالم قبلی خراب نمی‌شود | ⬜ |
+| **3.2.0** | دریافت مطمئن خروجی مدل (GPT) | `intake/normalize.py` (BOM، NBSP، zero-width، CRLF، نقل‌قول هوشمند بیرون از رشته، escape مارک‌داون مارکرها، HTML entity، fence بیرونی، ویرگول انتهایی، کامنت JSON)؛ تشخیص بریدگی + پرامپت «ادامه از جایی که قطع شد»؛ قالب پیش‌فرض GPT = بلوک‌های AIWB بدون fence؛ یک ورودی Paste برای همه‌چیز با تشخیص خودکار نوع | پیکرهٔ ≥ ۳۰ نمونهٔ خرابی واقعی GPT/Gemini/Claude پاس؛ هیچ نمونهٔ سالم قبلی خراب نمی‌شود | ✅ (`test_intake_normalize`، `gui_intake_smoke`؛ ۳۶ نمونه) |
 | **3.3.0** | Project Charter | پرامپت «طراحی معماری کل پروژه»: معماری و ماژول‌ها، تعداد AI موازی و دلیل، پروتکل هماهنگی (مالکیت فایل/مسیر، قراردادهای مشترک، نقاط Sync، حل تعارض)، Roadmap با Milestone و نسخه، Task هر AI، پرامپت شروع هر AI؛ قرارداد `project-charter.v1` (schema + fixture)؛ Import یک‌جا با بازبینی → Agentها، Milestoneها، نسخه‌ها، Taskها | تست قرارداد و Import؛ پرامپت همهٔ بخش‌های الزامی را می‌خواهد (تست)؛ Charter ناقص با پیام دقیق و پرامپت اصلاح رد می‌شود | ⬜ |
 | **3.4.0** | حلقهٔ هدایت‌شده (بدون بن‌بست) | `v2/guide.py`: برای هر وضعیت یک Step با عنوان، توضیح، پرامپت آماده یا تصمیم؛ کارت «قدم بعدی» در Home و Project؛ صف هر AI؛ پرامپت Manager Update/Review/Repair/Continue خودکار؛ ثبت «کپی شد/ارسال شد» با یک کلیک | تست ثابت روی همهٔ وضعیت‌های قابل‌رسیدن: هیچ Step بدون عمل؛ E2E شبیه‌سازی‌شده از ایده تا نسخهٔ منتشرشده با پاسخ‌های اسکریپتی ۳ AI موازی | ⬜ |
 | **3.5.0** | Timeline تصویری | `ui/timeline_canvas.py`: محور افقی زمان، دایره با اندازهٔ اهمیت (minor/normal/major/critical)، خط عمودی هر نسخه (پیشنهادی خط‌چین، منتشرشده توپر)، Lane هر AI، Zoom/Pan، Tooltip، کلیک → Inspector | smoke: رندر ۲۰۰۰ رویداد < 300ms؛ اندازهٔ دایره و خط نسخه مطابق داده؛ Dark (فقط انگلیسی) | ⬜ |
