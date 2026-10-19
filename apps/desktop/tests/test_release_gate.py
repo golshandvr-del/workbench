@@ -97,7 +97,7 @@ class ReleaseGateTests(unittest.TestCase):
                 g.perform(key, "accept_handoff")
             elif key.startswith("task:") and first == "approve":
                 g.perform(key, "approve")
-            elif key.startswith("task:") and first == "record_validation":
+            elif key.startswith("task:") and first in ("record_validation", "validation_passed"):
                 # the AI claimed "tests pass"; only the recorded run counts
                 g.perform(key, "record_validation", result="passed", run_id="run-" + step["ref"])
             elif key.startswith("milestone:"):
