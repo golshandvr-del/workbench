@@ -13,11 +13,11 @@ without a dead end.
 
 ## 1. Install
 
-**Windows desktop:** download `AI_Workbench_Setup_<version>.zip` from the GitHub release, unzip, run
-`Setup.bat`. The app installs per user into `%LOCALAPPDATA%\Programs\AIWorkbench` and needs no admin
+**Windows desktop:** download `AI_Workbench_<version>_Setup.bat` from the GitHub release and
+double-click it (Python 3.10+ with Tkinter is detected, or installed per user via winget). The app installs per user into `%LOCALAPPDATA%\Programs\AIWorkbench` and needs no admin
 rights. An upgrade keeps your projects and settings.
 
-**Android:** install `AI_Workbench_Mobile_<version>.apk` from the GitHub release (allow installation from
+**Android:** install `AIWorkbench-mobile-<version>.apk` from the GitHub release (allow installation from
 this source when Android asks).
 
 ## 2. The main window
@@ -30,7 +30,7 @@ One window, a navigation rail on the left:
 | **Project Workbench** | Overview, Timeline, Tasks, Team, Files & Context, Versions & Builds |
 | **Prompt** | The prompt for the current step, ready to copy |
 | **AI Response** | Paste or load an AI answer → review → apply |
-| **Settings** | Theme (light/dark), Simple/Advanced mode, project bundles |
+| **Settings** | Theme (light/dark), Simple/Advanced mode, Mobile Companion, Restore Manager |
 
 *Simple* mode shows only the guided pages. *Advanced* adds Project Profile, History, Run & Report and
 Git / GitHub. Every page shows at most four main buttons; the rest are under **More ▾**.
@@ -72,14 +72,15 @@ Main screen → **Standalone mode**. Create a project, then use the same loop: t
 automatically) and the Timeline (pinch to zoom, drag, tap).
 
 ### Moving a project between PC and phone
-* Desktop: **Settings → Export project bundle** → a `.aiwb-bundle.json` file.
+* Desktop: **Project Workbench → Settings → Export project for the phone…** → a `.aiwb-bundle.json` file
+  (*Import project from the phone…* is next to it).
 * Phone: **Import project bundle** and pick the file (or the other way round with *Export*).
 * Bundles are **never merged**. The app tells you whether the incoming copy is *new*, *the same*, *newer*,
   *older* or *diverged*. New and newer are applied directly; older/diverged need an explicit *Replace*.
   A backup of the replaced project is always kept.
 
 ### Companion (pairing with the desktop)
-Desktop: **Mobile Companion → Pair** shows a QR code and a 16-character code (valid 10 minutes, 5
+Desktop: **Settings → Mobile Companion… → Pair** shows a QR code and a 16-character code (valid 10 minutes, 5
 attempts). Phone: *Scan QR* or type the code. The phone then sees the desktop project over your local
 network.
 
