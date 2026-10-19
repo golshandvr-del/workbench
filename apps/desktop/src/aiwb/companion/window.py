@@ -127,7 +127,8 @@ class CompanionWindow:
         matrix = qr.encode(uri, "M")
         module = max(2, 240 // (len(matrix) + 8))
         qr.draw(self.qr_canvas, matrix, module=module)
-        self.pair_var.set("Scan the QR code or type the 16-character code in the AI Workbench app (valid 10 minutes).")
+        self.pair_var.set(f"Scan the QR code, or in the AI Workbench app type the desktop address "
+                          f"{self.server.host}:{self.server.port} and the 16-character code (valid 10 minutes).")
         self.refresh()
         return uri
 
