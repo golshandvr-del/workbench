@@ -125,6 +125,15 @@ def _configure_shared(style: ttk.Style, p: dict[str, str]) -> None:
     style.configure("AppTitle.TLabel", background=p["bg"], foreground=p["text"], font=f("section_title"))
     style.configure("Crumb.TLabel", background=p["bg"], foreground=p["muted"], font=f("body"))
     style.configure("PageTitle.TLabel", background=p["bg"], foreground=p["text"], font=f("page_title"))
+    style.configure("RailHead.TLabel", background=p["sidebar"], foreground=p["muted"], font=f("secondary"))
+    style.configure("RailBrand.TLabel", background=p["sidebar"], foreground=p["accent"], font=f("section_title"))
+    # Navigation rail entries: Fluent "Toolbutton" radios (selected = highlighted pill)
+    style.configure("Rail.Toolbutton", anchor="w", padding=(12, 8), font=f("body"))
+    style.configure("Pivot.Toolbutton", anchor="center", padding=(12, 6), font=f("body"))
+    # Cards used by the Home / Settings pages
+    style.configure("CardTitle.TLabel", background=p["surface"], foreground=p["text"], font=f("section_title"))
+    style.configure("Card.TRadiobutton", background=p["surface"], foreground=p["text"])
+    style.configure("Card.TCheckbutton", background=p["surface"], foreground=p["text"])
 
 
 def classic_options(widget: tk.Misc, theme_name: str) -> dict[str, Any]:
