@@ -96,12 +96,12 @@ def main() -> None:
             root.update()
             c = w.tl_canvas
             assert c.model["events"], "timeline canvas has the project's events"
-            it = next(i for i in c.items.values() if i["kind"] == "event")
-            cid = next(k for k, v in c.items.items() if v is it)
+            cid = next(k for k, v in c.items.items() if v["kind"] == "event")
             x0, y0, x1, y1 = c.coords(cid)
-            got = c.click((x0 + x1) / 2, (y0 + y1) / 2)
-            assert got and got["id"] == it["id"], got
-            assert w.wc.selection == ("event", it["id"]), w.wc.selection
+            got = c.click((x0 + x1) / 2, (y0 + y1) / 2)   # the topmost circle at that point wins
+            assert got and got["kind"] == "event", got
+            assert w.wc.selection == ("event", got["id"]), w.wc.selection
+            assert c.selected == got["id"]
         finally:
             root.destroy()
     print("PASS: visual timeline GUI smoke - 2000 events < 300ms, importance circles, version lines, dark, click → Inspector")
