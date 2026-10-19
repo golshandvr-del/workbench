@@ -496,6 +496,14 @@
     {
       "path": "aiwb/ui/layout.py",
       "source": "apps/desktop/src/aiwb/ui/layout.py"
+    },
+    {
+      "path": "aiwb/intake/__init__.py",
+      "source": "apps/desktop/src/aiwb/intake/__init__.py"
+    },
+    {
+      "path": "aiwb/intake/normalize.py",
+      "source": "apps/desktop/src/aiwb/intake/normalize.py"
     }
   ],
   "zip_timestamp": [
