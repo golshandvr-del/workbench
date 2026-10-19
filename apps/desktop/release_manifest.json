@@ -492,6 +492,10 @@
     {
       "path": "aiwb/ui/sv_theme/theme/spritesheet_dark.png",
       "source": "apps/desktop/src/aiwb/ui/sv_theme/theme/spritesheet_dark.png"
+    },
+    {
+      "path": "aiwb/ui/layout.py",
+      "source": "apps/desktop/src/aiwb/ui/layout.py"
     }
   ],
   "zip_timestamp": [
