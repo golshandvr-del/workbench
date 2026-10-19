@@ -4656,14 +4656,15 @@ class WorkbenchApp:
                 pass
 
     def _settings_app_section(self, card: ttk.Frame) -> None:
-        row = ttk.Frame(card, style=ui_layout.row_style(card))
-        row.grid(row=2, column=0, sticky="ew")
-        for text, cmd in (("Mobile Companion…", self.open_companion),
-                          ("Validation Profiles…", self.manage_validation_profiles),
-                          ("Restore Manager…", self.open_restore_manager),
-                          ("Export redacted diagnostics…", self.export_redacted_diagnostics),
-                          ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))):
-            ttk.Button(row, text=text, command=cmd).pack(side="left", padx=(0, 6), pady=2)
+        bar = ui_actions.ActionBar(
+            card,
+            primary=(("Mobile Companion…", self.open_companion),
+                     ("Restore Manager…", self.open_restore_manager)),
+            more=(("Tools", (("Validation Profiles…", self.manage_validation_profiles),)),
+                  ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
+                               ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
+            style=ui_layout.row_style(card))
+        bar.grid(row=2, column=0, sticky="w")
 
     def _make_workbench_placeholder(self) -> None:
         tab = self.workbench_tab
