@@ -103,7 +103,8 @@ with tempfile.TemporaryDirectory() as tmp:
         for child in widget.winfo_children():
             yield child
             yield from descendants(child)
-    button_texts = {str(widget.cget("text")) for widget in descendants(app.git_tab) if widget.winfo_class() in {"TButton", "Button"}}
-    assert "Install Git" in button_texts and "Update Git" in button_texts
+    from aiwb.ui import actions as ui_actions  # 3.3.0: rarely used commands live in the More ▾ menu
+    button_texts = ui_actions.all_commands([app.git_tab])
+    assert "Install Git" in button_texts and "Update Git" in button_texts, button_texts
     root.destroy()
 print("Action pipeline GUI integration: PASS")
