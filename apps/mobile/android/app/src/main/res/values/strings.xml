@@ -67,5 +67,11 @@
     <string name="standalone_back">All projects</string>
     <string name="standalone_exported">Bundle saved.</string>
     <string name="standalone_replace">Replace (a backup is kept)</string>
+    <string name="standalone_overview">Project overview (team, tasks, versions)</string>
+    <string name="standalone_settings">Project settings (goal, number of AI chats)</string>
+    <string name="standalone_goal_label">Project goal</string>
+    <string name="standalone_chats_label">AI chats you will follow at the same time (1–12):</string>
+    <string name="standalone_chats_help">The project manager plans the team inside this limit. Set it before you copy the charter prompt.</string>
+    <string name="standalone_saved">Saved.</string>
     <string name="standalone_error">Error: %1$s</string>
 </resources>

@@ -67,5 +67,11 @@
     <string name="standalone_back">همهٔ پروژه‌ها</string>
     <string name="standalone_exported">Bundle ذخیره شد.</string>
     <string name="standalone_replace">جایگزینی (پشتیبان نگه داشته می‌شود)</string>
+    <string name="standalone_overview">نمای کلی پروژه (تیم، تسک‌ها، نسخه‌ها)</string>
+    <string name="standalone_settings">تنظیمات پروژه (هدف، تعداد چت‌های AI)</string>
+    <string name="standalone_goal_label">هدف پروژه</string>
+    <string name="standalone_chats_label">تعداد چت‌های AI که هم‌زمان دنبال می‌کنید (۱ تا ۱۲):</string>
+    <string name="standalone_chats_help">مدیر پروژه تیم را در همین سقف می‌چیند. قبل از کپی پرامپت منشور تنظیمش کنید.</string>
+    <string name="standalone_saved">ذخیره شد.</string>
     <string name="standalone_error">خطا: %1$s</string>
 </resources>
