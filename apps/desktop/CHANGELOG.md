@@ -1,3 +1,16 @@
+## [3.0.0] - 2026-10-19
+
+### One application: single shell, one theme, one settings page (Roadmap 3.x, Gate 3.0.0, ADR-009)
+- **Single window.** A navigation rail (Home · Project Workbench · Prompt · AI Response · Project Profile · History · Run & Report · Git / GitHub · Settings), a title bar with the active project and the main actions, a page stack and a status bar. The **Project Workbench is a page of the main window** — it no longer opens a second window with its own language, theme and mode.
+- **One Settings page** for the whole application: Appearance (light/dark), Language (English/فارسی, the rail mirrors in RTL) and Experience (Simple/Advanced). Changes apply to every page immediately and are saved in the application settings; they never change project data.
+- **Simple / Advanced is global.** Simple shows the guided path (Home, Workbench, Prompt, AI Response, Settings); Advanced adds Project Profile, History, Run & Report and Git / GitHub.
+- **Professional Fluent look.** The vendored Sun Valley theme (Windows 11 Fluent style, MIT, Tcl + PNG only, no pip dependency) is used for every control; all styles map to the semantic design tokens; navigation items use a Fluent selection pill. Every hard-coded colour was removed from the main window, so dark mode is complete (tables, diff colours, status rows).
+- The main window is sized to the screen work area and its minimum size never exceeds the screen.
+
+### Validation
+- `test_single_shell.py` (preferences, page model, vendored theme) and `gui_single_shell_smoke.py` (Workbench embedded with no new window, one theme, one language, one mode, settings persisted, no hard-coded colours). All previous unit tests and GUI smokes pass.
+- NOT RUN: physical Windows at 125/150/200 % DPI.
+
 ## [2.7.0] - 2026-10-19
 
 ### GUI redesign foundation (GUI roadmap stages 0–4; Gate 0–4)
