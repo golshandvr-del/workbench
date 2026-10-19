@@ -248,8 +248,8 @@
   {
    "id": "json_python_literals",
    "source": "local-llm",
-   "note": "extra key draft",
-   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\",\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ],\n  \"draft\": False\n}",
+   "note": "placeholder",
+   "text": "{\n  \"protocol\": \"workbench-v2\",\n  \"task_id\": \"t1\",\n  \"summary\": \"s\", // python-style comment\n\n  \"files\": [\n    {\n      \"path\": \"src/app.py\",\n      \"action\": \"write\",\n      \"content\": \"print(\\\"hi\\\")\\n\"\n    }\n  ]\n}",
    "expect_files": {
     "src/app.py": "print(\"hi\")\n"
    }
@@ -360,6 +360,18 @@
    "text": "{\"protocol\": \"workbench-v2\", \"task_id\": \"t1\", \"summary\": \"s\", \"files\": [{\"path\": \"a.js\", \"action\": \"write\", \"content\": \"// keep me\\nconst u='http://x/*y*/';\\n\"}]}",
    "expect_files": {
     "a.js": "// keep me\nconst u='http://x/*y*/';\n"
+   }
+  }
+ ],
+ "normalize_only": [
+  {
+   "id": "json_python_literals_parse",
+   "text": "{\n \"a\": False,\n \"b\": None,\n \"c\": True,\n \"s\": \"None True\"\n}",
+   "expect_json": {
+    "a": false,
+    "b": null,
+    "c": true,
+    "s": "None True"
    }
   }
  ],
