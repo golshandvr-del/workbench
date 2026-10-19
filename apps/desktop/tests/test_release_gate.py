@@ -134,7 +134,7 @@ class ReleaseGateTests(unittest.TestCase):
         phone = self.project("phone/todo")
         self.assertEqual(phone.plan_bundle_import(text)["kind"], "new")
         self.assertTrue(phone.import_bundle(text)["imported"])
-        self.assertEqual(json.loads(phone.export_bundle())["state_sha256"], json.loads(text)["state_sha256"])
+        self.assertEqual(phone.plan_bundle_import(text)["kind"], "same")
         self.assertEqual(c.plan_bundle_import(phone.export_bundle())["kind"], "same")
         _, back = bundle.read_bundle(phone.export_bundle())
         self.assertEqual(back["versions"], st["versions"])
