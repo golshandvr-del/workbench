@@ -52,6 +52,7 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.workspace import theme as tokens
 from aiwb.ui.prefs import AppPrefs
 from aiwb.ui.shell import AppShell, build_settings_page
 from aiwb.v2.publisher import GitHubStateClient, StatePublisher
@@ -4645,7 +4646,7 @@ class WorkbenchApp:
     def _make_projects_dashboard(self) -> None:
         tab = self.manager_tab
         ttk.Label(tab, text="Your projects", style="SectionTitle.TLabel").pack(anchor="w")
-        ttk.Label(tab, text="Create independent workspaces, switch between existing projects, and keep each project's profile and last task separate.", foreground="#667085", wraplength=1180).pack(anchor="w", pady=(3, 12))
+        ttk.Label(tab, text="Create independent workspaces, switch between existing projects, and keep each project's profile and last task separate.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(3, 12))
 
         toolbar = ttk.Frame(tab, style="Card.TFrame", padding=10)
         toolbar.pack(fill="x", pady=(0, 9))
@@ -4660,7 +4661,7 @@ class WorkbenchApp:
         ttk.Label(search_row, text="Find a project").pack(side="left")
         search_entry = ttk.Entry(search_row, textvariable=self.project_search_var, width=38)
         search_entry.pack(side="left", padx=(9, 8))
-        ttk.Label(search_row, text="Search by name, folder, path, or description. Removing a project only removes it from this list; it never deletes project files.", foreground="#667085", wraplength=900).pack(side="left", fill="x", expand=True)
+        ttk.Label(search_row, text="Search by name, folder, path, or description. Removing a project only removes it from this list; it never deletes project files.", style="Hint.TLabel", wraplength=900).pack(side="left", fill="x", expand=True)
         self.project_search_var.trace_add("write", lambda *_: self.refresh_project_list())
 
         table_frame = ttk.Frame(tab)
@@ -4690,9 +4691,9 @@ class WorkbenchApp:
 
         detail = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
         detail.pack(fill="x", pady=(9, 0))
-        ttk.Label(detail, textvariable=self.manager_active_var, background="#FFFFFF", foreground="#1D4ED8", font=("Segoe UI", 9, "bold")).pack(anchor="w")
-        ttk.Label(detail, textvariable=self.manager_detail_var, background="#FFFFFF", foreground="#667085", wraplength=1170).pack(anchor="w", pady=(4, 0))
-        ttk.Label(tab, text="Tip: double-click a project to open it. Each project stores its profile and resumable task in its own .workbench/project.json; that metadata is excluded from model edits and local Git commits.", foreground="#667085", wraplength=1180).pack(anchor="w", pady=(8, 0))
+        ttk.Label(detail, textvariable=self.manager_active_var, style="CardAccent.TLabel").pack(anchor="w")
+        ttk.Label(detail, textvariable=self.manager_detail_var, style="CardMuted.TLabel", wraplength=1170).pack(anchor="w", pady=(4, 0))
+        ttk.Label(tab, text="Tip: double-click a project to open it. Each project stores its profile and resumable task in its own .workbench/project.json; that metadata is excluded from model edits and local Git commits.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(8, 0))
 
     def _project_selection_changed(self, _event: Any = None) -> None:
         path = self._selected_project_path()
@@ -4739,7 +4740,7 @@ class WorkbenchApp:
             if query and query not in haystack:
                 continue
             self.projects_tree.insert("", "end", iid=str(path), text=name, values=(description, state, last_opened, str(path)), tags=("active",) if state == "Active" else ())
-        self.projects_tree.tag_configure("active", background="#E8F2FF")
+        self.projects_tree.tag_configure("active", background=tokens.palette(self.prefs.theme)["selected"], foreground=tokens.palette(self.prefs.theme)["selected_text"])
         count = len(self.projects_tree.get_children())
         self.manager_active_var.set(f"Active project: {self.workspace.name}  ·  {self.workspace}" if self.workspace else f"{count} project(s) in your local library · no active project")
         if not self.projects_tree.selection() and self.workspace and self.projects_tree.exists(str(self.workspace)):
@@ -4803,7 +4804,7 @@ class WorkbenchApp:
         outer = ttk.Frame(win, padding=20)
         outer.pack(fill="both", expand=True)
         ttk.Label(outer, text="Create a project", style="SectionTitle.TLabel").pack(anchor="w")
-        ttk.Label(outer, text="Choose where the project lives. Workbench creates a new folder and saves settings inside that folder; it never overwrites an existing directory.", wraplength=600, foreground="#667085").pack(anchor="w", pady=(4, 14))
+        ttk.Label(outer, text="Choose where the project lives. Workbench creates a new folder and saves settings inside that folder; it never overwrites an existing directory.", wraplength=600, style="Hint.TLabel").pack(anchor="w", pady=(4, 14))
 
         name_var = tk.StringVar()
         default_parent = Path.home() / "Documents"
@@ -5175,7 +5176,7 @@ class WorkbenchApp:
     def _make_profile_tab(self) -> None:
         tab = self.profile_tab
         ttk.Label(tab, text="Project profile", style="SectionTitle.TLabel").pack(anchor="w")
-        ttk.Label(tab, text="These values guide every prompt for the active project and are saved to its local .workbench/project.json file. Hover any option for field-specific guidance.", foreground="#667085", wraplength=1170).pack(anchor="w", pady=(3, 5))
+        ttk.Label(tab, text="These values guide every prompt for the active project and are saved to its local .workbench/project.json file. Hover any option for field-specific guidance.", style="Hint.TLabel", wraplength=1170).pack(anchor="w", pady=(3, 5))
         architecture_tools = ttk.Frame(tab)
         architecture_tools.pack(fill="x", pady=(0, 8))
         ttk.Button(architecture_tools, text="Architecture plan…", command=self.edit_active_architecture_plan).pack(side="left")
@@ -5183,7 +5184,7 @@ class WorkbenchApp:
         ttk.Label(architecture_tools, text="Architecture plans are saved as project context; dependency analysis is heuristic and never executes source code.", style="Hint.TLabel").pack(side="left", padx=(10, 0))
         scroll_host = ttk.Frame(tab)
         scroll_host.pack(fill="both", expand=True)
-        canvas = tk.Canvas(scroll_host, highlightthickness=0, background="#F3F6FB")
+        canvas = tk.Canvas(scroll_host, highlightthickness=0)
         scrollbar = ttk.Scrollbar(scroll_host, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=scrollbar.set)
         canvas.pack(side="left", fill="both", expand=True)
@@ -5378,7 +5379,7 @@ class WorkbenchApp:
             command=self.save_validated_turn_to_history, state="disabled",
         )
         self.save_validated_history_button.pack(side="left", padx=(6, 0))
-        ttk.Label(tab, text="File paths are validated. Text/binary writes require approval and create backups; proposed commands are only queued on import and require a separate review/approval in the Run tab. Typed model output may propose Delete/Rename/Move; every operation is previewed, destructive changes need final approval, and no command is auto-run.", foreground="#8a4b08", wraplength=1100).pack(anchor="w", pady=(0, 5))
+        ttk.Label(tab, text="File paths are validated. Text/binary writes require approval and create backups; proposed commands are only queued on import and require a separate review/approval in the Run tab. Typed model output may propose Delete/Rename/Move; every operation is previewed, destructive changes need final approval, and no command is auto-run.", style="Warning.TLabel", wraplength=1100).pack(anchor="w", pady=(0, 5))
         response_frame = ttk.Frame(tab)
         response_frame.pack(fill="both", expand=True)
         self.response_input = tk.Text(response_frame, wrap="none", undo=True, font=("Consolas", 9))
@@ -6174,8 +6175,9 @@ class WorkbenchApp:
             timeout = str(item.get("timeout_seconds", "—")) + "s" if item.get("timeout_seconds") else "—"
             status = str(item.get("status", "Pending"))
             self.action_tree.insert("", "end", iid=queue_id, text=str(item.get("id", "action")), values=(status, str(item.get("purpose", "")), timeout), tags=(status.casefold().replace(" ", "_"),))
-        for tag, color in {"passed": "#E5F6EB", "failed": "#FDECEC", "timed_out": "#FFF4E5", "interrupted": "#FFF4E5", "running": "#E8F2FF"}.items():
-            self.action_tree.tag_configure(tag, background=color)
+        pal = tokens.palette(self.prefs.theme)
+        for tag, key in {"passed": "banner_success", "failed": "banner_danger", "timed_out": "banner_warning", "interrupted": "banner_warning", "running": "banner_info"}.items():
+            self.action_tree.tag_configure(tag, background=pal[key], foreground=pal["text"])
 
     def _ensure_history_entry_for_output(self, root: Path) -> tuple[dict[str, Any], str]:
         state = load_task_state(root)
@@ -6602,7 +6604,7 @@ class WorkbenchApp:
     def _make_run_tab(self) -> None:
         tab = self.run_tab
         ttk.Label(tab, text="Execution, recovery & report", font=("Segoe UI", 11, "bold")).pack(anchor="w")
-        ttk.Label(tab, text="Model-proposed actions are queued after file review. Select the actions to run, inspect the exact commands, and approve the batch. Each result is saved immediately so an interrupted run can be diagnosed.", wraplength=1120, foreground="#8a4b08").pack(anchor="w", pady=(3, 7))
+        ttk.Label(tab, text="Model-proposed actions are queued after file review. Select the actions to run, inspect the exact commands, and approve the batch. Each result is saved immediately so an interrupted run can be diagnosed.", wraplength=1120, style="Warning.TLabel").pack(anchor="w", pady=(3, 7))
         cmd_frame = ttk.Frame(tab)
         cmd_frame.pack(fill="x", pady=(0, 7))
         ttk.Label(cmd_frame, text="Manual command:").pack(side="left")
@@ -6683,7 +6685,7 @@ class WorkbenchApp:
         ttk.Button(git_tool_row, text="Check Git", command=self.check_git_installation).pack(side="right")
         ttk.Button(git_tool_row, text="Update Git", command=lambda: self.install_or_update_git("upgrade")).pack(side="right", padx=(0, 6))
         ttk.Button(git_tool_row, text="Install Git", command=lambda: self.install_or_update_git("install")).pack(side="right", padx=(0, 6))
-        ttk.Label(tab, text="Install/Update uses Windows Package Manager (winget). After installation Workbench refreshes common Git paths; if Windows does not expose Git to the current process, restart the app.", foreground="#667085", wraplength=1120).pack(anchor="w", pady=(0, 5))
+        ttk.Label(tab, text="Install/Update uses Windows Package Manager (winget). After installation Workbench refreshes common Git paths; if Windows does not expose Git to the current process, restart the app.", style="Hint.TLabel", wraplength=1120).pack(anchor="w", pady=(0, 5))
         actions = ttk.Frame(tab)
         actions.pack(fill="x", pady=(0, 7))
         ttk.Button(actions, text="Refresh Git status / project history", command=lambda: self.refresh_git(silent=False, ensure_version_baseline=True)).pack(side="left")
@@ -6830,7 +6832,7 @@ class WorkbenchApp:
         else:
             storage_text = "Secure PAT storage is enabled only on Windows in this release; credential actions are unavailable on this platform."
         self.github_credential_storage_var = tk.StringVar(value=storage_text)
-        ttk.Label(panel, textvariable=self.github_credential_storage_var, foreground="#667085", wraplength=1100).pack(anchor="w", pady=(0, 6))
+        ttk.Label(panel, textvariable=self.github_credential_storage_var, style="Hint.TLabel", wraplength=1100).pack(anchor="w", pady=(0, 6))
         columns = ("status", "method", "verified", "identity", "permissions")
         self.github_accounts_tree = ttk.Treeview(panel, columns=columns, show="tree headings", height=3, selectmode="browse")
         self.github_accounts_tree.heading("#0", text="GitHub account")
@@ -6908,9 +6910,9 @@ class WorkbenchApp:
         repo_table.columnconfigure(0, weight=1)
         self.github_repositories_tree.bind("<Double-1>", lambda _event: self._open_selected_github_repository())
         self.github_repository_status_var = tk.StringVar(value="Connect a GitHub account, then refresh repositories.")
-        ttk.Label(panel, textvariable=self.github_repository_status_var, foreground="#667085", wraplength=1120).pack(anchor="w", pady=(5, 2))
+        ttk.Label(panel, textvariable=self.github_repository_status_var, style="Hint.TLabel", wraplength=1120).pack(anchor="w", pady=(5, 2))
         self.github_repository_binding_var = tk.StringVar(value="Project binding: no active project")
-        ttk.Label(panel, textvariable=self.github_repository_binding_var, foreground="#1D4ED8", wraplength=1120).pack(anchor="w", pady=(0, 5))
+        ttk.Label(panel, textvariable=self.github_repository_binding_var, style="Accent.TLabel", wraplength=1120).pack(anchor="w", pady=(0, 5))
         buttons = ttk.Frame(panel)
         buttons.pack(fill="x")
         self.github_repository_refresh_button = ttk.Button(buttons, text="Refresh Repositories", command=self._refresh_github_repositories)
@@ -7235,11 +7237,11 @@ class WorkbenchApp:
         for row, (label, variable, hint) in enumerate(fields, start=2):
             ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", pady=(5, 0))
             ttk.Entry(frame, textvariable=variable, width=62).grid(row=row, column=1, sticky="ew", pady=(5, 0))
-            ttk.Label(frame, text=hint, foreground="#667085", wraplength=500).grid(row=row + 1, column=1, sticky="w", pady=(0, 3))
+            ttk.Label(frame, text=hint, style="Hint.TLabel", wraplength=500).grid(row=row + 1, column=1, sticky="w", pady=(0, 3))
         channel_row = 8
         ttk.Label(frame, text="Release channel").grid(row=channel_row, column=0, sticky="w", pady=(8, 0))
         ttk.Combobox(frame, textvariable=channel_var, state="readonly", values=("dev", "beta", "stable"), width=18).grid(row=channel_row, column=1, sticky="w", pady=(8, 0))
-        ttk.Label(frame, text="These values configure the project binding. Build Center (1.14.6) shows Workflows and Runs; it does not dispatch Workflows or download Artifacts yet.", foreground="#667085", wraplength=670).grid(row=9, column=0, columnspan=2, sticky="w", pady=(10, 5))
+        ttk.Label(frame, text="These values configure the project binding. Build Center (1.14.6) shows Workflows and Runs; it does not dispatch Workflows or download Artifacts yet.", style="Hint.TLabel", wraplength=670).grid(row=9, column=0, columnspan=2, sticky="w", pady=(10, 5))
         frame.columnconfigure(1, weight=1)
 
         def save() -> None:
@@ -7663,7 +7665,7 @@ class WorkbenchApp:
         token_entry.pack(fill="x", pady=(0, 6))
         ttk.Button(frame, text="Open GitHub token settings", command=lambda: webbrowser.open("https://github.com/settings/personal-access-tokens/new")).pack(anchor="w")
         status_var = tk.StringVar(value="The token is tested before it is saved. It is never written to settings.json or project files.")
-        ttk.Label(frame, textvariable=status_var, foreground="#667085", wraplength=520).pack(anchor="w", pady=(10, 8))
+        ttk.Label(frame, textvariable=status_var, style="Hint.TLabel", wraplength=520).pack(anchor="w", pady=(10, 8))
         buttons = ttk.Frame(frame)
         buttons.pack(fill="x")
 
@@ -9053,7 +9055,7 @@ class WorkbenchApp:
             status = "CONTEXT PLAN RECOGNIZED — import requested context; no files applied"
         else:
             status = "VALIDATION PASSED — preview only; nothing applied" if report.get("success") else "VALIDATION FAILED — no files applied"
-        ttk.Label(win, text=status, font=("Segoe UI", 11, "bold"), foreground="#157347" if report.get("success") else ("#8A5A00" if "context plan" in str(report.get("format", "")).casefold() and not report.get("errors") else "#B42318")).pack(anchor="w", padx=12, pady=(12, 4))
+        ttk.Label(win, text=status, style="Success.TLabel" if report.get("success") else ("Warning.TLabel" if "context plan" in str(report.get("format", "")).casefold() and not report.get("errors") else "Danger.TLabel")).pack(anchor="w", padx=12, pady=(12, 4))
         ttk.Label(win, text=f"Format: {report.get('format')} · files: {report.get('file_count', 0)} · actions: {report.get('action_count', 0)} · {report.get('response_characters', 0):,} characters / {report.get('response_bytes', 0):,} bytes", wraplength=900).pack(anchor="w", padx=12, pady=(0, 6))
         body = tk.Text(win, wrap="word", font=("Consolas", 9), undo=False)
         scroll = ttk.Scrollbar(win, orient="vertical", command=body.yview)
@@ -9279,8 +9281,8 @@ class WorkbenchApp:
         modified = len(changes) - created - deleted - moved
         actions = payload.get("actions", []) if isinstance(payload.get("actions", []), list) else []
         ttk.Label(win, text=f"Summary: {summary}", wraplength=1120).pack(anchor="w", padx=10, pady=(10, 3))
-        ttk.Label(win, text=f"Detected response format: {format_name}", foreground="#1D4ED8").pack(anchor="w", padx=10, pady=(0, 3))
-        ttk.Label(win, text=f"{len(changes)} operation(s) · {created} create · {modified} write/replace · {deleted} delete · {moved} rename/move · {len(actions)} proposed action(s). Preview only; nothing has been applied or executed.", foreground="#8a4b08", wraplength=1120).pack(anchor="w", padx=10, pady=(0, 6))
+        ttk.Label(win, text=f"Detected response format: {format_name}", style="Accent.TLabel").pack(anchor="w", padx=10, pady=(0, 3))
+        ttk.Label(win, text=f"{len(changes)} operation(s) · {created} create · {modified} write/replace · {deleted} delete · {moved} rename/move · {len(actions)} proposed action(s). Preview only; nothing has been applied or executed.", style="Warning.TLabel", wraplength=1120).pack(anchor="w", padx=10, pady=(0, 6))
         split = ttk.Panedwindow(win, orient="horizontal")
         split.pack(fill="both", expand=True, padx=10, pady=(0, 8))
         left = ttk.Frame(split, padding=(0, 0, 6, 0))
@@ -9418,9 +9420,10 @@ class WorkbenchApp:
             text.configure(state="normal")
             text.delete("1.0", "end")
             text.insert("1.0", diff_content)
-            text.tag_configure("addition", foreground="#1b6e2b")
-            text.tag_configure("deletion", foreground="#a61b1b")
-            text.tag_configure("header", foreground="#1d4e89", font=("Consolas", 9, "bold"))
+            pal = tokens.palette(self.prefs.theme)
+            text.tag_configure("addition", foreground=pal["success"])
+            text.tag_configure("deletion", foreground=pal["danger"])
+            text.tag_configure("header", foreground=pal["info"], font=("Consolas", 9, "bold"))
             for line_num in range(1, int(text.index("end-1c").split(".")[0]) + 1):
                 line = text.get(f"{line_num}.0", f"{line_num}.end")
                 if line.startswith("+") and not line.startswith("+++"):
@@ -9766,7 +9769,7 @@ class WorkbenchApp:
         win.geometry("1040x650")
         win.minsize(800, 500)
         win.transient(self.root)
-        ttk.Label(win, text="Only files that still match the exact post-Apply hash can be restored. Conflicts stop by default; forced overwrite is not available.", wraplength=1000, foreground="#8a4b08").pack(anchor="w", padx=10, pady=(10, 6))
+        ttk.Label(win, text="Only files that still match the exact post-Apply hash can be restored. Conflicts stop by default; forced overwrite is not available.", wraplength=1000, style="Warning.TLabel").pack(anchor="w", padx=10, pady=(10, 6))
         split = ttk.Panedwindow(win, orient="horizontal")
         split.pack(fill="both", expand=True, padx=10, pady=(0, 8))
         left = ttk.Frame(split); right = ttk.Frame(split)
@@ -9861,7 +9864,7 @@ class WorkbenchApp:
         except Exception as exc:
             messagebox.showerror("Validation Profiles",str(exc),parent=self.root); return
         win=tk.Toplevel(self.root); win.title("Project Validation Profiles"); win.geometry("900x600"); win.minsize(700,450); win.transient(self.root)
-        ttk.Label(win,text="Profiles are stored in .workbench/validation_profiles.json. Saving a profile does not grant automatic trust; running checks always requires an explicit action.",wraplength=860,foreground="#8a4b08").pack(anchor="w",padx=10,pady=(10,6))
+        ttk.Label(win,text="Profiles are stored in .workbench/validation_profiles.json. Saving a profile does not grant automatic trust; running checks always requires an explicit action.",wraplength=860, style="Warning.TLabel").pack(anchor="w",padx=10,pady=(10,6))
         tree=ttk.Treeview(win,columns=("kind","timeout"),show="tree headings",selectmode="browse")
         tree.heading("#0",text="Step"); tree.heading("kind",text="Type"); tree.heading("timeout",text="Timeout")
         tree.column("#0",width=600,stretch=True); tree.column("kind",width=90,stretch=False); tree.column("timeout",width=90,stretch=False)
@@ -9988,7 +9991,7 @@ class WorkbenchApp:
                            "warning":"Redaction is conservative but not a guarantee that every sensitive value is absent. Review this preview before saving or sharing."}}
         raw=json.dumps(report,ensure_ascii=False,indent=2)
         win=tk.Toplevel(self.root); win.title("Redacted diagnostics — review before export"); win.geometry("900x680"); win.minsize(700,450); win.transient(self.root)
-        ttk.Label(win,text="This report excludes project source, prompts, model responses, commands, process output and full project paths. It is saved locally only; nothing is uploaded.",wraplength=860,foreground="#8a4b08").pack(anchor="w",padx=10,pady=(10,6))
+        ttk.Label(win,text="This report excludes project source, prompts, model responses, commands, process output and full project paths. It is saved locally only; nothing is uploaded.",wraplength=860, style="Warning.TLabel").pack(anchor="w",padx=10,pady=(10,6))
         text=tk.Text(win,wrap="none",font=("Consolas",9)); sy=ttk.Scrollbar(win,orient="vertical",command=text.yview); sx=ttk.Scrollbar(win,orient="horizontal",command=text.xview); text.configure(yscrollcommand=sy.set,xscrollcommand=sx.set)
         text.pack(fill="both",expand=True,padx=(10,0),pady=(0,0)); sy.pack(side="right",fill="y",padx=(0,10)); sx.pack(fill="x",padx=10,pady=(0,6))
         text.insert("1.0",raw); text.configure(state="disabled")
