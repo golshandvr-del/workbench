@@ -21,7 +21,7 @@ class TimelineView(context: Context) : View(context) {
 
     private val density = resources.displayMetrics.density
     private val laneH = 40 * density
-    private val top = 28 * density
+    private val top = (16 + 13 * LABEL_ROWS) * density
     private val left = 110 * density
     private var zoom = 1f
     private var offset = 0f
@@ -64,13 +64,16 @@ class TimelineView(context: Context) : View(context) {
             canvas.drawLine(left, y, width.toFloat(), y, grid)
             canvas.drawText(lane.removePrefix("agent-").take(14), 8 * density, y + 4 * density, text)
         }
-        for (v in model.versions) {
+        val rowEnd = FloatArray(LABEL_ROWS) { -1e9f }   // labels that would overlap go one row up
+        for (v in model.versions.sortedBy { it.t }) {
             val xv = x(v.t)
             if (xv < left || xv > width) continue
+            val row = (0 until LABEL_ROWS).firstOrNull { rowEnd[it] < xv } ?: (LABEL_ROWS - 1)
+            rowEnd[row] = xv + muted.measureText(v.label) + 6 * density
             line.color = if (v.released) 0xFF0E700E.toInt() else 0xFF005FB8.toInt()
             line.pathEffect = if (v.released) null else DashPathEffect(floatArrayOf(8 * density, 6 * density), 0f)
             canvas.drawLine(xv, top - 6 * density, xv, top + laneH * lanes.size, line)
-            canvas.drawText(v.label, xv + 3 * density, top - 10 * density, muted)
+            canvas.drawText(v.label, xv + 3 * density, top - 10 * density - row * 13 * density, muted)
         }
         for (e in model.events) {
             val xe = x(e.t)
@@ -109,4 +112,6 @@ class TimelineView(context: Context) : View(context) {
         }
         best?.let { onSelect?.invoke("${it.label}\n${it.whenText} · revision ${it.revision} · ${it.importance}\nlane: ${it.lane}") }
     }
+
+    private companion object { const val LABEL_ROWS = 3 }
 }
