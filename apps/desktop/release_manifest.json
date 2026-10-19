@@ -118,6 +118,10 @@
       "source": "apps/desktop/tests/test_ui_actions.py"
     },
     {
+      "path": "test_v2_charter.py",
+      "source": "apps/desktop/tests/test_v2_charter.py"
+    },
+    {
       "path": "test_repair_diagnostics.py",
       "source": "apps/desktop/tests/test_repair_diagnostics.py"
     },
@@ -448,6 +452,10 @@
     {
       "path": "aiwb/v2/changes.py",
       "source": "apps/desktop/src/aiwb/v2/changes.py"
+    },
+    {
+      "path": "aiwb/v2/charter.py",
+      "source": "apps/desktop/src/aiwb/v2/charter.py"
     },
     {
       "path": "aiwb/ui/__init__.py",
