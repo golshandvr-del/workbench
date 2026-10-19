@@ -94,13 +94,20 @@ def main() -> int:
         led = schemas["event-ledger.v1"]
         for rec in p.store.ledger.all():
             errors += [f"v2 event ledger {rec.get('event_id')}: {e.message}" for e in led.iter_errors(rec)]
+    # Project Charter (3.4.0): schema and code validator agree on every fixture.
+    from aiwb.v2.charter import validate_charter
+    for kind in ("valid", "invalid"):
+        for fx in sorted((C / "fixtures" / kind).glob("project-charter.v1.*.json")):
+            code_ok = not validate_charter(json.loads(fx.read_text(encoding="utf-8")))["errors"]
+            if code_ok != (kind == "valid"):
+                errors.append(f"aiwb.v2.charter disagrees with fixture {kind}/{fx.name}")
     r = subprocess.run([sys.executable, str(REPO / "tools/gen_v2_contracts.py"), "--check"], capture_output=True, text=True)
     if r.returncode != 0:
         errors.append(r.stdout.strip())
 
     for e in errors:
         print("FAIL:", e)
-    print(f"{'FAIL' if errors else 'PASS'}: {len(schemas)} schemas, {count} fixtures, capabilities ({len(ids)}), desktop manifest, build metadata, V2 producers")
+    print(f"{'FAIL' if errors else 'PASS'}: {len(schemas)} schemas, {count} fixtures, capabilities ({len(ids)}), desktop manifest, build metadata, V2 producers, charter")
     return 1 if errors else 0
 
 
