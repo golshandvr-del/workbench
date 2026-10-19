@@ -52,6 +52,7 @@ from aiwb.context_request_window import ContextRequestWindow
 from aiwb.v2.controller import ProjectsController
 from aiwb.v2.projects_window import ProjectsWindow
 from aiwb.ui import appearance
+from aiwb.ui import layout as ui_layout
 from aiwb.workspace import theme as tokens
 from aiwb.ui.prefs import AppPrefs
 from aiwb.ui.shell import AppShell, build_settings_page
@@ -4590,6 +4591,10 @@ class WorkbenchApp:
         self.activity_progress.grid_remove()
         ttk.Label(bottom, text=f"v{APP_VERSION}", style="StatusBar.TLabel").grid(row=0, column=2)
         self.shell.on_pref(self._on_app_pref)
+        ui_layout.install(self.root)
+        for page in self.shell.pages.values():
+            ui_layout.auto_flow(page)
+        ui_layout.flow(self.shell.actions)
         self.shell.show("home")
 
     def _save_prefs(self, values: dict[str, str]) -> None:
