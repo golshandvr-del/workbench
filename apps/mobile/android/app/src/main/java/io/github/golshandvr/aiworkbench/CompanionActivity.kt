@@ -2,6 +2,7 @@ package io.github.golshandvr.aiworkbench
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -35,7 +36,14 @@ class CompanionActivity : Activity() {
         status = findViewById(R.id.companion_status)
         stateText = findViewById(R.id.state_text)
         pairing = Pairing.decode(prefs().getString(KEY_PAIRING, null))
-        findViewById<Button>(R.id.pair_button).setOnClickListener { pair(findViewById<EditText>(R.id.pair_code).text.toString()) }
+        findViewById<Button>(R.id.pair_button).setOnClickListener {
+            val code = PairingCode.manual(findViewById<EditText>(R.id.pair_address).text.toString(),
+                findViewById<EditText>(R.id.pair_code).text.toString())
+            if (code == null) status.setText(R.string.bad_pair_code) else pair(code)
+        }
+        findViewById<Button>(R.id.scan_button).setOnClickListener {
+            startActivityForResult(Intent(this, ScanActivity::class.java), REQ_SCAN)
+        }
         findViewById<Button>(R.id.refresh_button).setOnClickListener { refresh() }
         findViewById<Button>(R.id.create_task_button).setOnClickListener {
             val title = findViewById<EditText>(R.id.task_title).text.toString().trim()
@@ -63,6 +71,31 @@ class CompanionActivity : Activity() {
         }
         showSections()
         if (pairing != null) refresh()
+        handleLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleLink(intent)
+    }
+
+    @Deprecated("startActivityForResult is used for API 24 compatibility without AndroidX")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQ_SCAN && resultCode == RESULT_OK) {
+            val code = PairingCode.parse(data?.getStringExtra(ScanActivity.EXTRA_LINK) ?: "")
+            if (code == null) status.setText(R.string.bad_pair_code) else pair(code)
+        }
+    }
+
+    /** Deep link `aiwb://pair?...` opened from the system camera. */
+    private fun handleLink(intent: Intent?) {
+        val link = intent?.takeIf { it.action == Intent.ACTION_VIEW }?.dataString ?: return
+        intent.data = null
+        if (pairing != null) return
+        val code = PairingCode.parse(link)
+        if (code == null) status.setText(R.string.bad_pair_code) else pair(code)
     }
 
     override fun onDestroy() {
@@ -79,8 +112,7 @@ class CompanionActivity : Activity() {
         if (paired) status.text = getString(R.string.paired_with, pairing!!.host, pairing!!.port)
     }
 
-    private fun pair(text: String) {
-        val code = PairingCode.parse(text) ?: run { status.setText(R.string.bad_pair_code); return }
+    private fun pair(code: PairingCode) {
         val key = CompanionCrypto.randomBytes(32)
         status.setText(R.string.pairing_wait)
         background({
@@ -148,6 +180,7 @@ class CompanionActivity : Activity() {
 
     companion object {
         private const val KEY_PAIRING = "pairing"
+        private const val REQ_SCAN = 42
         private const val MAX_REPLY = 4 * 1024 * 1024
     }
 }
