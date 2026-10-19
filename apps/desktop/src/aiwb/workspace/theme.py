@@ -238,4 +238,6 @@ def apply(style: Any, theme: str) -> dict[str, str]:
                     darkcolor=p["surface_alt"], relief="flat", padding=(SPACE[2], SPACE[1]))
     style.map("WS.Treeview.Heading", background=[("active", p["divider"])])
     style.configure("WS.TSeparator", background=p["divider"])
+    style.configure("WS.TLabelframe", background=p["bg"], bordercolor=p["border"], lightcolor=p["bg"], darkcolor=p["bg"])
+    style.configure("WS.TLabelframe.Label", background=p["bg"], foreground=p["text"], font=font("section_title"))
     return p
