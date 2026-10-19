@@ -137,19 +137,35 @@ def _mapped(w: tk.Misc) -> bool:
         return False
 
 
+def is_navigation(w: tk.Misc) -> bool:
+    """Section navigation (sidebar entries) and one-glyph toggles are not *actions*."""
+    try:
+        style = str(w.cget("style"))
+    except tk.TclError:
+        style = ""
+    try:
+        text = str(w.cget("text")).strip()
+    except tk.TclError:
+        text = ""
+    return "Nav." in style or "Rail." in style or len(text) <= 1
+
+
 def visible_buttons(view: tk.Misc) -> list[str]:
-    """Labels of real buttons laid out in *view* (nested notebooks: only the selected tab)."""
+    """Labels of real action buttons laid out in *view* (nested notebooks: only the selected tab;
+    navigation entries and one-glyph toggles excluded)."""
     out: list[str] = []
 
     def walk(w: tk.Misc) -> None:
         if isinstance(w, tk.Toplevel):
             return
         cls = w.winfo_class()
-        if cls in BUTTON_CLASSES and _mapped(w):
+        if cls in BUTTON_CLASSES and _mapped(w) and not is_navigation(w):
             try:
                 out.append(str(w.cget("text")))
             except tk.TclError:
                 pass
+            return
+        if cls in BUTTON_CLASSES:
             return
         if cls == "TNotebook":
             sel = w.select()
