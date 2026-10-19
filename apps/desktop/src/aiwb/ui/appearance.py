@@ -86,7 +86,13 @@ def _configure_shared(style: ttk.Style, p: dict[str, str]) -> None:
     style.configure("TLabelframe", background=p["bg"])
     style.configure("TLabelframe.Label", background=p["bg"], foreground=p["text"], font=f("section_title"))
     # Card surfaces (classic pages) — flat surface with the same tokens as the workspace
-    style.configure("Card.TFrame", background=p["surface"])
+    style.configure("Card.TFrame", background=p["surface"], bordercolor=p["border"], lightcolor=p["border"],
+                    darkcolor=p["border"], borderwidth=1, relief="solid")
+    try:  # flat surface card: the Fluent image card is filled with the page colour, not the surface
+        style.layout("Card.TFrame", [("Frame.border", {"sticky": "nswe", "children": [
+            ("Frame.padding", {"sticky": "nswe"})]})])
+    except tk.TclError:
+        pass
     style.configure("Header.TFrame", background=p["bg"])
     style.configure("Surface.TLabel", background=p["surface"], foreground=p["text"], font=f("body"))
     style.configure("Muted.TLabel", background=p["bg"], foreground=p["muted"], font=f("secondary"))
