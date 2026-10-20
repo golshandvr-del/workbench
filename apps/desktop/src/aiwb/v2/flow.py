@@ -87,11 +87,6 @@ def _sent(state: dict[str, Any], h: dict[str, Any]) -> bool:
     return bool((att.get("workflow") or {}).get("sent_confirmed_at"))
 
 
-def _copied(state: dict[str, Any], h: dict[str, Any]) -> bool:
-    att = state.get("attempts", {}).get(h.get("attempt_id", "")) or {}
-    return bool((att.get("workflow") or {}).get("copied_at")) or h.get("status") != "prepared"
-
-
 def current(state: dict[str, Any]) -> dict[str, Any]:  # noqa: C901 — one ordered table of the flowchart
     """Where the project is in the owner's flowchart: node, phase, why, and the nodes already passed."""
     fs = flow_settings(state)
@@ -130,8 +125,7 @@ def current(state: dict[str, Any]) -> dict[str, Any]:  # noqa: C901 — one orde
         return at("F15", "The last answer was cut off; a continue prompt is ready.")
     open_h = [h for h in handoffs if h.get("status") in _OPEN_H]
     if open_h:
-        if any(_sent(state, h) for h in open_h) and all(_sent(state, h) or not _copied(state, h) for h in open_h) \
-                and any(_sent(state, h) for h in open_h):
+        if all(_sent(state, h) for h in open_h):
             return at("F12", "Bring every AI's answer back and paste it.")
         return at("F11", "Give every AI its prompt (copy, send, then tap 'I sent it').")
     if any(t.get("status") in ("in_review", "validation_pending") for t in tasks.values()):
