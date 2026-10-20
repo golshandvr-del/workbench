@@ -36,7 +36,8 @@ def shot(root: tk.Tk, name: str) -> None:
         return
     Path(out).mkdir(parents=True, exist_ok=True)
     settle(root, 12)
-    subprocess.run(["import", "-window", "root", "-crop", "1280x800+0+0", str(Path(out) / name)], check=False,
+    geo = f"{root.winfo_width()}x{root.winfo_height()}+{root.winfo_rootx()}+{root.winfo_rooty()}"
+    subprocess.run(["import", "-window", "root", "-crop", geo, "+repage", str(Path(out) / name)], check=False,
                    timeout=30)
 
 
@@ -122,7 +123,8 @@ def main() -> None:
             assert [r["enabled"] for r in rows] == [True, True, True, False], rows
             assert ctl.project.store.revision > rev
             # Shift+F10 on the selected circle opens it again; SEND PROMPT
-            c.focus_set()
+            c.focus_force()
+            settle(root, 4)
             c.event_generate("<Shift-F10>")
             settle(root, 10)
             menu = app.mission_popup
