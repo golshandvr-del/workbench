@@ -76,7 +76,7 @@ jobs:
           if (-not $p.WaitForExit(600000)) { $p.Kill(); throw 'Installer timed out' }
           if ($p.ExitCode -ne 0) { throw "Installer exited with $($p.ExitCode)" }
           Start-Sleep -Seconds 3
-          Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*AI_Workbench.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+          Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*AI_Workbench.py*' -or $_.CommandLine -like '*launch_aiwb.py*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
           $smoke = if (Test-Path tools/smoke_installed_app.py) { 'tools/smoke_installed_app.py' } else { 'tools/gui_smoke.py' }
           python $smoke (Join-Path $env:LOCALAPPDATA 'Programs\AIWorkbench')
           if ($LASTEXITCODE -ne 0) { throw 'GUI smoke failed' }

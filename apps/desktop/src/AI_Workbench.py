@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "4.7.0"
+APP_VERSION = "5.0.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -11156,7 +11156,8 @@ class WorkbenchApp:
         self.root.destroy()
 
 
-def main() -> int:
+def main(root: tk.Tk | None = None, splash: Any = None) -> int:
+    """Start the app. ``launch_aiwb.py`` passes the Tk root and the splash it already shows (roadmap 5.0.0)."""
     if sys.version_info < MIN_PYTHON:
         try:
             tk.messagebox.showerror(APP_NAME, "AI Workbench requires Python 3.10 or newer.")  # type: ignore[attr-defined]
@@ -11164,8 +11165,17 @@ def main() -> int:
             print("AI Workbench requires Python 3.10 or newer.", file=sys.stderr)
         return 2
     try:
-        root = tk.Tk()
+        if root is None:
+            from aiwb.ui.startup import enable_dpi_awareness
+            enable_dpi_awareness()
+            root = tk.Tk()
+        if splash is not None:
+            splash.progress(0.6)
         WorkbenchApp(root)
+        if splash is not None:
+            splash.progress(1.0)
+            splash.close()
+            root.deiconify()
         root.mainloop()
         return 0
     except Exception as exc:
