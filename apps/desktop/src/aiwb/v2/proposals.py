@@ -75,8 +75,12 @@ class ProposalService:
     def import_data(self, data: dict[str, Any], *, response_id: str = "", kind: str = "update",
                     charter: dict[str, Any] | None = None) -> dict[str, Any]:
         """Import an already parsed proposal (also used for a Project Charter, 3.4.0)."""
+        from .report import parse_emergency, parse_remaining
         ops = data.get("operations")
-        if not isinstance(ops, list) or not ops:
+        remaining = parse_remaining(data.get("roadmap_remaining"))
+        if isinstance(ops, list) and not ops and remaining is False and charter is None:
+            pass  # a pure decision: "nothing left" (roadmap 4.4.0, F25 → F26)
+        elif not isinstance(ops, list) or not ops:
             raise ModelError("the proposal has no operations")
         if len(ops) > MAX_OPS:
             raise ModelError(f"too many operations ({len(ops)} > {MAX_OPS}); ask the manager to split the proposal")
@@ -130,6 +134,8 @@ class ProposalService:
                  "assumptions": [str(a)[:500] for a in data.get("assumptions", []) or []][:30],
                  "team": team["team"], "team_issues": team["issues"], "team_counts": team["counts"],
                  "is_team": team["is_team"], "charter": charter or None,
+                 "roadmap_remaining": remaining, "emergency_tasks": parse_emergency(data.get("emergency_tasks")),
+                 "has_decision": "roadmap_remaining" in data or "emergency_tasks" in data,
                  "created_at": now_utc(), "updated_at": now_utc(), "result": {}}
             s["proposals"][pid] = p
             emit(s, "proposal_imported", proposal_id=pid, operations=len(normalized), stale=stale)
@@ -164,7 +170,11 @@ class ProposalService:
             for op in p["operations"]:
                 op["decision"] = "accepted" if op["index"] in accepted else "rejected"
             n_valid = sum(1 for op in p["operations"] if op["valid"])
-            p["status"] = ("rejected" if not accepted else "accepted" if len(accepted) == n_valid else "partially_accepted")
+            p["status"] = ("accepted" if not n_valid and not p["operations"] else "rejected" if not accepted
+                           else "accepted" if len(accepted) == n_valid else "partially_accepted")
+            if p.get("has_decision") and p["status"] != "rejected":
+                from .report import apply_decision
+                result["decision"] = apply_decision(s, p, result["created"])
             p["result"] = {**result, "note": note[:1000], "reviewed_at": now_utc()}
             if accepted and p.get("charter"):
                 s["settings"]["charter"] = {**p["charter"], "proposal_id": proposal_id, "accepted_at": now_utc(),
