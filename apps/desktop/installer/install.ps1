@@ -313,7 +313,10 @@ try {
         # A few installations expose only python.exe; in that case use a hidden WScript launch.
         $pythonwPath = $python.ExePath
     }
-    $appScript = Join-Path $installDir 'AI_Workbench.py'
+    # Roadmap 5.0.0: pre-compile once so every start loads cached bytecode, and start through the splash launcher.
+    try { & $python.ExePath -m compileall -q -j 0 $installDir | Out-Null } catch { Write-Step 'Pre-compiling skipped (not required).' }
+    $appScript = Join-Path $installDir 'launch_aiwb.py'
+    if (-not (Test-Path -LiteralPath $appScript -PathType Leaf)) { $appScript = Join-Path $installDir 'AI_Workbench.py' }
     $vbsPath = Join-Path $installDir 'launch.vbs'
     $vbsPython = $pythonwPath.Replace('"', '""')
     $vbsScript = $appScript.Replace('"', '""')
