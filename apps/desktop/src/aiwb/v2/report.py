@@ -111,7 +111,8 @@ def status_prompt(state: dict[str, Any], update: str) -> str:
                       ("Stuck tasks (need your plan)", "stuck"), ("GitHub / releases", "github")):
         lines += ["", f"### {head}"] + [f"- {x}" for x in sec[key][:40]] + ([] if sec[key] else ["- none"])
     lines += ["", "## What I need now",
-              "Decide the next step: fixes for stuck work, tasks for the next roadmap stage, or say that the project is "
+              "Every planned task is finished or waiting. Propose the next step: fixes for stuck work, tasks for the "
+              "next roadmap stage, or say that the project is "
               "complete. Answer with one AIWB_MANAGER_PROPOSAL block (it may contain zero operations only if "
               "roadmap_remaining is false).", "", DECISION_FORMAT]
     return "\n".join(lines)
