@@ -39,7 +39,7 @@ class IntegrateTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.c = ProjectsController(self.root, make_pipeline=wb.make_inbox_pipeline)
         self.g = Guide(self.c)
-        t = self.c.project.tasks.create({"title": "Calc", "objective": "add", "allowed_paths": ["src/"],
+        t = self.c.project.tasks.create({"title": "Calc", "objective": "add", "scope": {"include": ["src/"], "exclude": []},
                                          "acceptance_criteria": ["adds"]})
         self.tid = t["task_id"]
         self.c.project.tasks.transition(self.tid, "ready", "test")
