@@ -1,5 +1,18 @@
 # AI Workbench Mobile — Changelog
 
+## [2.0.0] - 2026-10-20
+
+### The whole algorithm — gate (Roadmap 4.7.0, every node F1–F28)
+
+- `AlgorithmE2ETest` (JVM): the owner's whole flowchart end to end, through the Guide only, with three scripted AIs
+  (core, desktop, mobile) working in parallel under a scripted project manager. It walks troubleshooting
+  (F13 no → F14 → F15 → F11), the emergency branch (F21 yes → F10), the releases 0.1.0 / 0.2.0 / 0.2.1
+  (F23 yes → F24), "no release needed" (F23 no → F25), the next stage (F25 yes → F10), completion, expansion
+  (F27 yes → F1) and archive (F27 no → F28).
+- Every edge counts only when its own evidence (flowchart node, timeline events, state) was observed; the test
+  requires 100 % of the 32 edges of `project-flow.v1` — the same story as desktop `test_algorithm_e2e.py`.
+- User guide: the whole algorithm (F1–F28) and the NOT RUN list.
+
 ## [1.7.0] - 2026-10-20
 
 ### Completion, expansion or archive (Roadmap 4.6.0, flowchart F26–F28)
