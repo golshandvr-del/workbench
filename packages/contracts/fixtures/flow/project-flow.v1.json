@@ -1,0 +1,343 @@
+{
+ "schema_version": "1.0",
+ "flow_id": "owner-algorithm",
+ "source": "docs/specs/flowchart/owner_algorithm.pdf",
+ "kinds": {
+  "app": "done by the app",
+  "user": "done by the user (copy, paste, approve)",
+  "github": "GitHub integration prepared by the app, authorised by the user"
+ },
+ "phases": [
+  "start",
+  "repo",
+  "brief",
+  "charter_prompt",
+  "charter_review",
+  "split",
+  "dispatch",
+  "collect",
+  "check",
+  "troubleshoot",
+  "approve",
+  "integrate",
+  "status_report",
+  "pm_decision",
+  "publish",
+  "complete",
+  "expand_or_archive",
+  "archived"
+ ],
+ "nodes": [
+  {
+   "id": "F1",
+   "title": "Start project",
+   "kind": "user",
+   "phase": "start"
+  },
+  {
+   "id": "F2",
+   "title": "Start timeline",
+   "kind": "app",
+   "phase": "start"
+  },
+  {
+   "id": "F3",
+   "title": "Create repository or update the existing one",
+   "kind": "github",
+   "phase": "repo"
+  },
+  {
+   "id": "F4",
+   "title": "Get name, specification and number of available AIs",
+   "kind": "app",
+   "phase": "brief"
+  },
+  {
+   "id": "F5",
+   "title": "Design the project-manager prompt",
+   "kind": "app",
+   "phase": "charter_prompt"
+  },
+  {
+   "id": "F6",
+   "title": "Give the prompt to the project-manager AI",
+   "kind": "user",
+   "phase": "charter_prompt"
+  },
+  {
+   "id": "F7",
+   "title": "Bring the project-manager output back",
+   "kind": "user",
+   "phase": "charter_prompt"
+  },
+  {
+   "id": "F8",
+   "title": "Check the project-manager output (roadmap) carefully",
+   "kind": "app",
+   "phase": "charter_review"
+  },
+  {
+   "id": "F9",
+   "title": "Split the project into parallel paths",
+   "kind": "app",
+   "phase": "split"
+  },
+  {
+   "id": "F10",
+   "title": "Generate a suitable prompt for every AI",
+   "kind": "app",
+   "phase": "dispatch"
+  },
+  {
+   "id": "F11",
+   "title": "Give every AI its prompt",
+   "kind": "user",
+   "phase": "dispatch"
+  },
+  {
+   "id": "F12",
+   "title": "Bring every AI's output back",
+   "kind": "user",
+   "phase": "collect"
+  },
+  {
+   "id": "F13",
+   "title": "Is the output acceptable?",
+   "kind": "app",
+   "phase": "check"
+  },
+  {
+   "id": "F14",
+   "title": "Smart problem detection",
+   "kind": "app",
+   "phase": "troubleshoot"
+  },
+  {
+   "id": "F15",
+   "title": "Build the troubleshooting prompt",
+   "kind": "app",
+   "phase": "troubleshoot"
+  },
+  {
+   "id": "F16",
+   "title": "User approval",
+   "kind": "user",
+   "phase": "approve"
+  },
+  {
+   "id": "F17",
+   "title": "Add to the project files and update the timeline",
+   "kind": "app",
+   "phase": "integrate"
+  },
+  {
+   "id": "F18",
+   "title": "Design the status prompt for the project manager",
+   "kind": "app",
+   "phase": "status_report"
+  },
+  {
+   "id": "F19",
+   "title": "Give the status prompt to the project manager",
+   "kind": "user",
+   "phase": "status_report"
+  },
+  {
+   "id": "F20",
+   "title": "Bring the project-manager output back",
+   "kind": "user",
+   "phase": "status_report"
+  },
+  {
+   "id": "F21",
+   "title": "Did the project manager define an emergency task?",
+   "kind": "app",
+   "phase": "pm_decision"
+  },
+  {
+   "id": "F22",
+   "title": "Save the changes on GitHub",
+   "kind": "github",
+   "phase": "publish"
+  },
+  {
+   "id": "F23",
+   "title": "Is a release needed?",
+   "kind": "github",
+   "phase": "publish"
+  },
+  {
+   "id": "F24",
+   "title": "Publish the new version",
+   "kind": "github",
+   "phase": "publish"
+  },
+  {
+   "id": "F25",
+   "title": "Is any roadmap stage left?",
+   "kind": "app",
+   "phase": "pm_decision"
+  },
+  {
+   "id": "F26",
+   "title": "Announce completion and update the timeline",
+   "kind": "app",
+   "phase": "complete"
+  },
+  {
+   "id": "F27",
+   "title": "Expand the project?",
+   "kind": "user",
+   "phase": "expand_or_archive"
+  },
+  {
+   "id": "F28",
+   "title": "Archive the project",
+   "kind": "app",
+   "phase": "archived"
+  }
+ ],
+ "edges": [
+  {
+   "from": "F1",
+   "to": "F2"
+  },
+  {
+   "from": "F1",
+   "to": "F3"
+  },
+  {
+   "from": "F1",
+   "to": "F4"
+  },
+  {
+   "from": "F4",
+   "to": "F5"
+  },
+  {
+   "from": "F5",
+   "to": "F6"
+  },
+  {
+   "from": "F6",
+   "to": "F7"
+  },
+  {
+   "from": "F7",
+   "to": "F8"
+  },
+  {
+   "from": "F8",
+   "to": "F9"
+  },
+  {
+   "from": "F9",
+   "to": "F10"
+  },
+  {
+   "from": "F10",
+   "to": "F11"
+  },
+  {
+   "from": "F11",
+   "to": "F12"
+  },
+  {
+   "from": "F12",
+   "to": "F13"
+  },
+  {
+   "from": "F13",
+   "to": "F14",
+   "when": "no"
+  },
+  {
+   "from": "F14",
+   "to": "F15"
+  },
+  {
+   "from": "F15",
+   "to": "F11"
+  },
+  {
+   "from": "F13",
+   "to": "F16",
+   "when": "yes"
+  },
+  {
+   "from": "F16",
+   "to": "F17"
+  },
+  {
+   "from": "F17",
+   "to": "F18"
+  },
+  {
+   "from": "F18",
+   "to": "F19"
+  },
+  {
+   "from": "F19",
+   "to": "F20"
+  },
+  {
+   "from": "F20",
+   "to": "F21"
+  },
+  {
+   "from": "F21",
+   "to": "F10",
+   "when": "yes"
+  },
+  {
+   "from": "F21",
+   "to": "F22",
+   "when": "no"
+  },
+  {
+   "from": "F22",
+   "to": "F23"
+  },
+  {
+   "from": "F23",
+   "to": "F24",
+   "when": "yes"
+  },
+  {
+   "from": "F23",
+   "to": "F25",
+   "when": "no"
+  },
+  {
+   "from": "F24",
+   "to": "F25"
+  },
+  {
+   "from": "F25",
+   "to": "F10",
+   "when": "yes"
+  },
+  {
+   "from": "F25",
+   "to": "F26",
+   "when": "no"
+  },
+  {
+   "from": "F26",
+   "to": "F27"
+  },
+  {
+   "from": "F27",
+   "to": "F1",
+   "when": "yes"
+  },
+  {
+   "from": "F27",
+   "to": "F28",
+   "when": "no"
+  }
+ ],
+ "limits": {
+  "troubleshoot_attempts": 3
+ }
+}
