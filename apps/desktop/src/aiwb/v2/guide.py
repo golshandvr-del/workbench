@@ -155,7 +155,7 @@ def github_steps(ctl: Any, st: dict[str, Any]) -> list[dict[str, Any]]:
                          "Workbench saves approved files on its own branch (never main) and publishes releases — each "
                          "write only after you confirm.",
                          [_a("prepare_connect", "Connect an existing repository…", "owner", "name"),
-                          _a("prepare_create", "Create a new private repository…", "owner", "name")], rank=95))
+                          _a("prepare_create", "Create a new private repository…", "owner", "name")], rank=89))
         return out
     if unsaved_files(st):
         out.append(_step("github:save", "decision", f"GitHub: save {len(unsaved_files(st))} approved file(s)",
@@ -315,8 +315,9 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
             out.append(_step(f"milestone:{m['milestone_id']}", "decision", f"Accept milestone {m['title']}",
                              "All its tasks are done. Check its criteria: " + "; ".join(m.get("criteria", []))[:300],
                              [_a("accept_milestone", "Accept the milestone")], ref=m["milestone_id"], rank=75))
+    connected = bool(((st["settings"].get("flow") or {}).get("repo") or {}).get("full_name"))
     for v in sorted(st["versions"].values(), key=lambda v: v["version_id"]):
-        if v["status"] in ("released", "withdrawn"):
+        if v["status"] in ("released", "withdrawn") or connected:  # connected: the GitHub release step (4.5.0)
             continue
         ms = [st["milestones"].get(x) or {} for x in v.get("milestone_ids", [])]
         if ms and all(m.get("status") == "accepted" for m in ms):
