@@ -66,7 +66,8 @@ class BuildTests(unittest.TestCase):
         m = mm.build(st)
         nd = next(n for n in m["lanes"][1]["nodes"] if n["task_id"] == "extra")
         self.assertEqual(m["columns"][nd["column"]]["label"], "0.2.0")
-        self.assertEqual(nd["slot"], 1)  # side by side with the lane's other 0.2.0 task
+        same = sorted(n["slot"] for n in m["lanes"][1]["nodes"] if n["column"] == nd["column"])
+        self.assertEqual(same, [0, 1])  # side by side with the lane's other 0.2.0 task
         self.assertEqual(m["slots"][nd["column"]], 2)
         self.assertTrue(m["lanes"][1]["live"])
 
