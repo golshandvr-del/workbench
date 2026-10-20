@@ -67,7 +67,6 @@ class FloatingMenu:
                         ("<Return>", lambda _e: self.activate()), ("<KP_Enter>", lambda _e: self.activate()),
                         ("<Escape>", lambda _e: self.close()), ("<FocusOut>", self._focus_out)):
             self.top.bind(seq, fn)
-        self._outside = owner.winfo_toplevel().bind("<Button-1>", lambda _e: self.close(), add="+")
 
     # -- drawing
     def _draw(self) -> None:
@@ -204,10 +203,6 @@ class FloatingMenu:
         self.closed = True
         if self.motion is not None:
             self.motion.stop("menu:open")
-        try:
-            self.owner.winfo_toplevel().unbind("<Button-1>", self._outside)
-        except tk.TclError:
-            pass
         try:
             self.top.destroy()
         except tk.TclError:
