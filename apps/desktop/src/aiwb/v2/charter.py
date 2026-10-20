@@ -86,8 +86,10 @@ def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
     lines = ["# AI Workbench — Project Charter (design the whole project)",
              "You are the Project Manager and architect for this project. You cannot read files, run anything or "
              "contact other chats; the user copies every prompt by hand and pastes your answer back.", "",
-             f"State revision: {int(state.get('state_revision', 0))}", "", "## Project",
-             f"- Goal: {project.get('goal', '')}"]
+             f"State revision: {int(state.get('state_revision', 0))}", "", "## Project"]
+    if project.get("name"):
+        lines.append(f"- Name: {project['name']}")
+    lines.append(f"- Goal: {project.get('goal', '')}")
     for k, label in (("non_goals", "Non-goals"), ("success", "Success criteria"), ("platform", "Platform / technology"),
                      ("constraints", "Constraints"), ("limits", "Time / cost limits")):
         if project.get(k):
