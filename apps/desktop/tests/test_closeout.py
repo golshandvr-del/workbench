@@ -33,7 +33,7 @@ class CloseoutTests(unittest.TestCase):
         with self.store.transaction("t") as s:
             s["settings"]["goal"] = "A calculator"
             s["tasks"][t]["status"] = "done"
-            s["handoffs"]["H-1"] = {"handoff_id": "H-1", "task_id": t, "status": "accepted",
+            s["handoffs"]["H-1"] = {"handoff_id": "H-1", "task_id": t, "status": "accepted", "to_agent_id": "agent-implementer",
                                     "integrated_at": "2026-01-01T00:00:00Z", "integrated_files": ["src/calc.py"]}
             s["versions"]["VER-1"] = {"version_id": "VER-1", "label": "1.0.0", "status": "released", "tag": "v1.0.0",
                                       "commit_sha": "a" * 40, "run_id": "run-7", "milestone_ids": []}
