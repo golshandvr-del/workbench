@@ -130,7 +130,7 @@ def continue_project_prompt(update: str, state: dict[str, Any] | None = None) ->
 
 def github_steps(ctl: Any, st: dict[str, Any]) -> list[dict[str, Any]]:
     """Blue nodes (roadmap 4.5.0): F3 connect, F22 save, F24 release — every write waits for 'Confirm'."""
-    from .repo import manual_steps, release_needed, repo_info, unsaved_files
+    from .repo import release_needed, repo_info, unsaved_files
     out: list[dict[str, Any]] = []
     if not str(st["settings"].get("goal", "")).strip():
         return out
@@ -356,6 +356,7 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                          "Nothing else is waiting for you. Copy the update, send it, then paste the manager's plan.",
                          [_a("copy", "Copy manager update"), _a("sent", "I sent it"), _a("paste", "Paste the plan", "text")],
                          agent=MANAGER, prompt=continue_project_prompt(upd, st), rank=90))
+    out += github_steps(ctl, st)  # optional blue nodes never hide the manager update (roadmap 4.5.0)
     out.sort(key=lambda s: (s["rank"], s["key"]))
     return out
 
@@ -610,7 +611,7 @@ class Guide:
             self.p.timeline.advance_version(ref, "released", run_id=run)
             return {"message": f"Version {v['label']} released."}
         if kind == "github":
-            return self._github(action, ref, inp)
+            return self._github(action, step["ref"], inp)
         if action == "withdraw":
             self.p.timeline.advance_version(ref, "withdrawn")
             return {"message": f"Version {ref} withdrawn."}
