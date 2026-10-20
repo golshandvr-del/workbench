@@ -19,7 +19,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
-from .diagnose import _in_scope, parse_files
+from .diagnose import _in_scope, parse_files, task_paths
 from .models import now_utc
 from .store import emit
 
@@ -44,7 +44,7 @@ def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
     files, _open = parse_files(text)
     with store.transaction("stage files") as s:
         h = s["handoffs"][handoff_id]
-        allowed = list((s["tasks"].get(h["task_id"]) or {}).get("allowed_paths") or [])
+        allowed = task_paths(s["tasks"].get(h["task_id"]) or {})
         staged: list[dict[str, Any]] = []
         total = 0
         for f in files:
