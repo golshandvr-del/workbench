@@ -155,3 +155,16 @@ def apply_decision(s: dict[str, Any], p: dict[str, Any], created: dict[str, str]
     emit(s, "pm_decision", proposal_id=p["proposal_id"], route=r, emergency=emergency, paused=paused,
          importance="major")
     return fs["last_decision"]
+
+
+def route_message(decision: dict[str, Any] | None) -> str:
+    """One sentence for the user after a plan with a decision was accepted."""
+    if not decision:
+        return ""
+    r = decision.get("route")
+    if r == "emergency":
+        return (f" Emergency: {', '.join(decision.get('emergency') or [])} goes first"
+                + (f"; paused until it is done: {', '.join(decision['paused'])}." if decision.get("paused") else "."))
+    if r == "complete":
+        return " The project manager says no roadmap stage is left — announce completion."
+    return " Next roadmap stage: prompts for the next tasks can be generated."
