@@ -69,11 +69,6 @@ def _columns(state: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, int
     for i, c in enumerate(cols):
         for tid in c.pop("task_ids"):
             owner.setdefault(tid, i)
-    if versions:  # a milestone that no version took still places its tasks in the version that took any of them
-        for m in milestones.values():
-            for tid in m.get("task_ids") or []:
-                owner.setdefault(tid, owner.get(next((t for t in m.get("task_ids") or [] if t in owner), ""), -1))
-        owner = {k: v for k, v in owner.items() if v >= 0}
     return cols, owner
 
 
