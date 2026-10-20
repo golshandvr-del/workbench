@@ -3,4 +3,4 @@
 The Tkinter application remains the stable launcher while domain logic is kept in
 small, independently testable modules. Do not import the GUI from this package.
 """
-__version__ = "4.1.0"
+__version__ = "4.2.0"
