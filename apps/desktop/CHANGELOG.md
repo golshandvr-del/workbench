@@ -1,3 +1,14 @@
+## [4.7.0] - 2026-10-20
+
+### The whole algorithm — gate (Roadmap 4.7.0, every node F1–F28)
+
+- `tests/test_algorithm_e2e.py`: the owner's whole flowchart end to end, through the Guide only, with three scripted
+  AIs (core, desktop, mobile) working in parallel under a scripted project manager — troubleshooting, emergency,
+  releases (0.1.0, 0.2.0, hotfix 0.2.1), "no release needed", next stage, completion, expansion and archive.
+- An edge counts only when its own evidence was observed (flowchart node, timeline events, state); the test requires
+  100 % of the 32 edges of `project-flow.v1`. The phone runs the same story in `AlgorithmE2ETest`.
+- `docs/USER_GUIDE.md`: the whole algorithm (F1–F28) and the NOT RUN list.
+
 ## [4.6.0] - 2026-10-20
 
 ### Completion, expansion or archive (Roadmap 4.6.0, flowchart F26–F28)

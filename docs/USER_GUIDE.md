@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 3.9.0 · mobile 1.0.0)
+# AI Workbench — User Guide (desktop 4.7.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -58,6 +58,26 @@ Git / GitHub. Every page shows at most four main buttons; the rest are under **M
 If an answer is incomplete, the step offers a **repair prompt** that lists exactly what arrived and what
 is still missing.
 
+## 3a. The whole algorithm (flowchart F1–F28)
+
+The phase bar at the top of the project (desktop and phone) always says where you are in the owner's flowchart
+(`Flow F10 · Generate a suitable prompt for every AI (app)`). Kinds: **app** = Workbench does it, **you** = your
+action, **GitHub** = optional repository step.
+
+| Stage | Nodes | What happens |
+|---|---|---|
+| Start | F1–F4 | One form: name, goal, platform, constraints and **how many AI chats** you can follow at once. The timeline starts (`project_started`). Optionally connect a GitHub repository (F3) — Workbench only writes its own branch `aiwb/<project>`, never `main`. |
+| Charter | F5–F8 | Copy the charter prompt → *I sent it* → paste the answer → check it. Nothing is created before you accept. |
+| Parallel paths | F9–F12 | The roadmap becomes parallel paths (one per AI) in waves that respect dependencies and your chat limit. The **dispatch desk** prepares every prompt of the wave at once; copy each into its AI's chat, then paste each answer. |
+| Smart check | F13–F15 | Every pasted answer is checked: cut off, missing manifest, wrong attempt, files outside the AI's paths, empty files, missing deliverables, copy damage, test claims without evidence. Problems → a **troubleshooting prompt** with only the problems (max 3, then the project manager is asked). |
+| Approve & integrate | F16–F17 | You accept the delivery (files go to the project files with a backup), review the task, and record the real test/build run (or accept it as NOT RUN). |
+| Status report | F18–F21 | When nothing else waits, Workbench writes the status prompt for the project manager. Its answer may define **emergency tasks** (they go first and pause what they block) and says whether a roadmap stage is left. |
+| GitHub | F22–F24 | Save the approved files on the project branch (one commit, no force push), and publish a version (tag + release) when all its milestones are accepted. Without a token you get exact manual steps and record the result. |
+| End | F25–F28 | No stage left → **announce completion** (summary of tasks, versions and evidence). Then **expand** (the next major cycle, with the whole history, back to F1) or **archive** (final bundle; the project becomes read-only until you reopen it). |
+
+Workbench 4.7.0 / mobile 2.0.0 tests every one of the 32 edges of this flowchart end to end, with three scripted AIs
+working in parallel (`test_algorithm_e2e.py`, `AlgorithmE2ETest`).
+
 ## 4. Timeline
 
 Workbench → **Timeline**: one lane per AI plus "project". Circle size = importance (minor → critical).
@@ -99,7 +119,15 @@ Git / GitHub can commit the files the AIs delivered, bind a GitHub repository wi
 | Bundle is *older* or *diverged* | Decide which copy is right; *Replace* keeps a backup of the other. |
 | Window too small | All pages scroll and toolbars wrap; minimum supported size is 1024×640. |
 
-## 8. Privacy
+## 8. Not run by the developers (NOT RUN)
+
+These checks need hardware or accounts only the product owner has; they are listed, never claimed:
+
+- Physical Windows at 100 / 125 / 150 / 200 % DPI.
+- A complete project with real ChatGPT / Gemini / Claude chats (three AIs in parallel).
+- A real phone: standalone mode, project files, GitHub with a real token.
+
+## 9. Privacy
 
 Everything stays on your machine/phone. The app never talks to a model. GitHub is contacted only when you
 use the Git / GitHub page with your own token.
