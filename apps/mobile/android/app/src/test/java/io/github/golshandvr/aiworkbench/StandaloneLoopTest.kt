@@ -1,6 +1,7 @@
 package io.github.golshandvr.aiworkbench
 
 import io.github.golshandvr.aiworkbench.core.Charter
+import io.github.golshandvr.aiworkbench.core.Diagnose
 import io.github.golshandvr.aiworkbench.core.Guide
 import io.github.golshandvr.aiworkbench.core.Json
 import io.github.golshandvr.aiworkbench.core.ModelError
@@ -43,12 +44,16 @@ class StandaloneLoopTest {
         return p
     }
 
+    private val scopes = HashMap<String, String>()
+
     private fun answer(h: Obj, outcome: String = "complete", unresolved: List<String> = emptyList()): String {
         val m = linkedMapOf<String, Any?>("schema_version" to "1.0", "handoff_id" to h["handoff_id"], "task_id" to h["task_id"],
             "task_revision" to h["task_revision"], "attempt_id" to h["attempt_id"], "outcome" to outcome, "summary" to "done",
             "completed_items" to listOf("a"), "unresolved_items" to unresolved, "assumptions" to emptyList<Any?>(),
             "decision_requests" to emptyList<Any?>(), "validation_claims" to listOf("tests pass"), "recommended_next_action" to "review")
-        return "AIWB_ATTEMPT_ID: ${h["attempt_id"]}\n<<<AIWB_FILE path=\"src/core/a.py\" action=\"write\" body=\"raw\">>>\nx=1\n" +
+        // A scripted AI writes inside the task's own scope (the smart check flags anything else, roadmap 4.2.0).
+        val scope = (scopes[Json.str(h["task_id"])] ?: "src/core").trimEnd('*').trimEnd('/').ifEmpty { "src/core" }
+        return "AIWB_ATTEMPT_ID: ${h["attempt_id"]}\n<<<AIWB_FILE path=\"$scope/a.txt\" action=\"write\" body=\"raw\">>>\nx=1\n" +
             "<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n${StrictJson.stringify(m)}\n<<<AIWB_END_HANDOFF>>>\n"
     }
 
@@ -113,6 +118,9 @@ class StandaloneLoopTest {
                 s.key.startsWith("handoff:") && s.primary?.id == "sent" -> g.perform(s.key, "sent")
                 s.key.startsWith("handoff:") && s.primary?.id == "paste" -> {
                     val h = State.require(st, "handoffs", s.ref)
+                    State.coll(p.state(), "tasks").values.map { Json.obj(it) }.forEach { t ->
+                        Diagnose.taskPaths(t).firstOrNull()?.let { scopes[Json.str(t["task_id"])] = it }
+                    }
                     val out = g.perform(s.key, "paste", mapOf("text" to answer(h)))
                     assertEquals(out.message, "handoff", out.kind)
                 }
