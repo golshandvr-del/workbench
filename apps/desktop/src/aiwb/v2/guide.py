@@ -426,7 +426,8 @@ class Guide:
         if action == "accept":
             p = self.p.proposals.get(ref)
             out = c.accept_proposal(ref, [o["index"] for o in p["operations"] if o["valid"]], confirm_stale=True)
-            return {"message": f"Plan {ref} {out['status']}."}
+            from .report import route_message
+            return {"message": f"Plan {ref} {out['status']}." + route_message((out.get("result") or {}).get("decision"))}
         if action == "reject":
             c.accept_proposal(ref, [])
             return {"message": f"Plan {ref} rejected. Nothing changed."}
