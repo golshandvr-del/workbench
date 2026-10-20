@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.0.0 (Phase-2 feature release)
+# Windows Release Checklist — AI Workbench 5.0.0 (5.x "Mission Map" — design foundation)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -16,6 +16,14 @@
 
 `tools/e2e_github_sandbox.py` — run 2026-10-18, all PASS (see `E2E_REPORT_v5.0.0.md`):
 preflight · sensitive file blocked · commit · idempotent commit · push · idempotent push · exact run of the pushed SHA (not the seed push) · build passed · artifact SHA-256 matched GitHub's digest · artifact content = pushed SHA · build-metadata contract · stale plan refused after a concurrent push · manual dispatch confirmed with run ID · no token in records/events/`.git/config` · branch cleanup. Paths contain spaces and Unicode.
+
+## 5.0.0 specific
+
+- [x] `test_visual5_foundation.py` — rasteriser coverage/alpha/PNG validity, tokens contrast, asset cache (CI)
+- [x] `test_ui_tree.py` — `docs/UI_TREE.md` equals `aiwb/ui/structure5.py` (CI)
+- [x] `gui_v5_startup_smoke.py` — splash launcher starts the app; Tk loads rasterised PNGs (CI)
+- [ ] NOT RUN: splash and sharp text on a real Windows display at 100/125/150/200 % scaling
+- [ ] NOT RUN: Desktop shortcut created by an upgraded install starts `launch_aiwb.py`
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
