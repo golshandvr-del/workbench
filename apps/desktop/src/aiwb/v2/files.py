@@ -20,7 +20,8 @@ from pathlib import Path
 from typing import Any
 
 from .diagnose import _in_scope, parse_files
-from .store import emit, now_utc
+from .models import now_utc
+from .store import emit
 
 MAX_FILE = 512 * 1024
 MAX_TOTAL = 8 * 1024 * 1024
