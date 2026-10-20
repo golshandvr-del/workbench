@@ -212,8 +212,8 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
             return listOf(step("github:connect", "form", "GitHub: connect the project repository (optional)",
                 (if (tok) "Workbench checks the repository and creates the branch ${Repo.projectBranch(st)} after you confirm. "
                  else Repo.manualSteps("connect", st).joinToString(" ") + " ") + "Files go to ${Repo.projectBranch(st)}, never to main.",
-                (if (tok) listOf(a("send_connect", "Connect (confirm)…", "owner", "name")) else emptyList()) +
-                    listOf(a("record_connect", "Record the repository…", "owner", "name")), rank = 91))
+                (if (tok) listOf(a("send_connect", "Connect (confirm)…", "owner", "repo")) else emptyList()) +
+                    listOf(a("record_connect", "Record the repository…", "owner", "repo")), rank = 91))
         val out = ArrayList<Step>()
         val files = Repo.unsavedFiles(st)
         if (files.isNotEmpty())
@@ -374,15 +374,15 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                 Outcome("Version ${v["label"]} released.")
             }
             "withdraw" -> { p.advanceVersion(st.ref.ifEmpty { ref }, "withdrawn"); Outcome("Version ${st.ref.ifEmpty { ref }} withdrawn.") }
-            "record_connect" -> { val r = Repo.recordConnect(p.store, i("owner"), i("name")); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).") }
+            "record_connect" -> { val r = Repo.recordConnect(p.store, i("owner"), i("repo")); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).") }
             "record_save" -> { Repo.recordSave(p.store, i("commit_sha")); Outcome("Saved on GitHub: ${i("commit_sha").take(12)}.") }
             "record_release" -> {
                 val v = Repo.recordRelease(p.store, st.ref, i("tag"), i("commit_sha"), runId = i("run_id"))
                 Outcome("Version ${v["label"]} released (${v["tag"]}).")
             }
             "send_connect" -> {
-                if (!Repo.validName(i("owner")) || !Repo.validName(i("name"))) throw ModelError("owner and repository name may only use letters, digits, '-', '_' and '.'")
-                val r = Repo.sendConnect(p.store, api(i("owner"), i("name"))); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).")
+                if (!Repo.validName(i("owner")) || !Repo.validName(i("repo"))) throw ModelError("owner and repository name may only use letters, digits, '-', '_' and '.'")
+                val r = Repo.sendConnect(p.store, api(i("owner"), i("repo"))); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).")
             }
             "send_save" -> {
                 val full = Json.str(Repo.info(p.state())["full_name"])
@@ -454,6 +454,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
             "ais" to "How many AI chats can you use at the same time? (1-12, optional)",
             "reason" to "Reason (optional)", "rationale" to "Why? (optional, kept in the decision log)", "choice" to "Your decision",
             "result" to "passed or failed", "run_id" to "Run ID, build number or commit (optional)",
-            "commit_sha" to "Commit SHA (optional)", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
+            "commit_sha" to "Commit SHA (optional)", "owner" to "GitHub owner (user or organization)",
+            "repo" to "Repository name", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
     }
 }
