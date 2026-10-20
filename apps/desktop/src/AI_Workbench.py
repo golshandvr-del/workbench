@@ -4795,7 +4795,7 @@ class WorkbenchApp:
         self.mission_summary_var = tk.StringVar(value="")
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
-                                     motion=self.shell.motion)
+                                     motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
         self.mission_detail_var = tk.StringVar(value="Click a task circle to see its details.")
         detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
@@ -4847,6 +4847,103 @@ class WorkbenchApp:
                                     f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
                                     f"[{nd['status']}]")
         self.mission_open_btn.state(["!disabled"])
+
+    # -- Mission Map › right-click menu (roadmap 5.4.0)
+    def _mission_ctl(self) -> Any:
+        """The V2 controller of the open project (the embedded Workbench's when it is open)."""
+        if self.workspace is None:
+            return None
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            return ws.wc.ctl
+        return self.make_projects_controller(Path(self.workspace))
+
+    def mission_menu_rows(self, task_id: str) -> list[dict[str, Any]]:
+        """The four menu rows for a task, enabled from the Guide's current steps (reading never writes)."""
+        from aiwb.ui import task_menu
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        steps = Guide(ctl).steps() if ctl is not None else []
+        return task_menu.items(steps, task_id)
+
+    def mission_menu(self, task_id: str, x_root: int, y_root: int) -> Any:
+        """Right-click on a task circle: the floating menu (COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE)."""
+        from aiwb.ui.menu5 import FloatingMenu
+        old = getattr(self, "mission_popup", None)
+        if old is not None:
+            old.close()
+        try:
+            rows = self.mission_menu_rows(task_id)
+        except Exception as exc:  # noqa: BLE001 - a broken store is reported, never hidden
+            messagebox.showerror("Mission Map", redact(str(exc)))
+            return None
+        if self.mission.selected != task_id:
+            self.mission.select(task_id)
+        self.mission_popup = FloatingMenu(self.mission, self.shell.assets, rows, motion=self.shell.motion,
+                                          title=task_id, on_pick=lambda row: self.mission_menu_pick(task_id, row))
+        return self.mission_popup.popup(x_root, y_root)
+
+    def _mission_input(self, need: str, label: str) -> str | None:
+        """Ask for one input of a Guide action (tests replace ``mission_input_hook``)."""
+        hook = getattr(self, "mission_input_hook", None)
+        if hook is not None:
+            return hook(need, label)
+        if need == "text":
+            top = tk.Toplevel(self.root)
+            top.title(label)
+            top.transient(self.root)
+            box = tk.Text(top, width=90, height=22, wrap="word")
+            box.pack(fill="both", expand=True, padx=8, pady=8)
+            out: dict[str, str | None] = {"text": None}
+
+            def ok() -> None:
+                out["text"] = box.get("1.0", "end-1c")
+                top.destroy()
+            ttk.Button(top, text="Use this answer", style="Accent.TButton", command=ok).pack(pady=(0, 8))
+            ui_layout.place_dialog(top, self.root)
+            box.focus_set()
+            top.grab_set()
+            top.wait_window()
+            return out["text"]
+        prompts = {"reason": "Why? (recorded in the project history)", "run_id": "Test/CI run id or link (optional)",
+                   "note": "Note"}
+        return simpledialog.askstring(label, prompts.get(need, need.replace("_", " ").capitalize()), parent=self.root)
+
+    def mission_menu_pick(self, task_id: str, row: dict[str, Any]) -> dict[str, Any] | None:
+        """Run the Guide action behind a menu row; COPY PROMPT also prepares the prompt of a ready task."""
+        from aiwb.v2.guide import OPTIONAL_INPUTS, Guide
+        ctl = self._mission_ctl()
+        if ctl is None or not row.get("enabled"):
+            return None
+        inputs: dict[str, str] = {}
+        for need in row.get("needs", []):
+            v = self._mission_input(need, row["hint"])
+            if v is None or (not v.strip() and need not in OPTIONAL_INPUTS and need != "run_id"):
+                self.set_status("Cancelled — nothing changed.")
+                return None
+            inputs[need] = v
+        guide = Guide(ctl)
+        try:
+            if row["action"] == "validation_passed" and not inputs.get("run_id", "").strip():
+                inputs["run_id"] = "manual"
+            out = guide.perform(row["step"], row["action"], **inputs)
+            if row["action"] == "prepare" and out.get("handoff_id"):
+                out = {**guide.perform(f"handoff:{out['handoff_id']}", "copy"), "handoff_id": out["handoff_id"]}
+        except Exception as exc:  # noqa: BLE001 - the Guide refuses impossible steps with a clear message
+            messagebox.showerror("Mission Map", redact(str(exc)))
+            return None
+        if out.get("prompt") and row["id"] == "copy_prompt":
+            self._copy_text_to_clipboard(out["prompt"])
+        self.set_status(f"{task_id}: {out.get('message', 'Done.')}")
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                ws.refresh()
+            except Exception:  # noqa: BLE001 - the Workbench redraws on its next visit
+                pass
+        self.refresh_mission(self.status_state(), force=True)
+        self.shell.refresh_status(self.status_state()) if hasattr(self.shell, "refresh_status") else None
+        return out
 
     def mission_open_task(self) -> None:
         """Open the selected Mission Map task in the Workbench's Inspector."""
