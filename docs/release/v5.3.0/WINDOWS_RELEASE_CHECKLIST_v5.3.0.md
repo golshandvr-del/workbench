@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.3.0 (5.x "Mission Map" — parallel timelines)
+# Windows Release Checklist — AI Workbench 5.3.0 (5.x "Mission Map" — motion)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -19,15 +19,14 @@ preflight · sensitive file blocked · commit · idempotent commit · push · id
 
 ## 5.3.0 specific
 
-- [x] `test_mission_model.py` — one lane per AI, semantic-version columns, milestone tasks in their version's
-      column, Later / Next columns, node states, open hand-off = active, layout per DPI scale, reading never
-      mutates (CI)
-- [x] `gui_v5_mission_smoke.py` — real five-AI project: 5 lanes + hexagons, 3 version columns, 15 circles, hover
-      halo + tooltip, click → details → Workbench Inspector, Midnight/Daylight, follows state revisions, looking
-      writes nothing (CI)
-- [x] All 5.1.0 shell gates stay green (`gui_v5_shell_smoke.py`, `test_shell5.py`, `test_ui_tree.py`)
-- [x] Screenshots: `docs/design/screens/5.3.0_mission_midnight.png`, `5.3.0_mission_daylight.png`
-- [ ] NOT RUN: hover / drag-pan feel on a real Windows display at 100/125/150/200 % scaling
+- [x] `test_motion.py` — easing ends/monotonic, tween timing, ~60 frames per second, same-key replace, the clock
+      sleeps when idle (no timer), loops, destroyed-widget safety, Reduce motion = end state + no timer, frame
+      budget (CI)
+- [x] `gui_v5_motion_smoke.py` — one shared clock; branch growth starts and cleans up; breathing active circles;
+      light particles on live branches; page and rail slides; p95 frame cost < 16 ms; idle app does not tick;
+      Settings › Motion › Reduce motion stops everything and is saved; no Tk errors; no state written (CI)
+- [x] All 5.1.0 / 5.2.0 gates stay green
+- [ ] NOT RUN: perceived smoothness on a real Windows display (60 Hz and 144 Hz) at 100/150 % scaling
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
