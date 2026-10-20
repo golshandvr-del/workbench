@@ -143,7 +143,9 @@ class StandaloneActivity : Activity() {
         val fields = needs.distinct().associateWith { n ->
             EditText(this).apply {
                 hint = Guide.INPUT_HINTS[n] ?: n.replace('_', ' ')
-                if (n == "text") minLines = 4 else inputType = InputType.TYPE_CLASS_TEXT
+                inputType = when (n) { "text" -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
+                    "ais" -> InputType.TYPE_CLASS_NUMBER; else -> InputType.TYPE_CLASS_TEXT }
+                if (n == "text") minLines = 4
             }.also { box.addView(it) }
         }
         AlertDialog.Builder(this).setTitle(a.label).setView(box)
