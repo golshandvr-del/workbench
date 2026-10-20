@@ -4,8 +4,9 @@ package io.github.golshandvr.aiworkbench.core
  * GitHub blue nodes on the phone (roadmap 4.5.0 / mobile 1.6.0, flowchart F3, F22–F24).
  *
  * Port of the rules of desktop `aiwb/v2/repo.py`, checked against `packages/contracts/fixtures/repo/github-flow.v1.json`.
- * The phone keeps **no GitHub token**: every blue node is shown as exact manual steps, then the user records the
- * result (repository, commit SHA). Releases (F24) use the existing version step (tag + run id are recorded facts).
+ * Without a token every blue node is shown as exact manual steps, then the user records the result (repository,
+ * commit SHA, release). With a token (kept encrypted by `TokenVault`, Android Keystore) the same steps are sent by
+ * [GitHubApi] — but only after the user confirms the exact write in a dialog.
  * Workbench never writes the default branch: files go to the project branch `aiwb/<project>`.
  */
 object Repo {
@@ -77,5 +78,52 @@ object Repo {
         repo["head"] = sha; repo["saved_at"] = State.nowUtc()
         State.emit(s, "github_save", "commit_sha" to sha, "manual" to true)
         repo
+    }
+
+    /** F24: mark a ready version released (manual record or after [sendRelease]); same facts as Project.advanceVersion. */
+    fun recordRelease(store: ProjectStore, versionId: String, tag: String, commitSha: String = "", url: String = "", runId: String = ""): Obj =
+        store.transaction("GitHub release") { s ->
+            if (releaseNeeded(s).none { it["version_id"] == versionId }) throw ModelError("$versionId is not ready to release (all its milestones must be accepted)")
+            val t = tag.trim().take(60)
+            if (t.isEmpty()) throw ModelError("the tag is required")
+            val v = State.require(s, "versions", versionId)
+            val old = Json.str(v["status"])
+            v["tag"] = t
+            if (commitSha.isNotBlank()) v["commit_sha"] = commitSha.trim()
+            if (runId.isNotBlank()) v["run_id"] = runId.trim().take(300)
+            v["artifact"] = url.ifBlank { Json.str(v["artifact"]).ifEmpty { "github-release:$t" } }
+            v["release"] = linkedMapOf<String, Any?>("tag" to t, "commit_sha" to v["commit_sha"], "url" to url, "at" to State.nowUtc())
+            Json.list(v.getOrPut("history") { ArrayList<Any?>() }).add(linkedMapOf("from" to old, "to" to "released", "at" to State.nowUtc()))
+            v["status"] = "released"; v["updated_at"] = State.nowUtc()
+            State.emit(s, "release_published", "version_id" to versionId, "label" to v["label"], "old" to old, "new" to "released",
+                "commit_sha" to v["commit_sha"], "run_id" to v["run_id"])
+            v
+        }
+
+    // ---------------------------------------------------------------- with a token (each call = one confirmed write)
+    fun sendConnect(store: ProjectStore, api: GitHubApi): Obj {
+        val br = projectBranch(store.load())
+        api.connect(br)
+        return recordConnect(store, api.owner, api.repo, br)
+    }
+
+    fun sendSave(store: ProjectStore, api: GitHubApi, filesDir: java.io.File): String {
+        val st = store.load()
+        val br = Json.str(info(st)["branch"])
+        val files = unsavedFiles(st).associateWith { java.io.File(filesDir, it) }.filterValues { it.isFile }.mapValues { it.value.readText() }
+        if (files.isEmpty()) throw ModelError("the integrated files are no longer in the project folder")
+        val sha = api.commitFiles(br, files, "AI Workbench: ${files.size} file(s)")
+        recordSave(store, sha)
+        return sha
+    }
+
+    fun sendRelease(store: ProjectStore, api: GitHubApi, versionId: String): Obj {
+        val st = store.load()
+        val v = releaseNeeded(st).firstOrNull { it["version_id"] == versionId } ?: throw ModelError("$versionId is not ready to release")
+        val br = Json.str(info(st)["branch"])
+        val sha = api.branchHead(br) ?: Json.str(info(st)["head"])
+        val tag = "v" + Json.str(v["label"])
+        val url = api.release(tag, sha, br, Json.str(v["label"]))
+        return recordRelease(store, versionId, tag, sha, url)
     }
 }
