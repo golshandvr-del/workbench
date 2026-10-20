@@ -97,7 +97,9 @@ def main() -> None:
                 settle(root)
                 want = "midnight" if theme == "dark" else "daylight"
                 assert sh.assets.theme == want
-                assert str(sh.toolbar.cget("background")) == wb.__dict__.get("_x", str(sh.toolbar.cget("background")))
+                from aiwb.ui.tokens5 import palette5
+                assert str(sh.toolbar.cget("background")).lower() == palette5(want)["panel"]
+                assert str(sh.statusbar.cget("background")).lower() == palette5(want)["panel"]
                 for size in SIZES:
                     root.geometry(size + "+0+0")
                     settle(root)
