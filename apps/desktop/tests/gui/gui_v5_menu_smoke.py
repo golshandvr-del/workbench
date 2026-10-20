@@ -128,7 +128,7 @@ def main() -> None:
             c.event_generate("<Shift-F10>")
             settle(root, 10)
             menu = app.mission_popup
-            assert not menu.closed and menu.rows[1]["enabled"], (menu.closed, menu.rows, root.focus_get(), c.selected)
+            assert not menu.closed and menu.rows[1]["enabled"], (menu.closed, [r["enabled"] for r in menu.rows], c.selected)
             menu.top.event_generate("<Down>")
             settle(root, 2)
             assert menu.index == 1, menu.index
