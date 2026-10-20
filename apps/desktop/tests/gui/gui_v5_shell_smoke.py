@@ -117,7 +117,7 @@ def main() -> None:
                 shot(root, f"shell_{want}.png")
             assert not failures, failures
             assert (ctl.project.store.revision, ctl.project.store.ledger.count()) == (rev, n), "view change wrote state"
-            print("v5.1.0 shell smoke passed: toolbar/rail = UI tree · 5 destinations + Tools → Agents · "
+            print("v5.1.0 shell smoke passed: toolbar/rail = UI tree · 5 destinations + Tools -> Agents · "
                   f"{len(SIZES)} sizes × Midnight/Daylight, nothing clipped · Save/Run safe · live status bar · "
                   "no state written")
         finally:
