@@ -1,3 +1,31 @@
+## [5.4.0] - 2026-10-21
+
+### Mission Map right-click menu (Roadmap 5.4.0)
+
+- **Right-click a task circle** (or press Shift+F10 / the Menu key on the selected circle) and a floating menu
+  opens, drawn like the owner's reference image: rounded surface, hairline border, line icons, tracked caps,
+  a blue active row, and a hint line saying what the row will do or why it is off. It fades and slides in on
+  the shared motion clock (instantly under *Reduce motion*).
+- **COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE**: each row is enabled **only when the Guide
+  offers the matching action for that task now** (`aiwb/ui/task_menu.py`, pure). COPY PROMPT on a ready task
+  prepares the prompt, copies it and marks it copied in one go; GET AI RESPONSE opens the paste box; MARK AS
+  DONE accepts the delivery, approves the review or records the validation — whatever the Guide allows. A
+  queued task (waiting for a free chat) offers nothing.
+- Keyboard: ↑ ↓ move between enabled rows, Enter runs, Esc closes.
+- Opening the menu never writes project state; only a chosen row does, through the Guide.
+
+### Owner decisions (2026-10-21)
+
+- **The AI Assistant panel is removed from the product** — gone from `docs/UI_TREE.md`, `structure5`, the
+  design tokens and the design language. Home is now *Mission Map · Task details · Your projects*, matching the
+  page.
+- Roadmap: 5.5.0 is the full **App Map** (every tab → section → button, generated from the live app and locked
+  by tests), 5.6.0 the **Agents hub**, 5.7.0 integration, 6.x the mobile theme.
+
+### Tests
+
+- `test_task_menu.py` (14 tests) and the 5.4.0 gate `gui_v5_menu_smoke.py`.
+
 ## [5.3.0] - 2026-10-20
 
 ### Motion (Roadmap 5.3.0)
