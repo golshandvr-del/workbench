@@ -571,14 +571,14 @@ class Guide:
 
     def _diagnose(self, handoff_id: str, text: str) -> list[dict[str, Any]]:
         """F13/F14: run the smart check on a linked answer and keep the problems on the handoff."""
-        from .diagnose import diagnose
+        from .diagnose import diagnose, task_paths
         st = self.ctl.state()
         h = st["handoffs"].get(handoff_id)
         if not h:
             return []
         t = st["tasks"].get(h["task_id"]) or {}
         att = st["attempts"].get(h["attempt_id"]) or {}
-        res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=list(t.get("allowed_paths") or []),
+        res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=task_paths(t),
                        expected_paths=list(att.get("expected_paths") or []))
         with self.p.store.transaction("diagnose answer") as s:
             s["handoffs"][handoff_id]["diagnosis"] = res["problems"]
