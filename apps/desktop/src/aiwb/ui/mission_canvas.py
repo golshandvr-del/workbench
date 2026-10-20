@@ -13,8 +13,10 @@ import tkinter as tk
 from typing import Any, Callable
 
 from . import mission_model
-from .assets import Assets
-from .tokens5 import font5, palette5
+from .assets import PULSE_LEVELS, Assets
+from .motion import pulse
+from .raster import bezier
+from .tokens5 import MOTION, font5, palette5
 
 STATE_SPRITE = {"done": "task_done", "active": "task_active", "blocked": "task_blocked",
                 "attention": "task_attention", "idle": "task_idle"}
@@ -24,8 +26,11 @@ STATE_TEXT = {"done": "Done", "active": "In progress", "blocked": "Blocked", "at
 
 class MissionCanvas(tk.Canvas):
     def __init__(self, master: tk.Misc, assets: Assets, *, on_select: Callable[[str], Any] | None = None,
-                 on_menu: Callable[[str, int, int], Any] | None = None, **kw: Any) -> None:
+                 on_menu: Callable[[str, int, int], Any] | None = None, motion: Any = None, **kw: Any) -> None:
         super().__init__(master, highlightthickness=0, bd=0, **kw)
+        self.motion = motion          # 5.3.0: shared animation clock (None = still picture)
+        self._grown_for = ""          # branch growth plays once per project
+        self._particles: list[tuple[int, list[tuple[float, float]]]] = []
         self._aiwb_keep_colours = True
         self.assets = assets
         self.on_select, self.on_menu = on_select, on_menu
@@ -61,6 +66,10 @@ class MissionCanvas(tk.Canvas):
     def set_state(self, state: dict[str, Any] | None) -> dict[str, Any]:
         self.model = mission_model.build(state)
         self.redraw()
+        pid = str((state or {}).get("project_id", "")) if not self.model["empty"] else ""
+        if pid and pid != self._grown_for:
+            self._grown_for = pid
+            self.grow()
         return self.model
 
     def set_theme(self, theme: str) -> None:
@@ -75,6 +84,7 @@ class MissionCanvas(tk.Canvas):
         self.node_items.clear()
         self.node_ids.clear()
         self._halo = None
+        self._particles = []
         self._tip = []
         self.configure(background=p["field"])
         m = self.model
@@ -85,6 +95,7 @@ class MissionCanvas(tk.Canvas):
                              text="Open a project and plan it with your project-manager AI in the Workbench. "
                                   "Each AI then gets its own lane here.", tags=("empty",))
             self._fit_scrollregion()
+            self._stop_live()
             return
         g = self.geo = mission_model.layout(m, s)
         top, bottom = g["top"] - 26 * s, g["height"] - 12 * s
@@ -115,6 +126,11 @@ class MissionCanvas(tk.Canvas):
             img = self.assets.sprite("branch", w=w, h=h, y0=round(sy - y0 + 4 * s, 1), y1=round(y - y0 + 4 * s, 1),
                                      lit=lane["live"], role="text_dim" if lane["live"] else "text_faint")
             self.create_image(sx, y0 - 4 * s, image=img, anchor="nw", tags=("branch",))
+            if lane["live"]:
+                bx0, by0 = sx, y0 - 4 * s
+                self._particles.append((i, [(bx0 + px, by0 + py) for px, py in bezier(
+                    (0, sy - y0 + 4 * s), (w * 0.45, sy - y0 + 4 * s), (w * 0.35, y - y0 + 4 * s), (w, y - y0 + 4 * s),
+                    steps=40)]))
         # capsule + source
         cx, cy, cw = g["capsule"]
         cap = self.assets.sprite("capsule", w=round(cw / s))
@@ -138,6 +154,67 @@ class MissionCanvas(tk.Canvas):
                 self.node_items[cid] = nd["task_id"]
                 self.node_ids[nd["task_id"]] = cid
         self._fit_scrollregion()
+        self._start_live()
+
+    # -- motion (5.3.0)
+    def grow(self) -> None:
+        """Branches and lanes grow from the source to the right (600 ms, cubic-out); a mask is uncovered."""
+        if self.motion is None or self.model["empty"] or not self.geo:
+            return
+        p = palette5(self.assets.theme)
+        x0 = self.geo["source"][0]
+        x1 = self.geo["width"] + 40 * self.assets.scale
+        self.delete("grow_mask")
+        mask = self.create_rectangle(x0, 0, x1, self.geo["height"] + 40, fill=p["field"], outline="",
+                                     tags=("grow_mask",))
+        self.tag_raise(mask)
+        self.tag_raise("source")
+
+        def step(x: float) -> None:
+            self.coords(mask, x, 0, x1, self.geo["height"] + 40)
+
+        self.motion.tween("mission:grow", x0, x1, MOTION["grow_ms"], step, ease="out",
+                          on_done=lambda: self.delete("grow_mask"), alive=self.winfo_exists)
+
+    def _stop_live(self) -> None:
+        if self.motion is not None:
+            self.motion.stop("mission:pulse")
+            self.motion.stop("mission:particles")
+        self.delete("particle")
+
+    def _start_live(self) -> None:
+        """Active circles breathe and light particles travel along live branches (1.6 s loops)."""
+        self._stop_live()
+        if self.motion is None or self.motion.reduced:
+            return
+        active = [cid for cid, tid in self.node_items.items()
+                  if (self.node(tid) or {}).get("state") == "active" and tid != self.selected]
+        if active:
+            frames = [self.assets.sprite("task_pulse", level=i) for i in range(PULSE_LEVELS)]
+            last = [-1]
+
+            def breathe(phase: float) -> None:
+                lvl = min(PULSE_LEVELS - 1, int(pulse(phase) * PULSE_LEVELS))
+                if lvl == last[0]:
+                    return  # nothing changed: no Tk call this frame
+                last[0] = lvl
+                for cid in active:
+                    if cid != self._halo:
+                        self.itemconfigure(cid, image=frames[lvl])
+            self.motion.loop("mission:pulse", MOTION["pulse_ms"], breathe, alive=self.winfo_exists)
+        if self._particles:
+            img = self.assets.sprite("particle")
+            dots = [(self.create_image(pts[0][0], pts[0][1], image=img, tags=("particle",)), pts, k)
+                    for k, (_lane, pts) in enumerate(self._particles)]
+            for did, _pts, _k in dots:
+                self.tag_lower(did, "hex")
+
+            def travel(phase: float) -> None:
+                for did, pts, k in dots:
+                    t = (phase + k * 0.17) % 1.0
+                    x, y = pts[min(len(pts) - 1, int(t * (len(pts) - 1)))]
+                    self.coords(did, x, y)
+            self.motion.loop("mission:particles", MOTION["pulse_ms"], travel, alive=self.winfo_exists)
 
     def _fit_scrollregion(self) -> None:
         bbox = self.bbox("all") or (0, 0, 1, 1)
@@ -179,6 +256,11 @@ class MissionCanvas(tk.Canvas):
         self.configure(cursor="hand2")
         x, y = self.geo["nodes"][tid]
         self._halo = self.create_image(x, y, image=self.assets.sprite("task_hover"), tags=("halo",))
+        if self.motion is not None:  # 120 ms bloom: the halo rises from the circle
+            self.itemconfigure(self._halo, state="hidden")
+            self.motion.tween("mission:hover", 0.0, 1.0, MOTION["hover_ms"],
+                              lambda t, h=self._halo: self.itemconfigure(h, state="normal") if t > 0.35 else None,
+                              alive=self.winfo_exists)
         nd = self.node(tid) or {}
         if nd.get("state") not in ("active", "idle"):
             self.tag_raise(self.node_ids[tid])

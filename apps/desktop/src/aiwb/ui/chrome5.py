@@ -200,6 +200,7 @@ class IconRail(tk.Frame):
         self.marker._aiwb_keep_colours = True  # type: ignore[attr-defined]
         self._anim: str | None = None
         self.marker_y = 0.0
+        self.motion: Any = None  # set by AppShell (5.3.0)
         self.recolor()
 
     @staticmethod
@@ -231,6 +232,11 @@ class IconRail(tk.Frame):
         self.marker.lift()
 
     def _slide(self, y0: float, y1: float, h: int, ms: int) -> None:
+        mo = getattr(self, "motion", None)
+        if mo is not None:  # 5.3.0: the shared animation clock (Reduce motion = jump)
+            mo.tween("rail:marker", y0, y1, ms, lambda y: self._place_marker(y, h), ease="in_out",
+                     alive=self.winfo_exists)
+            return
         if self._anim is not None:
             try:
                 self.after_cancel(self._anim)

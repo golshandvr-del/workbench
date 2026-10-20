@@ -89,6 +89,8 @@ class AppShell:
         self.facts_fn = facts
         self._status5 = status5
         self._last_rev: tuple[str, int] | None = None
+        from .motion import Motion
+        self.motion = Motion(root, reduced=prefs.reduce_motion)  # 5.3.0: one clock for every animation
         self.palette = appearance.apply(root, prefs.theme)
         fit_to_screen(root)
         self.assets = Assets(root, chrome5.chrome_theme(prefs.theme), ui_scale(root))
@@ -105,6 +107,7 @@ class AppShell:
         self.body = ttk.Frame(self.outer)
         self.body.pack(side="top", fill="both", expand=True)
         self.rail = chrome5.IconRail(self.body, self.assets, self.select_rail)
+        self.rail.motion = self.motion
         self.nav = self.rail.items
         self.nav_var = tk.StringVar(value="home")
         self.main = ttk.Frame(self.body)
@@ -144,9 +147,12 @@ class AppShell:
             return
         if not self.page_visible(key):
             self.prefs.set_mode("advanced")  # explicit navigation to an expert page reveals it
+        changed = key != self.current
         self.current = key
         self.notebook.select(self.pages[key])
         self._mark(key)
+        if changed:
+            self._slide_in()
         hook = self.page_hooks.get(key)
         if hook is not None:
             hook()
@@ -156,6 +162,15 @@ class AppShell:
         self.nav_var.set(dest)
         self.page_title.set(self.prefs.tr(PAGES[key][:2]))
         self.rail.select(dest)
+
+    def _slide_in(self) -> None:
+        """Page change: the new page slides in a few pixels from the reading side (240 ms, cubic-out)."""
+        from .tokens5 import MOTION
+        base = 14
+        sign = -1 if self.prefs.rtl else 1
+        self.motion.tween("shell:page", base + 18 * sign, base, MOTION["page_ms"],
+                          lambda x: self.notebook.grid_configure(padx=(max(0, round(x)), max(0, 2 * base - round(x)))),
+                          ease="out", alive=self.notebook.winfo_exists)
 
     def sync_from_notebook(self) -> None:
         """Keep rail + title in step when code calls ``notebook.select(frame)`` directly."""
@@ -182,7 +197,7 @@ class AppShell:
             except Exception:  # noqa: BLE001 - a broken project state must not break the status bar
                 state = None
         facts = self._status5.summary(state)
-        self.statusbar.show_facts(facts)
+        self._count_facts(facts)
         for fn in list(self.status_listeners):  # e.g. the Mission Map redraws when the state revision changes
             try:
                 fn(state)
@@ -199,6 +214,25 @@ class AppShell:
             self._last_rev = None
             self.statusbar.show_saved("")
         return facts
+
+    def _count_facts(self, facts: dict[str, Any]) -> None:
+        """Status bar: when the number of running agents changes, count up/down to it (5.3.0)."""
+        from .motion import value_text
+        from .tokens5 import MOTION
+        old = getattr(self, "_shown_running", None)
+        new = int(facts.get("running", 0))
+        self._shown_running = new
+        if old is None or old == new or "running" not in str(facts.get("text", "")):
+            self.statusbar.show_facts(facts)
+            return
+        tail = facts["text"].split(" ", 1)[1] if " " in facts["text"] else ""
+
+        def step(t: float) -> None:
+            n = value_text(old, new, t)
+            text = facts["text"] if t >= 1 else f"{n} {tail}"
+            self.statusbar.show_facts({**facts, "text": text})
+        self.motion.tween("status:count", 0.0, 1.0, MOTION["page_ms"] * 2, step, ease="linear",
+                          alive=self.statusbar.winfo_exists)
 
     def _poll_status(self) -> None:
         try:
@@ -230,6 +264,8 @@ class AppShell:
         self.statusbar.recolor()
 
     def _on_pref(self, key: str) -> None:
+        if key == "motion":
+            self.motion.set_reduced(self.prefs.reduce_motion)
         if key == "theme":
             from .chrome5 import chrome_theme
             self.palette = appearance.apply(self.root, self.prefs.theme)
@@ -296,6 +332,15 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
     row3.grid(row=2, column=0, sticky="w")
     widgets["mode"] = [ttk.Radiobutton(row3, variable=mode_var, value=v, style="Card.TRadiobutton",
                                        command=lambda: prefs.set_mode(mode_var.get())) for v in ("simple", "advanced")]
+    c5 = card(4, ("Motion", "حرکت"),
+              ("Animations explain what changed: branches grow, active tasks breathe, pages slide in. "
+               "Reduce motion shows every animation's end state instead.",
+               "انیمیشن‌ها تغییر را نشان می‌دهند. «کاهش حرکت» به‌جای آن وضعیت نهایی را نشان می‌دهد."))
+    motion_var = tk.BooleanVar(value=prefs.reduce_motion)
+    widgets["motion"] = ttk.Checkbutton(c5, text="Reduce motion", variable=motion_var, style="Card.TCheckbutton",
+                                        command=lambda: prefs.set_reduce_motion(motion_var.get()))
+    widgets["motion"].grid(row=2, column=0, sticky="w")
+    widgets["motion_var"] = motion_var
     if extra is not None:
         c4 = card(3, ("Application", "برنامه"), ("Tools and data that belong to the whole application.",
                                                  "ابزارها و داده‌های مربوط به کل برنامه."))
@@ -305,6 +350,7 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
 
     def relabel(_key: str = "") -> None:
         theme_var.set(prefs.theme)
+        motion_var.set(prefs.reduce_motion)
         lang_var.set(prefs.lang)
         mode_var.set(prefs.mode)
         side = "right" if prefs.rtl else "left"

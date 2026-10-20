@@ -21,6 +21,7 @@ class AppPrefs:
         self.theme = data.get("ui_theme") if data.get("ui_theme") in THEMES else DEFAULTS["theme"]
         self.lang = data.get("ui_lang") if data.get("ui_lang") in LANGS else DEFAULTS["lang"]
         self.mode = data.get("ui_mode") if data.get("ui_mode") in MODES else DEFAULTS["mode"]
+        self.reduce_motion = bool(data.get("ui_reduce_motion", False))  # 5.3.0: every animation shows its end state
         self._save = save
         self._listeners: list[Callable[[str], None]] = []
 
@@ -41,7 +42,8 @@ class AppPrefs:
 
     # -- values
     def as_settings(self) -> dict[str, str]:
-        return {"ui_theme": self.theme, "ui_lang": self.lang, "ui_mode": self.mode}
+        return {"ui_theme": self.theme, "ui_lang": self.lang, "ui_mode": self.mode,
+                "ui_reduce_motion": self.reduce_motion}
 
     @property
     def rtl(self) -> bool:
@@ -74,3 +76,9 @@ class AppPrefs:
         if mode != self.mode:
             self.mode = mode
             self._changed("mode")
+
+    def set_reduce_motion(self, on: bool) -> None:
+        on = bool(on)
+        if on != self.reduce_motion:
+            self.reduce_motion = on
+            self._changed("motion")

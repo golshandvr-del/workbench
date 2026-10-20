@@ -32,7 +32,7 @@ class AppPrefsTests(unittest.TestCase):
         p.set_lang("fa")
         p.set_mode("advanced")
         self.assertEqual(seen, ["theme", "lang", "mode"])
-        self.assertEqual(saved[-1], {"ui_theme": "dark", "ui_lang": "fa", "ui_mode": "advanced"})
+        self.assertEqual(saved[-1], {"ui_theme": "dark", "ui_lang": "fa", "ui_mode": "advanced", "ui_reduce_motion": False})
 
     def test_unsubscribe(self) -> None:
         seen = []
