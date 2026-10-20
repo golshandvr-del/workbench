@@ -1,5 +1,16 @@
 # AI Workbench Mobile — Changelog
 
+## [1.2.0] - 2026-10-20
+
+### Parallel paths and the dispatch desk (Roadmap 4.1.0, flowchart F9–F12)
+- `core/Waves.kt`: lanes (open tasks per AI), dependency waves (cycles and dead prerequisites reported, never
+  looped over) and the dispatch desk.
+- Prompts are offered only for tasks of the current wave and never for more chats than *number of AIs*; the first
+  prompts are spread over the AI lanes, the rest wait for a free chat.
+- **Prepare all prompts**: one tap makes the prompt for every task of the wave.
+- Phase bar shows open chats / limit and waves left.
+- `WavesTest` (same cases as the desktop).
+
 ## [1.1.0] - 2026-10-20
 
 ### Owner's algorithm, nodes F1–F8 (Roadmap 4.0.0)
