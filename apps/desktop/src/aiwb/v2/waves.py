@@ -87,6 +87,8 @@ def dispatch(state: dict[str, Any]) -> dict[str, Any]:
     slots = max(0, limit - len(handoffs))
     order = [tid for layer in waves(state)["waves"] for tid in layer]
     startable = [tid for tid in order if state["tasks"][tid].get("status") in _STARTABLE and tid not in busy]
+    # an emergency task from the project manager goes first (roadmap 4.4.0, correction C4)
+    startable.sort(key=lambda tid: "emergency" not in (state["tasks"][tid].get("flags") or []))
     # fairness across lanes: first one task per AI, then the remaining ones, both in wave order
     first, rest, seen = [], [], set()
     for tid in startable:
