@@ -45,6 +45,23 @@ class FakeHub(FakeGitHub):
         if method == "GET" and url.endswith("/repos/o/r"):
             self.calls.append((method, ""))
             return ApiResult(200, {"default_branch": self.default, "html_url": "https://github.com/o/r"}, {})
+        path = url.split("/repos/o/r", 1)[1]
+        # branch names with '/' (aiwb/demo): the base fake splits on the last '/'
+        if method == "GET" and path.startswith("/git/ref/heads/"):
+            self.calls.append((method, path))
+            b = path[len("/git/ref/heads/"):]
+            return ApiResult(200, {"object": {"sha": self.refs[b]}}, {}) if b in self.refs else ApiResult(404, {}, {})
+        if method == "POST" and path == "/git/refs":
+            self.calls.append((method, path))
+            d = json.loads(body)
+            self.refs[d["ref"].split("/", 2)[2]] = d["sha"]
+            return ApiResult(201, {}, {})
+        if method == "PATCH" and path.startswith("/git/refs/heads/"):
+            self.calls.append((method, path))
+            d = json.loads(body)
+            assert d["force"] is False
+            self.refs[path[len("/git/refs/heads/"):]] = d["sha"]
+            return ApiResult(200, {}, {})
         return super().__call__(method, url, headers, body)
 
 
@@ -175,7 +192,8 @@ class GuideTests(Base):
         start_project(ctl.project.store, {"goal": "Build a calculator"})
         keys = [s["key"] for s in g.steps()]
         self.assertIn("github:connect", keys)
-        self.assertIn("manager_update", keys, "optional GitHub step never hides the manager update")
+        self.assertEqual(keys.count("github:connect"), 1)
+        self.assertEqual(keys[0], "charter", "the optional GitHub step never comes before the algorithm's own step")
         g.perform("github:connect", "prepare_connect", owner="o", name="r")
         step = next(s for s in g.steps() if s["key"] == "github:connect")
         self.assertEqual(step["kind"], "decision")
