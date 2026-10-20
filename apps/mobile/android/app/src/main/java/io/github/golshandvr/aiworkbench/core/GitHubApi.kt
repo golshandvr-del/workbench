@@ -82,7 +82,8 @@ class GitHubApi(private val token: String, val owner: String, val repo: String,
             if (!url.startsWith("https://")) throw java.io.IOException("GitHub API URL must use https")
             val c = URL(url).openConnection() as HttpURLConnection
             c.connectTimeout = 15000; c.readTimeout = 30000
-            if (method == "PATCH") { c.requestMethod = "POST"; c.setRequestProperty("X-HTTP-Method-Override", "PATCH") } else c.requestMethod = method
+            try { c.requestMethod = method }  // Android's HttpURLConnection (OkHttp) accepts PATCH
+            catch (_: java.net.ProtocolException) { c.requestMethod = "POST"; c.setRequestProperty("X-HTTP-Method-Override", method) }
             for ((k, v) in headers) c.setRequestProperty(k, v)
             if (body != null) { c.doOutput = true; c.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) } }
             val code = c.responseCode
