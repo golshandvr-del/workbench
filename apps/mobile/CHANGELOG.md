@@ -1,5 +1,14 @@
 # AI Workbench Mobile — Changelog
 
+## [1.3.0] - 2026-10-20
+### Smart output check and troubleshooting prompt (Roadmap 4.2.0, flowchart F13–F15)
+- `core/Diagnose.kt`: every pasted delivery is checked for cut-off blocks, missing manifest, wrong attempt, unsafe or
+  out-of-scope paths, empty files, missing deliverables, failed outcome, copy damage (no four-backtick fence, lost
+  Python indentation) and unverified test claims.
+- **Build the troubleshooting prompt**: the same AI gets only the problems found; after three prompts the task is
+  blocked and handed to the project manager (correction C1).
+- `DiagnoseTest`: the shared corpus `packages/contracts/fixtures/diagnose/` (same codes as the desktop) and the loop.
+
 ## [1.2.0] - 2026-10-20
 
 ### Parallel paths and the dispatch desk (Roadmap 4.1.0, flowchart F9–F12)

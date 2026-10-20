@@ -29,6 +29,7 @@ MANAGER = "agent-project-manager"
 RESULT_WORDS = {w: "passed" for w in ("passed", "pass", "ok", "yes", "y", "green", "success")}
 RESULT_WORDS.update({w: "failed" for w in ("failed", "fail", "no", "n", "red", "failure")})
 KINDS = ("prompt", "paste", "decision", "form")
+TROUBLESHOOT_ATTEMPTS = 3  # flowchart correction C1: then escalate to the project manager
 # Optional inputs of the start form (roadmap 4.0.0, flowchart F4): name, platform, constraints, number of AIs.
 BRIEF_OPTIONAL = ("name", "platform", "constraints", "ais")
 OPTIONAL_INPUTS = ("note", "reason", "rationale", "run_id", "commit_sha", "tag") + BRIEF_OPTIONAL
@@ -166,7 +167,22 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
         t = tasks.get(h["task_id"]) or {}
         who = h["to_agent_id"]
         label = f"{h['task_id']} {t.get('title', '')}".strip()
-        if h["status"] == "reconciled":
+        diag = [x for x in h.get("diagnosis") or [] if x.get("severity") == "error"]
+        if h["status"] in ("reconciled", "stale", "reconciliation_required") and diag:
+            n = int((g.get("troubleshoot") or {}).get(h["task_id"], 0))
+            found = "; ".join(f"[{x['code']}] {x['message']}" for x in diag[:4])
+            if n >= TROUBLESHOOT_ATTEMPTS:
+                acts = [_a("escalate", "Ask the project manager (stuck)"), _a("accept_handoff", "Accept anyway…", "reason"),
+                        _a("reject_handoff", "Reject…", "reason")]
+                why = f" {n} troubleshooting prompts did not fix it — hand it to the project manager."
+            else:
+                acts = [_a("troubleshoot", "Build the troubleshooting prompt"), _a("accept_handoff", "Accept anyway…", "reason"),
+                        _a("reject_handoff", "Reject…", "reason")]
+                why = f" Troubleshooting attempt {n + 1} of {TROUBLESHOOT_ATTEMPTS}."
+            out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"Problems found in {who}'s answer for {label}",
+                             "Smart check: " + found + "." + why, acts, agent=USER, ref=h["handoff_id"], rank=9,
+                             task_id=h["task_id"], problems=diag))
+        elif h["status"] == "reconciled":
             missing = [x for x in h.get("unresolved_items", [])]
             acts = [_a("accept_handoff", "Accept the delivery"), _a("reject_handoff", "Reject…", "reason")]
             if missing:
@@ -436,6 +452,39 @@ class Guide:
         if action == "reject_handoff":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")))
             return {"message": f"Delivery {ref} rejected. A new prompt can be prepared."}
+        if action == "troubleshoot":
+            from .diagnose import troubleshoot_prompt
+            h = self.p.handoffs.get(ref)
+            problems = list(h.get("diagnosis") or [])
+            c.resolve_handoff(ref, False, "troubleshooting: " + ", ".join(sorted({x["code"] for x in problems})))
+            nh = c.start_task(h["task_id"], h["to_agent_id"])
+            with self.p.store.transaction("troubleshooting prompt") as s:
+                g = s["settings"].setdefault("guide", {})
+                tr = g.setdefault("troubleshoot", {})
+                tr[h["task_id"]] = n = int(tr.get(h["task_id"], 0)) + 1
+                new = s["handoffs"][nh["handoff_id"]]
+                new["prompt"] = prompt = troubleshoot_prompt(s, h, new, problems, n)
+                new["troubleshoot_of"] = ref
+                from .store import emit
+                emit(s, "troubleshooting_prompt", task_id=h["task_id"], handoff_id=nh["handoff_id"], attempt=n,
+                     codes=sorted({x["code"] for x in problems}))
+            return {"message": f"Troubleshooting prompt {n} for {h['task_id']} ready (only the problems found). "
+                               f"Copy it into {h['to_agent_id']}'s chat.", "prompt": prompt, "handoff_id": nh["handoff_id"]}
+        if action == "escalate":
+            h = self.p.handoffs.get(ref)
+            c.resolve_handoff(ref, False, "stuck after troubleshooting; escalated to the project manager")
+            with self.p.store.transaction("escalate") as s:
+                t = s["tasks"][h["task_id"]]
+                if t["status"] in ("in_progress", "ready"):
+                    from .models import check_transition
+                    check_transition("task", t["status"], "blocked")
+                    t["status"] = "blocked"
+                t["blocked_reason"] = (f"stuck after {TROUBLESHOOT_ATTEMPTS} troubleshooting prompts: "
+                                       + "; ".join(x["message"] for x in (h.get("diagnosis") or [])[:3]))[:500]
+                from .store import emit
+                emit(s, "task_escalated", task_id=h["task_id"], importance="major")
+            return {"message": f"{h['task_id']} is handed to the project manager; the update prompt is ready.",
+                    "prompt": continue_project_prompt(c.manager_update())}
         if action == "repair":
             h = self.p.handoffs.get(ref)
             c.resolve_handoff(ref, True, "partial delivery accepted; repair requested for the missing items")
@@ -515,6 +564,21 @@ class Guide:
             return {"message": f"Version {ref} withdrawn."}
         raise ModelError(f"unknown action {action!r}")
 
+    def _diagnose(self, handoff_id: str, text: str) -> list[dict[str, Any]]:
+        """F13/F14: run the smart check on a linked answer and keep the problems on the handoff."""
+        from .diagnose import diagnose
+        st = self.ctl.state()
+        h = st["handoffs"].get(handoff_id)
+        if not h:
+            return []
+        t = st["tasks"].get(h["task_id"]) or {}
+        att = st["attempts"].get(h["attempt_id"]) or {}
+        res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=list(t.get("allowed_paths") or []),
+                       expected_paths=list(att.get("expected_paths") or []))
+        with self.p.store.transaction("diagnose answer") as s:
+            s["handoffs"][handoff_id]["diagnosis"] = res["problems"]
+        return res["problems"]
+
     def _paste(self, step: dict[str, Any], text: str) -> dict[str, Any]:
         from ..intake.normalize import continue_prompt, truncation_report
         if not text.strip():
@@ -528,8 +592,17 @@ class Guide:
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):
                 self._set_guide(seen=True)
-            if r.kind == "handoff" and rep.truncated:
-                out["message"] += " The answer looks cut off — use 'Ask only for what is missing'."
+            if r.kind == "handoff":
+                probs = self._diagnose(r.reference_id, text)
+                errs = [x for x in probs if x["severity"] == "error"]
+                if errs:
+                    out["message"] += " Smart check found problems: " + "; ".join(x["code"] for x in errs) + \
+                        ". A troubleshooting prompt can be built."
+                elif probs:
+                    out["message"] += " Check: " + "; ".join(x["message"] for x in probs[:3]) + "."
+                elif rep.truncated:
+                    out["message"] += " The answer looks cut off — use 'Ask only for what is missing'."
+                out["problems"] = probs
             return out
         if rep.truncated:
             att = ""

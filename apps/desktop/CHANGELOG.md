@@ -1,3 +1,11 @@
+## [4.2.0] - 2026-10-20
+### Smart output check and troubleshooting prompt (Roadmap 4.2.0, flowchart F13–F15)
+- `v2/diagnose.py`: smart check of every pasted delivery (truncated, no_manifest, wrong_attempt, unsafe_path,
+  out_of_scope, empty_file, missing_deliverable, failed_outcome, copy_damage, unverified_test_claim).
+- Guide: **Build the troubleshooting prompt** (only the problems found, at most 3), then **Ask the project manager**
+  (task blocked, `task_escalated` on the timeline).
+- Shared corpus `packages/contracts/fixtures/diagnose/diagnose-corpus.v1.json`; `tests/test_diagnose.py`.
+
 ## [4.1.0] - 2026-10-20
 
 ### Parallel paths and the dispatch desk (Roadmap 4.1.0, flowchart F9–F12)

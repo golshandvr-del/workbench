@@ -73,6 +73,17 @@ class Guide(val project: Project) {
             val t = Json.obj(tasks[h["task_id"]])
             val who = Json.str(h["to_agent_id"]); val hid = Json.str(h["handoff_id"])
             val label = "${h["task_id"]} ${Json.str(t["title"])}".trim()
+            val diag = Json.list(h["diagnosis"]).map { Json.obj(it) }.filter { it["severity"] == "error" }
+            if (h["status"] in setOf("reconciled", "stale", "reconciliation_required") && diag.isNotEmpty()) {
+                val n = Json.int(Json.obj(gd["troubleshoot"])[h["task_id"]])
+                val found = diag.take(4).joinToString("; ") { "[${it["code"]}] ${it["message"]}" }
+                val first = if (n >= Diagnose.TROUBLESHOOT_ATTEMPTS) a("escalate", "Ask the project manager (stuck)") else a("troubleshoot", "Build the troubleshooting prompt")
+                val why = if (n >= Diagnose.TROUBLESHOOT_ATTEMPTS) " $n troubleshooting prompts did not fix it — hand it to the project manager."
+                    else " Troubleshooting attempt ${n + 1} of ${Diagnose.TROUBLESHOOT_ATTEMPTS}."
+                out.add(step("handoff:$hid", "decision", "Problems found in $who's answer for $label", "Smart check: $found.$why",
+                    listOf(first, a("accept_handoff", "Accept anyway…", "reason"), a("reject_handoff", "Reject…", "reason")), ref = hid, rank = 9))
+                continue
+            }
             when (h["status"]) {
                 "reconciled" -> {
                     val missing = Json.strs(h["unresolved_items"])
@@ -255,6 +266,36 @@ class Guide(val project: Project) {
                 }
                 Outcome("Repair prompt for $tid ready (only the missing items).", prompt)
             }
+            "troubleshoot" -> {
+                val h = State.require(p.state(), "handoffs", ref)
+                val tid = Json.str(h["task_id"])
+                val problems = Json.list(h["diagnosis"]).map { Json.obj(it) }
+                val codes = problems.map { Json.str(it["code"]) }.toSortedSet().toList()
+                p.resolveHandoff(ref, false, "troubleshooting: " + codes.joinToString(", "))
+                val nh = p.startTask(tid, Json.str(h["to_agent_id"]))
+                val nid = Json.str(nh["handoff_id"])
+                var n = 0
+                val prompt = p.store.transaction("troubleshooting prompt") { s ->
+                    val gd = Json.obj(Json.obj(s["settings"]).getOrPut("guide") { LinkedHashMap<String, Any?>() })
+                    val tr = Json.obj(gd.getOrPut("troubleshoot") { LinkedHashMap<String, Any?>() })
+                    n = Json.int(tr[tid]) + 1; tr[tid] = n.toLong()
+                    val nn = State.require(s, "handoffs", nid)
+                    State.emit(s, "troubleshooting_prompt", "task_id" to tid, "handoff_id" to nid, "attempt" to n.toLong(), "codes" to ArrayList<Any?>(codes))
+                    Diagnose.troubleshootPrompt(s, h, nn, problems, n).also { nn["prompt"] = it; nn["troubleshoot_of"] = ref }
+                }
+                Outcome("Troubleshooting prompt $n for $tid ready (only the problems found). Copy it into ${h["to_agent_id"]}'s chat.", prompt)
+            }
+            "escalate" -> {
+                val h = State.require(p.state(), "handoffs", ref)
+                val tid = Json.str(h["task_id"])
+                p.resolveHandoff(ref, false, "stuck after troubleshooting; escalated to the project manager")
+                val why = "stuck after ${Diagnose.TROUBLESHOOT_ATTEMPTS} troubleshooting prompts: " +
+                    Json.list(h["diagnosis"]).take(3).joinToString("; ") { Json.str(Json.obj(it)["message"]) }
+                val ts = Json.str(State.require(p.state(), "tasks", tid)["status"])
+                if (ts == "in_progress" || ts == "ready") p.transition(tid, "blocked", why)
+                p.store.transaction("escalate") { s -> State.emit(s, "task_escalated", "task_id" to tid, "importance" to "major") }
+                Outcome("$tid is handed to the project manager; the update prompt is ready.", p.managerUpdate())
+            }
             "abandon" -> { p.resolveHandoff(ref, false, i("reason").ifEmpty { "dropped by the user" }); Outcome("Prompt $ref dropped.") }
             "prepare_all" -> {
                 val made = st.taskIds.map { tid -> p.startTask(tid, Waves.owner(p.state(), Json.obj(State.coll(p.state(), "tasks")[tid]))) }
@@ -296,6 +337,20 @@ class Guide(val project: Project) {
         }
     }
 
+    /** F13/F14: run the smart check on a linked answer and keep the problems on the handoff. */
+    private fun diagnoseInto(handoffId: String, text: String): List<Diagnose.Problem> {
+        val st = project.state()
+        val h = Json.obj(State.coll(st, "handoffs")[handoffId])
+        if (h.isEmpty()) return emptyList()
+        val t = Json.obj(State.coll(st, "tasks")[h["task_id"]])
+        val att = Json.obj(State.coll(st, "attempts")[h["attempt_id"]])
+        val res = Diagnose.diagnose(text, Json.str(h["attempt_id"]), Json.strs(t["allowed_paths"]), Json.strs(att["expected_paths"]))
+        project.store.transaction("diagnose answer") { s ->
+            State.require(s, "handoffs", handoffId)["diagnosis"] = ArrayList<Any?>(res.problems.map { it.toMap() })
+        }
+        return res.problems
+    }
+
     private fun paste(st: Step, text: String): Outcome {
         if (text.isBlank()) throw ModelError("the answer is empty")
         val rep = Normalize.truncationReport(text)
@@ -303,7 +358,16 @@ class Guide(val project: Project) {
         if (r.kind in setOf("proposal", "handoff", "charter_rejected")) {
             setGuide(st.key == "manager_update" || st.key == "charter", "continue" to null)
             var msg = r.message
-            if (r.kind == "handoff" && rep.truncated) msg += " The answer looks cut off — use 'Ask only for what is missing'."
+            if (r.kind == "handoff") {
+                val probs = diagnoseInto(r.ref, text)
+                val errs = probs.filter { it.severity == "error" }
+                msg += when {
+                    errs.isNotEmpty() -> " Smart check found problems: " + errs.joinToString("; ") { it.code } + ". A troubleshooting prompt can be built."
+                    probs.isNotEmpty() -> " Check: " + probs.take(3).joinToString("; ") { it.message } + "."
+                    rep.truncated -> " The answer looks cut off — use 'Ask only for what is missing'."
+                    else -> ""
+                }
+            }
             return Outcome(msg, r.prompt, r.kind)
         }
         if (rep.truncated) {
