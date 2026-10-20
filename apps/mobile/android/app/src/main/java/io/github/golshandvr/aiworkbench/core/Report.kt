@@ -136,4 +136,15 @@ Add two fields to the AIWB_MANAGER_PROPOSAL JSON:
             "paused" to ArrayList<Any?>(paused), "importance" to "major")
         return last
     }
+
+    /** One sentence for the user after a plan with a decision was accepted (desktop `route_message`). */
+    fun routeMessage(decision: Any?): String {
+        val d = decision as? Map<*, *> ?: return ""
+        return when (d["route"]) {
+            "emergency" -> " Emergency: ${Json.strs(d["emergency"]).joinToString(", ")} goes first" +
+                (Json.strs(d["paused"]).takeIf { it.isNotEmpty() }?.let { "; paused until it is done: ${it.joinToString(", ")}." } ?: ".")
+            "complete" -> " The project manager says no roadmap stage is left — announce completion."
+            else -> " Next roadmap stage: prompts for the next tasks can be generated."
+        }
+    }
 }
