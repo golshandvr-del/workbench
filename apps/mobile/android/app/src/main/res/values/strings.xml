@@ -74,4 +74,10 @@
     <string name="standalone_chats_help">The project manager plans the team inside this limit. Set it before you copy the charter prompt.</string>
     <string name="standalone_saved">Saved.</string>
     <string name="standalone_error">Error: %1$s</string>
+    <string name="standalone_files">Project files</string>
+    <string name="standalone_files_empty">No project files yet. Files are added when you accept a delivery.</string>
+    <string name="standalone_files_zip">Export files as ZIP</string>
+    <string name="standalone_files_unzip">Import files from ZIP</string>
+    <string name="standalone_files_imported">%1$d file(s) imported.</string>
+    <string name="standalone_files_saved">ZIP saved.</string>
 </resources>
