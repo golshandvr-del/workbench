@@ -32,7 +32,8 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 - Rail
   - Home
     - Mission Map
-    - AI Assistant
+    - Task details
+    - Your projects
   - Projects
     - Project cards
     - Project Workbench
@@ -59,10 +60,6 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
   - SEND PROMPT
   - GET AI RESPONSE
   - MARK AS DONE
-- Assistant menu
-  - Copy status
-  - Clear notes
-  - Hide panel
 - Status bar
   - Agents running
   - Milestone
@@ -76,11 +73,10 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 | **Toolbar › New Project** | Start a new guided project (the owner's algorithm, F1) or add a folder that already exists. |
 | **Toolbar › Open / Save / Run** | Open a project folder · save the project state now · do the Guide's next step. |
 | **Home › Mission Map** | Parallel timelines: one lane per AI, one circle per task in its version's column. |
-| **Home › AI Assistant** | Plain-language status and next step, built locally; notes for the project manager. |
+| **Home › Task details / Your projects** | The clicked task (with a link into the Workbench) · every project as a list to open. |
 | **Projects** | Every project as a card; the Project Workbench of the open project. |
 | **Agents** | The team, the dispatch desk (who gets a prompt now) and the expert tools. |
 | **History** | Everything that happened, on a timeline; old prompts/responses; versions and releases. |
 | **Settings** | Theme (Midnight / Daylight), Simple/Advanced, Motion (Reduce motion); application tools. |
 | **Task menu** | Right-click on a task circle. An item is enabled only when the Guide allows it now. |
-| **Assistant menu** | The ⋯ button of the assistant panel. |
 | **Status bar** | How many AIs are working, the current milestone, and whether the state is saved. |
