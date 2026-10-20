@@ -158,7 +158,7 @@ class Raster:
         if n < 3:
             raise ValueError("a polygon needs 3 points")
         area = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n))
-        sign = 1.0 if area > 0 else -1.0
+        sign = -1.0 if area > 0 else 1.0  # inward normals for either winding
         edges = []
         for i in range(n):
             (ax, ay), (bx, by) = pts[i], pts[(i + 1) % n]
