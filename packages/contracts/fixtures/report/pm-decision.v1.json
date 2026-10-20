@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "description": "Project-manager decision rule (roadmap 4.4.0, flowchart F21 and F25). Shared by apps/desktop (v2/report.py) and apps/mobile (core/Report.kt).",
+  "remaining": [
+    {"in": true, "out": true}, {"in": false, "out": false}, {"in": "yes", "out": true}, {"in": "No", "out": false},
+    {"in": "true", "out": true}, {"in": "false", "out": false}, {"in": 1, "out": true}, {"in": 0, "out": false},
+    {"in": null, "out": null}, {"in": "maybe", "out": null}, {"in": "", "out": null}
+  ],
+  "emergency": [
+    {"in": null, "out": []},
+    {"in": "TASK-0001", "out": []},
+    {"in": ["new-1"], "out": [{"ref": "new-1", "blocks": []}]},
+    {"in": [{"ref": "new-1", "blocks": ["TASK-0002", " ", "TASK-0003"]}], "out": [{"ref": "new-1", "blocks": ["TASK-0002", "TASK-0003"]}]},
+    {"in": [{"task_id": "TASK-0004"}], "out": [{"ref": "TASK-0004", "blocks": []}]},
+    {"in": [{"blocks": ["TASK-0002"]}, 7, ""], "out": []}
+  ],
+  "route": [
+    {"emergency": 1, "remaining": false, "open": 0, "out": "emergency"},
+    {"emergency": 1, "remaining": true, "open": 3, "out": "emergency"},
+    {"emergency": 0, "remaining": true, "open": 0, "out": "next_stage"},
+    {"emergency": 0, "remaining": null, "open": 0, "out": "next_stage"},
+    {"emergency": 0, "remaining": false, "open": 2, "out": "next_stage"},
+    {"emergency": 0, "remaining": false, "open": 0, "out": "complete"}
+  ]
+}
