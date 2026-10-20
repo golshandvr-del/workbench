@@ -113,8 +113,11 @@ class Guide(val project: Project) {
                     "Compare the delivery with the acceptance criteria: " + Json.strs(t["acceptance_criteria"]).joinToString("; ").take(300),
                     listOf(a("approve", "Approve"), a("reject_review", "Needs changes…", "note"), a("review_prompt", "Ask a reviewer AI")), ref = tid, rank = 16))
                 s == "validation_pending" -> out.add(step("task:$tid", "decision", "Verify $name",
-                    "Run the tests or the build, then record the real result with its run ID or commit. A model's claim does not count.",
-                    listOf(a("record_validation", "Record the test/build result…", "result", "run_id")), ref = tid, rank = 14))
+                    "Run the tests or the build (e.g. ./gradlew test in Android Studio or a CI run), then record what really happened. " +
+                        "A model's claim does not count. If you cannot run anything here, accept it on review alone — it stays marked NOT RUN.",
+                    listOf(a("validation_passed", "Tests/build passed…", "run_id"), a("validation_failed", "Tests/build failed…", "note"),
+                        a("waive_validation", "I can't run tests — accept on review…", "reason"),
+                        a("record_validation", "Record the result (passed/failed)…", "result", "run_id")), ref = tid, rank = 14))
                 s == "ready" || s == "in_progress" -> {
                     val who = owner(st, t)
                     out.add(step("task:$tid", "prompt", "Start $name with $who",
@@ -243,10 +246,19 @@ class Guide(val project: Project) {
             "reject_review" -> Outcome("$ref needs changes → ${p.reviewTask(ref, false, i("note")).first}.")
             "review_prompt" -> Outcome("Review prompt ready for a reviewer AI (its answer is advice; you decide).", Prompts.review(p.state(), ref))
             "record_validation" -> {
-                val r = i("result").lowercase()
-                if (r != "passed" && r != "failed") throw ModelError("result must be 'passed' or 'failed'")
+                val r = when (i("result").lowercase()) {
+                    "passed", "pass", "ok", "yes", "green", "success", "y" -> "passed"
+                    "failed", "fail", "no", "red", "failure", "n" -> "failed"
+                    else -> throw ModelError("result must be 'passed' or 'failed' (or use the 'passed' / 'failed' buttons)")
+                }
                 Outcome("Validation $r recorded → $ref ${p.recordValidation(ref, r == "passed", i("run_id")).first}.")
             }
+            "validation_passed", "validation_failed" -> {
+                val ok = action == "validation_passed"
+                val run = i("run_id").ifEmpty { i("note").take(100) }
+                Outcome("Validation ${if (ok) "passed" else "failed"} recorded → $ref ${p.recordValidation(ref, ok, run).first}.")
+            }
+            "waive_validation" -> Outcome("$ref accepted on review without tests (NOT RUN) → ${p.waiveValidation(ref, i("reason")).first}.")
             "make_ready" -> { p.transition(ref, "ready", "approved in the guided loop"); Outcome("$ref approved.") }
             "unblock" -> { p.transition(ref, "ready", "unblocked by the user"); Outcome("$ref can continue.") }
             "cancel" -> { p.transition(ref, "cancelled", i("reason").ifEmpty { "cancelled by the user" }); Outcome("$ref cancelled.") }
@@ -288,5 +300,10 @@ class Guide(val project: Project) {
         const val MANAGER = "agent-project-manager"
         private val OPEN_H = setOf("prepared", "prompt_exported", "response_received", "parsed", "reconciled", "stale", "reconciliation_required")
         private val OPTIONAL = setOf("note", "reason", "rationale", "run_id", "commit_sha", "tag")
+        /** What each input asks for (the UI shows these as field hints). */
+        val INPUT_HINTS = mapOf("goal" to "What should this project achieve? (one or two sentences)", "note" to "Note (optional)",
+            "reason" to "Reason (optional)", "rationale" to "Why? (optional, kept in the decision log)", "choice" to "Your decision",
+            "result" to "passed or failed", "run_id" to "Run ID, build number or commit (optional)",
+            "commit_sha" to "Commit SHA (optional)", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
     }
 }

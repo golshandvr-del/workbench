@@ -45,6 +45,21 @@ class Project(val store: ProjectStore) {
         }
     }
 
+    /** How many chats the user will follow at the same time (desktop `team.normalize_team_settings`, 1..12). */
+    fun maxParallelChats(): Int = (Json.obj(Json.obj(state()["settings"])["team"])["max_parallel_chats"] as? Number)?.toInt() ?: 2
+
+    fun setMaxParallelChats(n: Int) {
+        if (n !in 1..MAX_PARALLEL_CHATS) throw ModelError("max_parallel_chats must be between 1 and $MAX_PARALLEL_CHATS")
+        store.transaction("team settings") { s ->
+            val settings = Json.obj(s["settings"])
+            val team = Json.obj(settings.getOrPut("team") { linkedMapOf<String, Any?>() })
+            if ((team["max_parallel_chats"] as? Number)?.toInt() != n) {
+                team["max_parallel_chats"] = n.toLong()
+                State.emit(s, "team_settings_updated", "max_parallel_chats" to n.toLong())
+            }
+        }
+    }
+
     // ----------------------------------------------------------- charter + plans
 
     fun charterPrompt(goal: String): String = Charter.prompt(mapOf("goal" to goal), state())
@@ -713,6 +728,29 @@ class Project(val store: ProjectStore) {
         return evaluateTask(taskId)
     }
 
+    /**
+     * The user cannot run tests/builds (e.g. on a phone): the task is accepted on review alone. Nothing is faked —
+     * no passing evidence is created; the task records the waiver with its reason, the policy becomes
+     * `manual_review` (same task revision, so the recorded review still counts) and the timeline shows it.
+     */
+    fun waiveValidation(taskId: String, reason: String): Pair<String, List<String>> {
+        store.transaction("waive validation $taskId") { s ->
+            val t = State.require(s, "tasks", taskId)
+            if (t["status"] !in setOf("validation_pending", "in_review", "in_progress"))
+                throw ModelError("validation can only be waived while the task is being checked (now ${t["status"]})")
+            val why = reason.trim().ifEmpty { "tests/build cannot be run by the user" }.take(500)
+            t["acceptance_policy"] = "manual_review"
+            t["validation_waiver"] = linkedMapOf<String, Any?>("at" to State.nowUtc(), "reason" to why,
+                "task_revision" to Json.int(t["task_revision"]).toLong(), "result" to "not_run")
+            val flag = "validation NOT RUN (waived by the user): $why"
+            val flags = ArrayList<Any?>((t["flags"] as? List<*>).orEmpty())
+            if (flag !in flags) flags.add(flag)
+            t["flags"] = flags
+            State.emit(s, "validation_waived", "task_id" to taskId, "why" to why, "importance" to "major")
+        }
+        return evaluateTask(taskId)
+    }
+
     // --------------------------------------------------------------- decisions
 
     fun proposeDecision(title: String, problem: String, affected: List<String>): String = store.transaction("propose decision") { s ->
@@ -779,6 +817,7 @@ class Project(val store: ProjectStore) {
     fun managerUpdate(): String = Prompts.managerUpdate(state())
 
     companion object {
+        const val MAX_PARALLEL_CHATS = 12
         val PROPOSAL_RE = Regex("(?s)<<<AIWB_MANAGER_PROPOSAL>>>\\s*(.*?)\\s*<<<AIWB_END_MANAGER_PROPOSAL>>>")
         val HANDOFF_RE = Regex("(?s)<<<AIWB_HANDOFF>>>\\s*(.*?)\\s*<<<AIWB_END_HANDOFF>>>")
         const val MAX_OPS = 60

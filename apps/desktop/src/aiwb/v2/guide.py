@@ -26,6 +26,8 @@ MANAGER = "agent-project-manager"
 
 # Step kinds: prompt (copy a ready prompt, then paste the answer) · paste (an answer is awaited) ·
 # decision (a real choice) · form (one input is needed to build the next prompt).
+RESULT_WORDS = {w: "passed" for w in ("passed", "pass", "ok", "yes", "y", "green", "success")}
+RESULT_WORDS.update({w: "failed" for w in ("failed", "fail", "no", "n", "red", "failure")})
 KINDS = ("prompt", "paste", "decision", "form")
 
 
@@ -85,8 +87,8 @@ def repair_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str, Any] 
         lines += ["", "## Arrived complete (do NOT resend)"] + [f"- {p}" for p in done]
     lines += ["", "## Still missing"] + ([f"- {m}" for m in missing] or ["- (see the acceptance criteria below)"])
     lines += ["", "## Acceptance criteria"] + ([f"- [ ] {c}" for c in t.get("acceptance_criteria", [])] or ["- (none)"])
-    lines += ["", "## Format", "- Complete files as AIWB file blocks (<<<AIWB_FILE path=\"…\" action=\"write\" body=\"raw\">>> … "
-              "<<<AIWB_END_FILE>>>), then one manifest:", "<<<AIWB_HANDOFF>>>",
+    from .handoff import FILE_RULES
+    lines += ["", "## Format", *FILE_RULES, "- Then one manifest:", "<<<AIWB_HANDOFF>>>",
               json.dumps({"schema_version": "1.0", "handoff_id": n["handoff_id"], "task_id": n["task_id"],
                           "task_revision": n["task_revision"], "attempt_id": n["attempt_id"],
                           "outcome": "complete|partial", "summary": "…", "completed_items": ["…"],
@@ -204,9 +206,13 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                               _a("review_prompt", "Ask a reviewer AI")], ref=tid, rank=16))
         elif s_ == "validation_pending":
             out.append(_step(f"task:{tid}", "decision", f"Verify {name}",
-                             "Run the tests or the build, then record the real result with its run ID or commit. "
-                             "A model's claim does not count.",
-                             [_a("record_validation", "Record the test/build result…", "result", "run_id")], ref=tid, rank=14))
+                             "Run the tests or the build (e.g. ./gradlew test or a CI run), then record what really happened. "
+                             "A model's claim does not count. If you cannot run anything here, accept it on review alone "
+                             "— it stays marked NOT RUN.",
+                             [_a("validation_passed", "Tests/build passed…", "run_id"),
+                              _a("validation_failed", "Tests/build failed…", "note"),
+                              _a("waive_validation", "I can't run tests — accept on review…", "reason"),
+                              _a("record_validation", "Record the result (passed/failed)…", "result", "run_id")], ref=tid, rank=14))
         elif s_ in ("ready", "in_progress"):
             who = _owner(st, t)
             out.append(_step(f"task:{tid}", "prompt", f"Start {name} with {who}",
@@ -319,6 +325,29 @@ class Guide:
                 else:
                     g[k] = v
 
+    def waive_validation(self, task_id: str, reason: str) -> dict[str, Any]:
+        """The user cannot run tests/builds: accept on review alone (mobile 1.0.1 / 3.9.1).
+
+        Nothing is faked — no passing evidence is created. The task records the waiver and its reason, its policy
+        becomes ``manual_review`` (same task revision, so the recorded review still counts) and the timeline shows it.
+        """
+        from .store import emit, require
+        why = (reason.strip() or "tests/build cannot be run by the user")[:500]
+        with self.p.store.transaction("waive validation") as s:
+            t = require(s, "tasks", task_id)
+            if t["status"] not in ("validation_pending", "in_review", "in_progress"):
+                raise ModelError(f"validation can only be waived while the task is being checked (now {t['status']})")
+            t["acceptance_policy"] = "manual_review"
+            t["validation_waiver"] = {"at": now_utc(), "reason": why, "task_revision": int(t["task_revision"]),
+                                      "result": "not_run"}
+            flag = f"validation NOT RUN (waived by the user): {why}"
+            if flag not in t.setdefault("flags", []):
+                t["flags"].append(flag)
+            emit(s, "validation_waived", task_id=task_id, why=why, importance="major")
+        out = self.p.evidence.evaluate_task(task_id, current_commit=self.ctl.base_commit())
+        self.ctl._dirty("validation waived")
+        return out
+
     def perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:  # noqa: C901
         step = self.find(key)
         if action not in [a["id"] for a in step["actions"]]:
@@ -409,10 +438,17 @@ class Guide:
         if action == "review_prompt":
             return {"message": "Review prompt ready for a reviewer AI (its answer is advice; you decide).",
                     "prompt": review_prompt(c.state(), ref)}
+        if action in ("validation_passed", "validation_failed"):
+            inp = {**inp, "result": "passed" if action == "validation_passed" else "failed",
+                   "run_id": str(inp.get("run_id", "")).strip() or str(inp.get("note", "")).strip()[:100]}
+            action = "record_validation"
+        if action == "waive_validation":
+            out = self.waive_validation(ref, str(inp.get("reason", "")))
+            return {"message": f"{ref} accepted on review without tests (NOT RUN) → {out['status']}."}
         if action == "record_validation":
-            result = str(inp["result"]).lower()
+            result = RESULT_WORDS.get(str(inp["result"]).strip().lower(), "")
             if result not in ("passed", "failed"):
-                raise ModelError("result must be 'passed' or 'failed'")
+                raise ModelError("result must be 'passed' or 'failed' (or use the 'passed' / 'failed' buttons)")
             run = str(inp.get("run_id", "")).strip() or "manual-" + now_utc()
             self.p.evidence.record(type="test_run", subject_type="task", subject_id=ref, source_kind="user",
                                    result=result, run_id=run, summary="recorded in the guided loop")

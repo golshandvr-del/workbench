@@ -203,7 +203,7 @@ class EndToEndTests(GuideBase):
                 self.assertIn("VERDICT", rp["prompt"])
                 g.perform(key, "approve")
                 continue
-            if key.startswith("task:") and first == "record_validation":
+            if key.startswith("task:") and first in ("record_validation", "validation_passed"):
                 g.perform(key, "record_validation", result="passed", run_id="run-" + step["ref"])
                 continue
             if key.startswith("milestone:"):

@@ -116,7 +116,7 @@ class StandaloneLoopTest {
                     assertEquals(out.message, "handoff", out.kind)
                 }
                 s.key.startsWith("handoff:") && s.primary?.id == "accept_handoff" -> g.perform(s.key, "accept_handoff")
-                s.key.startsWith("task:") && s.primary?.id == "record_validation" ->
+                s.key.startsWith("task:") && s.primary?.id in setOf("record_validation", "validation_passed") ->
                     g.perform(s.key, "record_validation", mapOf("result" to "passed", "run_id" to "run-${s.ref}"))
                 s.key.startsWith("task:") && s.primary?.id == "approve" -> g.perform(s.key, "approve")
                 s.key.startsWith("milestone:") -> g.perform(s.key, "accept_milestone")

@@ -1,5 +1,27 @@
 # AI Workbench Mobile — Changelog
 
+## [1.0.1] - 2026-10-20
+
+### Fixes from the first phone test (standalone mode stuck after step 1)
+- **Verify step no longer traps the user.** It showed one action with an unlabelled `result` field, so the only
+  outcome was "Error: result is required". Now: *Tests/build passed…*, *Tests/build failed…* and
+  *I can't run tests — accept on review…* buttons. The last one never fakes evidence: the task is accepted on
+  review alone, its policy becomes `manual_review`, a `validation_waiver` with `result: not_run` and a
+  "validation NOT RUN" flag are kept, and the timeline shows a `validation_waived` event.
+- Every input field has a hint (what to type, and whether it is optional); `record_validation` accepts
+  ok/yes/pass/fail words.
+- **Project settings**: goal and *how many AI chats you will follow at the same time* (1–12). This number goes
+  into the Project Charter prompt; the project manager sizes the team inside it.
+- **Project overview**: AI team, tasks with status and owner, versions, and the charter's questions for you.
+- Errors are shown in red at the top and the page scrolls to them.
+- Timeline: version labels at the same time are stacked instead of drawn over each other (the "0.1.0" knot).
+- Prompts ask the AI to wrap every file in a four-backtick fence: chat apps strip indentation and backticks
+  from text outside code blocks when it is copied (seen in a real Gemini answer).
+
+### Validation
+- `VerifyStepTest` (JVM): one-tap verify, honest waiver, team-size setting, four-backtick fence parsing.
+- NOT RUN: on a physical phone.
+
 ## [1.0.0] - 2026-10-19
 
 ### Standalone mode (roadmap mobile 1.0.0 + 3.8.0)

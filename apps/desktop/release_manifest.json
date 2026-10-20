@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "3.9.0",
+  "version": "3.9.1",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -198,8 +198,12 @@
       "source": "apps/desktop/tests/test_release_gate.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v3.9.0.md",
-      "source": "docs/release/v3.9.0/WINDOWS_RELEASE_CHECKLIST_v3.9.0.md"
+      "path": "test_verify_step.py",
+      "source": "apps/desktop/tests/test_verify_step.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v3.9.1.md",
+      "source": "docs/release/v3.9.1/WINDOWS_RELEASE_CHECKLIST_v3.9.1.md"
     },
     {
       "path": "install.ps1",
