@@ -51,7 +51,11 @@ class MissionCanvas(tk.Canvas):
         self.bind("<ButtonRelease-1>", self._release)
         self.bind("<Button-3>", self._context)
         self.bind("<Shift-F10>", self._key_menu)  # 5.4.0: keyboard opens the menu of the selected task
-        self.bind("<App>", self._key_menu)
+        for seq in ("<App>", "<Menu>"):  # the Menu key's keysym differs per platform (Windows: App, X11: Menu)
+            try:
+                self.bind(seq, self._key_menu)
+            except tk.TclError:
+                pass
         self.bind("<MouseWheel>", lambda e: self.yview_scroll(-1 if e.delta > 0 else 1, "units"))
         self.bind("<Shift-MouseWheel>", lambda e: self.xview_scroll(-1 if e.delta > 0 else 1, "units"))
         self.bind("<Button-4>", lambda _e: self.yview_scroll(-1, "units"))
