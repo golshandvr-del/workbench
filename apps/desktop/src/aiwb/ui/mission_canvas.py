@@ -4,8 +4,8 @@ PROJECT START capsule → golden source node → curved anti-aliased branches �
 a horizontal lane per AI with one circle per task in its version's dashed column → a chevron at the lane end.
 Every soft shape is a cached PNG from :mod:`assets`; straight hairlines are plain canvas lines (crisp anyway).
 
-Hover: halo + tooltip. Click: ``on_select(task_id)``. Right-click: ``on_menu(task_id, x_root, y_root)``
-(the menu itself is 5.4.0). Drag / wheel / arrow keys scroll. Drawing never touches project data.
+Hover: halo + tooltip. Click: ``on_select(task_id)``. Right-click (or Shift+F10 / the Menu key on the
+selected task): ``on_menu(task_id, x_root, y_root)`` — the 5.4.0 floating menu. Drag / wheel / arrow keys scroll. Drawing never touches project data.
 """
 from __future__ import annotations
 
@@ -50,6 +50,8 @@ class MissionCanvas(tk.Canvas):
         self.bind("<B1-Motion>", self._drag_to)
         self.bind("<ButtonRelease-1>", self._release)
         self.bind("<Button-3>", self._context)
+        self.bind("<Shift-F10>", self._key_menu)  # 5.4.0: keyboard opens the menu of the selected task
+        self.bind("<App>", self._key_menu)
         self.bind("<MouseWheel>", lambda e: self.yview_scroll(-1 if e.delta > 0 else 1, "units"))
         self.bind("<Shift-MouseWheel>", lambda e: self.xview_scroll(-1 if e.delta > 0 else 1, "units"))
         self.bind("<Button-4>", lambda _e: self.yview_scroll(-1, "units"))
@@ -306,6 +308,13 @@ class MissionCanvas(tk.Canvas):
         self.redraw()
         if self.on_select is not None:
             self.on_select(tid)
+
+    def _key_menu(self, _e: Any = None) -> None:
+        tid = self.selected
+        if not tid or self.on_menu is None or tid not in (self.geo.get("nodes") or {}):
+            return
+        x, y = self.geo["nodes"][tid]
+        self.on_menu(tid, int(self.winfo_rootx() + x - self.canvasx(0)), int(self.winfo_rooty() + y - self.canvasy(0)))
 
     def _context(self, e: Any) -> None:
         tid = self.task_at(e.x, e.y)
