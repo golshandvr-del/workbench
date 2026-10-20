@@ -483,8 +483,8 @@ class Guide:
                                        + "; ".join(x["message"] for x in (h.get("diagnosis") or [])[:3]))[:500]
                 from .store import emit
                 emit(s, "task_escalated", task_id=h["task_id"], importance="major")
-            return {"message": f"{h['task_id']} is handed to the project manager.", "prompt": c.manager_update_prompt()
-                    if hasattr(c, "manager_update_prompt") else continue_project_prompt(c.manager_update())}
+            return {"message": f"{h['task_id']} is handed to the project manager; the update prompt is ready.",
+                    "prompt": continue_project_prompt(c.manager_update())}
         if action == "repair":
             h = self.p.handoffs.get(ref)
             c.resolve_handoff(ref, True, "partial delivery accepted; repair requested for the missing items")
