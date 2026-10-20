@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.2.0 (5.x "Mission Map" — new shell)
+# Windows Release Checklist — AI Workbench 5.2.0 (5.x "Mission Map" — parallel timelines)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -19,12 +19,15 @@ preflight · sensitive file blocked · commit · idempotent commit · push · id
 
 ## 5.2.0 specific
 
-- [x] `test_shell5.py` — status-bar facts (agents running, milestone), page → rail-destination map (CI)
-- [x] `test_ui_tree.py` — toolbar / rail / tools equal `docs/UI_TREE.md` (CI)
-- [x] `gui_v5_shell_smoke.py` — toolbar + rail = UI tree, 4 window sizes × Midnight/Daylight with nothing clipped,
-      Save/Run safe without a project, live status bar, no project state written (CI)
-- [x] Screenshots: `docs/design/screens/5.2.0_shell_midnight.png`, `5.2.0_shell_daylight.png`
-- [ ] NOT RUN: rail marker slide and hover on a real Windows display at 100/125/150/200 % scaling
+- [x] `test_mission_model.py` — one lane per AI, semantic-version columns, milestone tasks in their version's
+      column, Later / Next columns, node states, open hand-off = active, layout per DPI scale, reading never
+      mutates (CI)
+- [x] `gui_v5_mission_smoke.py` — real five-AI project: 5 lanes + hexagons, 3 version columns, 15 circles, hover
+      halo + tooltip, click → details → Workbench Inspector, Midnight/Daylight, follows state revisions, looking
+      writes nothing (CI)
+- [x] All 5.1.0 shell gates stay green (`gui_v5_shell_smoke.py`, `test_shell5.py`, `test_ui_tree.py`)
+- [x] Screenshots: `docs/design/screens/5.2.0_mission_midnight.png`, `5.2.0_mission_daylight.png`
+- [ ] NOT RUN: hover / drag-pan feel on a real Windows display at 100/125/150/200 % scaling
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
