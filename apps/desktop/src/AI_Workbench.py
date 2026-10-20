@@ -11175,6 +11175,7 @@ def main(root: tk.Tk | None = None, splash: Any = None) -> int:
         if splash is not None:
             splash.progress(1.0)
             splash.close()
+            root.deiconify()
         root.mainloop()
         return 0
     except Exception as exc:
