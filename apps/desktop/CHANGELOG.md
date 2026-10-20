@@ -1,3 +1,16 @@
+## [4.6.0] - 2026-10-20
+
+### Completion, expansion or archive (Roadmap 4.6.0, flowchart F26–F28)
+
+- `v2/closeout.py`: **F26** announce completion only after the project manager's "complete" decision with no open
+  task; the completion summary is built from Workbench state and recorded on the timeline (`project_completed`).
+- **F27** expand: the finished cycle goes to `settings.flow.history`; the next major cycle starts with an expansion
+  prompt (whole history + the user's idea) whose answer is a normal `AIWB_MANAGER_PROPOSAL`.
+- **F28** archive: the final `aiwb-bundle.v1` is written to `.workbench/archive/` and the project becomes read-only —
+  `ProjectStore.transaction` refuses every change except **Reopen**.
+- Guide: closeout steps (announce, expand or archive, reopen) replace every other step at the end of the algorithm.
+- `tests/test_closeout.py`.
+
 ## [4.5.0] - 2026-10-20
 
 ### GitHub integration — the blue nodes (Roadmap 4.5.0, flowchart F3, F22–F24)

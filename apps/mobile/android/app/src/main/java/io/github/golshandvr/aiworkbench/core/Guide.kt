@@ -45,6 +45,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         val gd = g(st)
         val out = ArrayList<Step>()
         val tasks = State.coll(st, "tasks")
+        closeoutSteps(st).takeIf { it.isNotEmpty() }?.let { return it }  // F26–F28 (mobile 1.7.0) replace every other step
         (gd["continue"] as? Map<*, *>)?.let { c ->
             out.add(step("continue", "prompt", "The last answer was cut off — ask to continue",
                 "The pasted answer ended before it finished. Copy this prompt into the same chat; it asks for the rest only. Then paste the new answer.",
@@ -201,6 +202,25 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         }
         out.addAll(githubSteps(st))  // optional blue nodes never hide the manager update (roadmap 4.5.0)
         return out.sortedWith(compareBy({ it.rank }, { it.key }))
+    }
+
+    /** F26 announce, F27 expand or archive, F28 archived (read-only) — same rules as desktop `closeout_steps`. */
+    private fun closeoutSteps(st: Obj): List<Step> {
+        val fs = Flow.settings(st)
+        if (Closeout.isArchived(st))
+            return listOf(step("closeout:archived", "decision", "The project is archived (read-only)",
+                "Nothing can change until you reopen it. The final bundle is in the project's archive folder.",
+                listOf(a("reopen", "Reopen the project")), rank = 0))
+        if (Json.str(fs["completed_at"]).isNotEmpty())
+            return listOf(step("closeout:expand", "decision", "The project is complete — expand it or archive it?",
+                Closeout.summaryText(Json.obj(fs["completion"]).ifEmpty { Closeout.summary(st) }) + " Expand starts the next major cycle " +
+                    "with the whole history; archive saves the final bundle and makes the project read-only.",
+                listOf(a("expand", "Expand the project…", "idea"), a("archive", "Archive the project")), rank = 0))
+        if (Closeout.canAnnounce(st))
+            return listOf(step("closeout:announce", "decision", "Announce the completion",
+                "The project manager says no roadmap stage is left and every task is finished. " + Closeout.summaryText(Closeout.summary(st)),
+                listOf(a("announce", "Announce completion")), rank = 0))
+        return emptyList()
     }
 
     /** Blue nodes on the phone (mobile 1.6.0): manual GitHub steps, then record the result. No token on the phone. */
@@ -373,6 +393,14 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                 p.advanceVersion(ref, "released", runId = i("run_id"))
                 Outcome("Version ${v["label"]} released.")
             }
+            "announce" -> Outcome("Completion announced. " + Closeout.summaryText(Closeout.announce(p.store)))
+            "expand" -> {
+                val (cycle, prompt) = Closeout.expand(p.store, i("idea"))
+                setGuide(false, "manager_copied_at" to null, "manager_sent_at" to null)
+                Outcome("Cycle $cycle started. Copy the expansion prompt to your project-manager chat, then paste its plan.", prompt)
+            }
+            "archive" -> Outcome("Archived. Final bundle: ${Closeout.archive(p.store).path}. The project is read-only now.")
+            "reopen" -> { Closeout.reopen(p.store); Outcome("Reopened. The project can change again.") }
             "withdraw" -> { p.advanceVersion(st.ref.ifEmpty { ref }, "withdrawn"); Outcome("Version ${st.ref.ifEmpty { ref }} withdrawn.") }
             "record_connect" -> { val r = Repo.recordConnect(p.store, i("owner"), i("repo")); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).") }
             "record_save" -> { Repo.recordSave(p.store, i("commit_sha")); Outcome("Saved on GitHub: ${i("commit_sha").take(12)}.") }
@@ -447,7 +475,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         private val OPEN_H = setOf("prepared", "prompt_exported", "response_received", "parsed", "reconciled", "stale", "reconciliation_required")
         /** Optional inputs of the start form (roadmap 4.0.0, flowchart F4). */
         val BRIEF_OPTIONAL = arrayOf("name", "platform", "constraints", "ais")
-        private val OPTIONAL = setOf("note", "reason", "rationale", "run_id", "commit_sha", "tag") + BRIEF_OPTIONAL
+        private val OPTIONAL = setOf("note", "reason", "rationale", "run_id", "commit_sha", "tag", "idea") + BRIEF_OPTIONAL
         /** What each input asks for (the UI shows these as field hints). */
         val INPUT_HINTS = mapOf("goal" to "What should this project achieve? (one or two sentences)", "note" to "Note (optional)",
             "name" to "Project name (optional)", "platform" to "Platform / technology (optional)", "constraints" to "Constraints (optional)",
@@ -455,6 +483,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
             "reason" to "Reason (optional)", "rationale" to "Why? (optional, kept in the decision log)", "choice" to "Your decision",
             "result" to "passed or failed", "run_id" to "Run ID, build number or commit (optional)",
             "commit_sha" to "Commit SHA (optional)", "owner" to "GitHub owner (user or organization)",
-            "repo" to "Repository name", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
+            "repo" to "Repository name", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here",
+            "idea" to "What should the next cycle add? (optional)")
     }
 }

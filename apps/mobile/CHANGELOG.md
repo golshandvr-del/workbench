@@ -1,5 +1,19 @@
 # AI Workbench Mobile — Changelog
 
+## [1.7.0] - 2026-10-20
+
+### Completion, expansion or archive (Roadmap 4.6.0, flowchart F26–F28)
+
+- `core/Closeout.kt` (port of desktop `closeout.py`): **F26** announce completion only after the project manager's
+  "complete" decision with no open task; the summary (tasks, milestones, released versions with evidence, files) is
+  built from state and put on the timeline (`project_completed`).
+- **F27** expand: the finished cycle is kept in `settings.flow.history`, the cycle number grows, and an expansion
+  prompt (history + the user's idea + manager format) goes to the project-manager chat.
+- **F28** archive: the final `aiwb-bundle.v1` is written to `archive/`; `ProjectStore.transaction` then refuses every
+  write except **Reopen**.
+- Guide: the closeout steps replace every other step at the end of the algorithm.
+- `CloseoutTest`: announce, expand, archive read-only, reopen.
+
 ## [1.6.0] - 2026-10-20
 
 ### GitHub integration — the blue nodes (Roadmap 4.5.0, flowchart F3, F22–F24)

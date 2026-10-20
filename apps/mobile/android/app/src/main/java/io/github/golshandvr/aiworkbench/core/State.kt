@@ -218,6 +218,9 @@ class ProjectStore(val root: File, projectId: String = "") {
         val result = block(work)
         val events = Json.list(work.remove("_pending_events"))
         if (StrictJson.stringify(work, sortKeys = true) == before && events.isEmpty()) return result
+        // roadmap 4.6.0 (F28): an archived project is read-only; only Closeout.reopen may change it
+        if (Json.str(Json.obj(Json.obj(state["settings"])["flow"])["archived_at"]).isNotEmpty() && reason != "reopen project")
+            throw ModelError("the project is archived (read-only); reopen it first")
         val rev = Json.int(state["state_revision"]) + 1
         work["state_revision"] = rev.toLong()
         val stamp = State.nowUtc()
