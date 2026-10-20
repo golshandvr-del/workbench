@@ -11,7 +11,8 @@ class Guide(val project: Project) {
     data class Action(val id: String, val label: String, val needs: List<String> = emptyList(), var primary: Boolean = false)
 
     data class Step(val key: String, val kind: String, val title: String, val explain: String, val actions: List<Action>,
-                    val agentId: String = USER, val ref: String = "", val prompt: String = "", val rank: Int = 50) {
+                    val agentId: String = USER, val ref: String = "", val prompt: String = "", val rank: Int = 50,
+                    val taskIds: List<String> = emptyList()) {
         val primary: Action? get() = actions.firstOrNull { it.primary }
     }
 
@@ -104,6 +105,15 @@ class Guide(val project: Project) {
                 }
             }
         }
+        val desk = Waves.dispatch(st)
+        if (desk.next.size > 1) {
+            val names = desk.next.joinToString(", ") { "$it → ${desk.owners[it]}" }
+            out.add(step("dispatch", "prompt", "Prepare the prompts for ${desk.next.size} parallel tasks",
+                "Parallel paths of this wave: $names. ${desk.slots} of ${desk.limit} chat(s) are free" +
+                    (if (desk.queued.isNotEmpty()) "; ${desk.queued.size} more task(s) wait for a free chat." else ".") +
+                    " Each AI gets its own self-contained prompt.",
+                listOf(a("prepare_all", "Prepare all prompts")), rank = 39).copy(taskIds = desk.next))
+        }
         for (t in tasks.values.map { Json.obj(it) }.sortedBy { Json.str(it["task_id"]) }) {
             val tid = Json.str(t["task_id"]); val s = Json.str(t["status"]); val name = "$tid ${t["title"]}"
             if (openHandoff(st, tid)) continue
@@ -118,6 +128,7 @@ class Guide(val project: Project) {
                     listOf(a("validation_passed", "Tests/build passed…", "run_id"), a("validation_failed", "Tests/build failed…", "note"),
                         a("waive_validation", "I can't run tests — accept on review…", "reason"),
                         a("record_validation", "Record the result (passed/failed)…", "result", "run_id")), ref = tid, rank = 14))
+                (s == "ready" || s == "in_progress") && tid !in desk.next -> Unit  // waits for its wave or a free chat (4.1.0)
                 s == "ready" || s == "in_progress" -> {
                     val who = owner(st, t)
                     out.add(step("task:$tid", "prompt", "Start $name with $who",
@@ -245,6 +256,11 @@ class Guide(val project: Project) {
                 Outcome("Repair prompt for $tid ready (only the missing items).", prompt)
             }
             "abandon" -> { p.resolveHandoff(ref, false, i("reason").ifEmpty { "dropped by the user" }); Outcome("Prompt $ref dropped.") }
+            "prepare_all" -> {
+                val made = st.taskIds.map { tid -> p.startTask(tid, Waves.owner(p.state(), Json.obj(State.coll(p.state(), "tasks")[tid]))) }
+                Outcome("${made.size} prompts ready: " + made.joinToString(", ") { "${it["task_id"]} → ${it["to_agent_id"]}" } +
+                    ". Copy each one into its AI's chat.", made.firstOrNull()?.let { Json.str(it["prompt"]) } ?: "")
+            }
             "prepare" -> { val h = p.startTask(ref, st.agentId); Outcome("Prompt for $ref ready. Copy it into ${h["to_agent_id"]}'s chat.", Json.str(h["prompt"])) }
             "approve" -> Outcome("$ref review approved → ${p.reviewTask(ref, true, i("note")).first}.")
             "reject_review" -> Outcome("$ref needs changes → ${p.reviewTask(ref, false, i("note")).first}.")
