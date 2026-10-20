@@ -26,7 +26,6 @@ def run() -> int:
     import AI_Workbench  # noqa: E402 — imported after the splash on purpose
 
     splash.progress(0.45)
-    root.deiconify()
     return AI_Workbench.main(root, splash)
 
 
