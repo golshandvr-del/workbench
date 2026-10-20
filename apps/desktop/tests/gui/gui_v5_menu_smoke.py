@@ -85,7 +85,8 @@ def main() -> None:
             sh.show("home")
             settle(root, 8)
             c = app.mission
-            tid = first[2]
+            tid = first[1]  # on the dispatch desk now (2 free chats); first[2] waits for a free chat
+            assert not any(r["enabled"] for r in app.mission_menu_rows(first[2])), "a queued task offers nothing"
             x, y = c.geo["nodes"][tid]
             wx, wy = int(x - c.canvasx(0)), int(y - c.canvasy(0))
             rev, n = ctl.project.store.revision, ctl.project.store.ledger.count()
@@ -136,6 +137,7 @@ def main() -> None:
             assert app.mission.node(tid)["state"] in ("active", "idle", "attention"), app.mission.node(tid)
             # other tasks unaffected
             assert [r["enabled"] for r in app.mission_menu_rows(first[0])] == [True, False, False, False]
+            assert not any(r["enabled"] for r in app.mission_menu_rows(first[2]))
             print("v5.4.0 menu smoke passed: right-click floating menu (4 rows = UI tree) · enabled = Guide · "
                   "keyboard Up/Down/Enter/Esc · Shift+F10 · COPY prepares+copies · SEND records · GET enabled · "
                   "Midnight/Daylight · no AI Assistant")
