@@ -517,7 +517,15 @@ class WorkspaceController:
     def flow_text(self) -> str:
         f = self.flow_position()
         kind = {"app": "app", "user": "you", "github": "GitHub"}[f["kind"]]
-        return f"Flow {f['node']} · {f['title']} ({kind})" + (f" · cycle {f['cycle']}" if f["cycle"] > 1 else "")
+        text = f"Flow {f['node']} · {f['title']} ({kind})" + (f" · cycle {f['cycle']}" if f["cycle"] > 1 else "")
+        from aiwb.v2.waves import dispatch, waves
+        st = self.ctl.state()
+        w, d = waves(st), dispatch(st)
+        if st.get("tasks"):
+            text += f" · chats {len(d['active'])}/{d['limit']} · waves left {len(w['waves'])}"
+            if w["cycle"]:
+                text += f" · dependency cycle: {', '.join(w['cycle'][:4])}"
+        return text
 
     def guide_queues(self) -> dict[str, list[dict[str, Any]]]:
         return self.guide().queues()
