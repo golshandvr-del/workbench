@@ -593,7 +593,7 @@ class Guide:
             if step["key"] in ("manager_update", "charter"):
                 self._set_guide(seen=True)
             if r.kind == "handoff":
-                probs = self._diagnose(r.ref, text)
+                probs = self._diagnose(r.reference_id, text)
                 errs = [x for x in probs if x["severity"] == "error"]
                 if errs:
                     out["message"] += " Smart check found problems: " + "; ".join(x["code"] for x in errs) + \
