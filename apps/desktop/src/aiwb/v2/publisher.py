@@ -75,14 +75,19 @@ class GitHubStateClient:
         self.owner, self.repo, self.api = owner, repo, api.rstrip("/")
         self.transport = transport or urllib_transport
 
-    def _call(self, method: str, path: str, payload: Any = None) -> Any:
+    def raw(self, method: str, path: str, payload: Any = None) -> Any:
+        """Call an absolute API path (``/user/repos``, ``/repos/o/r/releases``) — used by ``repo.py`` (4.5.0)."""
+        return self._call(method, path, payload, absolute=True)
+
+    def _call(self, method: str, path: str, payload: Any = None, *, absolute: bool = False) -> Any:
         headers = {"Authorization": f"Bearer {self._token}", "Accept": "application/vnd.github+json",
                    "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "AI-Workbench-State-Publisher"}
         body = json.dumps(payload).encode("utf-8") if payload is not None else None
         if body is not None:
             headers["Content-Type"] = "application/json"
         try:
-            r = self.transport(method, f"{self.api}/repos/{self.owner}/{self.repo}{path}", headers, body)
+            url = f"{self.api}{path}" if absolute else f"{self.api}/repos/{self.owner}/{self.repo}{path}"
+            r = self.transport(method, url, headers, body)
         except (OSError, urllib.error.URLError) as exc:
             raise PublishError("network", f"GitHub is not reachable ({type(exc).__name__})") from None
         if r.status in (401,):
@@ -94,7 +99,7 @@ class GitHubStateClient:
                 wait = float(retry) if retry else max(0.0, float(r.headers.get("X-RateLimit-Reset", time.time() + 60)) - time.time())
                 raise PublishError("rate_limit", f"GitHub rate limit; retry after {int(wait)} s", retry_after=wait)
             raise PublishError("auth", "GitHub refused access (403): the token needs Contents write permission on this repository.")
-        if r.status in (409, 422) and path.startswith("/git/refs"):
+        if r.status in (409, 422) and (path.startswith("/git/refs") or "/git/refs" in path and absolute):
             raise PublishError("conflict", "the state branch moved on GitHub since the last read (not fast-forward)")
         if r.status >= 500:
             raise PublishError("network", f"GitHub server error {r.status}")
