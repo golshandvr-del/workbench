@@ -24,6 +24,7 @@ from .prefs import AppPrefs
 PAGES: dict[str, tuple[str, str, str, bool]] = {
     "home": ("Home", "خانه", "⌂", False),
     "workbench": ("Project Workbench", "میز کار پروژه", "◈", False),
+    "agents": ("Agents", "عامل‌ها", "◎", False),
     "prompt": ("Prompt", "پرامپت", "✎", False),
     "response": ("AI Response", "پاسخ AI", "⇩", False),
     "profile": ("Project Profile", "پروفایل پروژه", "☰", True),
@@ -32,8 +33,7 @@ PAGES: dict[str, tuple[str, str, str, bool]] = {
     "git": ("Git / GitHub", "گیت / گیت‌هاب", "⑂", True),
     "settings": ("Settings", "تنظیمات", "⚙", False),
 }
-NAV_ORDER = ("home", "workbench", "prompt", "response", "profile", "history", "run", "git")
-RAIL_WIDTH = 210
+NAV_ORDER = ("home", "workbench", "agents", "prompt", "response", "profile", "history", "run", "git")
 
 
 def work_area(root: tk.Misc) -> tuple[int, int, int, int]:
@@ -54,10 +54,30 @@ def fit_to_screen(root: tk.Tk, want: tuple[int, int] = (1280, 820), minimum: tup
     return geo
 
 
-class AppShell:
-    """Owns the chrome; pages are plain frames created by the application."""
+# Page -> rail destination of the 5.x shell (roadmap 5.1.0, docs/UI_TREE.md): expert pages live under Agents › Tools.
+RAIL_OF: dict[str, str] = {"home": "home", "workbench": "projects", "agents": "agents", "prompt": "agents",
+                           "response": "agents", "profile": "agents", "run": "agents", "git": "agents",
+                           "history": "history", "settings": "settings"}
+# Rail destination -> page shown when it is clicked
+RAIL_PAGE: dict[str, str] = {"home": "home", "projects": "workbench", "agents": "agents", "history": "history",
+                             "settings": "settings"}
+STATUS_POLL_MS = 2500
 
-    def __init__(self, root: tk.Tk, prefs: AppPrefs, *, title: str, version: str) -> None:
+
+class AppShell:
+    """Owns the chrome (5.x: toolbar · icon rail · page stack · live status bar); pages are plain frames.
+
+    ``commands`` maps toolbar ids of :data:`structure5.TOOLBAR` to callables; ``message`` is the application's
+    status sentence; ``facts`` returns the open project's V2 state (or ``None``) for the status bar.
+    """
+
+    def __init__(self, root: tk.Tk, prefs: AppPrefs, *, title: str, version: str,
+                 commands: dict[str, Callable[[], Any]] | None = None, message: tk.StringVar | None = None,
+                 facts: Callable[[], dict[str, Any] | None] | None = None) -> None:
+        from . import chrome5, status5
+        from .assets import Assets
+        from .startup import ui_scale
+
         self.root = root
         self.prefs = prefs
         self.version = version
@@ -65,47 +85,40 @@ class AppShell:
         self.page_hooks: dict[str, Callable[[], None]] = {}
         self.pref_listeners: list[Callable[[str], None]] = []
         self.current = "home"
+        self.facts_fn = facts
+        self._status5 = status5
+        self._last_rev: tuple[str, int] | None = None
         self.palette = appearance.apply(root, prefs.theme)
         fit_to_screen(root)
+        self.assets = Assets(root, chrome5.chrome_theme(prefs.theme), ui_scale(root))
+        self.message_var = message if message is not None else tk.StringVar(value="")
         self.outer = ttk.Frame(root)
         self.outer.pack(fill="both", expand=True)
-        self.outer.rowconfigure(0, weight=1)
-        # rail
-        self.rail = ttk.Frame(self.outer, style="Rail.TFrame", padding=(8, 10), width=RAIL_WIDTH)
-        self.rail.grid_propagate(False)
-        self.rail.pack_propagate(False)
-        self.brand = ttk.Label(self.rail, text="◆ AI Workbench", style="RailBrand.TLabel", padding=(8, 2, 8, 14))
-        self.brand.pack(fill="x")
+        self.toolbar = chrome5.Toolbar(self.outer, self.assets, dict(commands or {}))
+        self.toolbar.pack(side="top", fill="x")
+        self.topline = tk.Frame(self.outer, height=1, bd=0)
+        self.topline._aiwb_keep_colours = True  # type: ignore[attr-defined]
+        self.topline.pack(side="top", fill="x")
+        self.statusbar = chrome5.StatusBar(self.outer, self.assets, message=self.message_var, version=version)
+        self.statusbar.pack(side="bottom", fill="x")
+        self.body = ttk.Frame(self.outer)
+        self.body.pack(side="top", fill="both", expand=True)
+        self.rail = chrome5.IconRail(self.body, self.assets, self.select_rail)
+        self.nav = self.rail.items
         self.nav_var = tk.StringVar(value="home")
-        self.nav: dict[str, ttk.Radiobutton] = {}
-        for key in NAV_ORDER + ("settings",):
-            b = ttk.Radiobutton(self.rail, variable=self.nav_var, value=key, style="Rail.Toolbutton",
-                                command=lambda k=key: self.show(k))
-            self.nav[key] = b
-        self.rail_version = ttk.Label(self.rail, text=f"v{version}", style="RailHead.TLabel", padding=(10, 4))
-        # main column
-        self.main = ttk.Frame(self.outer)
-        self.main.rowconfigure(1, weight=1)
+        self.main = ttk.Frame(self.body)
+        self.main.rowconfigure(0, weight=1)
         self.main.columnconfigure(0, weight=1)
-        self.titlebar = ttk.Frame(self.main, style="TitleBar.TFrame", padding=(20, 12, 20, 6))
-        self.titlebar.grid(row=0, column=0, sticky="ew")
-        self.titlebar.columnconfigure(0, weight=1)
         self.page_title = tk.StringVar()
-        self.title_label = ttk.Label(self.titlebar, textvariable=self.page_title, style="PageTitle.TLabel")
-        self.title_label.grid(row=0, column=0, sticky="w")
-        self.project_var = tk.StringVar(value="")
-        self.project_label = ttk.Label(self.titlebar, textvariable=self.project_var, style="Crumb.TLabel")
-        self.project_label.grid(row=1, column=0, sticky="w")
-        self.actions = ttk.Frame(self.titlebar, style="TitleBar.TFrame")
-        self.actions.grid(row=0, column=1, rowspan=2, sticky="e")
+        self.project_var = self.toolbar.project_var
+        self.project_label = self.toolbar.project_lbl
         self.notebook = ttk.Notebook(self.main, style="Shell.TNotebook")
-        self.notebook.grid(row=1, column=0, sticky="nsew", padx=(14, 14), pady=(0, 6))
-        self.statusbar = ttk.Frame(self.main, style="StatusBar.TFrame", padding=(14, 5))
-        self.statusbar.grid(row=2, column=0, sticky="ew")
-        self.statusbar.columnconfigure(0, weight=1)
+        self.notebook.grid(row=0, column=0, sticky="nsew", padx=(14, 14), pady=(10, 6))
         self._layout_rail()
         self._relabel()
+        self._recolor_chrome()
         prefs.subscribe(self._on_pref)
+        self.root.after(STATUS_POLL_MS, self._poll_status)
 
     # -- pages
     def add_page(self, key: str, *, padding: Any = 12, on_show: Callable[[], None] | None = None) -> ttk.Frame:
@@ -122,26 +135,33 @@ class AppShell:
                 return k
         return ""
 
+    def select_rail(self, dest: str) -> None:
+        self.show(RAIL_PAGE.get(dest, dest))
+
     def show(self, key: str) -> None:
         if key not in self.pages:
             return
         if not self.page_visible(key):
             self.prefs.set_mode("advanced")  # explicit navigation to an expert page reveals it
         self.current = key
-        self.nav_var.set(key)
         self.notebook.select(self.pages[key])
-        self.page_title.set(self.prefs.tr(PAGES[key][:2]))
+        self._mark(key)
         hook = self.page_hooks.get(key)
         if hook is not None:
             hook()
+
+    def _mark(self, key: str) -> None:
+        dest = RAIL_OF.get(key, key)
+        self.nav_var.set(dest)
+        self.page_title.set(self.prefs.tr(PAGES[key][:2]))
+        self.rail.select(dest)
 
     def sync_from_notebook(self) -> None:
         """Keep rail + title in step when code calls ``notebook.select(frame)`` directly."""
         key = self.key_for(self.notebook.select())
         if key and key != self.current:
             self.current = key
-            self.nav_var.set(key)
-            self.page_title.set(self.prefs.tr(PAGES[key][:2]))
+            self._mark(key)
             hook = self.page_hooks.get(key)
             if hook is not None:
                 hook()
@@ -150,45 +170,66 @@ class AppShell:
         return self.prefs.advanced or not PAGES[key][3]
 
     def visible_pages(self) -> list[str]:
-        return [k for k in NAV_ORDER + ("settings",) if self.page_visible(k)]
+        return [k for k in NAV_ORDER + ("settings",) if k in self.pages and self.page_visible(k)]
+
+    # -- status bar
+    def refresh_status(self) -> dict[str, Any]:
+        state = None
+        if self.facts_fn is not None:
+            try:
+                state = self.facts_fn()
+            except Exception:  # noqa: BLE001 - a broken project state must not break the status bar
+                state = None
+        facts = self._status5.summary(state)
+        self.statusbar.show_facts(facts)
+        if state is not None:
+            rev = (str(state.get("project_id", "")), int(state.get("state_revision", 0) or 0))
+            if self._last_rev is None or rev[0] != self._last_rev[0]:
+                self.statusbar.show_saved("Saved")
+            elif rev[1] != self._last_rev[1]:
+                self.statusbar.show_saved("Autosaved")
+            self._last_rev = rev
+        else:
+            self._last_rev = None
+            self.statusbar.show_saved("")
+        return facts
+
+    def _poll_status(self) -> None:
+        try:
+            if not self.root.winfo_exists():
+                return
+            self.refresh_status()
+            self.root.after(STATUS_POLL_MS, self._poll_status)
+        except tk.TclError:
+            pass
 
     # -- chrome
     def _layout_rail(self) -> None:
         self.rail.pack_forget()
         self.main.pack_forget()
-        side, other = ("right", "left") if self.prefs.rtl else ("left", "right")
+        side = "right" if self.prefs.rtl else "left"
         self.rail.pack(side=side, fill="y")
         self.main.pack(side=side, fill="both", expand=True)
-        for b in self.nav.values():
-            b.pack_forget()
-        self.rail_version.pack_forget()
-        for key in NAV_ORDER:
-            if self.page_visible(key):
-                self.nav[key].pack(fill="x", pady=1)
-        self.rail_version.pack(side="bottom", fill="x")
-        self.nav["settings"].pack(side="bottom", fill="x", pady=(1, 4))
-        rtl = self.prefs.rtl
-        anchor = "e" if rtl else "w"
-        title_col, action_col = (1, 0) if rtl else (0, 1)
-        self.titlebar.columnconfigure(title_col, weight=1)
-        self.titlebar.columnconfigure(action_col, weight=0)
-        self.title_label.grid_configure(column=title_col, sticky=anchor)
-        self.project_label.grid_configure(column=title_col, sticky=anchor)
-        self.actions.grid_configure(column=action_col, sticky="w" if rtl else "e")
-        _ = other
 
     def _relabel(self) -> None:
-        for key, b in self.nav.items():
-            en, fa, glyph, _adv = PAGES[key]
-            label = fa if self.prefs.rtl else en
-            b.configure(text=(f"{label}  {glyph}" if self.prefs.rtl else f"{glyph}  {label}"))
         if self.current in PAGES:
             self.page_title.set(self.prefs.tr(PAGES[self.current][:2]))
 
+    def _recolor_chrome(self) -> None:
+        from .tokens5 import palette5
+        p = palette5(self.assets.theme)
+        self.topline.configure(background=p["line_soft"])
+        self.toolbar.recolor()
+        self.rail.recolor()
+        self.statusbar.recolor()
+
     def _on_pref(self, key: str) -> None:
         if key == "theme":
+            from .chrome5 import chrome_theme
             self.palette = appearance.apply(self.root, self.prefs.theme)
             refresh_styles(self.root)
+            self.assets.set_theme(chrome_theme(self.prefs.theme))
+            self._recolor_chrome()
         if key == "lang":
             set_direction(self.prefs.rtl)
         if key in ("lang", "mode"):
