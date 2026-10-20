@@ -236,7 +236,7 @@ class Guide(val project: Project) {
                 Flow.startProject(p.store, (listOf("goal") + BRIEF_OPTIONAL).associateWith { i(it) })
                 Outcome("Project started. Project Charter prompt ready to copy.", p.charterPrompt(i("goal")))
             }
-            "accept" -> Outcome("Plan $ref ${p.acceptAllValid(ref)["status"]}.")
+            "accept" -> p.acceptAllValid(ref).let { r -> Outcome("Plan $ref ${r["status"]}." + Report.routeMessage(Json.obj(r["result"])["decision"])) }
             "reject" -> { p.reviewProposal(ref, emptyList()); Outcome("Plan $ref rejected. Nothing changed.") }
             "request_changes" -> {
                 val prompt = Prompts.proposalRevision(p.state(), ref, i("note"))
