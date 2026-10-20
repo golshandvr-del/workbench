@@ -839,7 +839,7 @@ class Project(val store: ProjectStore) {
             v
         }
 
-    fun managerUpdate(): String = Prompts.managerUpdate(state())
+    fun managerUpdate(): String = state().let { Prompts.continueProject(Prompts.managerUpdate(it), it) }
 
     companion object {
         const val MAX_PARALLEL_CHATS = 12
