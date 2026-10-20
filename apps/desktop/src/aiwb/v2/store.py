@@ -176,6 +176,9 @@ class ProjectStore:
             events = work.pop("_pending_events", [])
             if json.dumps(work, sort_keys=True) == before and not events:
                 return
+            # roadmap 4.6.0 (F28): an archived project is read-only; only "reopen project" may change it
+            if ((state.get("settings") or {}).get("flow") or {}).get("archived_at") and reason != "reopen project":
+                raise ModelError("the project is archived (read-only); reopen it first")
             work["state_revision"] = int(state.get("state_revision", 0)) + 1
             stamp = now_utc()
             for e in events or [{"type": "change"}]:
