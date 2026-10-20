@@ -222,8 +222,7 @@ class AppShell:
         old = getattr(self, "_shown_running", None)
         new = int(facts.get("running", 0))
         self._shown_running = new
-        if old is None or old == new or not facts.get("text", "").endswith(("running", "")) or \
-                "running" not in facts.get("text", ""):
+        if old is None or old == new or "running" not in str(facts.get("text", "")):
             self.statusbar.show_facts(facts)
             return
         tail = facts["text"].split(" ", 1)[1] if " " in facts["text"] else ""
