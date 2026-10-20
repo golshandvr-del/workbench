@@ -128,6 +128,46 @@ def continue_project_prompt(update: str, state: dict[str, Any] | None = None) ->
     return status_prompt(state or {}, update)
 
 
+def github_steps(ctl: Any, st: dict[str, Any]) -> list[dict[str, Any]]:
+    """Blue nodes (roadmap 4.5.0): F3 connect, F22 save, F24 release — every write waits for 'Confirm'."""
+    from .repo import manual_steps, release_needed, repo_info, unsaved_files
+    out: list[dict[str, Any]] = []
+    if not str(st["settings"].get("goal", "")).strip():
+        return out
+    fs = st["settings"].get("flow") or {}
+    pend = fs.get("github_pending")
+    has_token = getattr(getattr(ctl, "repo", None), "client_factory", None) is not None
+    if pend:
+        k = pend["kind"]
+        what = {"create": "create the repository", "connect": "connect the repository", "save": "save files on GitHub",
+                "release": f"publish {pend['payload'].get('tag', '')}"}[k]
+        acts = ([_a("confirm", "Confirm and send to GitHub")] if has_token else []) + [
+            _a("record", "I did it by hand — record…", *(("owner", "name") if k in ("create", "connect") else
+                                                         ("commit_sha",) if k == "save" else ("tag", "commit_sha", "run_id"))),
+            _a("cancel_github", "Cancel")]
+        out.append(_step(f"github:{k}", "decision", f"GitHub: {what}",
+                         ("Nothing is sent until you confirm. " if has_token else "No GitHub token: do it by hand, then record it. ")
+                         + " ".join(pend.get("steps") or []), acts, ref=pend["action_id"], rank=6, github=pend))
+        return out
+    repo = repo_info(st)
+    if not repo.get("full_name"):
+        out.append(_step("github:connect", "form", "GitHub: connect or create the project repository (optional)",
+                         "Workbench saves approved files on its own branch (never main) and publishes releases — each "
+                         "write only after you confirm.",
+                         [_a("prepare_connect", "Connect an existing repository…", "owner", "name"),
+                          _a("prepare_create", "Create a new private repository…", "owner", "name")], rank=95))
+        return out
+    if unsaved_files(st):
+        out.append(_step("github:save", "decision", f"GitHub: save {len(unsaved_files(st))} approved file(s)",
+                         f"Commit them to {repo.get('branch')} on {repo['full_name']} (no force push).",
+                         [_a("prepare_save", "Prepare the commit")], rank=77))
+    for v in release_needed(st):
+        out.append(_step(f"github:release:{v['version_id']}", "decision", f"GitHub: publish version {v['label']}",
+                         "All its milestones are accepted. Tag and GitHub Release after your confirmation.",
+                         [_a("prepare_release", "Prepare the release")], ref=v["version_id"], rank=79))
+    return out
+
+
 # -- steps -----------------------------------------------------------------------------------------
 def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of states is the clearest form
     """All open steps, most urgent first. Never empty."""
@@ -285,6 +325,8 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              "build run or artifact; Workbench never assumes a release.",
                              [_a("release", "Record the release…", "commit_sha", "tag", "run_id"),
                               _a("withdraw", "Withdraw the version")], ref=v["version_id"], rank=78))
+
+    out += github_steps(ctl, st)
 
     if not tasks and not any(p["status"] == "pending" for p in st["proposals"].values()):
         goal = str(st["settings"].get("goal", "")).strip()
@@ -567,10 +609,37 @@ class Guide:
                 self.p.timeline.advance_version(ref, "tagged", tag=tag or "v" + v["label"])
             self.p.timeline.advance_version(ref, "released", run_id=run)
             return {"message": f"Version {v['label']} released."}
+        if kind == "github":
+            return self._github(action, ref, inp)
         if action == "withdraw":
             self.p.timeline.advance_version(ref, "withdrawn")
             return {"message": f"Version {ref} withdrawn."}
         raise ModelError(f"unknown action {action!r}")
+
+    def _github(self, action: str, ref: str, inp: dict[str, Any]) -> dict[str, Any]:
+        """Blue nodes (4.5.0): prepare → confirm (token) or record (by hand); cancel drops the pending write."""
+        r = self.ctl.repo
+        if action in ("prepare_connect", "prepare_create"):
+            a = r.prepare(action.split("_", 1)[1], owner=inp.get("owner", ""), name=inp.get("name", ""))
+        elif action == "prepare_save":
+            a = r.prepare("save")
+        elif action == "prepare_release":
+            a = r.prepare("release", version_id=ref)
+        elif action == "confirm":
+            out = r.confirm(ref)
+            return {"message": "Done on GitHub: " + ", ".join(f"{k} {v}" for k, v in out.items() if v and k != "count")}
+        elif action == "record":
+            pend = r.pending() or {}
+            r.record(pend.get("kind", ""), **{k: inp.get(k, "") for k in ("owner", "name", "commit_sha", "tag", "run_id")
+                                             if inp.get(k)})
+            return {"message": "Recorded."}
+        elif action == "cancel_github":
+            r.cancel()
+            return {"message": "Cancelled. Nothing was sent to GitHub."}
+        else:
+            raise ModelError(f"unknown action {action!r}")
+        return {"message": "Prepared. " + ("Check it and confirm to send it to GitHub." if not a["manual"]
+                                           else "No token: " + " ".join(a["steps"]))}
 
     def _diagnose(self, handoff_id: str, text: str) -> list[dict[str, Any]]:
         """F13/F14: run the smart check on a linked answer and keep the problems on the handoff."""
