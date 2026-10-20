@@ -203,6 +203,8 @@ class AlgorithmWalk(unittest.TestCase):
         self.deliver(mob, ["mobile/MainActivity.kt"])
         self.do("github:save", "prepare_save")
         self.do("github:save", "record", commit_sha="2" * 40)
+        # milestone 2 (0.2.0) is complete; its release waits for the manager's decision (F21 no → F22 → F23)
+        self.do(next(k for k in self.keys() if k.startswith("milestone:")), "accept_milestone")
         self.events()
         # F17 → F18: every planned task is finished, so the status report is due
         self.edge("F17", "F18", g.find("manager_update")["kind"] == "prompt")
@@ -217,9 +219,8 @@ class AlgorithmWalk(unittest.TestCase):
         self.edge("F21", "F10", "pm_decision" in self.events() and c.state()["tasks"][fix]["priority"] == "critical")
         self.do(f"task:{fix}", "prepare")
         self.deliver(fix, ["mobile/Store.kt"])
-        # milestone 2 (0.2.0) is complete: F21 no → F22 → F23 yes → F24 → F25
-        self.do(next(k for k in self.keys() if k.startswith("milestone:")), "accept_milestone")
         self.events()
+        # the next report: no emergency, a stage is left → F21 no → F22 → F23 yes → F24 → F25 yes → F10
         d = self.report([{"operation": "create_task", "temporary_ref": "sync", "title": "Sync", "objective": "sync",
                           "owner_role": "implementer", "acceptance_criteria": ["syncs"], "scope": {"include": ["src/core/sync/**"]}}],
                         remaining=True)
