@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.1.0 (5.x "Mission Map" — design foundation)
+# Windows Release Checklist — AI Workbench 5.1.0 (5.x "Mission Map" — new shell)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -19,11 +19,12 @@ preflight · sensitive file blocked · commit · idempotent commit · push · id
 
 ## 5.1.0 specific
 
-- [x] `test_visual5_foundation.py` — rasteriser coverage/alpha/PNG validity, tokens contrast, asset cache (CI)
-- [x] `test_ui_tree.py` — `docs/UI_TREE.md` equals `aiwb/ui/structure5.py` (CI)
-- [x] `gui_v5_startup_smoke.py` — splash launcher starts the app; Tk loads rasterised PNGs (CI)
-- [ ] NOT RUN: splash and sharp text on a real Windows display at 100/125/150/200 % scaling
-- [ ] NOT RUN: Desktop shortcut created by an upgraded install starts `launch_aiwb.py`
+- [x] `test_shell5.py` — status-bar facts (agents running, milestone), page → rail-destination map (CI)
+- [x] `test_ui_tree.py` — toolbar / rail / tools equal `docs/UI_TREE.md` (CI)
+- [x] `gui_v5_shell_smoke.py` — toolbar + rail = UI tree, 4 window sizes × Midnight/Daylight with nothing clipped,
+      Save/Run safe without a project, live status bar, no project state written (CI)
+- [x] Screenshots: `docs/design/screens/5.1.0_shell_midnight.png`, `5.1.0_shell_daylight.png`
+- [ ] NOT RUN: rail marker slide and hover on a real Windows display at 100/125/150/200 % scaling
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
