@@ -1,3 +1,13 @@
+## [3.9.1] - 2026-10-20
+
+### Guided loop fixes (same as mobile 1.0.1)
+- Verify step: *Tests/build passed…*, *Tests/build failed…* and *I can't run tests — accept on review…*
+  (`waive_validation`: policy `manual_review`, `validation_waiver` with `result: not_run`, a NOT RUN flag and a
+  `validation_waived` event; never test/build evidence). `record_validation` accepts ok/yes/pass/fail words.
+- Handoff and repair prompts ask for four-backtick fences around every file (chat copies lose indentation and
+  backticks outside code blocks).
+- `tests/test_verify_step.py`.
+
 ## [3.9.0] - 2026-10-19
 
 ### Product Release Gate (Roadmap 3.x, Gate 3.9.0)
