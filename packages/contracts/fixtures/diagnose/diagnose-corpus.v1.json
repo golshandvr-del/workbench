@@ -1,0 +1,288 @@
+{
+ "schema_version": "1.0",
+ "description": "Smart problem detection corpus (roadmap 4.2.0). Desktop v2/diagnose.py and mobile core/Diagnose.kt must return exactly these problem codes in this order.",
+ "cases": [
+  {
+   "id": "clean",
+   "text": "AIWB_ATTEMPT_ID: ATT-1\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [],
+   "acceptable": true
+  },
+  {
+   "id": "truncated_file",
+   "text": "AIWB_ATTEMPT_ID: ATT-1\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "truncated",
+    "no_manifest"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "truncated_manifest",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"outcome\": \"comp",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "truncated"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "no_manifest",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "no_manifest"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "wrong_attempt",
+   "text": "AIWB_ATTEMPT_ID: ATT-9\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-9\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "wrong_attempt"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "unsafe_path",
+   "text": "<<<AIWB_FILE path=\"../etc/passwd\" action=\"write\">>>\n````\nx\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "unsafe_path"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "absolute_path",
+   "text": "<<<AIWB_FILE path=\"/tmp/x.py\" action=\"write\">>>\n````\nx=1\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "unsafe_path"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "out_of_scope",
+   "text": "<<<AIWB_FILE path=\"docs/notes.md\" action=\"write\">>>\nhi\n<<<AIWB_END_FILE>>>\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "out_of_scope"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "empty_file",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "empty_file"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "missing_deliverable",
+   "text": "<<<AIWB_FILE path=\"src/other.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "missing_deliverable"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "failed_outcome",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"failed\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "failed_outcome"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "not_fenced",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\ndef add(a, b):\n    return a + b\n\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "copy_damage"
+   ],
+   "acceptable": true
+  },
+  {
+   "id": "indent_lost",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\nreturn a + b\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "copy_damage"
+   ],
+   "acceptable": true
+  },
+  {
+   "id": "test_claim_manifest",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": [\"all tests pass\"]}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "unverified_test_claim"
+   ],
+   "acceptable": true
+  },
+  {
+   "id": "test_claim_text",
+   "text": "I ran it and all tests passed.\n<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "unverified_test_claim"
+   ],
+   "acceptable": true
+  },
+  {
+   "id": "unclosed_fence",
+   "text": "<<<AIWB_FILE path=\"src/calc.py\" action=\"write\">>>\n````\ndef add(a, b):\n    return a + b\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "ATT-1",
+    "allowed_paths": [
+     "src/"
+    ],
+    "expected_paths": [
+     "src/calc.py"
+    ]
+   },
+   "codes": [
+    "truncated"
+   ],
+   "acceptable": false
+  },
+  {
+   "id": "markdown_ok",
+   "text": "<<<AIWB_FILE path=\"README.md\" action=\"write\">>>\n# Title\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{\"schema_version\": \"1.0\", \"attempt_id\": \"ATT-1\", \"outcome\": \"complete\", \"summary\": \"s\", \"validation_claims\": []}\n<<<AIWB_END_HANDOFF>>>\n",
+   "context": {
+    "attempt_id": "",
+    "allowed_paths": [],
+    "expected_paths": []
+   },
+   "codes": [],
+   "acceptable": true
+  }
+ ]
+}
