@@ -112,6 +112,8 @@ object Flow {
                 Json.strs(v["milestone_ids"]).all { Json.obj(milestones[it])["status"] == "accepted" }
         }
         if (readyVersion) return at("F24", "A roadmap version is complete; publish it.")
+        if (Json.obj(fs["last_decision"])["route"] == "complete" && tasks.all { Json.str(it["status"]) in State.TERMINAL_TASK })
+            return at("F26", "The project manager says no roadmap stage is left; announce completion.")
         if (Json.int(st["state_revision"]) > Json.int(guide["manager_seen_revision"])) return at("F18", "Report the new state to the project manager.")
         return at("F25", "Ask the project manager whether any roadmap stage is left.")
     }
