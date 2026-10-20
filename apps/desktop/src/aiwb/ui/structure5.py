@@ -24,7 +24,7 @@ TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
 
 # Rail destinations: (key, label, icon, sections)
 RAIL: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
-    ("home", "Home", "home", ("Mission Map", "AI Assistant")),
+    ("home", "Home", "home", ("Mission Map", "Task details", "Your projects")),
     ("projects", "Projects", "projects", ("Project cards", "Project Workbench")),
     ("agents", "Agents", "agents", ("Team", "Dispatch desk", "Tools")),
     ("history", "History", "history", ("Timeline", "Prompts & responses", "Versions")),
@@ -48,13 +48,6 @@ TASK_MENU: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("mark_done", "MARK AS DONE", "check", ("accept_handoff", "approve", "validation_passed", "waive_validation")),
 )
 
-# Assistant panel ⋯ menu
-ASSISTANT_MENU: tuple[tuple[str, str], ...] = (
-    ("copy_status", "Copy status"),
-    ("clear_notes", "Clear notes"),
-    ("hide_panel", "Hide panel"),
-)
-
 STATUS_BAR: tuple[str, ...] = ("Agents running", "Milestone", "Autosaved")
 
 
@@ -65,7 +58,6 @@ def tree() -> dict[str, Any]:
         "Rail": {label: ({s: ({t[1]: {} for t in TOOLS} if s == "Tools" else {}) for s in sections})
                  for _k, label, _i, sections in RAIL},
         "Task menu": {label: {} for _id, label, _i, _a in TASK_MENU},
-        "Assistant menu": {label: {} for _id, label in ASSISTANT_MENU},
         "Status bar": {s: {} for s in STATUS_BAR},
     }
 
