@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.3.0",
+  "version": "5.4.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -258,8 +258,12 @@
       "source": "apps/desktop/tests/test_motion.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.3.0.md",
-      "source": "docs/release/v5.3.0/WINDOWS_RELEASE_CHECKLIST_v5.3.0.md"
+      "path": "test_task_menu.py",
+      "source": "apps/desktop/tests/test_task_menu.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.4.0.md",
+      "source": "docs/release/v5.4.0/WINDOWS_RELEASE_CHECKLIST_v5.4.0.md"
     },
     {
       "path": "install.ps1",
@@ -692,6 +696,14 @@
     {
       "path": "aiwb/ui/motion.py",
       "source": "apps/desktop/src/aiwb/ui/motion.py"
+    },
+    {
+      "path": "aiwb/ui/task_menu.py",
+      "source": "apps/desktop/src/aiwb/ui/task_menu.py"
+    },
+    {
+      "path": "aiwb/ui/menu5.py",
+      "source": "apps/desktop/src/aiwb/ui/menu5.py"
     }
   ],
   "zip_timestamp": [
