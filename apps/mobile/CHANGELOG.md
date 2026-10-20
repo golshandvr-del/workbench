@@ -1,5 +1,16 @@
 # AI Workbench Mobile — Changelog
 
+## [1.6.0] - 2026-10-20
+
+### GitHub integration — the blue nodes (Roadmap 4.5.0, flowchart F3, F22–F24)
+
+- `core/Repo.kt`: connect the project repository (F3) on its own branch `aiwb/<project>`. Workbench never writes `main`, `master`, `develop`, `development` or `trunk`. Approved (integrated) files are saved (F22). A version whose milestones are all accepted is detected (F23) and published as a tag plus a GitHub Release (F24).
+- `core/GitHubApi.kt`: a small GitHub REST client. It makes one atomic Git Data commit, fast-forward only (`force=false`), and its transport is injectable for tests.
+- `TokenVault`: the optional GitHub token is encrypted with an AES-256-GCM key in the Android Keystore. It is never exported or shown again.
+- Every GitHub write needs confirmation: a dialog shows exactly what will be sent, and the request runs off the UI thread only after **Send**.
+- Without a token, every GitHub step shows exact manual instructions and then "Record …" (repository, commit SHA, release), so there is never a dead end.
+- `RepoTest`: shared fixture `packages/contracts/fixtures/repo/github-flow.v1.json`, manual mode, and token mode against a fake GitHub.
+
 ## [1.5.0] - 2026-10-20
 
 ### Status report and the project manager's decision (Roadmap 4.4.0, flowchart F18–F21, F25)
