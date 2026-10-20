@@ -196,7 +196,7 @@ class Guide(val project: Project) {
                 if (due) "Tell the project manager what changed and ask for the next step" else "Ask the project manager for the next step",
                 "Nothing else is waiting for you. Copy the update, send it, then paste the manager's plan.",
                 listOf(a("copy", "Copy manager update"), a("sent", "I sent it"), a("paste", "Paste the plan", "text")),
-                agent = MANAGER, prompt = Prompts.continueProject(Prompts.managerUpdate(st)), rank = 90))
+                agent = MANAGER, prompt = Prompts.continueProject(Prompts.managerUpdate(st), st), rank = 90))
         }
         return out.sortedWith(compareBy({ it.rank }, { it.key }))
     }
@@ -209,7 +209,7 @@ class Guide(val project: Project) {
         project.store.transaction("guide") { s ->
             val settings = Json.obj(s["settings"])
             val gd = Json.obj(settings.getOrPut("guide") { LinkedHashMap<String, Any?>() })
-            if (seen) gd["manager_seen_revision"] = (Json.int(s["state_revision"]) + 1).toLong()
+            if (seen) { gd["manager_seen_revision"] = (Json.int(s["state_revision"]) + 1).toLong(); gd["manager_seen_at"] = State.nowUtc() }
             for ((k, v) in kv) if (v == null) gd.remove(k) else gd[k] = v
         }
     }
