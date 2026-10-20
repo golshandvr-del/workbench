@@ -313,12 +313,14 @@ class MissionCanvas(tk.Canvas):
         if self.on_select is not None:
             self.on_select(tid)
 
-    def _key_menu(self, _e: Any = None) -> None:
+    def _key_menu(self, _e: Any = None) -> str:
+        """Open the selected task's menu; "break" keeps Tk's F10 menubar traversal from stealing the focus."""
         tid = self.selected
         if not tid or self.on_menu is None or tid not in (self.geo.get("nodes") or {}):
-            return
+            return "break"
         x, y = self.geo["nodes"][tid]
         self.on_menu(tid, int(self.winfo_rootx() + x - self.canvasx(0)), int(self.winfo_rooty() + y - self.canvasy(0)))
+        return "break"
 
     def _context(self, e: Any) -> None:
         tid = self.task_at(e.x, e.y)
