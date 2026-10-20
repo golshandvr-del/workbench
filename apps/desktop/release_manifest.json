@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "4.7.0",
+  "version": "5.0.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -24,6 +24,10 @@
     {
       "path": "validation_profiles.py",
       "source": "apps/desktop/src/validation_profiles.py"
+    },
+    {
+      "path": "launch_aiwb.py",
+      "source": "apps/desktop/src/launch_aiwb.py"
     },
     {
       "path": "README.md",
@@ -234,8 +238,16 @@
       "source": "apps/desktop/tests/test_algorithm_e2e.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v4.7.0.md",
-      "source": "docs/release/v4.7.0/WINDOWS_RELEASE_CHECKLIST_v4.7.0.md"
+      "path": "test_visual5_foundation.py",
+      "source": "apps/desktop/tests/test_visual5_foundation.py"
+    },
+    {
+      "path": "test_ui_tree.py",
+      "source": "apps/desktop/tests/test_ui_tree.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.0.0.md",
+      "source": "docs/release/v5.0.0/WINDOWS_RELEASE_CHECKLIST_v5.0.0.md"
     },
     {
       "path": "install.ps1",
@@ -628,6 +640,26 @@
     {
       "path": "aiwb/v2/closeout.py",
       "source": "apps/desktop/src/aiwb/v2/closeout.py"
+    },
+    {
+      "path": "aiwb/ui/raster.py",
+      "source": "apps/desktop/src/aiwb/ui/raster.py"
+    },
+    {
+      "path": "aiwb/ui/tokens5.py",
+      "source": "apps/desktop/src/aiwb/ui/tokens5.py"
+    },
+    {
+      "path": "aiwb/ui/assets.py",
+      "source": "apps/desktop/src/aiwb/ui/assets.py"
+    },
+    {
+      "path": "aiwb/ui/structure5.py",
+      "source": "apps/desktop/src/aiwb/ui/structure5.py"
+    },
+    {
+      "path": "aiwb/ui/startup.py",
+      "source": "apps/desktop/src/aiwb/ui/startup.py"
     }
   ],
   "zip_timestamp": [
