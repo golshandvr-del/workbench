@@ -74,6 +74,13 @@ def _close(cur: dict[str, Any]) -> dict[str, Any]:
     return {"path": cur["path"], "body": "\n".join(lines), "fenced": fenced, "fence_balanced": fence_balanced}
 
 
+def task_paths(task: dict[str, Any]) -> list[str]:
+    """Where a task may write: ``allowed_paths`` plus ``scope.include`` (empty = not restricted)."""
+    out = [str(x) for x in task.get("allowed_paths") or []]
+    out += [str(x) for x in ((task.get("scope") or {}).get("include") or []) if str(x) not in out]
+    return out
+
+
 def _in_scope(path: str, allowed: list[str]) -> bool:
     if not allowed:
         return True
@@ -177,8 +184,8 @@ def troubleshoot_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str,
     warns = [p for p in problems if p["severity"] == "warning" and p not in errs]
     if warns:
         lines += ["", "## Also check"] + [f"- [{p['code']}] {p['message']}" for p in warns]
-    if t.get("allowed_paths"):
-        lines += ["", "## You may only write these paths"] + [f"- {x}" for x in t["allowed_paths"]]
+    if task_paths(t):
+        lines += ["", "## You may only write these paths"] + [f"- {x}" for x in task_paths(t)]
     lines += ["", "## Acceptance criteria"] + ([f"- [ ] {c}" for c in t.get("acceptance_criteria", [])] or ["- (none)"])
     lines += ["", "## Format", *FILE_RULES, "- Then one manifest:", MAN_OPEN,
               json.dumps({"schema_version": "1.0", "handoff_id": new["handoff_id"], "task_id": new["task_id"],
