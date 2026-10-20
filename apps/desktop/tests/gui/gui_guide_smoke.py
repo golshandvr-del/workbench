@@ -38,8 +38,8 @@ def main() -> None:
             ctl = w.wc.ctl
             root.update()
             # empty project: the strip asks for the goal (form step), never a dead end
-            assert "Describe the project" in w.next_var.get(), w.next_var.get()
-            assert str(w.next_btn.cget("text")).startswith("Design the whole project"), w.next_btn.cget("text")
+            assert "Start the project" in w.next_var.get(), w.next_var.get()
+            assert str(w.next_btn.cget("text")).startswith("Start the project"), w.next_btn.cget("text")
             out = w.guide_action("design", "design", {"goal": "Offline todo app for desktop and mobile"})
             assert out and "AIWB_PROJECT_CHARTER" in out["prompt"]
             root.update()

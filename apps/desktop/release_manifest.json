@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "3.9.1",
+  "version": "4.0.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -202,8 +202,12 @@
       "source": "apps/desktop/tests/test_verify_step.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v3.9.1.md",
-      "source": "docs/release/v3.9.1/WINDOWS_RELEASE_CHECKLIST_v3.9.1.md"
+      "path": "test_flow.py",
+      "source": "apps/desktop/tests/test_flow.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v4.0.0.md",
+      "source": "docs/release/v4.0.0/WINDOWS_RELEASE_CHECKLIST_v4.0.0.md"
     },
     {
       "path": "install.ps1",
@@ -568,6 +572,10 @@
     {
       "path": "aiwb/v2/bundle.py",
       "source": "apps/desktop/src/aiwb/v2/bundle.py"
+    },
+    {
+      "path": "aiwb/v2/flow.py",
+      "source": "apps/desktop/src/aiwb/v2/flow.py"
     }
   ],
   "zip_timestamp": [

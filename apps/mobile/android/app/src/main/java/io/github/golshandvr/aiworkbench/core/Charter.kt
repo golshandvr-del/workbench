@@ -78,8 +78,9 @@ Rules:
         val lines = mutableListOf("# AI Workbench — Project Charter (design the whole project)",
             "You are the Project Manager and architect for this project. You cannot read files, run anything or " +
                 "contact other chats; the user copies every prompt by hand and pastes your answer back.", "",
-            "State revision: ${Json.int(state["state_revision"])}", "", "## Project",
-            "- Goal: ${Json.str(project["goal"])}")
+            "State revision: ${Json.int(state["state_revision"])}", "", "## Project")
+        if (Json.str(project["name"]).isNotEmpty()) lines.add("- Name: ${Json.str(project["name"])}")
+        lines.add("- Goal: ${Json.str(project["goal"])}")
         for ((k, label) in listOf("non_goals" to "Non-goals", "success" to "Success criteria",
             "platform" to "Platform / technology", "constraints" to "Constraints", "limits" to "Time / cost limits")) {
             val v = Json.str(project[k])

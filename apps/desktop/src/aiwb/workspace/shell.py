@@ -139,6 +139,9 @@ class WorkspaceWindow:
         self.next_explain = ttk.Label(self.next_frame, textvariable=self.next_explain_var, style="WS.Muted.TLabel",
                                       wraplength=900)
         self.next_explain.grid(row=1, column=0, sticky="w")
+        # Phase bar (roadmap 4.0.0): where the project is in the owner's flowchart.
+        self.flow_var = tk.StringVar()
+        ttk.Label(self.next_frame, textvariable=self.flow_var, style="WS.Muted.TLabel").grid(row=2, column=0, sticky="w")
         self.next_btn = ttk.Button(self.next_frame, text="", style="WS.Primary.TButton", command=self.do_next)
         self.next_btn.grid(row=0, column=1, rowspan=2, sticky="e", padx=(8, 0))
         self.next_menu = tk.Menu(self.next_frame, tearoff=False)
@@ -254,6 +257,7 @@ class WorkspaceWindow:
         who = "" if st["agent_id"] == "you" else f"  [{st['agent_id']}]"
         self.next_var.set(("← " if self.wc.rtl else "→ ") + "Next step: " + st["title"] + who)
         self.next_explain_var.set(st["explain"] + (f"  ({len(steps) - 1} more open)" if len(steps) > 1 else ""))
+        self.flow_var.set(self.wc.flow_text())
         primary = next(a for a in st["actions"] if a["primary"])
         self.next_btn.configure(text=primary["label"] + ("…" if primary["needs"] and not primary["label"].endswith("…") else ""))
         self.next_menu.delete(0, "end")
@@ -321,7 +325,10 @@ class WorkspaceWindow:
         primary = next(a for a in st["actions"] if a["primary"])
         return self.guide_action(st["key"], primary["id"])
 
-    INPUT_PROMPTS = {"goal": "What should this project achieve? (one or two sentences)", "note": "Note (optional)",
+    INPUT_PROMPTS = {"goal": "What should this project achieve? (one or two sentences)",
+                     "name": "Project name (optional)", "platform": "Platform / technology (optional)",
+                     "constraints": "Constraints (optional)",
+                     "ais": "How many AI chats can you use at the same time? (1-12, optional)", "note": "Note (optional)",
                      "reason": "Reason", "rationale": "Why? (kept in the decision log)", "choice": "Your decision",
                      "result": "Result: passed or failed", "run_id": "Run ID / build number (optional)",
                      "commit_sha": "Commit SHA of the release", "tag": "Tag (optional, default v<version>)"}
@@ -367,7 +374,10 @@ class WorkspaceWindow:
                 else:
                     v = simpledialog.askstring(act["label"], self.INPUT_PROMPTS.get(need, need), parent=self.win)
                     if v is None:
-                        return None
+                        if "(optional" in self.INPUT_PROMPTS.get(need, ""):
+                            v = ""
+                        else:
+                            return None
                     inp[need] = v
         out = self._guard(lambda: self.wc.guide_perform(key, action, **inp))
         if out is None:

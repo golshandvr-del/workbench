@@ -510,6 +510,15 @@ class WorkspaceController:
     def guide_steps(self) -> list[dict[str, Any]]:
         return self.guide().steps()
 
+    def flow_position(self) -> dict[str, Any]:
+        """Where the project is in the owner's flowchart (roadmap 4.0.0), for the phase bar."""
+        return self.guide().flow()
+
+    def flow_text(self) -> str:
+        f = self.flow_position()
+        kind = {"app": "app", "user": "you", "github": "GitHub"}[f["kind"]]
+        return f"Flow {f['node']} · {f['title']} ({kind})" + (f" · cycle {f['cycle']}" if f["cycle"] > 1 else "")
+
     def guide_queues(self) -> dict[str, list[dict[str, Any]]]:
         return self.guide().queues()
 

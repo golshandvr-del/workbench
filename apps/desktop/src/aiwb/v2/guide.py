@@ -29,6 +29,9 @@ MANAGER = "agent-project-manager"
 RESULT_WORDS = {w: "passed" for w in ("passed", "pass", "ok", "yes", "y", "green", "success")}
 RESULT_WORDS.update({w: "failed" for w in ("failed", "fail", "no", "n", "red", "failure")})
 KINDS = ("prompt", "paste", "decision", "form")
+# Optional inputs of the start form (roadmap 4.0.0, flowchart F4): name, platform, constraints, number of AIs.
+BRIEF_OPTIONAL = ("name", "platform", "constraints", "ais")
+OPTIONAL_INPUTS = ("note", "reason", "rationale", "run_id", "commit_sha", "tag") + BRIEF_OPTIONAL
 
 
 def _a(id_: str, label: str, *needs: str, primary: bool = False) -> dict[str, Any]:
@@ -255,15 +258,17 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
     if not tasks and not any(p["status"] == "pending" for p in st["proposals"].values()):
         goal = str(st["settings"].get("goal", "")).strip()
         if not goal:
-            out.append(_step("design", "form", "Describe the project",
-                             "Write the goal in one or two sentences. Workbench builds the 'design the whole project' "
-                             "prompt for your project-manager chat.", [_a("design", "Design the whole project…", "goal")],
-                             agent=MANAGER, rank=1))
+            out.append(_step("design", "form", "Start the project",
+                             "Give the project a name, its goal (one or two sentences), the platform, any constraints and "
+                             "how many AI chats you can use at the same time. Workbench starts the timeline and builds the "
+                             "'design the whole project' prompt for your project-manager chat.",
+                             [_a("design", "Start the project…", "goal", *BRIEF_OPTIONAL)], agent=MANAGER, rank=1))
         else:
             out.append(_step("charter", "prompt", "Get the Project Charter from your project-manager chat",
                              f"Goal: {goal[:200]}. Copy the prompt, send it, then paste the whole answer.",
                              [_a("copy", "Copy the charter prompt"), _a("sent", "I sent it"),
-                              _a("paste", "Paste the charter", "text"), _a("design", "Change the goal…", "goal")],
+                              _a("paste", "Paste the charter", "text"), _a("design", "Change the project details…", "goal",
+                                                                              *BRIEF_OPTIONAL)],
                              agent=MANAGER, prompt=ctl.charter_prompt({"goal": goal, **(st["settings"].get("brief") or {})}),
                              rank=2))
 
@@ -300,6 +305,11 @@ class Guide:
 
     def steps(self) -> list[dict[str, Any]]:
         return steps(self.ctl)
+
+    def flow(self) -> dict[str, Any]:
+        """Where the project is in the owner's flowchart (roadmap 4.0.0)."""
+        from .flow import current
+        return current(self.ctl.state())
 
     def next(self) -> dict[str, Any]:
         return self.steps()[0]
@@ -353,7 +363,7 @@ class Guide:
         if action not in [a["id"] for a in step["actions"]]:
             raise ModelError(f"{action!r} is not possible for this step")
         for need in next(a for a in step["actions"] if a["id"] == action)["needs"]:
-            if need not in ("note", "reason", "rationale", "run_id", "commit_sha", "tag") and not str(inp.get(need, "")).strip():
+            if need not in OPTIONAL_INPUTS and not str(inp.get(need, "")).strip():
                 raise ModelError(f"{need.replace('_', ' ')} is required")
         kind, ref = key.split(":", 1) if ":" in key else (key, "")
         c = self.ctl
@@ -376,8 +386,11 @@ class Guide:
             self._set_guide(**{"continue": None})
             return {"message": "The cut-off answer is ignored; it stays in the Inbox."}
         if action == "design":
-            prompt = c.charter_prompt({"goal": str(inp["goal"])})
-            return {"message": "Project Charter prompt ready to copy.", "prompt": prompt}
+            from .flow import start_project
+            start_project(self.p.store, {k: inp.get(k, "") for k in ("goal",) + BRIEF_OPTIONAL})
+            brief = c.state()["settings"].get("brief") or {}
+            prompt = c.charter_prompt({**brief, "goal": str(inp["goal"])})
+            return {"message": "Project started. Project Charter prompt ready to copy.", "prompt": prompt}
         if action == "accept":
             p = self.p.proposals.get(ref)
             out = c.accept_proposal(ref, [o["index"] for o in p["operations"] if o["valid"]], confirm_stale=True)
