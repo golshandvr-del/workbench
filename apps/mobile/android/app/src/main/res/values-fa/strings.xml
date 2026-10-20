@@ -80,4 +80,13 @@
     <string name="standalone_files_unzip">ورود فایل‌ها از ZIP</string>
     <string name="standalone_files_imported">%1$d فایل وارد شد.</string>
     <string name="standalone_files_saved">ZIP ذخیره شد.</string>
+    <string name="github_token">توکن گیت‌هاب (اختیاری)</string>
+    <string name="github_token_help">یک توکن fine-grained با دسترسی Contents (خواندن و نوشتن) روی ریپوی پروژه. با Android Keystore رمز می‌شود و هرگز خروجی گرفته نمی‌شود. بدون آن، هر گام گیت‌هاب دستی انجام و اینجا ثبت می‌شود.</string>
+    <string name="github_token_hint">توکن را اینجا بچسبانید</string>
+    <string name="github_token_saved">یک توکن ذخیره شده است (برای جایگزینی، توکن تازه را بچسبانید)</string>
+    <string name="github_token_remove">حذف</string>
+    <string name="github_token_removed">توکن گیت‌هاب حذف شد. گام‌های گیت‌هاب اکنون دستی‌اند.</string>
+    <string name="github_confirm">%1$s\n\n%2$s\n\nتا «ارسال» را نزنید چیزی به گیت‌هاب فرستاده نمی‌شود.</string>
+    <string name="github_send">ارسال</string>
+    <string name="github_sending">در حال ارسال به گیت‌هاب…</string>
 </resources>
