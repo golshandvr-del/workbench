@@ -42,7 +42,7 @@ TOOLS: tuple[tuple[str, str], ...] = (
 
 # Right-click menu of a task circle on the Mission Map: (id, label, icon, guide actions that enable it)
 TASK_MENU: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
-    ("copy_prompt", "COPY PROMPT", "copy", ("copy",)),
+    ("copy_prompt", "COPY PROMPT", "copy", ("copy", "prepare")),
     ("send_prompt", "SEND PROMPT", "send", ("sent",)),
     ("get_response", "GET AI RESPONSE", "sparkle", ("paste",)),
     ("mark_done", "MARK AS DONE", "check", ("accept_handoff", "approve", "validation_passed", "waive_validation")),
