@@ -71,6 +71,9 @@ motion" turns every animation into its end state.
 
 ## 8. Rendering
 
-Shapes are drawn by `tools/gen_ui_assets.py` with Pillow at 4× and downsampled (anti-aliased), for scales
-1.0 / 1.25 / 1.5 / 2.0, and committed as PNG under `apps/desktop/src/aiwb/ui/assets/`. At run time Tk only
-places images (fast, crisp); Pillow is not needed on the user's machine.
+Tk on Windows draws canvas lines and ovals without anti-aliasing. So every soft shape — discs, rings, glows,
+hexagons, capsules, rounded corners, line icons and the curved branches — is rasterised by
+`apps/desktop/src/aiwb/ui/raster.py`: signed-distance shapes with analytic edge coverage, written as real-alpha
+PNG (pure Python: `zlib` + `struct`) and loaded with `tk.PhotoImage(data=…)`. Images are made per theme and DPI
+scale and cached (`aiwb/ui/assets.py`). Tk only places them, so drawing stays fast and crisp; Pillow is never
+needed on the user's machine. Straight hairlines (lane rails, borders) stay plain canvas lines — they are crisp.
