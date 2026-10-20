@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "4.4.0"
+APP_VERSION = "4.5.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -8974,6 +8974,20 @@ class WorkbenchApp:
                                        goal=lambda: str(ctl.state()["settings"].get("goal", "")))
             ctl.publisher = publisher
             ctl.state_url = lambda: state_url
+        # roadmap 4.5.0: GitHub writes of the algorithm use the first account with a token (each write still needs
+        # the user's explicit confirmation in the guide)
+        try:
+            accounts = self.github_account_service.list_accounts()
+        except Exception:  # noqa: BLE001 - GitHub is optional; manual mode stays available
+            accounts = []
+        if accounts:
+            acc_id = accounts[0].account_id
+
+            def repo_client(owner: str, name: str) -> GitHubStateClient | None:
+                token = self.github_account_service.get_api_token(acc_id)
+                return GitHubStateClient(token, owner, name) if token else None
+
+            ctl.repo.client_factory = repo_client
         return ctl
 
     def open_projects(self) -> None:

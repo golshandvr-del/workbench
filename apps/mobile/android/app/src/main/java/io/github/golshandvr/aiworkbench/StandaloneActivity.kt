@@ -17,6 +17,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import io.github.golshandvr.aiworkbench.core.Files
+import io.github.golshandvr.aiworkbench.core.GitHubApi
 import io.github.golshandvr.aiworkbench.core.Guide
 import io.github.golshandvr.aiworkbench.core.Project
 import io.github.golshandvr.aiworkbench.core.ProjectBundle
@@ -98,7 +99,7 @@ class StandaloneActivity : Activity() {
         heading(p.store.projectId)
         // Phase bar (roadmap 4.0.0): where the project is in the owner's flowchart.
         try { text(p.flowText()) } catch (e: Exception) { say(e.message ?: e.toString()) }
-        val steps = try { Guide(p).steps() } catch (e: Exception) { say(e.message ?: e.toString()); emptyList() }
+        val steps = try { guide(p).steps() } catch (e: Exception) { say(e.message ?: e.toString()); emptyList() }
         steps.firstOrNull()?.let { stepCard(p, it, true) }
         if (steps.size > 1) {
             heading(getString(R.string.standalone_other_steps))
@@ -122,6 +123,7 @@ class StandaloneActivity : Activity() {
         button(getString(R.string.standalone_files)) { showFiles(p) }
         button(getString(R.string.standalone_overview)) { showOverview(p) }
         button(getString(R.string.standalone_settings)) { editSettings(p) }
+        button(getString(R.string.github_token)) { editToken() }
         button(getString(R.string.standalone_export_bundle)) { pickExport(p) }
         button(getString(R.string.standalone_back)) { showProjects() }
     }
@@ -155,10 +157,47 @@ class StandaloneActivity : Activity() {
             .setNegativeButton(android.R.string.cancel, null).show()
     }
 
-    private fun run(p: Project, s: Guide.Step, a: Guide.Action, inp: Map<String, String>) = guard {
-        val out = Guide(p).perform(s.key, a.id, inp)
-        if (out.prompt.isNotEmpty()) copy(out.prompt)
-        render(out.message)
+    // GitHub (mobile 1.6.0): token from the Keystore vault; without it every GitHub step stays manual.
+    private val vault by lazy { TokenVault(this) }
+
+    private fun guide(p: Project): Guide {
+        val token = if (vault.has()) vault.load() else null
+        return if (token.isNullOrEmpty()) Guide(p) else Guide(p) { o, r -> GitHubApi(token, o, r) }
+    }
+
+    private fun run(p: Project, s: Guide.Step, a: Guide.Action, inp: Map<String, String>) {
+        if (!a.id.startsWith("send_")) return guard {
+            val out = guide(p).perform(s.key, a.id, inp)
+            if (out.prompt.isNotEmpty()) copy(out.prompt)
+            render(out.message)
+        }
+        // A GitHub write: show exactly what is sent, then run it off the UI thread only after "Send".
+        AlertDialog.Builder(this).setTitle(a.label).setMessage(getString(R.string.github_confirm, s.title, s.explain))
+            .setPositiveButton(R.string.github_send) { _, _ ->
+                say(getString(R.string.github_sending))
+                Thread {
+                    val msg = try { guide(p).perform(s.key, a.id, inp).message } catch (e: Exception) {
+                        getString(R.string.standalone_error, e.message ?: e.javaClass.simpleName)
+                    }
+                    runOnUiThread { render(msg) }
+                }.start()
+            }.setNegativeButton(android.R.string.cancel, null).show()
+    }
+
+    private fun editToken() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(24, 8, 24, 8) }
+        box.addView(TextView(this).apply { text = getString(R.string.github_token_help); textSize = 12f })
+        val field = EditText(this).apply {
+            hint = getString(if (vault.has()) R.string.github_token_saved else R.string.github_token_hint)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+        }
+        box.addView(field)
+        AlertDialog.Builder(this).setTitle(R.string.github_token).setView(box)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                guard { if (field.text.isNotBlank()) vault.save(field.text.toString()); render(getString(R.string.standalone_saved)) }
+            }
+            .setNeutralButton(R.string.github_token_remove) { _, _ -> vault.clear(); render(getString(R.string.github_token_removed)) }
+            .setNegativeButton(android.R.string.cancel, null).show()
     }
 
     // ---------------------------------------------------------------- bundles (SAF, user-chosen files only)

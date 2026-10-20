@@ -80,4 +80,13 @@
     <string name="standalone_files_unzip">Import files from ZIP</string>
     <string name="standalone_files_imported">%1$d file(s) imported.</string>
     <string name="standalone_files_saved">ZIP saved.</string>
+    <string name="github_token">GitHub token (optional)</string>
+    <string name="github_token_help">A fine-grained token with Contents (read and write) on the project repository. It is encrypted with the Android Keystore and never exported. Without it, every GitHub step is done by hand and recorded here.</string>
+    <string name="github_token_hint">Paste the token</string>
+    <string name="github_token_saved">A token is saved (paste a new one to replace it)</string>
+    <string name="github_token_remove">Remove</string>
+    <string name="github_token_removed">GitHub token removed. GitHub steps are manual now.</string>
+    <string name="github_confirm">%1$s\n\n%2$s\n\nNothing is sent to GitHub until you tap Send.</string>
+    <string name="github_send">Send</string>
+    <string name="github_sending">Sending to GitHub…</string>
 </resources>

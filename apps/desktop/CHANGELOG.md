@@ -1,3 +1,17 @@
+## [4.5.0] - 2026-10-20
+
+### GitHub integration — the blue nodes (Roadmap 4.5.0, flowchart F3, F22–F24)
+
+- `v2/repo.py`: every GitHub write is a two-step handshake. **Prepare** records exactly what will be written; only **Confirm**, with that action id, sends it. A stale id or a second confirm sends nothing.
+  - **F3** connects an existing repository or creates a new private one, plus the project branch `aiwb/<project>`. The default branch is never written.
+  - **F22** saves the integrated files in one atomic, fast-forward-only commit, with no force push and never to a protected branch.
+  - **F23** finds a roadmap version whose milestones are all accepted. **F24** publishes it as a tag on the saved commit plus a GitHub Release, and records it with the same facts as `advance_version`.
+- Without a GitHub token, each step shows manual instructions and then "record the result".
+- Guide: optional `github:*` steps (connect, save, release) never come before the algorithm's own step. Once a repository is connected, the GitHub release step replaces the manual "record the release" step.
+- The app binds the first GitHub account's token to the project's `RepoService`.
+- `GitHubStateClient.raw` calls absolute API paths.
+- `tests/test_repo.py` runs against a fake GitHub and uses the shared fixture `packages/contracts/fixtures/repo/github-flow.v1.json`.
+
 ## [4.4.0] - 2026-10-20
 
 ### Status report and the project manager's decision (Roadmap 4.4.0, flowchart F18–F21, F25)

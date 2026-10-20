@@ -51,6 +51,9 @@ class ProjectsController:
         self.publisher = publisher
         self.base_commit = base_commit
         self.state_url = state_url
+        # GitHub blue nodes (roadmap 4.5.0): manual until the app binds a token-backed client factory
+        from .repo import RepoService
+        self.repo = RepoService(self.project.store, root)
         self.ui_path = self.project.store.dir / "ui.json"
         self.mode = self._load_ui().get("mode") or str(self.project.store.load()["settings"].get("ui_mode", "simple"))
         if self.mode not in MODES:

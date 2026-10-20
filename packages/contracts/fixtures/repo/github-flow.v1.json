@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "description": "GitHub blue nodes (roadmap 4.5.0, flowchart F3, F22-F24). Shared by apps/desktop (v2/repo.py) and apps/mobile (core/Repo.kt): project branch name, branches Workbench never writes, valid owner/repo names.",
+  "project_branch": [
+    {"name": "Calculator", "out": "aiwb/calculator"},
+    {"name": "My Shop App 2", "out": "aiwb/my-shop-app-2"},
+    {"name": "  --Hello__World!!  ", "out": "aiwb/hello-world"},
+    {"name": "حسابداری", "out": "aiwb/project"},
+    {"name": "", "out": "aiwb/p"}
+  ],
+  "refused_branches": ["main", "master", "develop", "development", "trunk"],
+  "names": [
+    {"in": "workbench", "ok": true},
+    {"in": "golshandvr-del", "ok": true},
+    {"in": "my.repo_1", "ok": true},
+    {"in": "", "ok": false},
+    {"in": "a/b", "ok": false},
+    {"in": "has space", "ok": false},
+    {"in": "../x", "ok": false}
+  ]
+}

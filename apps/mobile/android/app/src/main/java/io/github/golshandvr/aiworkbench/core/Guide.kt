@@ -6,7 +6,7 @@ package io.github.golshandvr.aiworkbench.core
  * [steps] returns at least one step for every reachable state, most urgent first. [perform] runs a step's action
  * through [Project] only — no extra state machine. Nothing is ever sent to a model.
  */
-class Guide(val project: Project) {
+class Guide(val project: Project, val github: ((owner: String, repo: String) -> GitHubApi?)? = null) {
 
     data class Action(val id: String, val label: String, val needs: List<String> = emptyList(), var primary: Boolean = false)
 
@@ -169,8 +169,9 @@ class Guide(val project: Project) {
                     "All its tasks are done. Check its criteria: " + Json.strs(m["criteria"]).joinToString("; ").take(300),
                     listOf(a("accept_milestone", "Accept the milestone")), ref = Json.str(m["milestone_id"]), rank = 75))
         }
+        val connected = Json.str(Repo.info(st)["full_name"]).isNotEmpty()
         for (v in State.coll(st, "versions").values.map { Json.obj(it) }.sortedBy { Json.str(it["version_id"]) }) {
-            if (v["status"] in setOf("released", "withdrawn")) continue
+            if (v["status"] in setOf("released", "withdrawn") || connected) continue  // connected: the GitHub release step
             val ms = Json.strs(v["milestone_ids"]).map { Json.obj(milestones[it]) }
             if (ms.isNotEmpty() && ms.all { it["status"] == "accepted" })
                 out.add(step("version:${v["version_id"]}", "decision", "Release version ${v["label"]}",
@@ -198,8 +199,41 @@ class Guide(val project: Project) {
                 listOf(a("copy", "Copy manager update"), a("sent", "I sent it"), a("paste", "Paste the plan", "text")),
                 agent = MANAGER, prompt = Prompts.continueProject(Prompts.managerUpdate(st), st), rank = 90))
         }
+        out.addAll(githubSteps(st))  // optional blue nodes never hide the manager update (roadmap 4.5.0)
         return out.sortedWith(compareBy({ it.rank }, { it.key }))
     }
+
+    /** Blue nodes on the phone (mobile 1.6.0): manual GitHub steps, then record the result. No token on the phone. */
+    private fun githubSteps(st: Obj): List<Step> {
+        if (Json.str(Json.obj(st["settings"])["goal"]).isBlank()) return emptyList()
+        val repo = Repo.info(st)
+        val tok = github != null
+        if (Json.str(repo["full_name"]).isEmpty())
+            return listOf(step("github:connect", "form", "GitHub: connect the project repository (optional)",
+                (if (tok) "Workbench checks the repository and creates the branch ${Repo.projectBranch(st)} after you confirm. "
+                 else Repo.manualSteps("connect", st).joinToString(" ") + " ") + "Files go to ${Repo.projectBranch(st)}, never to main.",
+                (if (tok) listOf(a("send_connect", "Connect (confirm)…", "owner", "repo")) else emptyList()) +
+                    listOf(a("record_connect", "Record the repository…", "owner", "repo")), rank = 91))
+        val out = ArrayList<Step>()
+        val files = Repo.unsavedFiles(st)
+        if (files.isNotEmpty())
+            out.add(step("github:save", "decision", "GitHub: save ${files.size} approved file(s)",
+                if (tok) "One commit to ${repo["branch"]} on ${repo["full_name"]} (no force push) after you confirm: " + files.take(20).joinToString(", ")
+                else Repo.manualSteps("save", st).joinToString(" "),
+                (if (tok) listOf(a("send_save", "Save on GitHub (confirm)")) else emptyList()) + listOf(a("record_save", "Record the commit…", "commit_sha")),
+                rank = 77))
+        for (v in Repo.releaseNeeded(st))
+            out.add(step("github:release:${v["version_id"]}", "decision", "GitHub: publish version ${v["label"]}",
+                "All its milestones are accepted. " + (if (tok) "Tag v${v["label"]} + GitHub Release after you confirm."
+                    else "On github.com → Releases → tag v${v["label"]} on ${repo["branch"]}, then record it."),
+                (if (tok) listOf(a("send_release", "Publish on GitHub (confirm)")) else emptyList()) +
+                    listOf(a("record_release", "Record the release…", "tag", "commit_sha", "run_id"), a("withdraw", "Withdraw the version")),
+                ref = Json.str(v["version_id"]), rank = 79))
+        return out
+    }
+
+    private fun api(owner: String, name: String): GitHubApi =
+        github?.invoke(owner, name) ?: throw ModelError("no GitHub token: do it by hand and record the result")
 
     fun next(): Step = steps().first()
 
@@ -339,7 +373,27 @@ class Guide(val project: Project) {
                 p.advanceVersion(ref, "released", runId = i("run_id"))
                 Outcome("Version ${v["label"]} released.")
             }
-            "withdraw" -> { p.advanceVersion(ref, "withdrawn"); Outcome("Version $ref withdrawn.") }
+            "withdraw" -> { p.advanceVersion(st.ref.ifEmpty { ref }, "withdrawn"); Outcome("Version ${st.ref.ifEmpty { ref }} withdrawn.") }
+            "record_connect" -> { val r = Repo.recordConnect(p.store, i("owner"), i("repo")); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).") }
+            "record_save" -> { Repo.recordSave(p.store, i("commit_sha")); Outcome("Saved on GitHub: ${i("commit_sha").take(12)}.") }
+            "record_release" -> {
+                val v = Repo.recordRelease(p.store, st.ref, i("tag"), i("commit_sha"), runId = i("run_id"))
+                Outcome("Version ${v["label"]} released (${v["tag"]}).")
+            }
+            "send_connect" -> {
+                if (!Repo.validName(i("owner")) || !Repo.validName(i("repo"))) throw ModelError("owner and repository name may only use letters, digits, '-', '_' and '.'")
+                val r = Repo.sendConnect(p.store, api(i("owner"), i("repo"))); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).")
+            }
+            "send_save" -> {
+                val full = Json.str(Repo.info(p.state())["full_name"])
+                val sha = Repo.sendSave(p.store, api(full.substringBefore("/"), full.substringAfter("/")), Files.dir(p.store))
+                Outcome("Saved on GitHub: ${sha.take(12)}.")
+            }
+            "send_release" -> {
+                val full = Json.str(Repo.info(p.state())["full_name"])
+                val v = Repo.sendRelease(p.store, api(full.substringBefore("/"), full.substringAfter("/")), st.ref)
+                Outcome("Version ${v["label"]} published on GitHub (${v["tag"]}).")
+            }
             else -> throw ModelError("unknown action '$action'")
         }
     }
@@ -400,6 +454,7 @@ class Guide(val project: Project) {
             "ais" to "How many AI chats can you use at the same time? (1-12, optional)",
             "reason" to "Reason (optional)", "rationale" to "Why? (optional, kept in the decision log)", "choice" to "Your decision",
             "result" to "passed or failed", "run_id" to "Run ID, build number or commit (optional)",
-            "commit_sha" to "Commit SHA (optional)", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
+            "commit_sha" to "Commit SHA (optional)", "owner" to "GitHub owner (user or organization)",
+            "repo" to "Repository name", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
     }
 }
