@@ -1,3 +1,16 @@
+## [4.4.0] - 2026-10-20
+
+### Status report and the project manager's decision (Roadmap 4.4.0, flowchart F18–F21, F25)
+
+- `v2/report.py`: the "Tell the project manager what changed" step is a status report (F18). It covers files integrated since the manager last saw the state, finished tasks, stuck tasks and GitHub / release facts, all taken from Workbench state and never from model claims.
+- Decision contract: `roadmap_remaining` and `emergency_tasks` in the `AIWB_MANAGER_PROPOSAL` block.
+- On acceptance, `apply_decision` routes the project:
+  - **Emergency** (F21 → F10, correction C4): priority `critical`, `emergency` flag, blocked dependants wait for it, dispatched first.
+  - **Stage left** (F25 → F10): next wave.
+  - **Nothing left** (F25 → F26): completion.
+- The decision is recorded in `settings.flow.last_decision` and as a `pm_decision` timeline event.
+- `tests/test_report.py` uses the shared fixture `packages/contracts/fixtures/report/pm-decision.v1.json`.
+
 ## [4.3.0] - 2026-10-20
 ### User approval and project files (Roadmap 4.3.0, flowchart F16–F17)
 - `v2/files.py`: delivered files are staged on paste; accepting the delivery (F16) writes them into the project

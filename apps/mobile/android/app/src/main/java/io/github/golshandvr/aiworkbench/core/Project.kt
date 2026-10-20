@@ -113,7 +113,9 @@ class Project(val store: ProjectStore) {
 
     fun importProposalData(data: Obj, responseId: String = "", kind: String = "update", charter: Obj? = null): String {
         val ops = data["operations"] as? List<*>
-        if (ops == null || ops.isEmpty()) throw ModelError("the proposal has no operations")
+        val remaining = Report.parseRemaining(data["roadmap_remaining"])
+        // a pure decision "nothing left" may come without operations (roadmap 4.4.0, F25 → F26)
+        if (ops == null || (ops.isEmpty() && !(remaining == false && charter == null))) throw ModelError("the proposal has no operations")
         if (ops.size > MAX_OPS) throw ModelError("too many operations (${ops.size} > $MAX_OPS); ask the manager to split the proposal")
         val base = (data["base_state_revision"] as? Number)?.toInt()
             ?: throw ModelError("base_state_revision (integer) is required so Workbench can detect stale proposals")
@@ -159,7 +161,9 @@ class Project(val store: ProjectStore) {
                 "assumptions" to ArrayList<Any?>(Json.strs(data["assumptions"]).take(30)),
                 "team" to (StrictJson.copy(data["team"]) ?: linkedMapOf<String, Any?>()), "team_issues" to ArrayList<Any?>(),
                 "team_counts" to linkedMapOf<String, Any?>(), "is_team" to (data["team"] is Map<*, *>),
-                "charter" to charter, "created_at" to now, "updated_at" to now, "result" to linkedMapOf<String, Any?>())
+                "charter" to charter, "roadmap_remaining" to remaining,
+                "emergency_tasks" to ArrayList<Any?>(Report.parseEmergency(data["emergency_tasks"])),
+                "has_decision" to ("roadmap_remaining" in data || "emergency_tasks" in data), "created_at" to now, "updated_at" to now, "result" to linkedMapOf<String, Any?>())
             State.emit(s, "proposal_imported", "proposal_id" to pid, "operations" to normalized.size.toLong(), "stale" to stale)
             pid
         }
@@ -192,7 +196,10 @@ class Project(val store: ProjectStore) {
             val accepted = Json.list(result["applied"]).map { Json.int(it) }.toSet()
             for (raw in Json.list(p["operations"])) { val op = Json.obj(raw); op["decision"] = if (Json.int(op["index"]) in accepted) "accepted" else "rejected" }
             val nValid = Json.list(p["operations"]).count { Json.obj(it)["valid"] == true }
-            p["status"] = if (accepted.isEmpty()) "rejected" else if (accepted.size == nValid) "accepted" else "partially_accepted"
+            p["status"] = if (nValid == 0 && Json.list(p["operations"]).isEmpty()) "accepted" else if (accepted.isEmpty()) "rejected"
+                else if (accepted.size == nValid) "accepted" else "partially_accepted"
+            if (p["has_decision"] == true && p["status"] != "rejected")
+                result["decision"] = Report.applyDecision(s, p, Json.obj(result["created"]))
             result["note"] = note.take(1000); result["reviewed_at"] = State.nowUtc()
             p["result"] = result
             val ch = p["charter"] as? Map<*, *>
@@ -832,7 +839,7 @@ class Project(val store: ProjectStore) {
             v
         }
 
-    fun managerUpdate(): String = Prompts.managerUpdate(state())
+    fun managerUpdate(): String = state().let { Prompts.continueProject(Prompts.managerUpdate(it), it) }
 
     companion object {
         const val MAX_PARALLEL_CHATS = 12

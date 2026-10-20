@@ -204,8 +204,8 @@ Rules: never mark tasks done; Workbench assigns all IDs (use temporary_ref for n
         return lines.joinToString("\n")
     }
 
-    fun continueProject(update: String): String = update + "\n\n## What I need now\nEvery planned task is finished or waiting. Propose the next step: new " +
-        "tasks for the next milestone, fixes for blocked work, or say that the project is complete. Answer with one AIWB_MANAGER_PROPOSAL block."
+    /** F18: the status report to the project manager with the decision contract (roadmap 4.4.0, `Report.statusPrompt`). */
+    fun continueProject(update: String, st: Obj = linkedMapOf()): String = Report.statusPrompt(st, update)
 
     fun proposalRevision(state: Obj, proposalId: String, note: String): String {
         val p = State.require(state, "proposals", proposalId)

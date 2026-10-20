@@ -61,7 +61,9 @@ object Waves {
         val busy = handoffs.map { Json.str(it["task_id"]) }.toSet()
         val limit = maxChats(st)
         val slots = (limit - handoffs.size).coerceAtLeast(0)
+        // an emergency task from the project manager goes first (roadmap 4.4.0, correction C4)
         val startable = waves(st).waves.flatten().filter { Json.str(Json.obj(tasks[it])["status"]) in STARTABLE && it !in busy }
+            .sortedBy { if ("emergency" in Json.strs(Json.obj(tasks[it])["flags"])) 0 else 1 }
         val first = ArrayList<String>(); val rest = ArrayList<String>(); val seen = HashSet<String>()
         val owners = LinkedHashMap<String, String>()
         for (tid in startable) {

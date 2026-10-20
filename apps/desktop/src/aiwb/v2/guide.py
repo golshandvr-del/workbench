@@ -121,10 +121,11 @@ def review_prompt(state: dict[str, Any], task_id: str) -> str:
     return "\n".join(lines)
 
 
-def continue_project_prompt(update: str) -> str:
-    return update + ("\n\n## What I need now\nEvery planned task is finished or waiting. Propose the next step: new "
-                     "tasks for the next milestone, fixes for blocked work, or say that the project is complete. "
-                     "Answer with one AIWB_MANAGER_PROPOSAL block.")
+def continue_project_prompt(update: str, state: dict[str, Any] | None = None) -> str:
+    """F18: the status report to the project manager (roadmap 4.4.0) — what changed, what is stuck, GitHub facts and
+    the decision contract (emergency tasks, roadmap remaining)."""
+    from .report import status_prompt
+    return status_prompt(state or {}, update)
 
 
 # -- steps -----------------------------------------------------------------------------------------
@@ -312,7 +313,7 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                          else "Ask the project manager for the next step",
                          "Nothing else is waiting for you. Copy the update, send it, then paste the manager's plan.",
                          [_a("copy", "Copy manager update"), _a("sent", "I sent it"), _a("paste", "Paste the plan", "text")],
-                         agent=MANAGER, prompt=continue_project_prompt(upd), rank=90))
+                         agent=MANAGER, prompt=continue_project_prompt(upd, st), rank=90))
     out.sort(key=lambda s: (s["rank"], s["key"]))
     return out
 
@@ -359,6 +360,7 @@ class Guide:
             g = s["settings"].setdefault("guide", {})
             if seen:
                 g["manager_seen_revision"] = int(s["state_revision"]) + 1
+                g["manager_seen_at"] = now_utc()
             for k, v in kw.items():
                 if v is None:
                     g.pop(k, None)
@@ -424,7 +426,8 @@ class Guide:
         if action == "accept":
             p = self.p.proposals.get(ref)
             out = c.accept_proposal(ref, [o["index"] for o in p["operations"] if o["valid"]], confirm_stale=True)
-            return {"message": f"Plan {ref} {out['status']}."}
+            from .report import route_message
+            return {"message": f"Plan {ref} {out['status']}." + route_message((out.get("result") or {}).get("decision"))}
         if action == "reject":
             c.accept_proposal(ref, [])
             return {"message": f"Plan {ref} rejected. Nothing changed."}
@@ -489,7 +492,7 @@ class Guide:
                 from .store import emit
                 emit(s, "task_escalated", task_id=h["task_id"], importance="major")
             return {"message": f"{h['task_id']} is handed to the project manager; the update prompt is ready.",
-                    "prompt": continue_project_prompt(c.manager_update())}
+                    "prompt": continue_project_prompt(c.manager_update(), c.state())}
         if action == "repair":
             h = self.p.handoffs.get(ref)
             c.resolve_handoff(ref, True, "partial delivery accepted; repair requested for the missing items")
