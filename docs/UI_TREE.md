@@ -52,6 +52,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
   - Settings
     - Appearance
     - Experience
+    - Motion
     - Application
 - Task menu
   - COPY PROMPT
@@ -79,7 +80,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 | **Projects** | Every project as a card; the Project Workbench of the open project. |
 | **Agents** | The team, the dispatch desk (who gets a prompt now) and the expert tools. |
 | **History** | Everything that happened, on a timeline; old prompts/responses; versions and releases. |
-| **Settings** | Theme (Midnight / Daylight), Simple/Advanced and reduce motion; application tools. |
+| **Settings** | Theme (Midnight / Daylight), Simple/Advanced, Motion (Reduce motion); application tools. |
 | **Task menu** | Right-click on a task circle. An item is enabled only when the Guide allows it now. |
 | **Assistant menu** | The ⋯ button of the assistant panel. |
 | **Status bar** | How many AIs are working, the current milestone, and whether the state is saved. |
