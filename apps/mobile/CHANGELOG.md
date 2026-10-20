@@ -1,5 +1,14 @@
 # AI Workbench Mobile — Changelog
 
+## [1.5.0] - 2026-10-20
+
+### Status report and the project manager's decision (Roadmap 4.4.0, flowchart F18–F21, F25)
+
+- `core/Report.kt`: the manager update is now a **status report**. It lists the files added since the last report, finished tasks, stuck tasks (escalated / blocked / waiting for a decision) and the repository / release facts.
+- Decision contract in the manager's block: `roadmap_remaining` (true/false) and `emergency_tasks` (`{"ref", "blocks"}`).
+- Routing: **emergency** → the task gets priority `critical` and the `emergency` flag, the tasks it blocks wait for it, and it is dispatched first (F10). **Stage left** → next wave (F10). **Nothing left** → F26 completion. A plan with zero operations is accepted only as the decision "nothing left".
+- `ReportTest`: shared fixture `packages/contracts/fixtures/report/pm-decision.v1.json` and all three branches.
+
 ## [1.4.0] - 2026-10-20
 ### User approval and project files (Roadmap 4.3.0, flowchart F16–F17)
 - `core/Files.kt`: each project has a file space. Files of a pasted delivery are only staged (safe, in-scope paths);
