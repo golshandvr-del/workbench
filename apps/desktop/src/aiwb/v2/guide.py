@@ -326,8 +326,6 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              [_a("release", "Record the release…", "commit_sha", "tag", "run_id"),
                               _a("withdraw", "Withdraw the version")], ref=v["version_id"], rank=78))
 
-    out += github_steps(ctl, st)
-
     if not tasks and not any(p["status"] == "pending" for p in st["proposals"].values()):
         goal = str(st["settings"].get("goal", "")).strip()
         if not goal:
