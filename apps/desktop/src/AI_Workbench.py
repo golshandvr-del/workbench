@@ -4794,7 +4794,8 @@ class WorkbenchApp:
         ttk.Label(head, text="Mission Map", style="SectionTitle.TLabel").pack(side="left")
         self.mission_summary_var = tk.StringVar(value="")
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
-        self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300)
+        self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
+                                     motion=self.shell.motion)
         self.mission.pack(fill="x")
         self.mission_detail_var = tk.StringVar(value="Click a task circle to see its details.")
         detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
@@ -4808,7 +4809,7 @@ class WorkbenchApp:
         self.home_projects_frame = ttk.Frame(body)
         self.home_projects_frame.pack(fill="both", expand=True)
         self.shell.status_listeners.append(self.refresh_mission)
-        self.shell.on_pref(lambda key: self.mission.redraw() if key == "theme" else None)
+        self.shell.on_pref(lambda key: self.mission.redraw() if key in ("theme", "motion") else None)
         self.refresh_mission(self.status_state())
 
     def refresh_mission(self, state: dict[str, Any] | None, *, force: bool = False) -> dict[str, Any] | None:
