@@ -91,7 +91,9 @@ class Guide(val project: Project) {
                     if (missing.isNotEmpty()) acts.add(1, a("repair", "Ask only for what is missing"))
                     out.add(step("handoff:$hid", "decision", "Check what $who delivered for $label",
                         Json.str(h["summary"]).ifEmpty { "The answer was read." } + (if (missing.isNotEmpty()) " Missing: ${missing.take(4).joinToString("; ")}." else "") +
-                            " Accepting never applies files and never closes the task.", acts, ref = hid, rank = 10))
+                            (if (Json.list(h["staged_files"]).isNotEmpty()) " Accepting adds ${Json.list(h["staged_files"]).size} delivered file(s) " +
+                                "to the project files (old versions are backed up); it never closes the task." else " Accepting never closes the task."),
+                        acts, ref = hid, rank = 10))
                 }
                 "stale", "reconciliation_required" -> out.add(step("handoff:$hid", "decision", "The answer for $label is out of date",
                     Json.strs(h["stale_reasons"]).joinToString("; ").take(300).ifEmpty { "The task changed after the prompt was made." },
@@ -251,7 +253,12 @@ class Guide(val project: Project) {
                     Outcome("Decision recorded ($did); $ref can continue.")
                 } else { p.resolveDecision(ref, action == "decide", i("choice"), why); Outcome("Decision $ref recorded.") }
             }
-            "accept_handoff" -> { p.resolveHandoff(ref, true, i("reason").ifEmpty { "accepted in the guided loop" }); Outcome("Delivery $ref accepted. Next: review the task.") }
+            "accept_handoff" -> {
+                p.resolveHandoff(ref, true, i("reason").ifEmpty { "accepted in the guided loop" })
+                val written = Files.integrate(p.store, ref)
+                Outcome("Delivery $ref accepted." + (if (written.isNotEmpty()) " ${written.size} file(s) added to the project files." else "") +
+                    " Next: review the task.")
+            }
             "reject_handoff" -> { p.resolveHandoff(ref, false, i("reason")); Outcome("Delivery $ref rejected. A new prompt can be prepared.") }
             "repair" -> {
                 val h = State.require(p.state(), "handoffs", ref)
@@ -344,7 +351,7 @@ class Guide(val project: Project) {
         if (h.isEmpty()) return emptyList()
         val t = Json.obj(State.coll(st, "tasks")[h["task_id"]])
         val att = Json.obj(State.coll(st, "attempts")[h["attempt_id"]])
-        val res = Diagnose.diagnose(text, Json.str(h["attempt_id"]), Json.strs(t["allowed_paths"]), Json.strs(att["expected_paths"]))
+        val res = Diagnose.diagnose(text, Json.str(h["attempt_id"]), Diagnose.taskPaths(t), Json.strs(att["expected_paths"]))
         project.store.transaction("diagnose answer") { s ->
             State.require(s, "handoffs", handoffId)["diagnosis"] = ArrayList<Any?>(res.problems.map { it.toMap() })
         }
@@ -359,6 +366,7 @@ class Guide(val project: Project) {
             setGuide(st.key == "manager_update" || st.key == "charter", "continue" to null)
             var msg = r.message
             if (r.kind == "handoff") {
+                Files.stage(project.store, r.ref, text)
                 val probs = diagnoseInto(r.ref, text)
                 val errs = probs.filter { it.severity == "error" }
                 msg += when {

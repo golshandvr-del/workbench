@@ -1,0 +1,78 @@
+{
+ "schema_version": "1.0",
+ "description": "Roadmap 4.3.0: the one write rule for project files and ZIP entries. Desktop v2/files.py safe_path and mobile core/Files.kt safePath must return exactly 'expect' (\"\" = refused).",
+ "cases": [
+  {
+   "input": "src/a.py",
+   "expect": "src/a.py"
+  },
+  {
+   "input": "./src//a.py",
+   "expect": "src/a.py"
+  },
+  {
+   "input": "src\\win\\b.kt",
+   "expect": "src/win/b.kt"
+  },
+  {
+   "input": "README.md",
+   "expect": "README.md"
+  },
+  {
+   "input": "../x",
+   "expect": ""
+  },
+  {
+   "input": "src/../../x",
+   "expect": ""
+  },
+  {
+   "input": "/etc/passwd",
+   "expect": ""
+  },
+  {
+   "input": "\\\\server\\share",
+   "expect": ""
+  },
+  {
+   "input": "C:/x.py",
+   "expect": ""
+  },
+  {
+   "input": "c:x",
+   "expect": ""
+  },
+  {
+   "input": ".git/config",
+   "expect": ""
+  },
+  {
+   "input": ".workbench/v2/state.json",
+   "expect": ""
+  },
+  {
+   "input": "",
+   "expect": ""
+  },
+  {
+   "input": "   ",
+   "expect": ""
+  },
+  {
+   "input": "a/./b/c.txt",
+   "expect": "a/b/c.txt"
+  },
+  {
+   "input": "docs/.github/x.yml",
+   "expect": "docs/.github/x.yml"
+  },
+  {
+   "input": ".github/workflows/ci.yml",
+   "expect": ".github/workflows/ci.yml"
+  },
+  {
+   "input": "a\u0000b",
+   "expect": ""
+  }
+ ]
+}

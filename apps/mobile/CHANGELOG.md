@@ -1,5 +1,14 @@
 # AI Workbench Mobile — Changelog
 
+## [1.4.0] - 2026-10-20
+### User approval and project files (Roadmap 4.3.0, flowchart F16–F17)
+- `core/Files.kt`: each project has a file space. Files of a pasted delivery are only staged (safe, in-scope paths);
+  **accepting the delivery** writes them, backs up the old content and adds `files_integrated` to the timeline.
+- **Project files** screen: file list, read-only preview, **Export files as ZIP** / **Import files from ZIP**
+  (an archive with an unsafe entry is refused as a whole).
+- The smart check and staging honour the task's `scope.include` (not only `allowed_paths`).
+- `FilesTest`: shared fixture `packages/contracts/fixtures/files/safe-paths.v1.json`, staging, integration, ZIP round-trip.
+
 ## [1.3.0] - 2026-10-20
 ### Smart output check and troubleshooting prompt (Roadmap 4.2.0, flowchart F13–F15)
 - `core/Diagnose.kt`: every pasted delivery is checked for cut-off blocks, missing manifest, wrong attempt, unsafe or

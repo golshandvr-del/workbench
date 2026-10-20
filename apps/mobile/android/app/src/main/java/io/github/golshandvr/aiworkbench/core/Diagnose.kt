@@ -64,7 +64,14 @@ object Diagnose {
         return FileBlock(path, lines.joinToString("\n"), m != null, balanced)
     }
 
-    private fun inScope(path: String, allowed: List<String>): Boolean {
+    /** Where a task may write: `allowed_paths` plus `scope.include` (empty = not restricted). */
+    fun taskPaths(task: Obj): List<String> {
+        val out = Json.strs(task["allowed_paths"]).toMutableList()
+        for (x in Json.strs(Json.obj(task["scope"])["include"])) if (x !in out) out.add(x)
+        return out
+    }
+
+    fun inScope(path: String, allowed: List<String>): Boolean {
         if (allowed.isEmpty()) return true
         for (raw in allowed) {
             val a = raw.trim()
@@ -143,7 +150,7 @@ object Diagnose {
         lines += errs.map { "- [${it["code"]}] ${it["message"]}" }
         val warns = problems.filter { it["severity"] == "warning" && it !in errs }
         if (warns.isNotEmpty()) lines += listOf("", "## Also check") + warns.map { "- [${it["code"]}] ${it["message"]}" }
-        val allowed = Json.strs(t["allowed_paths"])
+        val allowed = taskPaths(t)
         if (allowed.isNotEmpty()) lines += listOf("", "## You may only write these paths") + allowed.map { "- $it" }
         lines += listOf("", "## Acceptance criteria") + Json.strs(t["acceptance_criteria"]).map { "- [ ] $it" }.ifEmpty { listOf("- (none)") }
         lines += listOf("", "## Format") + Prompts.FILE_RULES + listOf("- Then one manifest:", MAN_OPEN,

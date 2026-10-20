@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.golshandvr.aiworkbench.core.Files
 import io.github.golshandvr.aiworkbench.core.Guide
 import io.github.golshandvr.aiworkbench.core.Project
 import io.github.golshandvr.aiworkbench.core.ProjectBundle
@@ -33,6 +34,7 @@ class StandaloneActivity : Activity() {
     private lateinit var status: TextView
     private var current: Project? = null
     private var pendingExport: String? = null
+    private var pendingZip: ByteArray? = null
 
     private val projectsDir: File get() = File(filesDir, "projects").apply { mkdirs() }
 
@@ -117,6 +119,7 @@ class StandaloneActivity : Activity() {
         }
         body.addView(tl)
         body.addView(info)
+        button(getString(R.string.standalone_files)) { showFiles(p) }
         button(getString(R.string.standalone_overview)) { showOverview(p) }
         button(getString(R.string.standalone_settings)) { editSettings(p) }
         button(getString(R.string.standalone_export_bundle)) { pickExport(p) }
@@ -185,6 +188,19 @@ class StandaloneActivity : Activity() {
                 pendingExport = null
                 say(getString(R.string.standalone_exported))
             }
+            REQ_ZIP_EXPORT -> guard {
+                val bytes = pendingZip ?: return@guard
+                contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                pendingZip = null
+                say(getString(R.string.standalone_files_saved))
+            }
+            REQ_ZIP_IMPORT -> guard {
+                val p = current ?: return@guard
+                val bytes = contentResolver.openInputStream(uri)?.use { s -> s.readBytes().also { if (it.size > MAX_BUNDLE) error("ZIP too large") } }
+                    ?: return@guard
+                val n = Files.unzip(p.store, bytes).size
+                showFiles(p); say(getString(R.string.standalone_files_imported, n))
+            }
             REQ_IMPORT -> guard {
                 val bytes = contentResolver.openInputStream(uri)?.use { s -> s.readBytes().also { if (it.size > MAX_BUNDLE) error("bundle too large") } }
                     ?: return@guard
@@ -204,6 +220,40 @@ class StandaloneActivity : Activity() {
                 }
             }
         }
+    }
+
+    // ---------------------------------------------------------------- project files (roadmap 4.3.0)
+    private fun showFiles(p: Project) {
+        body.removeAllViews()
+        heading(getString(R.string.standalone_files))
+        val list = Files.list(p.store)
+        if (list.isEmpty()) text(getString(R.string.standalone_files_empty))
+        for (e in list) button("${e.path}  (${e.size} B)") {
+            guard {
+                val t = Files.read(p.store, e.path)
+                AlertDialog.Builder(this).setTitle(e.path)
+                    .setView(ScrollView(this).apply {
+                        addView(TextView(this@StandaloneActivity).apply {
+                            text = if (t.length > 60_000) t.take(60_000) + "\n…" else t
+                            typeface = Typeface.MONOSPACE; textSize = 12f; setPadding(24, 16, 24, 16); setTextIsSelectable(true)
+                        })
+                    })
+                    .setPositiveButton(android.R.string.ok, null).show()
+            }
+        }
+        if (list.isNotEmpty()) button(getString(R.string.standalone_files_zip)) {
+            guard {
+                pendingZip = Files.zip(p.store)
+                startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE); type = "application/zip"
+                    putExtra(Intent.EXTRA_TITLE, "${p.store.projectId}-files.zip")
+                }, REQ_ZIP_EXPORT)
+            }
+        }
+        button(getString(R.string.standalone_files_unzip)) {
+            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }, REQ_ZIP_IMPORT)
+        }
+        button(getString(R.string.standalone_back)) { render() }
     }
 
     // ---------------------------------------------------------------- helpers
@@ -281,6 +331,8 @@ class StandaloneActivity : Activity() {
     companion object {
         private const val REQ_EXPORT = 41
         private const val REQ_IMPORT = 42
+        private const val REQ_ZIP_EXPORT = 43
+        private const val REQ_ZIP_IMPORT = 44
         private const val MAX_BUNDLE = 25 * 1024 * 1024
     }
 }

@@ -1,3 +1,12 @@
+## [4.3.0] - 2026-10-20
+### User approval and project files (Roadmap 4.3.0, flowchart F16–F17)
+- `v2/files.py`: delivered files are staged on paste; accepting the delivery (F16) writes them into the project
+  folder atomically, backs up old content under `.workbench/v2/backups/<handoff>/` and records `files_integrated` (F17).
+- One write rule `safe_path` (no absolute paths, `..`, drive letters, `.git` / `.workbench`), shared with the phone
+  through `packages/contracts/fixtures/files/safe-paths.v1.json`; ZIP export/import refuses zip-slip archives.
+- The smart check honours the task's `scope.include`.
+- `tests/test_files.py`.
+
 ## [4.2.0] - 2026-10-20
 ### Smart output check and troubleshooting prompt (Roadmap 4.2.0, flowchart F13–F15)
 - `v2/diagnose.py`: smart check of every pasted delivery (truncated, no_manifest, wrong_attempt, unsafe_path,
