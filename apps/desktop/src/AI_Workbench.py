@@ -4918,7 +4918,7 @@ class WorkbenchApp:
         inputs: dict[str, str] = {}
         for need in row.get("needs", []):
             v = self._mission_input(need, row["hint"])
-            if v is None or (not v.strip() and need not in OPTIONAL_INPUTS and need != "run_id"):
+            if v is None or (not v.strip() and need not in OPTIONAL_INPUTS):
                 self.set_status("Cancelled — nothing changed.")
                 return None
             inputs[need] = v
@@ -4942,7 +4942,7 @@ class WorkbenchApp:
             except Exception:  # noqa: BLE001 - the Workbench redraws on its next visit
                 pass
         self.refresh_mission(self.status_state(), force=True)
-        self.shell.refresh_status(self.status_state()) if hasattr(self.shell, "refresh_status") else None
+        self.shell.refresh_status()
         return out
 
     def mission_open_task(self) -> None:
