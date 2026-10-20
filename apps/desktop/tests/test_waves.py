@@ -80,8 +80,8 @@ class GuideDeskTests(unittest.TestCase):
         self.g = Guide(self.c)
         tasks = self.c.project.tasks
         for i, owner in enumerate(("agent-implementer", "agent-implementer", "agent-reviewer")):
-            t = tasks.create(f"Task {i}", f"Do part {i}", owner_agent_id=owner, allowed_paths=[f"src/p{i}/"],
-                             acceptance_criteria=["works"], status="ready")
+            t = tasks.create({"title": f"Task {i}", "objective": f"Do part {i}", "owner_agent_id": owner,
+                              "allowed_paths": [f"src/p{i}/"], "acceptance_criteria": ["works"]}, status="ready")
         with self.c.project.store.transaction("t") as s:
             s["settings"]["goal"] = "x"
             s["settings"].setdefault("team", {})["max_parallel_chats"] = 2
