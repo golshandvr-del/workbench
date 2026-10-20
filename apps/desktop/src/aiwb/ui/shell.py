@@ -84,6 +84,7 @@ class AppShell:
         self.pages: dict[str, ttk.Frame] = {}
         self.page_hooks: dict[str, Callable[[], None]] = {}
         self.pref_listeners: list[Callable[[str], None]] = []
+        self.status_listeners: list[Callable[[dict[str, Any] | None], None]] = []
         self.current = "home"
         self.facts_fn = facts
         self._status5 = status5
@@ -182,6 +183,11 @@ class AppShell:
                 state = None
         facts = self._status5.summary(state)
         self.statusbar.show_facts(facts)
+        for fn in list(self.status_listeners):  # e.g. the Mission Map redraws when the state revision changes
+            try:
+                fn(state)
+            except Exception:  # noqa: BLE001 - a listener must not break the status bar
+                pass
         if state is not None:
             rev = (str(state.get("project_id", "")), int(state.get("state_revision", 0) or 0))
             if self._last_rev is None or rev[0] != self._last_rev[0]:

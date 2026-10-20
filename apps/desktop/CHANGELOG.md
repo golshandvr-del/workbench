@@ -1,3 +1,27 @@
+## [5.2.0] - 2026-10-20
+
+### Mission Map — parallel timelines on Home (Roadmap 5.2.0)
+
+- **Home opens on the Mission Map**, drawn like the owner's reference image: a green *PROJECT START* capsule, a
+  glowing golden source node, smooth curved branches to one green numbered hexagon per AI, one horizontal lane per
+  AI with one circle per task in its version's dashed column (monospace version labels), and a chevron at the end
+  of every lane.
+- Circle states come from real project data: green tick = done, glowing blue = in progress / ready / prompt out,
+  red = blocked, amber = needs a decision, grey = waiting.
+- Columns are the project's versions in semantic-version order (withdrawn ones left out); without versions the
+  milestones are the columns; tasks no version claims sit in *Later*. Several tasks of one AI in one version sit
+  side by side.
+- **Hover** shows a soft halo and a tooltip; **click** shows the task's details under the map, and *Open task in
+  Workbench* selects it in the Workbench Inspector. Drag, wheel and arrow keys scroll the map.
+- The map follows the project live (same poll as the status bar, redraws only when the state revision changes) and
+  follows the Midnight/Daylight theme. Looking at it never writes project state.
+- New pure model `aiwb/ui/mission_model.py` (no Tk) and canvas `aiwb/ui/mission_canvas.py`.
+
+### Tests
+
+- `test_mission_model.py` (13 tests) and the 5.2.0 gate `gui_v5_mission_smoke.py`.
+- `gui_v5_shell_smoke.py` now prints Windows-console-safe text (the 5.1.0 Windows CI failure).
+
 ## [5.1.0] - 2026-10-20
 
 ### The new shell (Roadmap 5.1.0)

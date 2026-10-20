@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -250,8 +250,12 @@
       "source": "apps/desktop/tests/test_shell5.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.1.0.md",
-      "source": "docs/release/v5.1.0/WINDOWS_RELEASE_CHECKLIST_v5.1.0.md"
+      "path": "test_mission_model.py",
+      "source": "apps/desktop/tests/test_mission_model.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.2.0.md",
+      "source": "docs/release/v5.2.0/WINDOWS_RELEASE_CHECKLIST_v5.2.0.md"
     },
     {
       "path": "install.ps1",
@@ -672,6 +676,14 @@
     {
       "path": "aiwb/ui/status5.py",
       "source": "apps/desktop/src/aiwb/ui/status5.py"
+    },
+    {
+      "path": "aiwb/ui/mission_model.py",
+      "source": "apps/desktop/src/aiwb/ui/mission_model.py"
+    },
+    {
+      "path": "aiwb/ui/mission_canvas.py",
+      "source": "apps/desktop/src/aiwb/ui/mission_canvas.py"
     }
   ],
   "zip_timestamp": [

@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.1.0"
+APP_VERSION = "5.2.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4607,6 +4607,7 @@ class WorkbenchApp:
         self.run_tab = self.shell.add_page("run", padding=8)
         self.git_tab = self.shell.add_page("git", padding=8)
         self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
+        self._make_home_page()
         self._make_projects_dashboard()
         self._make_workbench_placeholder()
         self._make_agents_page()
@@ -4781,8 +4782,87 @@ class WorkbenchApp:
             return
         self.root.after_idle(self.open_project_workbench)
 
+    # -- Home › Mission Map (roadmap 5.2.0)
+    def _make_home_page(self) -> None:
+        """Home: the Mission Map (parallel timelines, one lane per AI) above the project list. Read-only view."""
+        from aiwb.ui.mission_canvas import MissionCanvas
+        self.home_scroll = ui_layout.ScrollPage(self.manager_tab)
+        self.home_scroll.pack(fill="both", expand=True)
+        body = self.home_scroll.body
+        head = ttk.Frame(body)
+        head.pack(fill="x", pady=(0, 6))
+        ttk.Label(head, text="Mission Map", style="SectionTitle.TLabel").pack(side="left")
+        self.mission_summary_var = tk.StringVar(value="")
+        ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
+        self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300)
+        self.mission.pack(fill="x")
+        self.mission_detail_var = tk.StringVar(value="Click a task circle to see its details.")
+        detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
+        detail.pack(fill="x", pady=(8, 12))
+        ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
+                  justify="left").pack(side="left", fill="x", expand=True)
+        self.mission_open_btn = ttk.Button(detail, text="Open task in Workbench", command=self.mission_open_task)
+        self.mission_open_btn.pack(side="right")
+        self.mission_open_btn.state(["disabled"])
+        self._mission_rev: tuple[str, int] | None = None
+        self.home_projects_frame = ttk.Frame(body)
+        self.home_projects_frame.pack(fill="both", expand=True)
+        self.shell.status_listeners.append(self.refresh_mission)
+        self.shell.on_pref(lambda key: self.mission.redraw() if key == "theme" else None)
+        self.refresh_mission(self.status_state())
+
+    def refresh_mission(self, state: dict[str, Any] | None, *, force: bool = False) -> dict[str, Any] | None:
+        """Redraw the Mission Map when the open project or its state revision changed (reading never writes)."""
+        if not hasattr(self, "mission"):
+            return None
+        rev = None if state is None else (str(state.get("project_id", "")) + "|" + str(self.workspace),
+                                          int(state.get("state_revision", 0) or 0))
+        if not force and rev == self._mission_rev and self._mission_rev is not None:
+            return self.mission.model
+        self._mission_rev = rev
+        model = self.mission.set_state(state)
+        geo = self.mission.geo
+        want = int(geo.get("height", 0)) + 8 if not model["empty"] else 120
+        self.mission.configure(height=max(120, min(want, int(460 * self.shell.assets.scale))))
+        c = model["counts"]
+        self.mission_summary_var.set("" if model["empty"] else
+                                     f"{len(model['lanes'])} AI lanes · {len(model['columns'])} columns · "
+                                     f"{c['done']} done · {c['active']} in progress · {c['blocked']} blocked")
+        if self.mission.selected and self.mission.node(self.mission.selected) is None:
+            self.mission.selected = ""
+            self.mission_detail_var.set("Click a task circle to see its details.")
+            self.mission_open_btn.state(["disabled"])
+        return model
+
+    def mission_select(self, task_id: str) -> None:
+        """Mission Map click → task details below the map (nothing is written)."""
+        nd = self.mission.node(task_id)
+        if nd is None:
+            return
+        from aiwb.ui.mission_canvas import STATE_TEXT
+        lane = next((ln for ln in self.mission.model["lanes"] if any(n["task_id"] == task_id for n in ln["nodes"])), {})
+        col = self.mission.model["columns"][nd["column"]]["label"]
+        self.mission_detail_var.set(f"{nd['title']}  ·  {task_id}  ·  AI {lane.get('number', '?')} "
+                                    f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
+                                    f"[{nd['status']}]")
+        self.mission_open_btn.state(["!disabled"])
+
+    def mission_open_task(self) -> None:
+        """Open the selected Mission Map task in the Workbench's Inspector."""
+        tid = self.mission.selected
+        if not tid:
+            return
+        self.shell.show("workbench")
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                ws.wc.select("task", tid)
+                ws._render_inspector()
+            except Exception:  # noqa: BLE001 - a stale selection must not break navigation
+                pass
+
     def _make_projects_dashboard(self) -> None:
-        tab = self.manager_tab
+        tab = getattr(self, "home_projects_frame", self.manager_tab)
         ttk.Label(tab, text="Your projects", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(tab, text="Create independent workspaces, switch between existing projects, and keep each project's profile and last task separate.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(3, 12))
 
