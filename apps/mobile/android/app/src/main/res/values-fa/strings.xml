@@ -74,4 +74,10 @@
     <string name="standalone_chats_help">مدیر پروژه تیم را در همین سقف می‌چیند. قبل از کپی پرامپت منشور تنظیمش کنید.</string>
     <string name="standalone_saved">ذخیره شد.</string>
     <string name="standalone_error">خطا: %1$s</string>
+    <string name="standalone_files">فایل‌های پروژه</string>
+    <string name="standalone_files_empty">هنوز فایلی در پروژه نیست. با تأیید یک تحویل، فایل‌ها اضافه می‌شوند.</string>
+    <string name="standalone_files_zip">خروجی فایل‌ها به ZIP</string>
+    <string name="standalone_files_unzip">ورود فایل‌ها از ZIP</string>
+    <string name="standalone_files_imported">%1$d فایل وارد شد.</string>
+    <string name="standalone_files_saved">ZIP ذخیره شد.</string>
 </resources>
