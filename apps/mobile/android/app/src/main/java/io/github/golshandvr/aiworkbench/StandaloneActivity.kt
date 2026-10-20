@@ -16,7 +16,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import io.github.golshandvr.aiworkbench.core.Flow
 import io.github.golshandvr.aiworkbench.core.Guide
 import io.github.golshandvr.aiworkbench.core.Project
 import io.github.golshandvr.aiworkbench.core.ProjectBundle
