@@ -197,6 +197,16 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              "a cut-off answer gets a continue prompt.", acts, agent=who, ref=h["handoff_id"],
                              prompt=h.get("prompt", ""), rank=rank, task_id=h["task_id"]))
 
+    from .waves import dispatch
+    desk = dispatch(st)
+    if len(desk["next"]) > 1:
+        names = ", ".join(f"{x} → {desk['owners'][x]}" for x in desk["next"])
+        out.append(_step("dispatch", "prompt", f"Prepare the prompts for {len(desk['next'])} parallel tasks",
+                         f"Parallel paths of this wave: {names}. {desk['slots']} of {desk['limit']} chat(s) are free"
+                         + (f"; {len(desk['queued'])} more task(s) wait for a free chat." if desk["queued"] else ".")
+                         + " Each AI gets its own self-contained prompt.",
+                         [_a("prepare_all", "Prepare all prompts")], rank=39, task_ids=list(desk["next"])))
+
     for t in sorted(tasks.values(), key=lambda t: t["task_id"]):
         tid, s_ = t["task_id"], t["status"]
         name = f"{tid} {t['title']}"
@@ -217,6 +227,8 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                               _a("waive_validation", "I can't run tests — accept on review…", "reason"),
                               _a("record_validation", "Record the result (passed/failed)…", "result", "run_id")], ref=tid, rank=14))
         elif s_ in ("ready", "in_progress"):
+            if tid not in desk["next"]:
+                continue  # waits for a free chat or for its wave (roadmap 4.1.0, dispatch desk)
             who = _owner(st, t)
             out.append(_step(f"task:{tid}", "prompt", f"Start {name} with {who}",
                              "All prerequisites are done. Workbench builds a self-contained prompt for that AI's chat.",
@@ -438,6 +450,11 @@ class Guide:
         if action == "abandon":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")) or "dropped by the user")
             return {"message": f"Prompt {ref} dropped."}
+        if action == "prepare_all":
+            made = [c.start_task(tid, _owner(c.state(), c.state()["tasks"][tid])) for tid in step.get("task_ids", [])]
+            return {"message": f"{len(made)} prompts ready: " + ", ".join(f"{h['task_id']} → {h['to_agent_id']}" for h in made)
+                    + ". Copy each one into its AI's chat.", "prompt": made[0]["prompt"] if made else "",
+                    "handoff_ids": [h["handoff_id"] for h in made]}
         if action == "prepare":
             h = c.start_task(ref, step["agent_id"])
             return {"message": f"Prompt for {ref} ready. Copy it into {h['to_agent_id']}'s chat.", "prompt": h["prompt"],
