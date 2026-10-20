@@ -332,6 +332,15 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
     row3.grid(row=2, column=0, sticky="w")
     widgets["mode"] = [ttk.Radiobutton(row3, variable=mode_var, value=v, style="Card.TRadiobutton",
                                        command=lambda: prefs.set_mode(mode_var.get())) for v in ("simple", "advanced")]
+    c5 = card(4, ("Motion", "حرکت"),
+              ("Animations explain what changed: branches grow, active tasks breathe, pages slide in. "
+               "Reduce motion shows every animation's end state instead.",
+               "انیمیشن‌ها تغییر را نشان می‌دهند. «کاهش حرکت» به‌جای آن وضعیت نهایی را نشان می‌دهد."))
+    motion_var = tk.BooleanVar(value=prefs.reduce_motion)
+    widgets["motion"] = ttk.Checkbutton(c5, text="Reduce motion", variable=motion_var, style="Card.TCheckbutton",
+                                        command=lambda: prefs.set_reduce_motion(motion_var.get()))
+    widgets["motion"].grid(row=2, column=0, sticky="w")
+    widgets["motion_var"] = motion_var
     if extra is not None:
         c4 = card(3, ("Application", "برنامه"), ("Tools and data that belong to the whole application.",
                                                  "ابزارها و داده‌های مربوط به کل برنامه."))
@@ -341,6 +350,7 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
 
     def relabel(_key: str = "") -> None:
         theme_var.set(prefs.theme)
+        motion_var.set(prefs.reduce_motion)
         lang_var.set(prefs.lang)
         mode_var.set(prefs.mode)
         side = "right" if prefs.rtl else "left"
