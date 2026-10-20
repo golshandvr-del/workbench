@@ -198,7 +198,22 @@ class Guide(val project: Project) {
                 listOf(a("copy", "Copy manager update"), a("sent", "I sent it"), a("paste", "Paste the plan", "text")),
                 agent = MANAGER, prompt = Prompts.continueProject(Prompts.managerUpdate(st), st), rank = 90))
         }
+        out.addAll(githubSteps(st))  // optional blue nodes never hide the manager update (roadmap 4.5.0)
         return out.sortedWith(compareBy({ it.rank }, { it.key }))
+    }
+
+    /** Blue nodes on the phone (mobile 1.6.0): manual GitHub steps, then record the result. No token on the phone. */
+    private fun githubSteps(st: Obj): List<Step> {
+        if (Json.str(Json.obj(st["settings"])["goal"]).isBlank()) return emptyList()
+        val repo = Repo.info(st)
+        if (Json.str(repo["full_name"]).isEmpty())
+            return listOf(step("github:connect", "form", "GitHub: connect the project repository (optional)",
+                Repo.manualSteps("connect", st).joinToString(" ") + " Files go to ${Repo.projectBranch(st)}, never to main.",
+                listOf(a("record_connect", "Record the repository…", "owner", "name")), rank = 89))
+        val files = Repo.unsavedFiles(st)
+        if (files.isEmpty()) return emptyList()
+        return listOf(step("github:save", "decision", "GitHub: save ${files.size} approved file(s)",
+            Repo.manualSteps("save", st).joinToString(" "), listOf(a("record_save", "Record the commit…", "commit_sha")), rank = 77))
     }
 
     fun next(): Step = steps().first()
@@ -340,6 +355,8 @@ class Guide(val project: Project) {
                 Outcome("Version ${v["label"]} released.")
             }
             "withdraw" -> { p.advanceVersion(ref, "withdrawn"); Outcome("Version $ref withdrawn.") }
+            "record_connect" -> { val r = Repo.recordConnect(p.store, i("owner"), i("name")); Outcome("Connected ${r["full_name"]} (branch ${r["branch"]}).") }
+            "record_save" -> { Repo.recordSave(p.store, i("commit_sha")); Outcome("Saved on GitHub: ${i("commit_sha").take(12)}.") }
             else -> throw ModelError("unknown action '$action'")
         }
     }
