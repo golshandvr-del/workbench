@@ -45,7 +45,7 @@ TASK_MENU: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("copy_prompt", "COPY PROMPT", "copy", ("copy",)),
     ("send_prompt", "SEND PROMPT", "send", ("sent",)),
     ("get_response", "GET AI RESPONSE", "sparkle", ("paste",)),
-    ("mark_done", "MARK AS DONE", "check", ("approve", "accept", "verify")),
+    ("mark_done", "MARK AS DONE", "check", ("accept_handoff", "approve", "validation_passed", "waive_validation")),
 )
 
 # Assistant panel ⋯ menu
