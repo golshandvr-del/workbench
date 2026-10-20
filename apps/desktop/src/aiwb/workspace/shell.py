@@ -374,7 +374,10 @@ class WorkspaceWindow:
                 else:
                     v = simpledialog.askstring(act["label"], self.INPUT_PROMPTS.get(need, need), parent=self.win)
                     if v is None:
-                        return None
+                        if "(optional" in self.INPUT_PROMPTS.get(need, ""):
+                            v = ""
+                        else:
+                            return None
                     inp[need] = v
         out = self._guard(lambda: self.wc.guide_perform(key, action, **inp))
         if out is None:
