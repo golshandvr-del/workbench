@@ -108,6 +108,7 @@ class StandaloneLoopTest {
             assertTrue("dead end", g.steps().isNotEmpty())
             when {
                 s.key.startsWith("task:") && s.primary?.id == "prepare" -> g.perform(s.key, "prepare")
+                s.key == "dispatch" -> g.perform(s.key, "prepare_all")
                 s.key.startsWith("handoff:") && s.primary?.id == "copy" -> g.perform(s.key, "copy")
                 s.key.startsWith("handoff:") && s.primary?.id == "sent" -> g.perform(s.key, "sent")
                 s.key.startsWith("handoff:") && s.primary?.id == "paste" -> {
