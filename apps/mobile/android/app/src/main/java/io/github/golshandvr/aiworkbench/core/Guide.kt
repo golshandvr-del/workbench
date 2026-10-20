@@ -344,7 +344,7 @@ class Guide(val project: Project) {
         if (h.isEmpty()) return emptyList()
         val t = Json.obj(State.coll(st, "tasks")[h["task_id"]])
         val att = Json.obj(State.coll(st, "attempts")[h["attempt_id"]])
-        val res = Diagnose.diagnose(text, Json.str(h["attempt_id"]), Json.strs(t["allowed_paths"]), Json.strs(att["expected_paths"]))
+        val res = Diagnose.diagnose(text, Json.str(h["attempt_id"]), Diagnose.taskPaths(t), Json.strs(att["expected_paths"]))
         project.store.transaction("diagnose answer") { s ->
             State.require(s, "handoffs", handoffId)["diagnosis"] = ArrayList<Any?>(res.problems.map { it.toMap() })
         }
