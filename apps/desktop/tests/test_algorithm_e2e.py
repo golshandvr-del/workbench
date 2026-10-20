@@ -203,8 +203,10 @@ class AlgorithmWalk(unittest.TestCase):
         self.deliver(mob, ["mobile/MainActivity.kt"])
         self.do("github:save", "prepare_save")
         self.do("github:save", "record", commit_sha="2" * 40)
-        # milestone 2 (0.2.0) is complete; its release waits for the manager's decision (F21 no → F22 → F23)
+        # milestone 2 (0.2.0) is complete and released at once (correction C2: release when the milestone is done)
         self.do(next(k for k in self.keys() if k.startswith("milestone:")), "accept_milestone")
+        self.do("github:release:VER-0002", "prepare_release")
+        self.do("github:release", "record", tag="v0.2.0", commit_sha="2" * 40, run_id="ci-0.2.0")
         self.events()
         # F17 → F18: every planned task is finished, so the status report is due
         self.edge("F17", "F18", g.find("manager_update")["kind"] == "prompt")
@@ -218,26 +220,32 @@ class AlgorithmWalk(unittest.TestCase):
         self.at("F10")
         self.edge("F21", "F10", "pm_decision" in self.events() and c.state()["tasks"][fix]["priority"] == "critical")
         self.do(f"task:{fix}", "prepare")
-        self.deliver(fix, ["mobile/Store.kt"])
+        self.deliver(fix, ["mobile/Store.kt"])  # not saved yet: GitHub steps never hold the manager update
         self.events()
-        # the next report: no emergency, a stage is left → F21 no → F22 → F23 yes → F24 → F25 yes → F10
-        d = self.report([{"operation": "create_task", "temporary_ref": "sync", "title": "Sync", "objective": "sync",
-                          "owner_role": "implementer", "acceptance_criteria": ["syncs"], "scope": {"include": ["src/core/sync/**"]}}],
-                        remaining=True)
+        # the next report: no emergency; a hotfix release 0.2.1 and a stage (sync) are left
+        d = self.report([{"operation": "create_milestone", "title": "Hotfix", "version": "0.2.1",
+                          "criteria": ["no data loss"], "task_refs": [fix]},
+                         {"operation": "create_task", "temporary_ref": "sync", "title": "Sync", "objective": "sync",
+                          "owner_role": "implementer", "acceptance_criteria": ["syncs"],
+                          "scope": {"include": ["src/core/sync/**"]}}], remaining=True)
         self.assertEqual(d["route"], "next_stage")
+        # F21 no → F22: the approved hotfix files are saved on the project branch
         self.edge("F21", "F22", "github:save" in self.keys())
         self.do("github:save", "prepare_save")
         self.do("github:save", "record", commit_sha="3" * 40)
-        self.edge("F22", "F23", "github_save" in self.events())
+        # F22 → F23: the saved commit is the base of the release check; F23 yes → F24: 0.2.1 needs a release
+        self.edge("F22", "F23", "github_save" in self.events() and c.state()["settings"]["flow"]["repo"]["head"] == "3" * 40)
+        self.do(next(k for k in self.keys() if k.startswith("milestone:")), "accept_milestone")
+        self.at("F24")
         rel = next(k for k in self.keys() if k.startswith("github:release:"))
-        self.edge("F23", "F24", rel == "github:release:VER-0002")
+        self.edge("F23", "F24", rel == "github:release:VER-0003")
         self.do(rel, "prepare_release")
-        self.do("github:release", "record", tag="v0.2.0", commit_sha="3" * 40, run_id="ci-0.2.0")
+        self.do("github:release", "record", tag="v0.2.1", commit_sha="3" * 40, run_id="ci-0.2.1")
         ev = self.events()
         self.edge("F24", "F25", "release_published" in ev)
-        self.assertEqual(c.state()["versions"]["VER-0002"]["release"]["run_id"], "ci-0.2.0")
+        self.assertEqual(c.state()["versions"]["VER-0003"]["release"]["run_id"], "ci-0.2.1")
         # F25 yes → F10: stage 3 (sync) is dispatched
-        sync = d["created"]["sync"] if "created" in d else max(c.state()["tasks"])
+        sync = max(c.state()["tasks"])
         self.at("F10")
         self.edge("F25", "F10", c.state()["settings"]["flow"]["roadmap_remaining"] is True)
         self.do(f"task:{sync}", "prepare")
@@ -255,7 +263,7 @@ class AlgorithmWalk(unittest.TestCase):
         self.at("F27")
         comp = c.state()["settings"]["flow"]["completion"]
         self.edge("F26", "F27", "project_completed" in self.events() and comp["tasks_done"] == 5)
-        self.assertEqual([v["label"] for v in comp["versions_released"]], ["0.1.0", "0.2.0"])
+        self.assertEqual([v["label"] for v in comp["versions_released"]], ["0.1.0", "0.2.0", "0.2.1"])
         # F27 yes → F1: expansion opens cycle 2 with the history
         out = self.do("closeout:expand", "expand", idea="Shared lists")
         self.assertIn("Cycle 1 is complete", out["prompt"])
