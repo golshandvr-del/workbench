@@ -43,7 +43,7 @@ class RepoTest {
         val p = project()
         val g = Guide(p)
         assertTrue(g.steps().any { it.key == "github:connect" })
-        assertTrue("optional GitHub step never hides the manager update", g.steps().any { it.key == "manager_update" })
+        assertEquals("the optional GitHub step never comes first", "charter", g.next().key)
         try { Repo.recordConnect(p.store, "o", "r", "main"); fail("main accepted") } catch (_: ModelError) { }
         try { Repo.recordSave(p.store, "abc1234"); fail("save before connect") } catch (_: ModelError) { }
         g.perform("github:connect", "record_connect", mapOf("owner" to "o", "name" to "r"))
