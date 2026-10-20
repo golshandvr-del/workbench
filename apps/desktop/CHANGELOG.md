@@ -1,3 +1,22 @@
+## [5.1.0] - 2026-10-20
+
+### The new shell (Roadmap 5.1.0)
+
+- **Toolbar** (from the reference image): *New Project ▾* (Guided project · Add existing folder…), *Open*, *Save*,
+  *Run*. Save writes settings and profile now; Run does the open project's next guided step (the Workbench's
+  primary action). Both explain themselves when no project is open. The open project's name sits on the right.
+- **Icon rail**, 64 px: Home · Projects · Agents · History · Settings, anti-aliased line icons, a blue marker that
+  slides (ease-out) to the selected destination, and the user's avatar and name at the bottom. Expert pages
+  (Prompt, AI Response, Project Profile, Run & Report, Git / GitHub) are reached from **Agents › Tools** and light up
+  Agents; History is now a main destination (also in Simple mode).
+- **Agents page**: Team (● working / ○ idle), Dispatch desk (chats in use, who gets a prompt now, waiting) and Tools.
+- **Live status bar**: "● N agents running · Milestone …", the last message, "✓ Saved/Autosaved" when the project
+  state changes, version. Facts come from `aiwb/ui/status5.py` (pure, tested) and never write state.
+- Chrome colours come from the 5.x tokens (Midnight/Daylight follow the Appearance setting); page content keeps its
+  current look until 5.6.0.
+- Tests: `test_shell5.py`, `gui/gui_v5_shell_smoke.py` (UI tree, 4 sizes × 2 themes, nothing clipped); screenshots
+  in `docs/design/screens/`.
+
 ## [5.0.0] - 2026-10-20
 
 ### The 5.x look "Mission Map" — design foundation and faster start (Roadmap 5.0.0)

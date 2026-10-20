@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.0.0"
+APP_VERSION = "5.1.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4589,19 +4589,17 @@ class WorkbenchApp:
         Every former tab — and the Project Workbench — is a page of this window. Theme,
         language and Simple/Advanced are application-wide and live on the Settings page."""
         self.prefs = AppPrefs(self.settings_data, save=self._save_prefs)
-        self.shell = AppShell(self.root, self.prefs, title=APP_NAME, version=APP_VERSION)
+        self.shell = AppShell(self.root, self.prefs, title=APP_NAME, version=APP_VERSION,
+                              commands={"new_guided": self.new_guided_project, "new_folder": self.add_existing_project,
+                                        "open": self.add_existing_project, "save": self.save_now,
+                                        "run": self.run_next_step},
+                              message=self.status_var, facts=self.status_state)
         self.notebook = self.shell.notebook
         self.notebook.bind("<<NotebookTabChanged>>", lambda _e: self.shell.sync_from_notebook(), add="+")
-        actions = self.shell.actions
-        self.title_new_btn = ttk.Button(actions, text="+ New project", style="Primary.TButton", command=self.new_project)
-        self.title_new_btn.pack(side="left", padx=(0, 6))
-        self.title_open_btn = ttk.Button(actions, text="Open folder", command=self.open_workspace)
-        self.title_open_btn.pack(side="left", padx=(0, 6))
-        self.title_refresh_btn = ttk.Button(actions, text="Refresh files", command=self.refresh_files)
-        self.title_refresh_btn.pack(side="left")
         self.shell.project_label.configure(textvariable=self.workspace_var)
         self.manager_tab = self.shell.add_page("home", padding=(8, 8), on_show=self.refresh_home_next_step)
         self.workbench_tab = self.shell.add_page("workbench", padding=0, on_show=self._show_workbench_page)
+        self.agents_tab = self.shell.add_page("agents", padding=(8, 8), on_show=self.refresh_agents_page)
         self.project_tab = self.shell.add_page("prompt", padding=8)
         self.response_tab = self.shell.add_page("response", padding=8)
         self.profile_tab = self.shell.add_page("profile", padding=10)
@@ -4611,6 +4609,7 @@ class WorkbenchApp:
         self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
         self._make_projects_dashboard()
         self._make_workbench_placeholder()
+        self._make_agents_page()
         self._make_profile_tab()
         self._make_project_tab()
         self._make_response_tab()
@@ -4620,18 +4619,14 @@ class WorkbenchApp:
         self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
         self.settings_scroll.pack(fill="both", expand=True)
         self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
-        bottom = self.shell.statusbar
-        ttk.Label(bottom, textvariable=self.status_var, style="StatusBar.TLabel").grid(row=0, column=0, sticky="ew")
-        self.activity_progress = ttk.Progressbar(bottom, mode="indeterminate", length=100)
-        self.activity_progress.grid(row=0, column=1, padx=(8, 12))
+        self.activity_progress = ttk.Progressbar(self.shell.statusbar.slot, mode="indeterminate", length=100)
+        self.activity_progress.grid(row=0, column=0)
         self.activity_progress.grid_remove()
-        ttk.Label(bottom, text=f"v{APP_VERSION}", style="StatusBar.TLabel").grid(row=0, column=2)
         self.shell.on_pref(self._on_app_pref)
         ui_layout.install(self.root)
         ui_layout.set_direction(self.prefs.rtl)
         for page in self.shell.pages.values():
             ui_layout.auto_flow(page)
-        ui_layout.flow(self.shell.actions)
         self.shell.show("home")
 
     def _save_prefs(self, values: dict[str, str]) -> None:
@@ -4665,6 +4660,106 @@ class WorkbenchApp:
                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
             style=ui_layout.row_style(card))
         bar.grid(row=2, column=0, sticky="w")
+
+    # -- 5.x shell commands (roadmap 5.1.0): toolbar New Project ▾ · Open · Save · Run, Agents page, status bar
+    def new_guided_project(self) -> None:
+        """Toolbar › New Project › Guided project: create the folder, then start the guided Workbench (F1)."""
+        before = self.workspace
+        self.new_project()
+        if self.workspace is not None and self.workspace != before:
+            self.shell.show("workbench")
+
+    def save_now(self) -> None:
+        """Toolbar › Save: write the profile and settings now (the V2 project state is saved on every change)."""
+        if self.workspace is not None:
+            self._store_current_profile()
+        ok = self._save_settings()
+        self.shell.statusbar.show_saved("Saved" if ok is not False else "")
+        self.set_status("Saved." if self.workspace is not None else "Settings saved. No project is open.")
+
+    def run_next_step(self) -> Any:
+        """Toolbar › Run: do the Guide's next step of the open project (same as the Workbench's primary button)."""
+        if self.workspace is None:
+            self.set_status("Open or create a project first — Run does the project's next guided step.")
+            return None
+        ws = getattr(self, "workspace_window", None)
+        if ws is None or getattr(ws, "_project_root", None) != str(self.workspace):
+            self.shell.show("workbench")
+            self.set_status("Workbench opened — press Run again to do the next step.")
+            return None
+        self.shell.show("workbench")
+        return ws.do_next()
+
+    def status_state(self) -> dict[str, Any] | None:
+        """V2 state of the open project for the status bar (read only; never creates or writes files)."""
+        if self.workspace is None:
+            return None
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            return ws.wc.ctl.state()
+        path = Path(self.workspace) / ".workbench" / "v2" / "state.json"
+        if not path.is_file():
+            return None
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return data if isinstance(data, dict) else None
+
+    def _make_agents_page(self) -> None:
+        """Rail › Agents: Team · Dispatch desk · Tools (the expert pages of 3.x/4.x), as in docs/UI_TREE.md."""
+        from aiwb.ui import structure5
+        tab = self.agents_tab
+        ttk.Label(tab, text="Agents", style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(tab, text="Your AI team, who gets a prompt now, and the expert tools.", style="Hint.TLabel",
+                  wraplength=900).pack(anchor="w", pady=(3, 10))
+        team = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
+        team.pack(fill="x", pady=(0, 9))
+        ttk.Label(team, text="Team", style="CardTitle.TLabel").pack(anchor="w")
+        self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")
+        ttk.Label(team, textvariable=self.agents_team_var, style="CardMuted.TLabel", wraplength=900,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        desk = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
+        desk.pack(fill="x", pady=(0, 9))
+        ttk.Label(desk, text="Dispatch desk", style="CardTitle.TLabel").pack(anchor="w")
+        self.agents_dispatch_var = tk.StringVar(value="—")
+        ttk.Label(desk, textvariable=self.agents_dispatch_var, style="CardMuted.TLabel", wraplength=900,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        tools = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
+        tools.pack(fill="x")
+        ttk.Label(tools, text="Tools", style="CardTitle.TLabel").pack(anchor="w")
+        ttk.Label(tools, text="Expert pages for manual prompt work, project profile, running and Git.",
+                  style="CardMuted.TLabel").pack(anchor="w", pady=(2, 8))
+        row = ttk.Frame(tools, style="Card.TFrame")
+        row.pack(anchor="w")
+        self.agents_tool_buttons: dict[str, ttk.Button] = {}
+        for key, label in structure5.TOOLS:
+            b = ttk.Button(row, text=label, command=lambda k=key: self.shell.show(k))
+            b.pack(side="left", padx=(0, 6))
+            self.agents_tool_buttons[key] = b
+
+    def refresh_agents_page(self) -> None:
+        if not hasattr(self, "agents_team_var"):
+            return
+        st = self.status_state()
+        if st is None:
+            self.agents_team_var.set("Open a project to see its AI team.")
+            self.agents_dispatch_var.set("—")
+            return
+        from aiwb.ui import status5
+        running = set(status5.running_agents(st))
+        agents = sorted((st.get("agents") or {}).values(), key=lambda a: str(a.get("agent_id", "")))
+        lines = [f"{'●' if a.get('agent_id') in running else '○'}  {a.get('name') or a.get('agent_id')}"
+                 f"  ·  {a.get('role', '')}" for a in agents]
+        self.agents_team_var.set("\n".join(lines) or "No AI team yet — plan the project in the Workbench.")
+        try:
+            from aiwb.v2.waves import dispatch
+            d = dispatch(st)
+            nxt = ", ".join(d["next"]) or "nothing startable"
+            self.agents_dispatch_var.set(f"Chats in use {len(d['active'])} of {d['limit']}  ·  "
+                                         f"prompt now: {nxt}  ·  waiting: {len(d['queued'])}")
+        except Exception:  # noqa: BLE001 - an incomplete plan must not break the page
+            self.agents_dispatch_var.set("The plan is not complete yet.")
 
     def _make_workbench_placeholder(self) -> None:
         tab = self.workbench_tab

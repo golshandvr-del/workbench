@@ -60,7 +60,7 @@ class ShellModelTests(unittest.TestCase):
         simple = [k for k, v in ui_shell.PAGES.items() if not v[3]]
         for key in ("home", "workbench", "prompt", "response", "settings"):
             self.assertIn(key, simple)
-        for key in ("git", "run", "history", "profile"):
+        for key in ("git", "run", "profile"):
             self.assertNotIn(key, simple)
 
     def test_no_raw_colours_in_ui_package(self) -> None:
