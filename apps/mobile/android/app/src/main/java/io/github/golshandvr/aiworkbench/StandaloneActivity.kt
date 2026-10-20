@@ -16,7 +16,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import io.github.golshandvr.aiworkbench.core.Flow
 import io.github.golshandvr.aiworkbench.core.Guide
 import io.github.golshandvr.aiworkbench.core.Project
 import io.github.golshandvr.aiworkbench.core.ProjectBundle
@@ -96,7 +95,7 @@ class StandaloneActivity : Activity() {
         if (message.isNotEmpty()) say(message)
         heading(p.store.projectId)
         // Phase bar (roadmap 4.0.0): where the project is in the owner's flowchart.
-        try { text(Flow.label(p.flow())) } catch (e: Exception) { say(e.message ?: e.toString()) }
+        try { text(p.flowText()) } catch (e: Exception) { say(e.message ?: e.toString()) }
         val steps = try { Guide(p).steps() } catch (e: Exception) { say(e.message ?: e.toString()); emptyList() }
         steps.firstOrNull()?.let { stepCard(p, it, true) }
         if (steps.size > 1) {

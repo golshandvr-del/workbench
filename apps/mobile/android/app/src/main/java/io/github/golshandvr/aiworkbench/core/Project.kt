@@ -70,6 +70,18 @@ class Project(val store: ProjectStore) {
     /** Where the project is in the owner's flowchart (roadmap 4.0.0 / mobile 1.1.0). */
     fun flow(): Flow.Position = Flow.current(state())
 
+    /** Phase bar text: flowchart node plus open chats / limit and waves left (roadmap 4.1.0). */
+    fun flowText(): String {
+        val st = state()
+        var text = Flow.label(Flow.current(st))
+        if (State.coll(st, "tasks").isNotEmpty()) {
+            val w = Waves.waves(st); val d = Waves.dispatch(st)
+            text += " · chats ${d.active.size}/${d.limit} · waves left ${w.waves.size}"
+            if (w.cycle.isNotEmpty()) text += " · dependency cycle: ${w.cycle.take(4).joinToString(", ")}"
+        }
+        return text
+    }
+
     fun charter(): Obj? = Json.obj(state()["settings"])["charter"] as? Obj
 
     fun charterStartPrompt(agentId: String): String {

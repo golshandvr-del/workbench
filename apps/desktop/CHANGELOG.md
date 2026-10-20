@@ -1,3 +1,12 @@
+## [4.1.0] - 2026-10-20
+
+### Parallel paths and the dispatch desk (Roadmap 4.1.0, flowchart F9–F12)
+- `v2/waves.py`: lanes per AI, dependency waves (cycles / dead prerequisites reported) and the dispatch desk.
+- Guide: start steps only for the current wave within `max_parallel_chats`, spread over the AI lanes first;
+  **Prepare all prompts** makes one handoff per task of the wave.
+- Phase bar: open chats / limit and waves left.
+- `tests/test_waves.py`.
+
 ## [4.0.0] - 2026-10-20
 
 ### Owner's algorithm, nodes F1–F8 (Roadmap 4.x, step 4.0.0)
