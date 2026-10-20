@@ -1,5 +1,17 @@
 # AI Workbench Mobile — Changelog
 
+## [1.1.0] - 2026-10-20
+
+### Owner's algorithm, nodes F1–F8 (Roadmap 4.0.0)
+- `core/Flow.kt`: the owner's flowchart as data (`project-flow.v1`: nodes F1–F28, kind app/user/github, phases,
+  edges) and `Flow.current(state)` — which node the project is at, derived from the saved state only.
+- **Start the project** form: name, goal, platform, constraints and number of AI chats you can use at the same
+  time (flowchart F4). Starting writes a `project_started` event to the timeline (F2) and builds the Project
+  Charter prompt (F5) with the name and brief.
+- Phase bar above the next step: where the project is in the flowchart.
+- Number keyboard for the "number of AIs" field.
+- `FlowTest`: contract fixture parity and an F1–F8 walk.
+
 ## [1.0.1] - 2026-10-20
 
 ### Fixes from the first phone test (standalone mode stuck after step 1)
