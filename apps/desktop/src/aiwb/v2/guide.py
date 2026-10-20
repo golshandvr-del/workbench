@@ -32,7 +32,7 @@ KINDS = ("prompt", "paste", "decision", "form")
 TROUBLESHOOT_ATTEMPTS = 3  # flowchart correction C1: then escalate to the project manager
 # Optional inputs of the start form (roadmap 4.0.0, flowchart F4): name, platform, constraints, number of AIs.
 BRIEF_OPTIONAL = ("name", "platform", "constraints", "ais")
-OPTIONAL_INPUTS = ("note", "reason", "rationale", "run_id", "commit_sha", "tag") + BRIEF_OPTIONAL
+OPTIONAL_INPUTS = ("note", "reason", "rationale", "run_id", "commit_sha", "tag", "idea") + BRIEF_OPTIONAL
 
 
 def _a(id_: str, label: str, *needs: str, primary: bool = False) -> dict[str, Any]:
@@ -128,6 +128,26 @@ def continue_project_prompt(update: str, state: dict[str, Any] | None = None) ->
     return status_prompt(state or {}, update)
 
 
+def closeout_steps(st: dict[str, Any]) -> list[dict[str, Any]]:
+    """F26 announce, F27 expand or archive, F28 archived (read-only)."""
+    from .closeout import can_announce, is_archived, summary, summary_text
+    fs = st["settings"].get("flow") or {}
+    if is_archived(st):
+        return [_step("closeout:archived", "decision", "The project is archived (read-only)",
+                      "Nothing can change until you reopen it. The final bundle is in .workbench/archive/.",
+                      [_a("reopen", "Reopen the project")], rank=0)]
+    if fs.get("completed_at"):
+        return [_step("closeout:expand", "decision", "The project is complete — expand it or archive it?",
+                      summary_text(fs.get("completion") or summary(st)) + " Expand starts the next major cycle with the "
+                      "whole history; archive saves the final bundle and makes the project read-only.",
+                      [_a("expand", "Expand the project…", "idea"), _a("archive", "Archive the project")], rank=0)]
+    if can_announce(st):
+        return [_step("closeout:announce", "decision", "Announce the completion",
+                      "The project manager says no roadmap stage is left and every task is finished. "
+                      + summary_text(summary(st)), [_a("announce", "Announce completion")], rank=0)]
+    return []
+
+
 def github_steps(ctl: Any, st: dict[str, Any]) -> list[dict[str, Any]]:
     """Blue nodes (roadmap 4.5.0): F3 connect, F22 save, F24 release — every write waits for 'Confirm'."""
     from .repo import release_needed, repo_info, unsaved_files
@@ -175,6 +195,10 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
     g = _g(st)
     out: list[dict[str, Any]] = []
     tasks = st["tasks"]
+
+    end = closeout_steps(st)  # F26–F28 (roadmap 4.6.0): the end of the algorithm replaces every other step
+    if end:
+        return end
 
     cont = g.get("continue")
     if cont:
@@ -611,9 +635,31 @@ class Guide:
             return {"message": f"Version {v['label']} released."}
         if kind == "github":
             return self._github(action, step["ref"], inp)
+        if kind == "closeout":
+            return self._closeout(action, inp)
         if action == "withdraw":
             self.p.timeline.advance_version(ref, "withdrawn")
             return {"message": f"Version {ref} withdrawn."}
+        raise ModelError(f"unknown action {action!r}")
+
+    def _closeout(self, action: str, inp: dict[str, Any]) -> dict[str, Any]:
+        """F26–F28 (4.6.0): announce → expand (back to F1 with history) or archive (read-only)."""
+        from . import closeout
+        store = self.p.store
+        if action == "announce":
+            return {"message": "Completion announced. " + closeout.summary_text(closeout.announce(store))}
+        if action == "expand":
+            out = closeout.expand(store, str(inp.get("idea", "")))
+            self._set_guide(manager_copied_at=None, manager_sent_at=None)
+            return {"message": f"Cycle {out['cycle']} started. Copy the expansion prompt to your project-manager chat, "
+                               "then paste its plan.", "prompt": out["prompt"]}
+        if action == "archive":
+            from .. import __version__
+            path = closeout.archive(store, self.ctl.root, version=__version__)
+            return {"message": f"Archived. Final bundle: {path}. The project is read-only now."}
+        if action == "reopen":
+            closeout.reopen(store)
+            return {"message": "Reopened. The project can change again."}
         raise ModelError(f"unknown action {action!r}")
 
     def _github(self, action: str, ref: str, inp: dict[str, Any]) -> dict[str, Any]:
