@@ -156,13 +156,14 @@ class Guide(val project: Project) {
         }
         if (tasks.isEmpty() && State.coll(st, "proposals").values.none { Json.obj(it)["status"] == "pending" }) {
             val goal = Json.str(Json.obj(st["settings"])["goal"]).trim()
-            if (goal.isEmpty()) out.add(step("design", "form", "Describe the project",
-                "Write the goal in one or two sentences. Workbench builds the 'design the whole project' prompt for your project-manager chat.",
-                listOf(a("design", "Design the whole project…", "goal")), agent = MANAGER, rank = 1))
+            if (goal.isEmpty()) out.add(step("design", "form", "Start the project",
+                "Give the project a name, its goal (one or two sentences), the platform, any constraints and how many AI chats you " +
+                    "can use at the same time. Workbench starts the timeline and builds the 'design the whole project' prompt for your project-manager chat.",
+                listOf(a("design", "Start the project…", "goal", *BRIEF_OPTIONAL)), agent = MANAGER, rank = 1))
             else out.add(step("charter", "prompt", "Get the Project Charter from your project-manager chat",
                 "Goal: ${goal.take(200)}. Copy the prompt, send it, then paste the whole answer.",
-                listOf(a("copy", "Copy the charter prompt"), a("sent", "I sent it"), a("paste", "Paste the charter", "text"), a("design", "Change the goal…", "goal")),
-                agent = MANAGER, prompt = Charter.prompt(mapOf("goal" to goal), st), rank = 2))
+                listOf(a("copy", "Copy the charter prompt"), a("sent", "I sent it"), a("paste", "Paste the charter", "text"), a("design", "Change the project details…", "goal", *BRIEF_OPTIONAL)),
+                agent = MANAGER, prompt = Charter.prompt(LinkedHashMap<String, Any?>(Json.obj(Json.obj(st["settings"])["brief"])).also { it["goal"] = goal }, st), rank = 2))
         }
         val actionable = out.filter { it.agentId == USER || it.kind == "prompt" || it.kind == "form" }
         if (actionable.isEmpty()) {
@@ -207,7 +208,10 @@ class Guide(val project: Project) {
                 Outcome("Recorded as sent. Paste the answer when you have it.")
             }
             "dismiss" -> { setGuide(false, "continue" to null); Outcome("The cut-off answer is ignored.") }
-            "design" -> { p.setGoal(i("goal")); Outcome("Project Charter prompt ready to copy.", p.charterPrompt(i("goal"))) }
+            "design" -> {
+                Flow.startProject(p.store, (listOf("goal") + BRIEF_OPTIONAL).associateWith { i(it) })
+                Outcome("Project started. Project Charter prompt ready to copy.", p.charterPrompt(i("goal")))
+            }
             "accept" -> Outcome("Plan $ref ${p.acceptAllValid(ref)["status"]}.")
             "reject" -> { p.reviewProposal(ref, emptyList()); Outcome("Plan $ref rejected. Nothing changed.") }
             "request_changes" -> {
@@ -299,9 +303,13 @@ class Guide(val project: Project) {
         const val USER = "you"
         const val MANAGER = "agent-project-manager"
         private val OPEN_H = setOf("prepared", "prompt_exported", "response_received", "parsed", "reconciled", "stale", "reconciliation_required")
-        private val OPTIONAL = setOf("note", "reason", "rationale", "run_id", "commit_sha", "tag")
+        /** Optional inputs of the start form (roadmap 4.0.0, flowchart F4). */
+        val BRIEF_OPTIONAL = arrayOf("name", "platform", "constraints", "ais")
+        private val OPTIONAL = setOf("note", "reason", "rationale", "run_id", "commit_sha", "tag") + BRIEF_OPTIONAL
         /** What each input asks for (the UI shows these as field hints). */
         val INPUT_HINTS = mapOf("goal" to "What should this project achieve? (one or two sentences)", "note" to "Note (optional)",
+            "name" to "Project name (optional)", "platform" to "Platform / technology (optional)", "constraints" to "Constraints (optional)",
+            "ais" to "How many AI chats can you use at the same time? (1-12, optional)",
             "reason" to "Reason (optional)", "rationale" to "Why? (optional, kept in the decision log)", "choice" to "Your decision",
             "result" to "passed or failed", "run_id" to "Run ID, build number or commit (optional)",
             "commit_sha" to "Commit SHA (optional)", "tag" to "Tag (optional, default v<version>)", "text" to "Paste the whole answer here")
