@@ -1,3 +1,25 @@
+## [5.0.0] - 2026-10-20
+
+### The 5.x look "Mission Map" — design foundation and faster start (Roadmap 5.0.0)
+
+- The owner's reference images are in `docs/design/reference/`; `docs/design/DESIGN_LANGUAGE.md` turns them into
+  rules (tokens, type, geometry, motion, rendering). The 4.x roadmap is archived; `ROADMAP.md` is the 5.x plan.
+- `aiwb/ui/raster.py`: a pure-Python anti-aliased rasteriser (signed-distance discs, rings, glows, hexagons,
+  rounded panels, strokes and curves) that writes real-alpha PNG — Tk on Windows has no anti-aliasing, so every
+  soft shape of 5.x is drawn here and only *placed* by Tk. No Pillow at run time.
+- `aiwb/ui/tokens5.py`: Midnight (dark, from the images) and Daylight palettes, type, 4-px geometry, motion timing;
+  old `light`/`dark` preferences map onto them. Text contrast is tested (≥ 7:1, dim text ≥ 4.5:1).
+- `aiwb/ui/assets.py`: 19 line icons on a 24-unit grid and the task/hexagon/source/capsule/panel/branch sprites,
+  cached per theme and DPI scale.
+- **UI tree contract:** `docs/UI_TREE.md` is the map of every destination, section, command and menu;
+  `aiwb/ui/structure5.py` is the same tree for code, and `tests/test_ui_tree.py` fails CI when they differ, when a
+  node has more than 7 children, or when a right-click item does not map to a real Guide action.
+- Faster, crisper start: `launch_aiwb.py` shows a splash card ~0.1 s after launch (before, an empty wait of ~1 s),
+  then imports the app as a cached module; the installer pre-compiles bytecode and the shortcut starts the launcher.
+  Windows per-monitor DPI awareness (sharp text on 125–200 % displays). Total build time is unchanged in this step
+  (~0.9–1.1 s on the Linux CI machine); the new pages are lighter (5.1–5.6).
+- Tests: `test_visual5_foundation.py`, `test_ui_tree.py`, `gui/gui_v5_startup_smoke.py`.
+
 ## [4.7.0] - 2026-10-20
 
 ### The whole algorithm — gate (Roadmap 4.7.0, every node F1–F28)
