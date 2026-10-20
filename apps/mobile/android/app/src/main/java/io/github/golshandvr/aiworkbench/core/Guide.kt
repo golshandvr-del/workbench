@@ -209,7 +209,7 @@ class Guide(val project: Project) {
         if (Json.str(repo["full_name"]).isEmpty())
             return listOf(step("github:connect", "form", "GitHub: connect the project repository (optional)",
                 Repo.manualSteps("connect", st).joinToString(" ") + " Files go to ${Repo.projectBranch(st)}, never to main.",
-                listOf(a("record_connect", "Record the repository…", "owner", "name")), rank = 89))
+                listOf(a("record_connect", "Record the repository…", "owner", "name")), rank = 91))
         val files = Repo.unsavedFiles(st)
         if (files.isEmpty()) return emptyList()
         return listOf(step("github:save", "decision", "GitHub: save ${files.size} approved file(s)",
