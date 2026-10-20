@@ -28,7 +28,7 @@ PAGES: dict[str, tuple[str, str, str, bool]] = {
     "prompt": ("Prompt", "پرامپت", "✎", False),
     "response": ("AI Response", "پاسخ AI", "⇩", False),
     "profile": ("Project Profile", "پروفایل پروژه", "☰", True),
-    "history": ("History", "تاریخچه", "↺", True),
+    "history": ("History", "تاریخچه", "↺", False),  # 5.x: a main rail destination
     "run": ("Run & Report", "اجرا و گزارش", "▶", True),
     "git": ("Git / GitHub", "گیت / گیت‌هاب", "⑂", True),
     "settings": ("Settings", "تنظیمات", "⚙", False),
