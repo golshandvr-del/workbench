@@ -28,7 +28,7 @@ RAIL: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("projects", "Projects", "projects", ("Project cards", "Project Workbench")),
     ("agents", "Agents", "agents", ("Team", "Dispatch desk", "Tools")),
     ("history", "History", "history", ("Timeline", "Prompts & responses", "Versions")),
-    ("settings", "Settings", "settings", ("Appearance", "Experience", "Application")),
+    ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application")),
 )
 
 # Tools reached from Agents › Tools: the expert pages of 3.x/4.x (page key, label).
