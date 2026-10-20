@@ -1,12 +1,18 @@
 package io.github.golshandvr.aiworkbench
 
 import io.github.golshandvr.aiworkbench.core.Diagnose
+import io.github.golshandvr.aiworkbench.core.Guide
+import io.github.golshandvr.aiworkbench.core.Json
+import io.github.golshandvr.aiworkbench.core.Project
+import io.github.golshandvr.aiworkbench.core.ProjectStore
+import io.github.golshandvr.aiworkbench.core.State
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import java.nio.file.Files
 
 /** Roadmap 4.2.0 gate (phone half): smart problem detection matches the shared corpus (same codes as desktop). */
 class DiagnoseTest {
@@ -44,5 +50,44 @@ class DiagnoseTest {
         assertTrue("- [empty_file] src/calc.py is empty" in p)
         assertTrue("## Also check" in p)
         assertTrue("- src/" in p)
+    }
+
+    /** F13 -> F15 -> F11 loop: at most three troubleshooting prompts, then the project manager (same as desktop). */
+    @Test fun troubleshootLoopThenEscalate() {
+        val p = Project(ProjectStore(File(Files.createTempDirectory("aiwb").toFile(), "calc")))
+        p.installTemplates()
+        val tid = Json.str(p.createTask(linkedMapOf("title" to "Calc", "objective" to "add", "allowed_paths" to arrayListOf<Any?>("src/"),
+            "acceptance_criteria" to arrayListOf<Any?>("adds")))["task_id"])
+        p.transition(tid, "ready", "test")
+        val g = Guide(p)
+        fun broken(): String {
+            val h = State.coll(p.state(), "handoffs").values.map { Json.obj(it) }
+                .first { it["task_id"] == tid && it["status"] in setOf("prepared", "prompt_exported") }
+            val man = "{\"schema_version\": \"1.0\", \"handoff_id\": \"${h["handoff_id"]}\", \"task_id\": \"$tid\", " +
+                "\"task_revision\": ${Json.int(h["task_revision"])}, \"attempt_id\": \"${h["attempt_id"]}\", \"outcome\": \"complete\", " +
+                "\"summary\": \"done\", \"completed_items\": [\"x\"], \"unresolved_items\": [], \"validation_claims\": []}"
+            return "AIWB_ATTEMPT_ID: ${h["attempt_id"]}\n<<<AIWB_FILE path=\"../evil.py\" action=\"write\">>>\n````\nx=1\n````\n" +
+                "<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n$man\n<<<AIWB_END_HANDOFF>>>\n"
+        }
+        fun hstep() = g.steps().first { it.key.startsWith("handoff:") }
+        g.perform("task:$tid", "prepare")
+        for (n in 1..Diagnose.TROUBLESHOOT_ATTEMPTS) {
+            val out = g.perform(hstep().key, "paste", mapOf("text" to broken()))
+            assertTrue(out.message, "unsafe_path" in out.message)
+            val st = hstep()
+            assertEquals("troubleshoot", st.actions[0].id)
+            val o2 = g.perform(st.key, "troubleshoot")
+            assertTrue("troubleshooting request $n" in o2.prompt)
+            assertTrue("[unsafe_path]" in o2.prompt)
+        }
+        g.perform(hstep().key, "paste", mapOf("text" to broken()))
+        val st = hstep()
+        assertEquals("escalate", st.actions[0].id)
+        assertTrue(g.perform(st.key, "escalate").prompt.isNotEmpty())
+        val s = p.state()
+        assertEquals("blocked", State.require(s, "tasks", tid)["status"])
+        val types = Json.list(s["events"]).map { Json.str(Json.obj(it)["type"]) }
+        assertEquals(Diagnose.TROUBLESHOOT_ATTEMPTS, types.count { it == "troubleshooting_prompt" })
+        assertTrue("task_escalated" in types)
     }
 }
