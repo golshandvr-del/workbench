@@ -76,6 +76,9 @@ def icon_png(name: str, size: int, color: str, stroke: float = 1.75) -> bytes:
 
 
 # -- sprites -----------------------------------------------------------------------------------------
+PULSE_LEVELS = 6  # pre-rendered breathing frames: animation swaps cached images, it never re-rasterises
+
+
 def sprite_png(name: str, theme: str = "midnight", scale: float = 1.0, **kw: Any) -> tuple[bytes, int, int]:
     """Draw one sprite. Returns (png, width, height). Sizes follow :data:`GEOMETRY` × ``scale``."""
     p = palette5(theme)
@@ -110,6 +113,18 @@ def sprite_png(name: str, theme: str = "midnight", scale: float = 1.0, **kw: Any
         else:  # idle / future
             im.disc(c, c, r_, p["idle"])
             im.ring(c, c, r_ - 0.8 * s, 1.6 * s, p["idle_ring"])
+        return im.to_png(), size, size
+    if name == "task_pulse":  # 5.3.0: one frame of an active circle's breathing glow, level 0..PULSE_LEVELS-1
+        level = max(0, min(PULSE_LEVELS - 1, int(kw.get("level", 0))))
+        r_ = g["task_r"] * s
+        pad = 14 * s
+        size = int(math.ceil(2 * (r_ + pad)))
+        c = size / 2.0
+        im = Raster(size, size)
+        k = level / (PULSE_LEVELS - 1)
+        im.glow(c, c, r_ * 0.6, r_ + pad * (0.7 + 0.3 * k), p["active_glow"], 0.4 + 0.3 * k)
+        im.disc(c, c, r_, p["active"])
+        im.ring(c, c, r_ - 0.6 * s, 1.6 * s, p["active_hi"], 0.9)
         return im.to_png(), size, size
     if name == "hex":
         r_ = g["hex_r"] * s
