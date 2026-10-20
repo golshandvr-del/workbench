@@ -189,7 +189,9 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                 acts.insert(1, _a("repair", "Ask only for what is missing"))
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"Check what {who} delivered for {label}",
                              (h.get("summary") or "The answer was read.") + (f" Missing: {'; '.join(missing[:4])}." if missing else "")
-                             + " Accepting never applies files and never closes the task.",
+                             + (f" Accepting adds {len(h.get('staged_files') or [])} delivered file(s) to the project files"
+                                " (old versions are backed up); it never closes the task." if h.get("staged_files")
+                                else " Accepting never closes the task."),
                              acts, agent=USER, ref=h["handoff_id"], rank=10, task_id=h["task_id"]))
         elif h["status"] in ("stale", "reconciliation_required"):
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"The answer for {label} is out of date",
@@ -447,8 +449,11 @@ class Guide:
             c.resolve_decision(ref, action == "decide", decision=str(inp.get("choice", "")), rationale=why)
             return {"message": f"Decision {ref} recorded."}
         if action == "accept_handoff":
+            from .files import integrate
             c.resolve_handoff(ref, True, str(inp.get("reason", "")) or "accepted in the guided loop")
-            return {"message": f"Delivery {ref} accepted. Next: review the task."}
+            written = integrate(self.p.store, c.root, ref)
+            added = f" {len(written)} file(s) added to the project files." if written else ""
+            return {"message": f"Delivery {ref} accepted.{added} Next: review the task.", "files": written}
         if action == "reject_handoff":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")))
             return {"message": f"Delivery {ref} rejected. A new prompt can be prepared."}
@@ -593,6 +598,10 @@ class Guide:
             if step["key"] in ("manager_update", "charter"):
                 self._set_guide(seen=True)
             if r.kind == "handoff":
+                from .files import stage
+                staged = stage(self.p.store, r.reference_id, text)
+                if staged:
+                    out["staged"] = [x["path"] for x in staged]
                 probs = self._diagnose(r.reference_id, text)
                 errs = [x for x in probs if x["severity"] == "error"]
                 if errs:
