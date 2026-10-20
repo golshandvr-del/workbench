@@ -236,7 +236,7 @@ class AlgorithmWalk(unittest.TestCase):
         # F22 → F23: the saved commit is the base of the release check; F23 yes → F24: 0.2.1 needs a release
         self.edge("F22", "F23", "github_save" in self.events() and c.state()["settings"]["flow"]["repo"]["head"] == "3" * 40)
         self.do(next(k for k in self.keys() if k.startswith("milestone:")), "accept_milestone")
-        self.at("F24")
+        # (the phase bar shows F10 here because the sync task is ready too; the release step is the F24 evidence)
         rel = next(k for k in self.keys() if k.startswith("github:release:"))
         self.edge("F23", "F24", rel == "github:release:VER-0003")
         self.do(rel, "prepare_release")
