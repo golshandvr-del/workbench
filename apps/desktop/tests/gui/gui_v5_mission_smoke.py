@@ -43,13 +43,13 @@ def plan_five(ctl) -> list[str]:
     p = ctl.project
     with p.store.transaction("smoke agents") as s:
         for i in range(1, 6):
-            aid = f"ai-{i}"
+            aid = f"agent-ai-{i}"
             s["agents"][aid] = normalize_agent({"agent_id": aid, "role": "implementer", "name": f"Builder {i}",
                                                 "template_id": ""})
     per_version: list[list[str]] = [[], [], []]
     for i in range(1, 6):
         for k in range(3):
-            t = p.tasks.create({"title": f"Builder {i} step {k + 1}", "objective": "o", "owner_agent_id": f"ai-{i}",
+            t = p.tasks.create({"title": f"Builder {i} step {k + 1}", "objective": "o", "owner_agent_id": f"agent-ai-{i}",
                                 "scope": {"include": [f"m{i}/{k}/**"]}, "acceptance_criteria": ["ok"]})
             per_version[k].append(t["task_id"])
     for k, label in enumerate(("0.1.0", "0.2.0", "1.0.0")):
@@ -85,7 +85,7 @@ def main() -> None:
             settle(root, 8)
             m = app.mission.model
             assert not m["empty"]
-            assert [ln["agent_id"] for ln in m["lanes"]] == [f"ai-{i}" for i in range(1, 6)], m["lanes"]
+            assert [ln["agent_id"] for ln in m["lanes"]] == [f"agent-ai-{i}" for i in range(1, 6)], m["lanes"]
             assert [c["label"] for c in m["columns"]] == ["0.1.0", "0.2.0", "1.0.0"], m["columns"]
             c = app.mission
             assert len(c.find_withtag("hex")) == 10  # sprite + number per AI
