@@ -1,3 +1,25 @@
+## [5.3.0] - 2026-10-20
+
+### Motion (Roadmap 5.3.0)
+
+- **One animation clock** (`aiwb/ui/motion.py`): every animation runs on a single timer at up to 60 fps and the
+  clock **sleeps** when nothing moves — an idle window costs no CPU. Easing: cubic-out for entering, cubic-in-out
+  for moving (docs/design/DESIGN_LANGUAGE.md §6).
+- **Mission Map:** branches and lanes grow from the golden source when a project opens (600 ms); active task
+  circles breathe slowly (1.6 s, six pre-rendered glow frames — no re-drawing per frame); a light particle travels
+  along every live branch; the hover halo blooms in (120 ms).
+- **Shell:** pages slide in from the reading side (240 ms); the rail marker glides on the shared clock; the
+  status bar counts to the new number of running agents.
+- **Settings › Motion › Reduce motion** (saved as `ui_reduce_motion`): every animation shows its end state at
+  once, live loops stop and the clock sleeps.
+- Animations only change pixels; they never write project state. A widget destroyed mid-animation ends that
+  animation only.
+
+### Tests
+
+- `test_motion.py` (14 tests: timing, easing, auto-sleep, loops, reduce motion, frame budget) and the 5.3.0 gate
+  `gui_v5_motion_smoke.py` (p95 frame cost measured < 1 ms on CI hardware).
+
 ## [5.2.0] - 2026-10-20
 
 ### Mission Map — parallel timelines on Home (Roadmap 5.2.0)
