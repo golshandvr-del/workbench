@@ -38,7 +38,6 @@ class FloatingMenu:
         self.w = int(WIDTH * s)
         self.head = int(22 * s) if title else 0
         self.h = int(2 * PAD * s + self.head + ROW_H * s * len(rows) + HINT_H * s)
-        sh = int(SHADOW * s)
         self.top = tk.Toplevel(owner)
         self.top.withdraw()
         self.top.overrideredirect(True)
@@ -52,7 +51,10 @@ class FloatingMenu:
             self._transparent = "#010203"
         except tk.TclError:
             pass
-        bg = self._transparent or p["window"]
+        # a soft shadow only where the corners can be see-through (Windows); elsewhere a clean hairline edge
+        self.shadow = SHADOW if self._transparent else 0
+        sh = int(self.shadow * s)
+        bg = self._transparent or p["menu"]
         self.canvas = tk.Canvas(self.top, width=self.w + 2 * sh, height=self.h + 2 * sh, highlightthickness=0, bd=0,
                                 background=bg)
         self.canvas._aiwb_keep_colours = True  # type: ignore[attr-defined]
@@ -73,7 +75,7 @@ class FloatingMenu:
         c, s, p = self.canvas, self.s, self.p
         c.delete("all")
         surf = self.assets.sprite("panel", w=self.w, h=self.h, r=GEOMETRY["radius_menu"], role="menu",
-                                  border="menu_border", shadow=SHADOW)
+                                  border="menu_border", shadow=self.shadow)
         c.create_image(0, 0, image=surf, anchor="nw", tags=("surface",))
         y = self.oy + PAD * s
         if self.title:
@@ -108,8 +110,10 @@ class FloatingMenu:
             c.itemconfigure(ic, image=self.assets.icon(row["icon"], 16, color=col))
         if 0 <= self.index < len(self.rows):
             y = self.row_y[self.index]
+            dark = self.assets.theme == "midnight"  # Midnight: deep-blue row + blue edge; Daylight: solid blue row
             hl = self.assets.sprite("panel", w=int(self.w - 2 * PAD * s), h=int(ROW_H * s - 4 * s),
-                                    r=GEOMETRY["radius_ctl"], role="selection", border="active")
+                                    r=GEOMETRY["radius_ctl"], role="selection" if dark else "active",
+                                    border="active" if dark else "active_hi")
             item = c.create_image(self.ox + PAD * s, y + 2 * s, image=hl, anchor="nw", tags=("hl",))
             c.tag_raise(item, "surface")
             c.tag_raise("row")
