@@ -1,3 +1,15 @@
+## [4.0.0] - 2026-10-20
+
+### Owner's algorithm, nodes F1–F8 (Roadmap 4.x, step 4.0.0)
+- Shared contract `project-flow.v1` (schema + fixture): the owner's flowchart as nodes F1–F28
+  (kind app / user / github), phases and edges. Desktop and phone check the same fixture.
+- `v2/flow.py`: `current(state)` derives the flowchart node from the saved state; `start_project` saves the brief
+  and writes `project_started` (F2).
+- Guide: **Start the project** form — name, goal, platform, constraints, number of AIs (F4); the Project Charter
+  prompt includes the name and brief (F5).
+- Workspace: phase bar under the next step; cancelling an optional field skips it.
+- `tests/test_flow.py`.
+
 ## [3.9.1] - 2026-10-20
 
 ### Guided loop fixes (same as mobile 1.0.1)
