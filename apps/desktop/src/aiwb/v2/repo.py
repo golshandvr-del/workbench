@@ -179,10 +179,15 @@ class RepoService:
                 v = s["versions"][pl["version_id"]]
                 rel = {"tag": result.get("tag") or pl["tag"], "commit_sha": result.get("commit_sha") or repo.get("head", ""),
                        "run_id": result.get("run_id", ""), "url": result.get("url", ""), "at": now_utc()}
-                v["release"] = rel
-                v["status"] = "released"
-                v["updated_at"] = now_utc()
-                emit(s, "version_status", version_id=v["version_id"], new="released", importance="major")
+                # same facts as Timeline.advance_version: a release is never assumed, it carries a tag + run/URL
+                v.update(tag=rel["tag"], commit_sha=rel["commit_sha"] or v.get("commit_sha", ""),
+                         run_id=rel["run_id"] or v.get("run_id", ""),
+                         artifact=rel["url"] or v.get("artifact", "") or f"github-release:{rel['tag']}", release=rel)
+                v.setdefault("history", []).append({"from": v["status"], "to": "released", "at": now_utc()})
+                old = v["status"]
+                v.update(status="released", updated_at=now_utc())
+                emit(s, "release_published", version_id=v["version_id"], label=v["label"], old=old, new="released",
+                     commit_sha=v["commit_sha"], run_id=v["run_id"])
             fs.pop("github_pending", None)
             emit(s, f"github_{kind}", importance="major", **{k: v for k, v in result.items() if k in ("commit_sha", "tag", "url")})
 
