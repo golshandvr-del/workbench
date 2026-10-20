@@ -65,13 +65,14 @@ def main() -> None:
             root.update()
             assert style.theme_use() == "sun-valley-dark"
             assert str(root.cget("background")).lower() == "#1c1c1c"
+            assert app.shell.assets.theme == "midnight"
             assert w.wc.theme == "dark"
             assert style.lookup("WS.TFrame", "background") == style.lookup("TFrame", "background")
             app.prefs.set_theme("light")
             # language: rail + workbench relabel, rail mirrors
             app.prefs.set_lang("fa")
             root.update()
-            assert app.shell.nav["home"].cget("text").startswith("خانه")
+            assert app.shell.nav["home"].text == "Home"  # 5.x rail labels: English-only product policy
             assert w.nav["overview"].cget("text") == "نمای کلی", w.nav["overview"].cget("text")
             assert app.shell.rail.pack_info()["side"] == "right"
             app.prefs.set_lang("en")
@@ -80,18 +81,28 @@ def main() -> None:
             # mode: simple hides expert pages, advanced shows them; one source of truth
             app.prefs.set_mode("simple")
             root.update()
-            assert not app.shell.nav["git"].winfo_ismapped() and app.shell.nav["workbench"].winfo_ismapped()
+            assert list(app.shell.nav) == ["home", "projects", "agents", "history", "settings"], list(app.shell.nav)
+            assert all(b.winfo_ismapped() for b in app.shell.nav.values()), "5.x rail: five fixed destinations"
+            assert "git" not in app.shell.visible_pages() and "workbench" in app.shell.visible_pages()
             assert w.wc.mode == "simple" and ctl.mode == "simple"
             app.prefs.set_mode("advanced")
             root.update()
-            assert app.shell.nav["git"].winfo_ismapped()
+            assert "git" in app.shell.visible_pages()
             assert ctl.mode == "advanced"
             # settings persisted application-wide
             assert app.settings_data["ui_mode"] == "advanced" and app.settings_data["ui_theme"] == "light"
             # existing calls that select a page directly keep the rail in sync
             app.notebook.select(app.response_tab)
             root.update()
-            assert app.shell.current == "response" and app.shell.nav_var.get() == "response"
+            assert app.shell.current == "response" and app.shell.nav_var.get() == "agents"  # Agents › Tools
+            assert app.shell.rail.current == "agents"
+            # 5.x toolbar + status bar
+            assert [b.text for b in app.shell.toolbar.buttons.values()] == ["New Project", "Open", "Save", "Run"]
+            facts = app.shell.refresh_status()
+            assert facts["text"].endswith("running") or "Milestone" in facts["text"], facts
+            app.shell.nav["projects"].invoke()
+            root.update()
+            assert app.shell.current == "workbench"
             assert (ctl.project.store.revision, ctl.project.store.ledger.count()) == (rev, n), "view change wrote state"
             print("Single shell smoke passed: Workbench embedded (no Toplevel) · one Fluent theme · one language (RTL rail) · "
                   "one Simple/Advanced mode · settings persisted · no hard-coded colours")
