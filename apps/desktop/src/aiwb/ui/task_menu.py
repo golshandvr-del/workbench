@@ -43,7 +43,7 @@ def items(steps: list[dict[str, Any]], task_id: str) -> list[dict[str, Any]]:
         pref = PREFERENCE.get(item_id, allowed)
         found: tuple[dict[str, Any], dict[str, Any]] | None = None
         for action_id in pref:
-            if action_id not in allowed and action_id != "prepare":
+            if action_id not in allowed:
                 continue
             for s in mine:
                 act = next((a for a in s.get("actions", []) if a["id"] == action_id), None)
