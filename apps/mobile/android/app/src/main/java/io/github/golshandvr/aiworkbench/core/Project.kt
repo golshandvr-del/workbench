@@ -62,7 +62,13 @@ class Project(val store: ProjectStore) {
 
     // ----------------------------------------------------------- charter + plans
 
-    fun charterPrompt(goal: String): String = Charter.prompt(mapOf("goal" to goal), state())
+    fun charterPrompt(goal: String): String {
+        val brief = Json.obj(Json.obj(state()["settings"])["brief"])
+        return Charter.prompt(LinkedHashMap<String, Any?>(brief).also { it["goal"] = goal }, state())
+    }
+
+    /** Where the project is in the owner's flowchart (roadmap 4.0.0 / mobile 1.1.0). */
+    fun flow(): Flow.Position = Flow.current(state())
 
     fun charter(): Obj? = Json.obj(state()["settings"])["charter"] as? Obj
 
