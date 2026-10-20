@@ -46,7 +46,7 @@ TYPE5 = {  # role: (family-kind, points, weight)
 }
 
 GEOMETRY = {
-    "rail_w": 64, "toolbar_h": 44, "status_h": 30, "assistant_w": 340, "assistant_hide_below": 1100,
+    "rail_w": 64, "toolbar_h": 44, "status_h": 30,
     "lane_gap": 68, "col_gap": 66, "task_r": 11, "task_ring": 2, "hex_r": 12, "source_r": 8,
     "radius_ctl": 6, "radius_bubble": 10, "radius_menu": 10, "grid": 4,
 }
