@@ -145,6 +145,10 @@ def current(state: dict[str, Any]) -> dict[str, Any]:  # noqa: C901 — one orde
            all((state.get("milestones", {}).get(x) or {}).get("status") == "accepted" for x in v["milestone_ids"])
            for v in versions):
         return at("F24", "A roadmap version is complete; publish it.")
+    last = fs.get("last_decision") or {}
+    if last.get("route") == "complete" and not any(t.get("status") not in ("done", "cancelled", "superseded")
+                                                    for t in tasks.values()):
+        return at("F26", "The project manager says no roadmap stage is left; announce completion.")
     if int(state.get("state_revision", 0)) > int(guide.get("manager_seen_revision", 0)):
         return at("F18", "Report the new state to the project manager.")
     return at("F25", "Ask the project manager whether any roadmap stage is left.")
