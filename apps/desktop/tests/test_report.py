@@ -85,16 +85,15 @@ class BranchTests(unittest.TestCase):
         with self.c.project.store.transaction("t") as s:
             s["tasks"][self.b]["status"] = "blocked"
             s["tasks"][self.b]["blocked_reason"] = "stuck after 3 troubleshooting prompts: cut off"
-            s["handoffs"]["H-9"] = {"handoff_id": "H-9", "task_id": self.a, "status": "accepted",
-                                    "integrated_at": "2099-01-01T00:00:00Z", "integrated_files": ["src/a/x.py"]}
             s["settings"].setdefault("flow", {})["repo"] = {"full_name": "me/app", "branch": "aiwb/app"}
         st = self.c.state()
+        st["handoffs"]["H-9"] = {"handoff_id": "H-9", "task_id": self.a, "status": "accepted",
+                                 "integrated_at": "2099-01-01T00:00:00Z", "integrated_files": ["src/a/x.py"]}
         sec = report.status_sections(st)
         self.assertTrue(any("src/a/x.py" in x for x in sec["integrated"]))
         self.assertTrue(any(self.b in x and "stuck" in x for x in sec["stuck"]))
         self.assertIn("Repository: me/app (branch aiwb/app)", sec["github"])
-        step = next(s for s in self.g.steps() if s["key"] == "manager_update") if any(
-            s["key"] == "manager_update" for s in self.g.steps()) else None
+        step = next((s for s in self.g.steps() if s["key"] == "manager_update"), None)
         prompt = report.status_prompt(st, self.c.manager_update())
         for needle in ("roadmap_remaining", "emergency_tasks", "Stuck tasks", "src/a/x.py", "AIWB_MANAGER_PROPOSAL"):
             self.assertIn(needle, prompt)
@@ -122,7 +121,7 @@ class BranchTests(unittest.TestCase):
         self.assertEqual(sorted(d["paused"]), sorted([self.a, self.b]))
         self.assertEqual(waves.dispatch(st)["next"], [fix], "the emergency is dispatched first")
         self.assertEqual(self.g.flow()["node"], "F10")
-        self.assertIn("pm_decision", [e["type"] for e in self.c.project.store.events.all()])
+        self.assertIn("pm_decision", [e["type"] for e in self.c.state()["events"]])
 
     def test_next_stage_branch(self):
         rev = self.c.state()["state_revision"]
