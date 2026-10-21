@@ -85,6 +85,13 @@ def _ordered(w: Any) -> list[Any]:
         pos = [(c.winfo_rooty() + c.winfo_height() / 2, c.winfo_rootx(), i) for i, c in enumerate(kids)]
     except Exception:  # noqa: BLE001
         return kids
+    try:  # a frame whose children are all packed side by side is ONE row, whatever the heights (Windows fonts)
+        packed = w.pack_slaves()
+        if packed and len(packed) == len(kids) and all(str(c.pack_info().get("side")) in ("left", "right")
+                                                       for c in packed):
+            return [kids[i] for _y, _x, i in sorted(pos, key=lambda q: (q[1], q[2]))]
+    except Exception:  # noqa: BLE001
+        pass
     rows: list[list[tuple[float, int, int]]] = []
     for p in sorted(pos):
         if rows and abs(p[0] - rows[-1][0][0]) <= 12:
