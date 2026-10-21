@@ -20,7 +20,8 @@ from gui_smoke_helpers import wait_for_project_ready
 
 # Commands present before the 3.3.0 rearrangement (from the 3.2.0 UI tree) — none may disappear.
 REQUIRED = {
-    "home": ["+ New project", "Add existing folder…", "Open selected", "Reveal folder", "Remove from list"],
+    "home": ["+ New project", "Open selected", "Reveal folder", "Remove from list"],  # 5.5.0: Add existing folder…
+    # has one home, Toolbar › New Project
     "prompt": ["Select recommended context", "Why these files?", "Select all", "Clear", "Build prompt", "Copy prompt",
                "Save prompt…", "Add history to prompt", "Manage custom instructions…"],
     "response": ["Paste & detect format", "Load response / ZIP…", "Analyze / preview files…", "Import diagnostics…",

@@ -4989,8 +4989,7 @@ class WorkbenchApp:
         ui_actions.ActionBar(
             toolbar,
             primary=(("+ New project", self.new_project, "Primary.TButton"),
-                     ("Open selected", self.open_selected_project),
-                     ("Add existing folder…", self.add_existing_project)),
+                     ("Open selected", self.open_selected_project)),  # Add existing folder…: Toolbar › New Project
             more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
                                         ("Remove from list", self.forget_selected_project))),),
             style="Card.TFrame").pack(side="left")
