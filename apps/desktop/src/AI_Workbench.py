@@ -4728,13 +4728,34 @@ class WorkbenchApp:
         team = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         team.pack(fill="x", pady=(0, 9))
         ttk.Label(team, text="Team", style="CardTitle.TLabel").pack(anchor="w")
-        self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")
-        ttk.Label(team, textvariable=self.agents_team_var, style="CardMuted.TLabel", wraplength=900,
-                  justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")  # plain-text twin of the cards
+        from aiwb.ui import agents5
+        self.agents_cards = agents5.AgentCards(team, self.shell.assets, on_select=self.agents_select)
+        self.agents_cards.pack(fill="x", pady=(6, 0))
+        self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
             team, primary=(("Copy team summary", self.agents_copy_team),
                            ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
+        who = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))  # 5.6.0: the AI picked on a card
+        who.pack(fill="x", pady=(0, 9))
+        ttk.Label(who, text="Selected AI", style="CardTitle.TLabel").pack(anchor="w")
+        self.agents_who_var = tk.StringVar(value="Pick an AI card above.")
+        ttk.Label(who, textvariable=self.agents_who_var, style="CardMuted.TLabel", wraplength=900,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_who_bar = ui_actions.ActionBar(
+            who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),
+                          ("Memory note…", self.agents_edit_note)), style="Card.TFrame")
+        self.agents_who_bar.pack(anchor="w", pady=(6, 0))
+        bal = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))  # 5.6.0: alerts + load balancing
+        bal.pack(fill="x", pady=(0, 9))
+        ttk.Label(bal, text="Balance", style="CardTitle.TLabel").pack(anchor="w")
+        self.agents_balance_var = tk.StringVar(value="—")
+        ttk.Label(bal, textvariable=self.agents_balance_var, style="CardMuted.TLabel", wraplength=900,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_balance_bar = ui_actions.ActionBar(
+            bal, primary=(("Apply suggested moves", self.agents_apply_moves),), style="Card.TFrame")
+        self.agents_balance_bar.pack(anchor="w", pady=(6, 0))
         desk = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         desk.pack(fill="x", pady=(0, 9))
         ttk.Label(desk, text="Dispatch desk", style="CardTitle.TLabel").pack(anchor="w")
