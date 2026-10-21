@@ -32,7 +32,7 @@ REQUIRED = {
     "history": ["Project versions…", "Refresh", "Report error…", "Search", "Clear", "Save metadata / notes",
                 "Delete selected entry…", "Copy prompt", "Copy model output", "Edit prompt as new revision…",
                 "Create repair prompt from this step"],
-    "run": ["Run…", "Browse…", "Run / simulate selected file…", "Run selected / retry…", "Run all pending…",
+    "run": ["Run command…", "Browse…", "Run / simulate selected file…", "Run selected / retry…", "Run all pending…",
             "Remove selected", "Repair prompt from latest failure…", "Build continuation handoff…",
             "Copy report", "Save report…", "Refresh report"],
     "git": ["Refresh Git status / project history", "Create work branch", "Commit changes…", "Push to GitHub…",

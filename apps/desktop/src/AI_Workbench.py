@@ -6979,7 +6979,7 @@ class WorkbenchApp:
         ttk.Label(cmd_frame, text="Manual command:").pack(side="left")
         cmd_entry = ttk.Entry(cmd_frame, textvariable=self.command_var)
         cmd_entry.pack(side="left", fill="x", expand=True, padx=6)
-        ttk.Button(cmd_frame, text="Run…", command=self.run_custom_command).pack(side="left")
+        ttk.Button(cmd_frame, text="Run command…", command=self.run_custom_command).pack(side="left")
 
         file_run_box = ttk.LabelFrame(tab, text="Run a project file / simulate a circuit", padding=7)
         file_run_box.pack(fill="x", pady=(0, 7))
