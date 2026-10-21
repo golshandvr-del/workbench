@@ -211,6 +211,7 @@ def extract(app: Any) -> dict[str, Any]:
             if tools is None:
                 tools = node("Tools", "section")
                 page["children"].append(tools)
+            tools["children"] = [c for c in tools["children"] if c["kind"] != "link"]  # each link becomes its page
             for tkey, tlabel in homed:
                 sub = node(tlabel, "page")
                 sh.show(tkey)
@@ -242,6 +243,9 @@ def _workbench(app: Any) -> list[dict[str, Any]]:
         walk(holder, t["children"])
         out.append(t)
     ws.show(current)
+    card = getattr(app, "tool_cards", {}).get("projects")
+    if card is not None and _mapped(card):
+        _visit(card, out)
     return out
 
 
@@ -357,7 +361,7 @@ def audit(tree: dict[str, Any], rules: dict[str, Any] | None = None) -> list[str
                 out.append(f"{' › '.join(path[1:])}: menu of {len(items)} items (max {r['menu_max_items']})")
         if n["kind"] in KINDS and n["children"]:
             labels = [c["label"] for c in n["children"]]
-            dup = sorted({x for x in labels if labels.count(x) > 1})
+            dup = sorted({x for x in labels if labels.count(x) > 1 and x not in GENERIC})
             if dup:
                 out.append(f"{' › '.join(path[1:]) or '/'}: duplicate sibling labels {dup}")
     out += [f"command with two homes: {x}" for x in two_homes(tree)]
