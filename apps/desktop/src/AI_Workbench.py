@@ -4721,7 +4721,9 @@ class WorkbenchApp:
     def _make_agents_page(self) -> None:
         """Rail › Agents: Team · Dispatch desk · Tools (the expert pages of 3.x/4.x), as in docs/UI_TREE.md."""
         from aiwb.ui import structure5
-        tab = self.agents_tab
+        self.agents_scroll = ui_layout.ScrollPage(self.agents_tab)  # 5.6.0: the hub scrolls on small windows
+        self.agents_scroll.pack(fill="both", expand=True)
+        tab = self.agents_scroll.body
         ttk.Label(tab, text="Agents", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(tab, text="Your AI team, who gets a prompt now, and the expert tools.", style="Hint.TLabel",
                   wraplength=900).pack(anchor="w", pady=(3, 10))
