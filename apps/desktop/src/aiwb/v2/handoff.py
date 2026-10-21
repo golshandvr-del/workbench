@@ -282,7 +282,9 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
              "(Repeat the line above as the first line of your answer.)", "",
              f"# AI Workbench handoff {h['handoff_id']} — you are {agent['name']} ({agent['agent_id']}, role {agent['role']})",
              "You have NO access to earlier chats. Everything you may rely on is below. Do not assume anything else."]
-    lines += _section("1. Your role", [f"- Purpose: {agent['purpose']}"] + [f"- {i}" for i in agent["instructions"]])
+    from .agent_hub import note_lines  # roadmap 5.6.0: the owner's memory note of this AI rides along
+    lines += _section("1. Your role", [f"- Purpose: {agent['purpose']}"] + [f"- {i}" for i in agent["instructions"]]
+                      + note_lines(s, agent["agent_id"]))
     lines += _section("2. Mission", [f"- Task {t['task_id']} revision {t['task_revision']}: {t['title']}",
                                      f"- Objective: {t['objective']}",
                                      f"- Project state revision {h['base_state_revision']}"
