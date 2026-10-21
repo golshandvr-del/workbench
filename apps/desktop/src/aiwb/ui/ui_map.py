@@ -205,20 +205,22 @@ def extract(app: Any) -> dict[str, Any]:
             page["children"] = _workbench(app)
         else:
             walk(sh.pages[pkey], page["children"])
-        if key == "agents":
-            tools = next((c for c in page["children"] if c["label"] == "Tools"), None)
-            if tools is not None:
-                for tkey, tlabel in structure5.TOOLS:
-                    sub = node(tlabel, "page")
-                    sh.show(tkey)
-                    app.root.update_idletasks()
-                    app.root.update()
-                    walk(sh.pages[tkey], sub["children"])
-                    tools["children"].append(sub)
+        homed = [(k, lab) for k, lab in structure5.TOOLS if structure5.TOOL_HOME[k] == key]
+        if homed:  # the expert pages of this destination, each mapped as a sub-page under its "Tools" section
+            tools = next((c for c in page["children"] if c["label"] == "Tools" and c["kind"] == "section"), None)
+            if tools is None:
+                tools = node("Tools", "section")
+                page["children"].append(tools)
+            for tkey, tlabel in homed:
+                sub = node(tlabel, "page")
+                sh.show(tkey)
+                app.root.update_idletasks()
+                app.root.update()
+                walk(sh.pages[tkey], sub["children"])
+                tools["children"].append(sub)
         rail["children"].append(page)
     sh.show(before)
     root["children"].append(rail)
-    root["children"].append(node("Task menu", "area", [node(m[1], "item") for m in structure5.TASK_MENU]))
     root["children"].append(node("Status bar", "area", [node(s, "item") for s in structure5.STATUS_BAR]))
     return root
 
