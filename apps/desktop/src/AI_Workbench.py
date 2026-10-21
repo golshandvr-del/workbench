@@ -4737,21 +4737,25 @@ class WorkbenchApp:
             team, primary=(("Copy team summary", self.agents_copy_team),
                            ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
-        who = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))  # 5.6.0: the AI picked on a card
-        who.pack(fill="x", pady=(0, 9))
+        pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
+        pair.pack(fill="x", pady=(0, 9))
+        pair.columnconfigure(0, weight=1, uniform="pair")
+        pair.columnconfigure(1, weight=1, uniform="pair")
+        who = ttk.Frame(pair, style="Card.TFrame", padding=(14, 10))  # the AI picked on a card
+        who.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
         ttk.Label(who, text="Selected AI", style="CardTitle.TLabel").pack(anchor="w")
         self.agents_who_var = tk.StringVar(value="Pick an AI card above.")
-        ttk.Label(who, textvariable=self.agents_who_var, style="CardMuted.TLabel", wraplength=900,
+        ttk.Label(who, textvariable=self.agents_who_var, style="CardMuted.TLabel", wraplength=560,
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_who_bar = ui_actions.ActionBar(
             who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),
                           ("Memory note…", self.agents_edit_note)), style="Card.TFrame")
         self.agents_who_bar.pack(anchor="w", pady=(6, 0))
-        bal = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))  # 5.6.0: alerts + load balancing
-        bal.pack(fill="x", pady=(0, 9))
+        bal = ttk.Frame(pair, style="Card.TFrame", padding=(14, 10))  # alerts + load balancing
+        bal.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
         ttk.Label(bal, text="Balance", style="CardTitle.TLabel").pack(anchor="w")
         self.agents_balance_var = tk.StringVar(value="—")
-        ttk.Label(bal, textvariable=self.agents_balance_var, style="CardMuted.TLabel", wraplength=900,
+        ttk.Label(bal, textvariable=self.agents_balance_var, style="CardMuted.TLabel", wraplength=560,
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_balance_bar = ui_actions.ActionBar(
             bal, primary=(("Apply suggested moves", self.agents_apply_moves),), style="Card.TFrame")
@@ -5000,8 +5004,13 @@ class WorkbenchApp:
         try:
             from aiwb.v2 import agent_hub
             found, moves = agent_hub.alerts(st), agent_hub.rebalance(st)
-            lines = [f"⚠ {a['text']}" for a in found[:5]] or ["No alerts — every AI has fair work."]
-            lines += [f"Suggest: {m['task_id']} {m['from_agent_id']} → {m['to_agent_id']}" for m in moves[:4]]
+            kinds = sorted({a["kind"] for a in found}, key=lambda k: list(agents5.ALERT_TEXT).index(k))
+            lines = [" · ".join(f"{agents5.ALERT_TEXT[k]} {sum(a['kind'] == k for a in found)}" for k in kinds)
+                     if found else "No alerts — every AI has fair work."]
+            lines += [f"⚠ {a['text']}" for a in found if a["kind"] in ("stuck", "overloaded", "overlap")][:2]
+            lines += [f"Suggest: {m['task_id']} {m['from_agent_id']} → {m['to_agent_id']}" for m in moves[:2]]
+            if len(moves) > 2:
+                lines[-1] += f"  (+{len(moves) - 2} more)"
             self.agents_balance_var.set("\n".join(lines))
         except Exception:  # noqa: BLE001
             self.agents_balance_var.set("The plan is not complete yet.")
