@@ -83,6 +83,6 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 | **Projects** | Every project as a card; the Project Workbench of the open project; its profile and run report. |
 | **Agents** | The team, the dispatch desk (who gets a prompt now); the manual prompt and AI-response tools. |
 | **History** | Everything that happened, on a timeline; old prompts/responses; versions, releases and Git. |
-| **Settings** | Theme (Midnight / Daylight), Simple/Advanced, Motion (Reduce motion); application tools. |
+| **Settings** | Theme (Midnight / Daylight), Simple/Advanced, Motion (Reduce motion); application tools; **App Map…** (the live map of every page, section and command — `docs/UI_MAP.md`). |
 | **Task menu** | Right-click on a task circle. An item is enabled only when the Guide allows it now. |
 | **Status bar** | How many AIs are working, the current milestone, and whether the state is saved. |
