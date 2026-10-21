@@ -13,7 +13,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 3 | 0 | 10 | 6 | 0 |
+| Home | 3 | 0 | 11 | 7 | 0 |
 | Projects | 12 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
@@ -34,7 +34,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 Audit:
 
-- rail destinations unbalanced: {'Home': 10, 'Projects': 32, 'Agents': 41, 'History': 36, 'Settings': 11} (max ratio 4.0)
+- none: the map is balanced.
 
 ## Tree
 
@@ -55,6 +55,7 @@ Audit:
         - GET AI RESPONSE [item]
         - MARK AS DONE [item]
     - Task details [section]
+      - Copy task summary [button]
       - Open task in Workbench [button]
     - Your projects [section]
       - + New project [button]

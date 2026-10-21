@@ -5055,8 +5055,6 @@ class WorkbenchApp:
         ttk.Label(head, text="Mission Map", style="SectionTitle.TLabel").pack(side="left")
         self.mission_summary_var = tk.StringVar(value="")
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
-        self.mission_jump_btn = ttk.Button(head, text="Jump to active", command=self.mission_jump_active)  # 5.6.0
-        self.mission_jump_btn.pack(side="right")
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
@@ -5076,6 +5074,8 @@ class WorkbenchApp:
         self.mission_copy_btn = ttk.Button(detail, text="Copy task summary", command=self.mission_copy_task)  # 5.6.0
         self.mission_copy_btn.pack(side="right", padx=(0, 6))
         self.mission_copy_btn.state(["disabled"])
+        self.mission_jump_btn = ttk.Button(detail, text="Jump to active task", command=self.mission_jump_active)
+        self.mission_jump_btn.pack(side="right", padx=(0, 6))  # 5.6.0
         self._mission_rev: tuple[str, int] | None = None
         self.home_projects_frame = ttk.Frame(body)
         self.home_projects_frame.pack(fill="both", expand=True)
@@ -5108,7 +5108,7 @@ class WorkbenchApp:
         return model
 
     def mission_jump_active(self) -> str:
-        """Home › Mission Map › Jump to active: select and scroll to the first task in progress (or needing you)."""
+        """Home › Task details › Jump to active task: select and scroll to the first task in progress (or needing you)."""
         m = self.mission.model
         order = {"active": 0, "attention": 1, "blocked": 2, "idle": 3}
         nodes = [(order[n["state"]], n["column"], n["task_id"]) for ln in m["lanes"] for n in ln["nodes"]
