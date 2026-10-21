@@ -439,7 +439,7 @@ def to_svg(tree: dict[str, Any], theme: str = "midnight") -> str:
         x1, y1 = pb["x"], pb["y"]
         mx = (x0 + x1) / 2
         out.append(f'<path d="M{x0:.1f},{y0:.1f} C{mx:.1f},{y0:.1f} {mx:.1f},{y1:.1f} {x1:.1f},{y1:.1f}" '
-                   f'fill="none" stroke="{p["line"]}" stroke-width="1"/>')
+                   f'fill="none" stroke="{p["text_faint"]}" stroke-opacity="0.7" stroke-width="1.1"/>')
     for bx in g["boxes"]:
         col = p[KIND_ROLE[bx["kind"]]]
         label = bx["label"] if len(bx["label"]) <= 28 else bx["label"][:27] + "…"
