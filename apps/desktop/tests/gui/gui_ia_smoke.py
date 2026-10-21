@@ -40,7 +40,7 @@ REQUIRED = {
             "Replace Credential…", "Refresh Accounts", "Disconnect", "Refresh Repositories", "Link to Active Project…",
             "Unlink Project", "Open on GitHub", "Clone Selected…", "Initialize & Link Local…", "Initial Push Review…",
             "Binding Settings…", "Refresh Binding Metadata", "Build Center…", "Sync & Build…"],
-    "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "Export redacted diagnostics…",
+    "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
 }
