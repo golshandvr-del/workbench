@@ -4736,6 +4736,8 @@ class WorkbenchApp:
             desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),
                            ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
+        for bar, label in ((self.agents_team_bar, "Plan team & tasks…"), (self.agents_desk_bar, "Open task queue")):
+            bar.buttons[label]._aiwb_link = "workbench"  # type: ignore[attr-defined]  # home: Projects › Workbench
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
 
     TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
