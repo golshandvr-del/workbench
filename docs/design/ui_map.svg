@@ -407,11 +407,11 @@
 <rect x="646" y="1415.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
 <text x="656" y="1428.0" fill="#22c55e" font-weight="600">Dispatch desk</text>
 <rect x="856" y="1393.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="1406.0" fill="#e6eaf2">Parallel chats…</text>
-<rect x="856" y="1415.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5b97ff" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="1428.0" fill="#e6eaf2">Open task queue</text>
-<rect x="856" y="1437.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="1450.0" fill="#e6eaf2">Prepare all prompts</text>
+<text x="866" y="1406.0" fill="#e6eaf2">Prepare all prompts</text>
+<rect x="856" y="1415.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="1428.0" fill="#e6eaf2">Parallel chats…</text>
+<rect x="856" y="1437.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5b97ff" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="1450.0" fill="#e6eaf2">Open task queue</text>
 <rect x="646" y="1802.8" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
 <text x="656" y="1815.8" fill="#22c55e" font-weight="600">Tools</text>
 <rect x="856" y="1613.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
