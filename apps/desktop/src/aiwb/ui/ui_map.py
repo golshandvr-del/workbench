@@ -79,11 +79,19 @@ def _style(w: Any) -> str:
 
 
 def _ordered(w: Any) -> list[Any]:
+    """Children in reading order: rows by vertical centre (12 px tolerance — fonts differ per machine), then x."""
     kids = list(w.winfo_children())
     try:
-        return sorted(kids, key=lambda c: (c.winfo_rooty() // 8, c.winfo_rootx()))
+        pos = [(c.winfo_rooty() + c.winfo_height() / 2, c.winfo_rootx(), i) for i, c in enumerate(kids)]
     except Exception:  # noqa: BLE001
         return kids
+    rows: list[list[tuple[float, int, int]]] = []
+    for p in sorted(pos):
+        if rows and abs(p[0] - rows[-1][0][0]) <= 12:
+            rows[-1].append(p)
+        else:
+            rows.append([p])
+    return [kids[i] for row in rows for _y, _x, i in sorted(row, key=lambda q: (q[1], q[2]))]
 
 
 def menu_items(menu: Any) -> list[str]:
