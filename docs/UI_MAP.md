@@ -22,7 +22,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
 | History | 6 | 6 | 12 | 10 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 5 | 0 |
-| Settings | 4 | 0 | 10 | 8 | 0 |
+| Settings | 4 | 0 | 11 | 9 | 0 |
 
 ## Balance rules
 
@@ -244,6 +244,7 @@ Audit:
     - Application [section]
       - Mobile Companion… [button]
       - Restore Manager… [button]
+      - App Map… [button]
       - More [menu]
         - Validation Profiles… [item]
         - Export redacted diagnostics… [item]
