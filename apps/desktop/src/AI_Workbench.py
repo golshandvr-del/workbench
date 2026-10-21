@@ -4734,6 +4734,7 @@ class WorkbenchApp:
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_desk_bar = ui_actions.ActionBar(
             desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),
+                           ("Parallel chats…", self.agents_set_parallel),
                            ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
         for bar, label in ((self.agents_team_bar, "Plan team & tasks…"), (self.agents_desk_bar, "Open task queue")):
@@ -4790,6 +4791,28 @@ class WorkbenchApp:
         self._copy_text_to_clipboard("AI team of this project:\n" + text)
         self.set_status("Team summary copied.")
         return text
+
+    def agents_set_parallel(self, value: int | None = None) -> dict[str, Any] | None:
+        """Dispatch desk › Parallel chats…: how many AI chats you follow at the same time (team settings)."""
+        ctl = self._mission_ctl()
+        if ctl is None:
+            self.set_status("Open or create a project first.")
+            return None
+        if value is None:
+            value = simpledialog.askinteger("Parallel chats", "How many AI chats do you follow at the same time?",
+                                            parent=self.root, minvalue=1, maxvalue=12,
+                                            initialvalue=int(ctl.team_settings()["max_parallel_chats"]))
+            if value is None:
+                self.set_status("Cancelled — nothing changed.")
+                return None
+        try:
+            out = ctl.set_team_settings(max_parallel_chats=int(value))
+        except Exception as exc:  # noqa: BLE001 - invalid values are reported, never hidden
+            messagebox.showerror("Agents", redact(str(exc)))
+            return None
+        self.set_status(f"Parallel chats: {out['max_parallel_chats']}.")
+        self.refresh_agents_page()
+        return out
 
     def agents_prepare_all(self) -> dict[str, Any] | None:
         """Dispatch desk › Prepare all prompts: the Guide's prepare_all step (one prompt per free chat)."""
