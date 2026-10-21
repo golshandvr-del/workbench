@@ -87,7 +87,7 @@ class MapView(ttk.Frame):
         c, p, s = self.canvas, self.palette, self.scale
         c.delete("all")
         tree = filtered(self.tree, self.filter_var.get())
-        g = ui_map.layout(tree, col_w=int(210 * s), row_h=max(14, int(22 * s)))
+        g = ui_map.layout(tree, col_w=int(210 * s), row_h=max(14, int(22 * s)), max_depth=99)
         cw, rh = g["col_w"], g["row_h"]
         bw, bh = cw - int(28 * s), max(12, int(18 * s))
         font = ("Segoe UI", max(7, int(9 * s)))
