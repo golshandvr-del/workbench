@@ -53,7 +53,7 @@ class UiTreeTests(unittest.TestCase):
 
     def test_one_home_per_command(self):
         ids = [t[0] for t in structure5.TOOLBAR] + [c[0] for t in structure5.TOOLBAR for c in t[3]]
-        ids += [t[0] for t in structure5.TASK_MENU] + [a[0] for a in structure5.ASSISTANT_MENU]
+        ids += [t[0] for t in structure5.TASK_MENU]
         self.assertEqual(len(ids), len(set(ids)), ids)
         rail = [r[0] for r in structure5.RAIL]
         tools = [t[0] for t in structure5.TOOLS]

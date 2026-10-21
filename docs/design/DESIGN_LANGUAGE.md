@@ -7,8 +7,8 @@ hard-code a colour.
 ## 1. Mood
 
 A night-time mission control: a deep blue-black field, thin quiet lines, and a few points of light that mean
-something. The eye should land, in order, on: the golden source → the active (blue) tasks → the assistant's
-latest message. Everything else stays in the background.
+something. The eye should land, in order, on: the golden source → the active (blue) tasks → the selected task's
+details. Everything else stays in the background.
 
 ## 2. Colour (Midnight — the default theme)
 
@@ -16,7 +16,7 @@ latest message. Everything else stays in the background.
 |---|---|---|
 | `window` | `#0f131a` | window / chrome |
 | `field` | `#10151c` | Mission Map canvas |
-| `panel` | `#151a23` | rail, toolbar, status bar, assistant panel |
+| `panel` | `#151a23` | rail, toolbar, status bar |
 | `raised` | `#1b2130` | bubbles, inputs, menus, buttons |
 | `raised_hi` | `#232a3b` | hover |
 | `line` | `#2a3142` | hairlines, lane rails, borders |
@@ -45,8 +45,8 @@ IDs and counters use Cascadia Mono → Consolas.
 
 ## 4. Geometry
 
-4 px grid. Rail 64 px; toolbar 44 px; status bar 30 px; assistant panel 340 px (collapses under 1100 px window
-width). Lanes are 68 px apart; version columns 66 px apart; task disc 22 px with a 2 px ring; lane hexagon 22 px;
+4 px grid. Rail 64 px; toolbar 44 px; status bar 30 px; no right-hand panel (owner decision 2026-10-21: the AI Assistant panel is out
+of the product). Lanes are 68 px apart; version columns 66 px apart; task disc 22 px with a 2 px ring; lane hexagon 22 px;
 source node 16 px. Corners: 6 px for buttons/inputs, 10 px for bubbles and menus, full round for capsules.
 
 ## 5. Light & depth
