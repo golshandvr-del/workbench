@@ -5779,6 +5779,7 @@ class WorkbenchApp:
                              more=(("History", (("Refresh", self._refresh_history_view),
                                                 ("Report error…", self.report_manual_runtime_error))),)).pack(side="left")
         filter_row = ttk.Frame(left)
+        filter_row._aiwb_section = "Filter"  # type: ignore[attr-defined]  # App Map: search controls as one group
         filter_row.pack(fill="x", pady=(0, 5))
         ttk.Label(filter_row, text="Filter history").pack(side="left", padx=(0, 5))
         self.history_filter_var = tk.StringVar()
@@ -5838,6 +5839,7 @@ class WorkbenchApp:
         self.history_output_view = self._make_history_text_page("Model output")
         self.history_error_view = self._make_history_text_page("Errors / context requests")
         action_row = ttk.Frame(right)
+        action_row._aiwb_section = "Selected step"  # type: ignore[attr-defined]  # App Map: acts on the chosen step
         action_row.pack(fill="x", pady=(6, 0))
         ui_actions.ActionBar(
             action_row,
