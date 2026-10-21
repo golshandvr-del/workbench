@@ -13,7 +13,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 3 | 0 | 11 | 7 | 0 |
+| Home | 3 | 0 | 12 | 8 | 0 |
 | Projects | 12 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
@@ -55,6 +55,7 @@ Audit:
         - GET AI RESPONSE [item]
         - MARK AS DONE [item]
     - Task details [section]
+      - Jump to active task [button]
       - Copy task summary [button]
       - Open task in Workbench [button]
     - Your projects [section]
