@@ -4895,8 +4895,13 @@ class WorkbenchApp:
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
+        from aiwb.ui import structure5
+        head._aiwb_section = ""  # type: ignore[attr-defined]  # App Map: the title row, not a section of its own
+        self.mission._aiwb_section = "Mission Map"  # type: ignore[attr-defined]
+        self.mission._aiwb_menu = ("Task menu", tuple(m[1] for m in structure5.TASK_MENU))  # type: ignore[attr-defined]
         self.mission_detail_var = tk.StringVar(value="Click a task circle to see its details.")
         detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
+        detail._aiwb_section = "Task details"  # type: ignore[attr-defined]
         detail.pack(fill="x", pady=(8, 12))
         ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(side="left", fill="x", expand=True)
