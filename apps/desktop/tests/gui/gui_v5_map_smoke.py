@@ -5,7 +5,7 @@
 * The live map passes every balance rule (``ui_map.audit`` is empty).
 * Settings › App Map… opens a window that draws every box; the filter narrows it; zoom redraws; Esc closes.
 * Extraction only shows pages: the open project's state file is byte-identical afterwards.
-* ``AIWB_SCREENSHOT_DIR=dir`` writes ``app_map_midnight.png``.
+* ``AIWB_SCREENSHOT_DIR=dir`` writes ``app_map.png`` (the current theme).
 """
 from __future__ import annotations
 
@@ -94,7 +94,7 @@ def main() -> None:
                 w = wins[0]
                 geo = f"{w.winfo_width()}x{w.winfo_height()}+{w.winfo_rootx()}+{w.winfo_rooty()}"
                 subprocess.run(["import", "-window", "root", "-crop", geo, "+repage",
-                                str(Path(out) / "app_map_midnight.png")], check=False, timeout=30)
+                                str(Path(out) / "app_map.png")], check=False, timeout=30)
             wins[0].event_generate("<Escape>")
             settle(root)
             assert not [w for w in root.winfo_children() if isinstance(w, tk.Toplevel) and "App Map" in w.title()
