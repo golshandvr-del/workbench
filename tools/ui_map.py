@@ -95,7 +95,13 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     DOC.write_text(document(tree), encoding="utf-8")
     SVG.write_text(ui_map.to_svg(tree), encoding="utf-8")
-    PNG.write_bytes(ui_map.to_png(tree))
+    import shutil
+    import subprocess
+    tool = shutil.which("magick") or shutil.which("convert")
+    if tool:  # the PNG is for people reading the docs; the in-app viewer draws the same layout on a Canvas
+        subprocess.run([tool, "-density", "110", str(SVG), str(PNG)], check=True, timeout=300)
+    else:
+        print("ImageMagick not found: docs/design/ui_map.png not refreshed")
     print(f"wrote {DOC.relative_to(ROOT)}, {SVG.relative_to(ROOT)}, {PNG.relative_to(ROOT)}")
     return 0
 
