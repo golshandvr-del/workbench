@@ -4617,6 +4617,8 @@ class WorkbenchApp:
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
+        self.tool_cards = {"projects": self._make_tools_card(self.workbench_tab, "projects"),
+                           "history": self._make_tools_card(self.history_tab, "history")}
         self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
         self.settings_scroll.pack(fill="both", expand=True)
         self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
@@ -4726,18 +4728,35 @@ class WorkbenchApp:
         self.agents_dispatch_var = tk.StringVar(value="—")
         ttk.Label(desk, textvariable=self.agents_dispatch_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
-        tools = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
-        tools.pack(fill="x")
-        ttk.Label(tools, text="Tools", style="CardTitle.TLabel").pack(anchor="w")
-        ttk.Label(tools, text="Expert pages for manual prompt work, project profile, running and Git.",
-                  style="CardMuted.TLabel").pack(anchor="w", pady=(2, 8))
-        row = ttk.Frame(tools, style="Card.TFrame")
-        row.pack(anchor="w")
-        self.agents_tool_buttons: dict[str, ttk.Button] = {}
-        for key, label in structure5.TOOLS:
-            b = ttk.Button(row, text=label, command=lambda k=key: self.shell.show(k))
-            b.pack(side="left", padx=(0, 6))
-            self.agents_tool_buttons[key] = b
+        self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
+
+    TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
+                  "history": "Commits, pushes, branches and GitHub releases of this project."}
+
+    def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "") -> ttk.Frame:
+        """The "Tools" card of a rail destination (5.5.0): links to the expert pages that belong to it.
+
+        Packed first with ``side="bottom"`` so it stays visible under a page body that expands; every button is a
+        *link* (``_aiwb_link``) for the App Map, because the page it opens is the command's one home.
+        """
+        from aiwb.ui import structure5
+        if not hasattr(self, "tool_buttons"):
+            self.tool_buttons: dict[str, ttk.Button] = {}
+            self.agents_tool_buttons = self.tool_buttons  # 5.1.0 name, kept for callers and tests
+        card = ttk.Frame(page, style="Card.TFrame", padding=(14, 8))
+        slaves = page.pack_slaves()
+        card.pack(side="bottom", fill="x", pady=(9, 0), **({"before": slaves[0]} if slaves else {}))
+        head = ttk.Frame(card, style="Card.TFrame")
+        head.pack(fill="x")
+        ttk.Label(head, text="Tools", style="CardTitle.TLabel").pack(side="left")
+        ttk.Label(head, text=hint or self.TOOLS_HINT.get(dest, ""), style="CardMuted.TLabel").pack(side="left",
+                                                                                                padx=(12, 0))
+        for key, label in structure5.tools_of(dest):
+            b = ttk.Button(head, text=label, command=lambda k=key: self.shell.show(k))
+            b._aiwb_link = key  # type: ignore[attr-defined]
+            b.pack(side="right", padx=(6, 0))
+            self.tool_buttons[key] = b
+        return card
 
     def refresh_agents_page(self) -> None:
         if not hasattr(self, "agents_team_var"):
