@@ -17,7 +17,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Projects | 12 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
-| Agents | 3 | 0 | 3 | 5 | 2 |
+| Agents | 5 | 0 | 6 | 8 | 2 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
 | History | 6 | 6 | 12 | 10 | 0 |
@@ -34,7 +34,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 Audit:
 
-- none: the map is balanced.
+- rail destinations unbalanced: {'Home': 10, 'Projects': 32, 'Agents': 41, 'History': 36, 'Settings': 11} (max ratio 4.0)
 
 ## Tree
 
@@ -132,6 +132,11 @@ Audit:
     - Team [section]
       - Copy team summary [button]
       - Plan team & tasks… [link]
+    - Selected AI [section]
+      - Copy briefing [button]
+      - Memory note… [button]
+    - Balance [section]
+      - Apply suggested moves [button]
     - Dispatch desk [section]
       - Prepare all prompts [button]
       - Parallel chats… [button]

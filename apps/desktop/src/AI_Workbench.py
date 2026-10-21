@@ -5055,6 +5055,8 @@ class WorkbenchApp:
         ttk.Label(head, text="Mission Map", style="SectionTitle.TLabel").pack(side="left")
         self.mission_summary_var = tk.StringVar(value="")
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
+        self.mission_jump_btn = ttk.Button(head, text="Jump to active", command=self.mission_jump_active)  # 5.6.0
+        self.mission_jump_btn.pack(side="right")
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
@@ -5071,6 +5073,9 @@ class WorkbenchApp:
         self.mission_open_btn = ttk.Button(detail, text="Open task in Workbench", command=self.mission_open_task)
         self.mission_open_btn.pack(side="right")
         self.mission_open_btn.state(["disabled"])
+        self.mission_copy_btn = ttk.Button(detail, text="Copy task summary", command=self.mission_copy_task)  # 5.6.0
+        self.mission_copy_btn.pack(side="right", padx=(0, 6))
+        self.mission_copy_btn.state(["disabled"])
         self._mission_rev: tuple[str, int] | None = None
         self.home_projects_frame = ttk.Frame(body)
         self.home_projects_frame.pack(fill="both", expand=True)
@@ -5099,7 +5104,38 @@ class WorkbenchApp:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
             self.mission_open_btn.state(["disabled"])
+            self.mission_copy_btn.state(["disabled"])
         return model
+
+    def mission_jump_active(self) -> str:
+        """Home › Mission Map › Jump to active: select and scroll to the first task in progress (or needing you)."""
+        m = self.mission.model
+        order = {"active": 0, "attention": 1, "blocked": 2, "idle": 3}
+        nodes = [(order[n["state"]], n["column"], n["task_id"]) for ln in m["lanes"] for n in ln["nodes"]
+                 if n["state"] in order]
+        if not nodes:
+            self.set_status("Nothing in progress on the Mission Map.")
+            return ""
+        tid = min(nodes)[2]
+        x, y = self.mission.geo["nodes"][tid]
+        sr = [float(v) for v in str(self.mission.cget("scrollregion") or "0 0 1 1").split()]
+        w, h = max(1.0, sr[2] - sr[0]), max(1.0, sr[3] - sr[1])
+        self.mission.xview_moveto(max(0.0, (x - self.mission.winfo_width() / 2) / w))
+        self.mission.yview_moveto(max(0.0, (y - self.mission.winfo_height() / 2) / h))
+        self.mission.selected = tid
+        self.mission.redraw()
+        self.mission_select(tid)
+        return tid
+
+    def mission_copy_task(self) -> str:
+        """Home › Task details › Copy task summary: the selected task's one-line summary. Reading only."""
+        if not self.mission.selected:
+            self.set_status("Click a task circle first.")
+            return ""
+        text = self.mission_detail_var.get()
+        self._copy_text_to_clipboard(text)
+        self.set_status("Task summary copied.")
+        return text
 
     def mission_select(self, task_id: str) -> None:
         """Mission Map click → task details below the map (nothing is written)."""
@@ -5113,6 +5149,7 @@ class WorkbenchApp:
                                     f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
                                     f"[{nd['status']}]")
         self.mission_open_btn.state(["!disabled"])
+        self.mission_copy_btn.state(["!disabled"])
 
     # -- Mission Map › right-click menu (roadmap 5.4.0)
     def _mission_ctl(self) -> Any:
