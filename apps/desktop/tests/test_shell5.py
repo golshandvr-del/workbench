@@ -69,9 +69,11 @@ class ShellMapTests(unittest.TestCase):
         for dest, page in ui_shell.RAIL_PAGE.items():
             self.assertEqual(ui_shell.RAIL_OF[page], dest)
 
-    def test_tools_live_under_agents(self):
+    def test_tools_live_under_their_home_destination(self):
+        """5.5.0: each expert tool sits under the destination it belongs to (structure5.TOOL_HOME)."""
         for key, _label in structure5.TOOLS:
-            self.assertEqual(ui_shell.RAIL_OF[key], "agents", key)
+            self.assertEqual(ui_shell.RAIL_OF[key], structure5.TOOL_HOME[key], key)
+        self.assertEqual({structure5.TOOL_HOME[k] for k, _l in structure5.TOOLS}, {"projects", "agents", "history"})
 
     def test_rail_destinations_are_never_advanced_only(self):
         for page in ui_shell.RAIL_PAGE.values():
