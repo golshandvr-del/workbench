@@ -397,7 +397,7 @@ KIND_ROLE = {"app": "source", "area": "text_dim", "page": "active", "section": "
              "link": "active_hi", "button": "text", "menu": "text", "item": "text_faint", "option": "text_dim"}
 
 
-def layout(tree: dict[str, Any], *, col_w: int = 210, row_h: int = 22, max_depth: int = 6) -> dict[str, Any]:
+def layout(tree: dict[str, Any], *, col_w: int = 210, row_h: int = 22, max_depth: int = 99) -> dict[str, Any]:
     """Left-to-right tidy tree: one column per depth, one row per leaf; parents centred on their children."""
     boxes: list[dict[str, Any]] = []
     edges: list[tuple[int, int]] = []
