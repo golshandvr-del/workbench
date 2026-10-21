@@ -4722,12 +4722,20 @@ class WorkbenchApp:
         self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")
         ttk.Label(team, textvariable=self.agents_team_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_team_bar = ui_actions.ActionBar(
+            team, primary=(("Copy team summary", self.agents_copy_team),
+                           ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
+        self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         desk = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         desk.pack(fill="x", pady=(0, 9))
         ttk.Label(desk, text="Dispatch desk", style="CardTitle.TLabel").pack(anchor="w")
         self.agents_dispatch_var = tk.StringVar(value="—")
         ttk.Label(desk, textvariable=self.agents_dispatch_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_desk_bar = ui_actions.ActionBar(
+            desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),
+                           ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
+        self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
 
     TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
@@ -4758,6 +4766,51 @@ class WorkbenchApp:
             b.pack(side="right", padx=(6, 0))
             self.tool_buttons[key] = b
         return card
+
+    def agents_workbench(self, section: str) -> None:
+        """Open the Project Workbench on one of its sections (the command's home)."""
+        if self.workspace is None:
+            self.set_status("Open or create a project first.")
+            return
+        self.shell.show("workbench")
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None:
+            ws.show(section)
+        else:
+            self.root.after(300, lambda: getattr(self, "workspace_window", None) and self.workspace_window.show(section))
+
+    def agents_copy_team(self) -> str:
+        """Copy the team list (name · role · running) for a new project-manager chat. Reading only."""
+        text = self.agents_team_var.get() if hasattr(self, "agents_team_var") else ""
+        if self.status_state() is None:
+            self.set_status("Open or create a project first.")
+            return ""
+        self._copy_text_to_clipboard("AI team of this project:\n" + text)
+        self.set_status("Team summary copied.")
+        return text
+
+    def agents_prepare_all(self) -> dict[str, Any] | None:
+        """Dispatch desk › Prepare all prompts: the Guide's prepare_all step (one prompt per free chat)."""
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        if ctl is None:
+            self.set_status("Open or create a project first.")
+            return None
+        guide = Guide(ctl)
+        step = next((st for st in guide.steps() if any(a["id"] == "prepare_all" for a in st["actions"])), None)
+        if step is None:
+            self.set_status("Nothing to prepare now — every free chat already has its prompt.")
+            return None
+        try:
+            out = guide.perform(step["key"], "prepare_all")
+        except Exception as exc:  # noqa: BLE001 - the Guide refuses impossible steps with a clear message
+            messagebox.showerror("Agents", redact(str(exc)))
+            return None
+        self.set_status(out.get("message", "Prompts ready."))
+        self.refresh_mission(self.status_state(), force=True)
+        self.shell.refresh_status()
+        self.refresh_agents_page()
+        return out
 
     def refresh_agents_page(self) -> None:
         if not hasattr(self, "agents_team_var"):
