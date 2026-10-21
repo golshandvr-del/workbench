@@ -456,7 +456,8 @@ def to_svg(tree: dict[str, Any], theme: str = "midnight") -> str:
         out.append(f'<rect x="{bx["x"]}" y="{bx["y"] - 9:.1f}" width="{bw}" height="18" rx="9" '
                    f'fill="{p["raised"] if strong else p["field"]}" stroke="{col}" '
                    f'stroke-width="{1.4 if strong else 0.8}" stroke-opacity="{1 if strong else 0.55}"/>')
+        weight = ' font-weight="600"' if strong else ""  # no backslash inside f-strings (Python 3.10)
         out.append(f'<text x="{bx["x"] + 10}" y="{bx["y"] + 4:.1f}" fill="{col if strong else p["text"]}"'
-                   f'{" font-weight=\"600\"" if strong else ""}>{html.escape(label)}</text>')
+                   f'{weight}>{html.escape(label)}</text>')
     out.append("</svg>")
     return "\n".join(out) + "\n"
