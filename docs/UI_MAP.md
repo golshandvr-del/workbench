@@ -17,7 +17,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Projects | 12 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
-| Agents | 5 | 0 | 6 | 8 | 2 |
+| Agents | 7 | 0 | 6 | 10 | 4 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
 | History | 6 | 6 | 12 | 10 | 0 |
@@ -131,18 +131,22 @@ Audit:
           - Save report… [item]
         - Copy report [button]
   - Agents [page]
-    - Team [section]
-      - Copy team summary [button]
-      - Plan team & tasks… [link]
-    - Selected AI [section]
-      - Copy briefing [button]
-      - Memory note… [button]
-    - Balance [section]
-      - Apply suggested moves [button]
-    - Dispatch desk [section]
-      - Prepare all prompts [button]
-      - Parallel chats… [button]
-      - Open task queue [link]
+    - Agents [section]
+      - Team [section]
+        - Copy team summary [button]
+        - Plan team & tasks… [link]
+      - Selected AI [section]
+        - Copy briefing [button]
+        - Memory note… [button]
+      - Balance [section]
+        - Apply suggested moves [button]
+      - Dispatch desk [section]
+        - Prepare all prompts [button]
+        - Parallel chats… [button]
+        - Open task queue [link]
+      - Tools [section]
+        - Prompt [link]
+        - AI Response [link]
     - Tools [section]
       - Prompt [page]
         - Select recommended context [button]
