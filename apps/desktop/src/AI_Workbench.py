@@ -4657,12 +4657,21 @@ class WorkbenchApp:
         bar = ui_actions.ActionBar(
             card,
             primary=(("Mobile Companion…", self.open_companion),
-                     ("Restore Manager…", self.open_restore_manager)),
+                     ("Restore Manager…", self.open_restore_manager),
+                     ("App Map…", self.open_app_map)),
             more=(("Tools", (("Validation Profiles…", self.manage_validation_profiles),)),
                   ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
             style=ui_layout.row_style(card))
         bar.grid(row=2, column=0, sticky="w")
+
+    def open_app_map(self) -> Any:
+        """Settings › App Map…: every page, section and command of this running app, drawn (roadmap 5.5.0)."""
+        from aiwb.ui import map_view, ui_map
+        tree = ui_map.extract(self)
+        win = map_view.open_window(self.root, tree, theme=self.prefs.theme)
+        self.set_status(f"App Map: {map_view.summary(tree)}.")
+        return win
 
     # -- 5.x shell commands (roadmap 5.1.0): toolbar New Project ▾ · Open · Save · Run, Agents page, status bar
     def new_guided_project(self) -> None:
