@@ -242,6 +242,10 @@
       "source": "apps/desktop/tests/test_visual5_foundation.py"
     },
     {
+      "path": "test_shared_tokens.py",
+      "source": "apps/desktop/tests/test_shared_tokens.py"
+    },
+    {
       "path": "test_ui_tree.py",
       "source": "apps/desktop/tests/test_ui_tree.py"
     },
