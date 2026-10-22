@@ -761,6 +761,23 @@
       "path": "aiwb/ui/projects5.py",
       "source": "apps/desktop/src/aiwb/ui/projects5.py"
     }
+,
+    {
+      "path": "aiwb/v2/team_setup.py",
+      "source": "apps/desktop/src/aiwb/v2/team_setup.py"
+    },
+    {
+      "path": "aiwb/ui/team_table.py",
+      "source": "apps/desktop/src/aiwb/ui/team_table.py"
+    },
+    {
+      "path": "aiwb/ui/project_wizard.py",
+      "source": "apps/desktop/src/aiwb/ui/project_wizard.py"
+    },
+    {
+      "path": "test_team_setup.py",
+      "source": "apps/desktop/tests/test_team_setup.py"
+    }
   ],
   "zip_timestamp": [
     2026,
