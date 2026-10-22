@@ -138,8 +138,9 @@ def main() -> None:
             assert app.shell.current == "workbench", f"after Create the app shows {app.shell.current!r}, not the Workbench"
             assert not [b for b in boxes if b[0] == "showinfo"], f"no 1.x 'Project created' box: {boxes}"
             # A6: an open, still unplanned project
-            assert "No project open" not in app.shell.status.facts_var.get() if hasattr(app.shell, "status") and \
-                hasattr(app.shell.status, "facts_var") else True
+            app.shell.refresh_status()
+            facts = app.shell.statusbar.facts_var.get()
+            assert "No project open" not in facts, f"status bar with an open project: {facts!r}"
             ws = app.workspace_window
             assert ws is not None
             o.shot("02_workbench_start")
