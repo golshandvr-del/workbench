@@ -207,7 +207,12 @@ def main() -> None:
             assert f1.is_file() and "TODOS" in f1.read_text(encoding="utf-8"), "ZIP file on disk"
 
             # 3) the next task answered as Markdown code blocks without any manifest; first a cut-off version
-            nxt = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:"))
+            rev = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:"))
+            assert any(a["id"] == "approve" for a in rev["actions"]), rev     # task 1 waits for the user's review
+            ws.guide_action(rev["key"], "approve", {"note": ""})
+            o.pump(200)
+            nxt = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:")
+                       and any(a["id"] == "prepare" for a in s["actions"]))
             ws.guide_action(nxt["key"], "prepare", {})
             o.pump(200)
             h = next(h for h in ctl.state()["handoffs"].values() if h["status"] in ("prepared", "prompt_exported"))
