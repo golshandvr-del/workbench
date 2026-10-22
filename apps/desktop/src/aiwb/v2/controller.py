@@ -357,7 +357,8 @@ class ProjectsController:
         if not res["ok"]:
             return {**res, "proposal": None, "fix_prompt": charter_fix_prompt(res)}
         p = self.project.proposals.import_data(charter_to_proposal(res["data"], st), response_id=response_id,
-                                               kind="charter", charter=charter_record(res["data"]))
+                                               kind="charter", charter=charter_record(res["data"]),
+                                               fixes=res.get("fixes") or [])
         self._dirty("charter imported")
         return {**res, "proposal": p, "fix_prompt": ""}
 
@@ -462,8 +463,15 @@ class ProjectsController:
                                        + "; ".join(out["errors"][:3]) + (" …" if len(out["errors"]) > 3 else "")
                                        + " A fix prompt is ready to copy.", "", out)
                 p = out["proposal"]
-                msg = (f"Project Charter imported as {p['proposal_id']} with {len(p['operations'])} change(s) "
-                       "(agents, tasks, milestones and versions) — review and accept them.")
+                data = out["data"] or {}
+                n_ai = len([a for a in (data.get("team") or {}).get("agents", []) if isinstance(a, dict)])
+                n_fix = len(out.get("fixes") or [])
+                msg = (f"Charter ✓ · {n_ai} AIs · {len(data.get('tasks') or [])} tasks · "
+                       f"{len((data.get('roadmap') or {}).get('milestones') or [])} milestones"
+                       + (f" · {n_fix} auto-fix{'es' if n_fix != 1 else ''}" if n_fix else "")
+                       + f". Imported as {p['proposal_id']} with {len(p['operations'])} change(s) — review and accept them.")
+                if n_fix:
+                    msg += " Fixed automatically: " + "; ".join(out["fixes"][:3]) + (" …" if n_fix > 3 else "") + "."
                 if out["warnings"]:
                     msg += f" {len(out['warnings'])} warning(s) to check."
                 return RouteResult("proposal", rid, msg, p["proposal_id"], p)
