@@ -158,57 +158,92 @@ def find_charter(text: str) -> str | None:
     return f.group(1) if f else body
 
 
+_OTHER_BLOCKS = ("AIWB_MANAGER_PROPOSAL", "AIWB_HANDOFF", "AIWB_FILE", "AIWB_CONTEXT_REQUEST")
+_CHARTER_KEYS = ("tasks", "roadmap", "milestones", "architecture", "team", "start_prompts", "coordination")
+
+
+def _marker_free_charter(text: str) -> bool:
+    """5.10.0 (A12): a JSON object that looks like a charter (tasks + roadmap/architecture/team) without our markers."""
+    s = text or ""
+    if any(m in s for m in _OTHER_BLOCKS):
+        return False
+    hits = [k for k in _CHARTER_KEYS if re.search(r"[\"\u201c\u201d]" + k + r"[\"\u201c\u201d]\s*:", s)]
+    return "tasks" in hits and len(hits) >= 3
+
+
 def has_charter(text: str) -> bool:
-    if CHARTER_RE.search(text or ""):
+    if CHARTER_RE.search(text or "") or "AIWB_PROJECT_CHARTER" in (text or "").replace("\\_", "_"):
         return True
     try:
         from ..intake.normalize import normalize
-        return bool(CHARTER_RE.search(normalize(text or "").text))
+        if CHARTER_RE.search(normalize(text or "").text):
+            return True
     except Exception:  # noqa: BLE001 - detection must never fail
-        return False
+        pass
+    return _marker_free_charter(text)
 
 
 def _load(text: str) -> tuple[dict[str, Any] | None, list[str], list[str]]:
-    """(data, errors, fixes). Raw text first; the normalized copy only as a fallback (3.2.0 rule)."""
+    """(data, errors, fixes). Our block first (raw, then normalized); 5.10.0: then an unmarked JSON object in a
+    ```json fence or in the prose, an opening marker without the end marker, and lenient JSON (comments, commas…)."""
+    from ..intake import lenient
     fixes: list[str] = []
-    candidates = [text or ""]
+    raw = text or ""
+    candidates = [(raw, [])]
     try:
-        from ..intake.normalize import normalize, normalize_json_text
-        n = normalize(text or "")
+        from ..intake.normalize import normalize
+        n = normalize(raw)
         if n.changed:
-            candidates.append(n.text)
+            candidates.append((n.text, list(n.fixes)))
     except Exception:  # noqa: BLE001
-        normalize_json_text = None  # type: ignore[assignment]
-        n = None
+        pass
     last_error = ""
-    for i, cand in enumerate(candidates):
+    bodies: list[tuple[str, list[str]]] = []
+    for cand, cf in candidates:
         body = find_charter(cand)
-        if body is None:
+        if body is not None:
+            bodies.append((body, cf))
+    if not bodies:
+        for cand, cf in candidates:
+            k = cand.find("AIWB_PROJECT_CHARTER")
+            if k >= 0 and "AIWB_END_PROJECT_CHARTER" not in cand:  # opened, never closed: is the JSON complete?
+                f = lenient.find_object(cand, start=k)
+                if f.text:
+                    bodies.append((f.text, cf + ["end marker <<<AIWB_END_PROJECT_CHARTER>>> was missing"]))
+                    break
+                return None, ["the charter block is not closed: <<<AIWB_END_PROJECT_CHARTER>>> is missing "
+                              "(the answer was probably cut off)"], fixes
+    if not bodies and _marker_free_charter(raw):
+        for cand, cf in candidates:
+            for fb in lenient.fenced_json_blocks(cand):
+                if _marker_free_charter(fb):
+                    bodies.append((fb, cf + ["the charter JSON had no AIWB markers (read from a ```json block)"]))
+            if bodies:
+                break
+            f = lenient.find_object(cand, keys=("tasks",))
+            if f.text:
+                bodies.append((f.text, cf + ["the charter JSON had no AIWB markers (read from the answer text)"]))
+                break
+            if f.truncated:
+                return None, ["the charter JSON was opened but never closed (the answer was probably cut off)"], fixes
+    for body, cf in bodies:
+        b = body.strip()
+        fm = re.match(r"(?s)^(`{3,}|~{3,})[^\n]*\n(.*?)\n?\1\s*$", b)
+        if fm:
+            b = fm.group(2)
+        if not b.lstrip().startswith("{"):
+            f = lenient.find_object(b)
+            if f.text:
+                b = f.text
+        data, lf, err = lenient.loads(b)
+        if data is None:
+            last_error = f"the charter block is {err}"
             continue
-        for attempt in (body, None):
-            if attempt is None:
-                if normalize_json_text is None:
-                    break
-                r = normalize_json_text(body)
-                if not r.changed:
-                    break
-                attempt = r.text
-                fixes += r.fixes
-            try:
-                data = json.loads(attempt)
-            except json.JSONDecodeError as exc:
-                last_error = f"the charter block is not valid JSON: {exc.msg} (line {exc.lineno}, column {exc.colno})"
-                continue
-            if i and n is not None:
-                fixes = list(n.fixes) + fixes
-            if not isinstance(data, dict):
-                return None, ["the charter block must be one JSON object"], fixes
-            return data, [], fixes
+        if not isinstance(data, dict):
+            return None, ["the charter block must be one JSON object"], cf + lf
+        return data, [], cf + lf
     if last_error:
         return None, [last_error], fixes
-    if OPEN_MARK in (text or "") or "AIWB_PROJECT_CHARTER" in (text or ""):
-        return None, ["the charter block is not closed: <<<AIWB_END_PROJECT_CHARTER>>> is missing "
-                      "(the answer was probably cut off)"], fixes
     return None, ["no AIWB_PROJECT_CHARTER block found"], fixes
 
 
@@ -549,6 +584,12 @@ def parse_charter(text: str, state: dict[str, Any] | None = None) -> dict[str, A
     data, errors, fixes = _load(text)
     if data is None:
         return {"ok": False, "data": None, "errors": errors, "warnings": [], "fixes": fixes}
+    from .charter_repair import repair  # 5.10.0: what models really return → the canonical shape (A12)
+    data, repaired = repair(data, state)
+    fixes = list(fixes) + repaired
+    if not isinstance(data, dict):
+        return {"ok": False, "data": None, "errors": ["the charter block must be one JSON object"], "warnings": [],
+                "fixes": fixes}
     v = validate_charter(data, state)
     return {"ok": not v["errors"], "data": data, "errors": v["errors"], "warnings": v["warnings"], "fixes": fixes}
 
