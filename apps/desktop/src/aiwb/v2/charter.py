@@ -124,10 +124,15 @@ def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
             lines.append(f"- {a['account_profile_id']}: {a['display_name']} ({a['provider']}, plan {a['plan']})")
     else:
         lines.append("- (no account profiles registered)")
-    lines += [f"- Maximum chats the user will follow at the same time: {r['max_parallel_chats']}", "",
-              "## Existing agents (you may reuse them by agent_id)"]
-    for a in r["agents"]:
-        lines.append(f"- {a['agent_id']} ({a['role']}): {a['purpose']}")
+    lines.append(f"- Maximum chats the user will follow at the same time: {r['max_parallel_chats']}")
+    from .team_setup import team_prompt_lines
+    chosen = team_prompt_lines(state)  # 5.9.0: the team from the New Project wizard is binding
+    if chosen:
+        lines += [""] + chosen
+    else:
+        lines += ["", "## Existing agents (you may reuse them by agent_id)"]
+        for a in r["agents"]:
+            lines.append(f"- {a['agent_id']} ({a['role']}): {a['purpose']}")
     lines += ["", "## Your task — answer ALL of these",
               "1. Architecture: the modules of the whole project, their purpose, the paths each one owns and how they "
               "depend on each other.",
