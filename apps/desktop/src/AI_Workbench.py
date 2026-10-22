@@ -5345,22 +5345,13 @@ class WorkbenchApp:
         if hook is not None:
             return hook(need, label)
         if need == "text":
-            top = tk.Toplevel(self.root)
-            top.title(label)
-            top.transient(self.root)
-            box = tk.Text(top, width=90, height=22, wrap="word")
-            box.pack(fill="both", expand=True, padx=8, pady=8)
-            out: dict[str, str | None] = {"text": None}
-
-            def ok() -> None:
-                out["text"] = box.get("1.0", "end-1c")
-                top.destroy()
-            ttk.Button(top, text="Use this answer", style="Accent.TButton", command=ok).pack(pady=(0, 8))
-            ui_layout.place_dialog(top, 820, 520, self.root)
-            box.focus_set()
-            top.grab_set()
-            top.wait_window()
-            return out["text"]
+            from aiwb.ui.paste_box import ask_answer   # 5.10.0: the shared paste box (live diagnosis, Load ZIP…)
+            try:
+                ctl = self._mission_ctl()
+                state = ctl.state() if ctl is not None else None
+            except Exception:  # noqa: BLE001 - the diagnosis works without a state
+                state = None
+            return ask_answer(self.root, label, state=state) or None
         prompts = {"reason": "Why? (recorded in the project history)", "run_id": "Test/CI run id or link (optional)",
                    "note": "Note"}
         return simpledialog.askstring(label, prompts.get(need, need.replace("_", " ").capitalize()), parent=self.root)
