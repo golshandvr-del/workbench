@@ -13,14 +13,14 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 3 | 0 | 12 | 8 | 0 |
+| Home | 3 | 0 | 8 | 5 | 0 |
 | Projects | 12 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
 | Agents | 7 | 0 | 6 | 10 | 4 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
-| History | 6 | 6 | 12 | 10 | 0 |
+| History | 7 | 6 | 12 | 10 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 5 | 0 |
 | Settings | 4 | 0 | 11 | 9 | 0 |
 
@@ -34,7 +34,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 Audit:
 
-- none: the map is balanced.
+- rail destinations unbalanced: {'Home': 8, 'Projects': 32, 'Agents': 41, 'History': 36, 'Settings': 11} (max ratio 4.0)
 
 ## Tree
 
@@ -58,12 +58,7 @@ Audit:
       - Jump to active task [button]
       - Copy task summary [button]
       - Open task in Workbench [button]
-    - Your projects [section]
-      - + New project [button]
-      - Open selected [button]
-      - More [menu]
-        - Reveal folder [item]
-        - Remove from list [item]
+    - Next step [section]
       - Continue in Workbench [button]
   - Projects [page]
     - Next step [section]
@@ -190,6 +185,7 @@ Audit:
           - Refresh workflow [item]
           - Projects (multi-agent)… [item]
   - History [page]
+    - Timeline [section]
     - Project versions… [button]
     - More [menu]
       - Refresh [item]
