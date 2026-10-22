@@ -68,6 +68,9 @@ def main() -> None:
                 real_grow()
                 grows.append(bool(mo.active("mission:grow") and app.mission.find_withtag("grow_mask")))
             app.mission.grow = counted_grow  # type: ignore[method-assign]
+            # a slow runner may already have handed this project to the map (and grown it) before the patch above:
+            # forget it so the next set_state for the project grows again through counted_grow
+            app.mission._grown_for = ""
             sh.refresh_status()
             sh.show("home")
             # checked at the moment growth starts: a slow Windows runner may already have finished the 600 ms tween
