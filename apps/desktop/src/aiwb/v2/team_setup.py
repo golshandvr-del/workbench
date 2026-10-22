@@ -246,7 +246,7 @@ def remove_unused_templates(store: Any) -> list[str]:
         for aid in gone:
             del s["agents"][aid]
         if gone:
-            emit(s, "agents_removed", agent_ids=gone, reason="unused template AIs")
+            emit(s, "agent_templates_removed", agent_ids=gone, reason="unused template AIs")
     return gone
 
 
