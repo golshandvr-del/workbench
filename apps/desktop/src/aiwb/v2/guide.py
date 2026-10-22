@@ -33,6 +33,7 @@ TROUBLESHOOT_ATTEMPTS = 3  # flowchart correction C1: then escalate to the proje
 # Optional inputs of the start form (roadmap 4.0.0, flowchart F4): name, platform, constraints, number of AIs.
 BRIEF_OPTIONAL = ("name", "platform", "constraints", "ais")
 OPTIONAL_INPUTS = ("note", "reason", "rationale", "run_id", "commit_sha", "tag", "idea") + BRIEF_OPTIONAL
+TEAM_INPUTS = ("team", "answer_format")   # 5.9.0: the one-window start form sends the user's team table too
 
 
 def _a(id_: str, label: str, *needs: str, primary: bool = False) -> dict[str, Any]:
@@ -484,8 +485,13 @@ class Guide:
             self._set_guide(**{"continue": None})
             return {"message": "The cut-off answer is ignored; it stays in the Inbox."}
         if action == "design":
-            from .flow import start_project
-            start_project(self.p.store, {k: inp.get(k, "") for k in ("goal",) + BRIEF_OPTIONAL})
+            if isinstance(inp.get("team"), list):  # 5.9.0: brief + the user's own team in one step
+                from .team_setup import apply_start
+                apply_start(self.p.store, {k: inp.get(k, "") for k in ("goal",) + BRIEF_OPTIONAL}, inp["team"],
+                            str(inp.get("answer_format") or "aiwb"))
+            else:
+                from .flow import start_project
+                start_project(self.p.store, {k: inp.get(k, "") for k in ("goal",) + BRIEF_OPTIONAL})
             brief = c.state()["settings"].get("brief") or {}
             prompt = c.charter_prompt({**brief, "goal": str(inp["goal"])})
             return {"message": "Project started. Project Charter prompt ready to copy.", "prompt": prompt}
