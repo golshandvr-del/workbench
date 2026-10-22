@@ -5296,8 +5296,9 @@ class WorkbenchApp:
                                           on_open=self._project_card_open)
         self.project_cards.pack(fill="x", pady=(6, 0))
         self.shell.on_pref(lambda key: self.project_cards.draw() if key == "theme" else None)
-        ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", wraplength=1180).pack(
-            anchor="w", pady=(4, 0))
+        # the selected card's details as one line (no wrapping: a wrapped label here would drive the page width)
+        ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", width=1).pack(
+            fill="x", pady=(4, 0))
 
         # selection model behind the cards (kept for callers and tests; never laid out)
         columns = ("description", "state", "last_opened", "path")
