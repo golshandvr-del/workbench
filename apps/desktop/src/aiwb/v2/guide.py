@@ -717,6 +717,8 @@ class Guide:
         r = self.ctl.route_answer(text, handoff_hint=hint)
         if r.text:   # 5.10.0: files from Markdown / JSON / ZIP were rewritten as AIWB blocks for staging and checks
             text = r.text
+            if r.kind == "truncated" and not rep.truncated:
+                rep = truncation_report(text)
         out: dict[str, Any] = {"message": r.message, "kind": r.kind}
         if r.kind == "charter_rejected":
             out["prompt"] = r.record.get("fix_prompt", "")
