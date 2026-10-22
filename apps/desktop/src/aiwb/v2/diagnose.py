@@ -7,7 +7,8 @@ and both are checked against ``packages/contracts/fixtures/diagnose/diagnose-cor
 Problem codes (``error`` = the answer is not acceptable as it is; ``warning`` = the user should look):
 
 * ``truncated`` (error) — a file block, a fence or the manifest was opened and never closed;
-* ``no_manifest`` (error) — no ``AIWB_HANDOFF`` manifest;
+* ``no_manifest`` (error; a warning when the answer delivers files — 5.10.0, Markdown / JSON / ZIP answers rarely
+  carry one) — no ``AIWB_HANDOFF`` manifest;
 * ``wrong_attempt`` (error) — the answer names another attempt;
 * ``unsafe_path`` (error) — absolute path or ``..``;
 * ``out_of_scope`` (error) — a file outside the task's allowed paths;
@@ -124,8 +125,8 @@ def diagnose(text: str, *, attempt_id: str = "", allowed_paths: list[str] | None
     """Problems of one pasted AI answer. Returns {"acceptable", "problems": [{code, severity, message, path}]}."""
     probs: list[dict[str, Any]] = []
 
-    def add(code: str, message: str, path: str = "") -> None:
-        probs.append({"code": code, "severity": SEVERITY[code], "message": message, "path": path})
+    def add(code: str, message: str, path: str = "", severity: str = "") -> None:
+        probs.append({"code": code, "severity": severity or SEVERITY[code], "message": message, "path": path})
 
     text = text or ""
     files, open_file = parse_files(text)
@@ -136,7 +137,8 @@ def diagnose(text: str, *, attempt_id: str = "", allowed_paths: list[str] | None
     elif man_open:
         add("truncated", "the AIWB_HANDOFF manifest was opened and never closed — the answer was cut off")
     if man is None and not man_open:
-        add("no_manifest", "there is no AIWB_HANDOFF manifest (summary, outcome, open items)")
+        add("no_manifest", "there is no AIWB_HANDOFF manifest (summary, outcome, open items)",
+            severity="warning" if files else "")
     m = ATTEMPT.search(text)
     claimed = (m.group(1) if m else "") or str((man or {}).get("attempt_id", ""))
     if attempt_id and claimed and claimed != attempt_id:
