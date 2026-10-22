@@ -14,7 +14,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
 | Home | 4 | 0 | 11 | 8 | 0 |
-| Projects | 13 | 7 | 21 | 10 | 9 |
+| Projects | 13 | 7 | 21 | 9 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
 | Agents | 7 | 0 | 6 | 10 | 4 |
@@ -67,8 +67,8 @@ Audit:
   - Projects [page]
     - Your projects [section]
       - + New project [button]
-      - Open selected [button]
       - More [menu]
+        - Open selected [item]
         - Reveal folder [item]
         - Remove from list [item]
     - Next step [section]
