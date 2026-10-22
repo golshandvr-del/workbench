@@ -111,4 +111,9 @@
     <string name="theme_current">تم: %1$s</string>
     <string name="theme_switch">تغییر به %1$s</string>
     <string name="settings_build">Build</string>
+    <!-- 6.1.0 / mobile 3.1.0: Mission Map -->
+    <string name="mission_map">نقشهٔ مأموریت</string>
+    <string name="mission_hint">برای هر AI یک مسیر و برای هر تسک یک دایره در ستون نسخه‌اش. با دو انگشت بزرگ‌نمایی کنید، بکشید تا جابه‌جا شود، برای جزئیات روی دایره بزنید و برای COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE لمس طولانی کنید.</string>
+    <string name="mission_node">%1$s\n%2$s · %3$s</string>
+    <string name="mission_moved">پروژه تغییر کرده — این گام فعلی است.</string>
 </resources>
