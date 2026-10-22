@@ -6093,7 +6093,21 @@ class WorkbenchApp:
                                          on_select=self._history_tl_select)
         self.history_tl._aiwb_keep_colours = True  # type: ignore[attr-defined]
         self.history_tl.pack(fill="x", pady=(6, 0))
+        # short windows: the timeline canvas folds away (the header line stays) so the list keeps its room
+        self.history_tl_compact = False
+        tab.bind("<Configure>", self._fit_history_timeline, add="+")
         self.shell.on_pref(lambda key: self.refresh_history_timeline() if key == "theme" else None)
+
+    def _fit_history_timeline(self, event: Any = None) -> None:
+        h = event.height if event is not None else self.history_tab.winfo_height()
+        compact = 1 < h < self.COMPACT_BELOW
+        if compact == self.history_tl_compact:
+            return
+        self.history_tl_compact = compact
+        if compact:
+            self.history_tl.pack_forget()
+        else:
+            self.history_tl.pack(fill="x", pady=(6, 0))
 
     def refresh_history_timeline(self) -> dict[str, Any] | None:
         """Redraw History › Timeline from the open project (reading never writes)."""
