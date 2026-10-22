@@ -159,6 +159,12 @@ class EditTeam(Base):
         self.assertFalse(st["agents"]["agent-bob"]["enabled"])
         self.assertEqual([x["agent_id"] for x in ts.team_rows(st)], ["agent-project-manager", "agent-alice"])
 
+    def test_every_user_ai_keeps_its_lane(self) -> None:
+        self.p.tasks.create({"title": "core", "owner_agent_id": "agent-alice", "objective": "core",
+                             "acceptance_criteria": ["works"]})
+        lanes = [ln["name"] for ln in mission_model.build(self.p.store.load())["lanes"]]
+        self.assertEqual(lanes, ["Alice", "Bob"], "Bob has no task yet but is part of the user's team")
+
     def test_nothing_changed_writes_nothing(self) -> None:
         rev = self.p.store.load()["state_revision"]
         out = ts.save_team(self.p.store, ts.team_rows(self.p.store.load()))
