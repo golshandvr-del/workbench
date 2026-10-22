@@ -5052,6 +5052,7 @@ class WorkbenchApp:
         self.home_scroll = ui_layout.ScrollPage(self.manager_tab)
         # a fixed natural width: wrapped labels follow the page width, so they must never drive it (5.7.0)
         self.home_scroll.canvas.configure(width=880, height=560)
+        self.home_scroll.canvas.itemconfigure(self.home_scroll._win, width=880)  # until the canvas is laid out
         self.home_scroll.pack(fill="both", expand=True)
         body = self.home_scroll.body
         head = ttk.Frame(body)
