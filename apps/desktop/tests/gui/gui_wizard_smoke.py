@@ -51,6 +51,8 @@ def run_one(wb, root, app, tmp: Path, workers: int, names: list[str]) -> None:
     assert wiz.step == 1, f"Next must go to the Team step: {wiz.error_var.get()}"
     # step 2 — Team: the real Spinbox, then the real name entries
     box = wiz.team.count_box
+    box.focus_force()                                  # a real user clicks into the box first
+    pump(root)
     box.delete(0, "end")
     box.insert(0, str(workers))
     box.event_generate("<Return>")
