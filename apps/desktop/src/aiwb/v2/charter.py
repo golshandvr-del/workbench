@@ -78,6 +78,30 @@ Rules:
 - Prefer a small team; propose more parallel AIs only with the benefit, the risk and the coordination cost."""
 
 
+# Charter v2 (roadmap 5.10.0): the team comes from the New Project wizard, so the model returns only what it alone can
+# decide — architecture, file ownership, roadmap and tasks on the user's agent_ids. Workbench adds the team and writes
+# every start prompt itself (shorter answer → fewer cut-off answers and fewer JSON mistakes).
+CHARTER_FORMAT_V2 = """Return a short explanation first, then exactly ONE block (valid JSON, no comments):
+<<<AIWB_PROJECT_CHARTER>>>
+{"schema_version": "1.0", "base_state_revision": <the state_revision above>,
+ "project": {"name": "…", "goal": "…", "summary": "two or three sentences"},
+ "architecture": {"summary": "…", "modules": [
+   {"id": "core", "purpose": "…", "paths": ["src/core/**"], "depends_on": [], "owner_agent_id": "<one agent_id>"}]},
+ "coordination": {"file_ownership": [{"agent_id": "<agent_id>", "paths": ["src/core/**"]}],
+                  "sync_points": [{"after_milestone": "m1", "description": "…"}]},
+ "roadmap": {"milestones": [{"ref": "m1", "title": "…", "version": "0.1.0", "criteria": ["…"]}]},
+ "tasks": [{"ref": "t1", "title": "…", "objective": "…", "owner_agent_id": "<agent_id>", "milestone_ref": "m1",
+            "depends_on_refs": [], "scope": {"include": ["src/core/**"]}, "acceptance_criteria": ["…"]}],
+ "risks": ["…"], "questions_for_user": ["…"]}
+<<<AIWB_END_PROJECT_CHARTER>>>
+Rules:
+- Use ONLY the agent_ids of the team above; every task has exactly one owner from that list.
+- Do NOT write team or start prompts — Workbench builds them from your plan.
+- One AI per path; a task's scope stays inside its owner's paths. Refs: t1, t2 … and m1, m2 …
+- Versions grow along the roadmap (0.1.0, 0.2.0 …).
+- If the project is big, plan only the first two milestones in detail (at most 15 tasks); later ones may have no tasks
+  yet. Keep the whole answer short."""
+
 PROFILE_LABELS = (("target_platform", "Target platform"), ("languages", "Language(s)"),
                   ("gui_framework", "GUI / application framework"), ("runtime_toolchain", "Runtime / build toolchain"),
                   ("target_ui_language", "Language of the app's own UI"), ("architecture", "Architecture preference"),
@@ -126,8 +150,15 @@ def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
     lines.append(f"- Maximum chats the user will follow at the same time: {r['max_parallel_chats']}")
     from .team_setup import team_prompt_lines
     chosen = team_prompt_lines(state)  # 5.9.0: the team from the New Project wizard is binding
-    if chosen:
+    if chosen:  # 5.10.0: Charter v2 — shorter; Workbench writes the team and the start prompts
         lines += [""] + chosen
+        lines += ["", "## Your task — answer ALL of these",
+                  "1. Architecture: the modules of the whole project, their purpose, the paths each owns, who owns it.",
+                  "2. Coordination: which AI owns which paths, and when one AI must wait for another.",
+                  "3. Roadmap: milestones in order, each with a version number and acceptance criteria.",
+                  "4. Tasks: every AI's tasks with owner, milestone, dependencies, scope and acceptance criteria.",
+                  "5. Risks and the questions only the user can answer.", "", CHARTER_FORMAT_V2]
+        return "\n".join(lines)
     else:
         lines += ["", "## Existing agents (you may reuse them by agent_id)"]
         for a in r["agents"]:
