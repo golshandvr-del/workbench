@@ -39,7 +39,11 @@ def run_one(wb, root, app, tmp: Path, workers: int, names: list[str]) -> None:
     entries[1].delete(0, "end")
     entries[1].insert(0, str(tmp))
     wiz.goal_text.insert("1.0", f"A test project with {workers} AIs")
-    assert wiz.vars["platform"].get(), "the preset fills the platform"
+    combo = next(c for c in walk(wiz.pages[0]) if c.winfo_class() == "TCombobox")
+    combo.set("Python desktop application")
+    combo.event_generate("<<ComboboxSelected>>")
+    pump(root)
+    assert wiz.vars["platform"].get().startswith("Windows desktop, Python"), wiz.vars["platform"].get()
     assert not [c for c in walk(wiz.win) if c.winfo_class() == "TButton" and c.cget("text") == "Architecture plan…"], \
         "A2: Architecture plan is not part of creating a project"
     wiz.next_btn.invoke()
@@ -94,7 +98,7 @@ def run_one(wb, root, app, tmp: Path, workers: int, names: list[str]) -> None:
     # the Mission Map on Home draws the names
     app.shell.show("home")
     pump(root, 10)
-    canvas = app.mission_canvas
+    canvas = app.mission
     drawn = [canvas.itemcget(i, "text") for i in canvas.find_withtag("lane_name")]
     assert drawn == [mission_model.short_name(n) for n in expected], f"lane names on the map: {drawn}"
     shot = os.environ.get("AIWB_SCREENSHOT_DIR")
