@@ -30,34 +30,33 @@ with tempfile.TemporaryDirectory() as temp:
     app = wb.WorkbenchApp(root)
     root.update()
 
-    # Architecture plan round-trip inside the New Project Wizard.
-    app.new_project()
+    # 5.9.0: the New Project wizard creates the project; the architecture plan lives under Tools (not in creation).
+    wiz = app.new_project()
     root.update()
-    wizard = next(w for w in root.winfo_children() if isinstance(w, tk.Toplevel) and w.title() == "Create a new project")
-    wizard_widgets = descendants(wizard)
-    next(b for b in wizard_widgets if isinstance(b, ttk.Button) and b.cget("text") == "Architecture plan…").invoke()
+    assert wiz.win.title() == "Create a new project"
+    assert not [b for b in descendants(wiz.win) if isinstance(b, ttk.Button) and b.cget("text") == "Architecture plan…"]
+    entries = [w for w in descendants(wiz.pages[0]) if isinstance(w, (tk.Entry, ttk.Entry))]
+    entries[0].insert(0, "v114 GUI Smoke")
+    entries[1].delete(0, "end"); entries[1].insert(0, temp)
+    wiz.goal_text.insert("1.0", "Testing v1.14 integration")
+    for _ in range(3):
+        wiz.next_btn.invoke()
+        root.update()
+    assert not wiz.win.winfo_exists(), wiz.error_var.get()
+    project = Path(temp) / "v114 GUI Smoke"
+    wait_for_project_ready(app, root, project)
+
+    # Architecture plan round-trip from Tools › Architecture plan… (edit + validate + save as project context).
+    app.edit_active_architecture_plan()
     root.update()
     editor_window = next(w for w in root.winfo_children() if isinstance(w, tk.Toplevel) and w.title().startswith("Architecture Plan"))
     editor = next(w for w in descendants(editor_window) if isinstance(w, tk.Text))
-    # Exercise edit + validate + explicit save-to-wizard; no project source files are touched.
-    plan = architecture_plan.new_plan("Smoke modular project", "Round-trip a reviewed plan through the wizard.")
+    plan = architecture_plan.new_plan("Smoke modular project", "Round-trip a reviewed plan.")
     plan["modules"] = [{"name": "Domain service", "path": "aiwb/domain.py", "responsibilities": "Own business rules", "depends_on": []}]
     editor.delete("1.0", "end")
     editor.insert("1.0", __import__("json").dumps(plan, indent=2))
-    next(b for b in descendants(editor_window) if isinstance(b, ttk.Button) and b.cget("text") == "Validate and save plan").invoke()
+    next(b for b in descendants(editor_window) if isinstance(b, ttk.Button) and b.cget("text").startswith("Validate and save")).invoke()
     root.update()
-    assert not editor_window.winfo_exists(), "validated architecture editor did not close/save to wizard"
-
-    wizard_widgets = descendants(wizard)
-    entries = [w for w in wizard_widgets if isinstance(w, (tk.Entry, ttk.Entry))]
-    assert len(entries) >= 3, "project wizard form entries not found"
-    entries[0].insert(0, "v114 GUI Smoke")
-    entries[1].delete(0, "end"); entries[1].insert(0, temp)
-    entries[2].insert(0, "Testing v1.14 integration")
-    next(b for b in wizard_widgets if isinstance(b, ttk.Button) and b.cget("text") == "Create project").invoke()
-    root.update()
-    project = Path(temp) / "v114 GUI Smoke"
-    wait_for_project_ready(app, root, project)
     saved_plan = architecture_plan.load_plan(project)
     assert saved_plan and saved_plan["modules"][0]["path"] == "aiwb/domain.py", "wizard failed to persist the validated architecture plan"
 
