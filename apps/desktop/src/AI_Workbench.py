@@ -5328,9 +5328,10 @@ class WorkbenchApp:
         ttk.Label(row, text="Your projects", style="SectionTitle.TLabel").pack(side="left")
         self.projects_bar = ui_actions.ActionBar(
             row,
-            primary=(("+ New project", self.new_project, "Primary.TButton"),
-                     ("Open selected", self.open_selected_project)),  # Add existing folder…: Toolbar › New Project
-            more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
+            # Add existing folder…: Toolbar › New Project. Open: double-click a card, or More › Open selected (5.7.0)
+            primary=(("+ New project", self.new_project, "Primary.TButton"),),
+            more=(("Selected project", (("Open selected", self.open_selected_project),
+                                        ("Reveal folder", self.reveal_selected_project),
                                         ("Remove from list", self.forget_selected_project))),))
         self.projects_bar.pack(side="right")
         search_entry = ttk.Entry(row, textvariable=self.project_search_var, width=26)
