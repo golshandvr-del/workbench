@@ -1,14 +1,18 @@
 """Roadmap 5.9.0: the user decides the AI team (audit A1/A5/A8/A9)."""
 from __future__ import annotations
 
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from aiwb.v2 import ModelError, V2Project
-from aiwb.v2 import team_setup as ts
-from aiwb.v2.charter import build_charter_prompt
-from aiwb.ui import mission_model
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from aiwb.ui import mission_model  # noqa: E402
+from aiwb.v2 import ModelError, V2Project  # noqa: E402
+from aiwb.v2 import team_setup as ts  # noqa: E402
+from aiwb.v2.charter import charter_prompt  # noqa: E402
+from aiwb.v2.guide import steps as guide_steps  # noqa: E402
 
 
 def rows(*workers: tuple[str, str], pm: str = "Project manager") -> list[dict[str, str]]:
@@ -87,10 +91,8 @@ class Wizard(Base):
         self.assertEqual(st["settings"]["brief"]["platform"], BRIEF["platform"])
         self.assertEqual(st["settings"]["team"]["max_parallel_chats"], 3)
         self.assertTrue(st["settings"]["flow"]["started_at"])
-        from aiwb.v2.guide import Guide
         from aiwb.v2.controller import ProjectsController
-        ctl = ProjectsController(self.root)
-        steps = Guide(ctl).steps()
+        steps = guide_steps(ProjectsController(self.root))
         self.assertNotIn("design", [s["key"] for s in steps], "the start form must not be asked again")
         self.assertIn("charter", [s["key"] for s in steps])
 
@@ -116,7 +118,7 @@ class Wizard(Base):
     def test_charter_prompt_binds_the_team(self) -> None:
         ts.apply_wizard(self.p, BRIEF, rows(("Core developer", "implementer"), ("QA", "reviewer")))
         st = self.p.store.load()
-        prompt = build_charter_prompt(st, {"goal": BRIEF["goal"]})
+        prompt = charter_prompt({"goal": BRIEF["goal"]}, st)
         self.assertIn("Team chosen by the user (binding)", prompt)
         self.assertIn('agent-core-developer — "Core developer"', prompt)
         self.assertLess(prompt.index("agent-core-developer"), prompt.index("agent-qa"), "the user's order is kept")
