@@ -11,7 +11,7 @@
 - **Balance**: alerts (idle with ready work around, stuck in one stage for more than 24 h, more than 1.5 × the
   fair share) and **Apply suggested moves** — only unstarted `ready` tasks move, after a confirmation.
 - The pure model is `aiwb/v2/agent_hub.py` (stats from recorded facts only, alerts, rebalance plan, queue,
-  briefing, notes); the controller gained `agent_hub()`, `set_agent_note()` and `apply_rebalance()`.
+  briefing, notes); the controller gained `agent_hub()`, `set_agent_note()`, `agent_briefing()` and `apply_rebalance()`.
 - The Agents page scrolls on small windows; **Home › Task details** gained *Jump to active task* and *Copy task
   summary*.
 
