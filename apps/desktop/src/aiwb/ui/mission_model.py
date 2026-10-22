@@ -129,6 +129,12 @@ def build(state: dict[str, Any] | None, *, hide_done: bool = False, open_only: b
     return {"columns": cols, "lanes": lanes, "slots": slots, "empty": not lanes, "counts": counts}
 
 
+def short_name(name: str, limit: int = 14) -> str:
+    """A lane label that fits under the hexagon: ``limit`` characters at most, with an ellipsis when cut."""
+    name = " ".join(str(name or "").split())
+    return name if len(name) <= limit else name[:limit - 1].rstrip() + "…"
+
+
 def layout(model: dict[str, Any], scale: float = 1.0) -> dict[str, Any]:
     """Pixel positions (top-left origin) of every element of :func:`build`'s result for a DPI ``scale``."""
     g, s = GEOMETRY, scale
