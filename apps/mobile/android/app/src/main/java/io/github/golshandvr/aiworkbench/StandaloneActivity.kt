@@ -18,6 +18,9 @@ import android.widget.TextView
 import io.github.golshandvr.aiworkbench.core.Files
 import io.github.golshandvr.aiworkbench.core.GitHubApi
 import io.github.golshandvr.aiworkbench.core.Guide
+import io.github.golshandvr.aiworkbench.core.Json
+import io.github.golshandvr.aiworkbench.core.MissionModel
+import io.github.golshandvr.aiworkbench.core.TaskMenu
 import io.github.golshandvr.aiworkbench.core.Project
 import io.github.golshandvr.aiworkbench.core.ProjectBundle
 import io.github.golshandvr.aiworkbench.core.ProjectStore
@@ -113,6 +116,14 @@ class StandaloneActivity : Activity() {
         button(getString(R.string.standalone_route)) {
             guard { val r = p.routeAnswer(paste.text.toString()); render(r.message) }
         }
+        heading(getString(R.string.mission_map))
+        val missionInfo = TextView(this).apply { text = getString(R.string.mission_hint) }
+        body.addView(MissionMapView(this).apply {
+            model = try { MissionModel.build(p.state()) } catch (e: Exception) { MissionModel.build(null) }
+            onTap = { nd -> missionInfo.text = getString(R.string.mission_node, Json.str(nd["title"]), Json.str(nd["task_id"]), Json.str(nd["status"])) }
+            onLongPress = { nd -> taskMenu(p, Json.str(nd["task_id"]), Json.str(nd["title"])) }
+        })
+        body.addView(missionInfo)
         heading(getString(R.string.standalone_timeline))
         val info = TextView(this)
         val tl = TimelineView(this).apply {
@@ -142,6 +153,22 @@ class StandaloneActivity : Activity() {
                 if (a.id == "paste") ask(s, a, listOf("text") + needs, p) else if (needs.isEmpty()) run(p, s, a, emptyMap()) else ask(s, a, needs, p)
             }
         }
+    }
+
+    /** Long press on a Mission Map circle (6.1.0): the desktop's four items, enabled only when the Guide allows them. */
+    private fun taskMenu(p: Project, taskId: String, title: String) {
+        val g = guide(p)
+        val rows = try { TaskMenu.forTask(g, taskId) } catch (e: Exception) { say(e.message ?: e.toString()); return }
+        val labels = rows.map { if (it.enabled) "${it.label}  ·  ${it.hint}" else "${it.label}  —  ${it.hint}" }.toTypedArray()
+        AlertDialog.Builder(this).setTitle(title).setItems(labels) { _, i ->
+            val r = rows[i]
+            if (!r.enabled) { say(r.hint); return@setItems }
+            val s = g.steps().firstOrNull { it.key == r.step } ?: return@setItems render(getString(R.string.mission_moved))
+            val a = s.actions.firstOrNull { it.id == r.action } ?: return@setItems render(getString(R.string.mission_moved))
+            if (a.id == "copy" && s.prompt.isNotEmpty()) copy(s.prompt)
+            val needs = a.needs.filter { it != "text" || a.id != "paste" }
+            if (a.id == "paste") ask(s, a, listOf("text") + needs, p) else if (needs.isEmpty()) run(p, s, a, emptyMap()) else ask(s, a, needs, p)
+        }.setNegativeButton(android.R.string.cancel, null).show()
     }
 
     private fun ask(s: Guide.Step, a: Guide.Action, needs: List<String>, p: Project) {
