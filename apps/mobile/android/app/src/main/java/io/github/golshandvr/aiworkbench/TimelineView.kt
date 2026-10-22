@@ -29,13 +29,15 @@ class TimelineView(context: Context) : View(context) {
     private var downX = 0f
     private var downY = 0f
 
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1C1C1C.toInt(); textSize = 12 * density }
-    private val muted = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF5C5C5C.toInt(); textSize = 11 * density }
-    private val grid = Paint().apply { color = 0xFFE5E5E5.toInt(); strokeWidth = density }
+    // 6.0.0: colours from the 5.x tokens (Midnight / Daylight), never hard-coded
+    private fun tok(role: String) = Ui5.c(context, role)
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tok("text"); textSize = 12 * density }
+    private val muted = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = tok("text_dim"); textSize = 11 * density }
+    private val grid = Paint().apply { color = tok("line_soft"); strokeWidth = density }
     private val dot = Paint(Paint.ANTI_ALIAS_FLAG)
     private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeWidth = 2 * density }
-    private val colors = mapOf("critical" to 0xFFC42B1C.toInt(), "major" to 0xFF8A5300.toInt(),
-        "normal" to 0xFF005FB8.toInt(), "minor" to 0xFF8A8A8A.toInt())
+    private val colors = mapOf("critical" to tok("danger"), "major" to tok("warn"),
+        "normal" to tok("active"), "minor" to tok("idle_ring"))
 
     private val scaler = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScale(d: ScaleGestureDetector): Boolean {
@@ -70,7 +72,7 @@ class TimelineView(context: Context) : View(context) {
             if (xv < left || xv > width) continue
             val row = (0 until LABEL_ROWS).firstOrNull { rowEnd[it] < xv } ?: (LABEL_ROWS - 1)
             rowEnd[row] = xv + muted.measureText(v.label) + 6 * density
-            line.color = if (v.released) 0xFF0E700E.toInt() else 0xFF005FB8.toInt()
+            line.color = if (v.released) tok("go") else tok("version")
             line.pathEffect = if (v.released) null else DashPathEffect(floatArrayOf(8 * density, 6 * density), 0f)
             canvas.drawLine(xv, top - 6 * density, xv, top + laneH * lanes.size, line)
             canvas.drawText(v.label, xv + 3 * density, top - 10 * density - row * 13 * density, muted)
@@ -79,7 +81,7 @@ class TimelineView(context: Context) : View(context) {
             val xe = x(e.t)
             if (xe < left - 12 * density || xe > width + 12 * density) continue
             val y = top + laneH * lanes.indexOf(e.lane).coerceAtLeast(0) + laneH / 2
-            dot.color = colors[e.importance] ?: 0xFF8A8A8A.toInt()
+            dot.color = colors[e.importance] ?: tok("idle_ring")
             dot.alpha = if (e.dated) 255 else 120
             canvas.drawCircle(xe, y, (Timeline.RADIUS[e.importance] ?: 4) * density, dot)
         }
