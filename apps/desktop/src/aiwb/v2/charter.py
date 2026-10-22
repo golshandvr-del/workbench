@@ -345,6 +345,14 @@ def validate_charter(data: dict[str, Any], state: dict[str, Any] | None = None) 
         actual = len(agent_roles) if team.get("pm_counted", True) else len([r for r in agent_roles.values() if r != "project_manager"])
         if declared != actual:
             warnings.append(f"team.total_agents: says {declared} but team.agents lists {actual} counted agent(s)")
+    if agents and (state.get("settings") or {}).get("team_source") == "wizard":  # 5.9.0: the user chose the team
+        mine = {aid for aid, ag in state["agents"].items() if ag.get("enabled", True)}
+        extra = sorted(set(agent_roles) - mine)
+        if extra:
+            warnings.append(f"team.agents: {', '.join(extra)} not in the team you chose; accepting adds them")
+        unused = sorted(aid for aid in mine - set(agent_roles) if state["agents"][aid]["role"] != "project_manager")
+        if unused:
+            warnings.append(f"team.agents: your AI(s) {', '.join(unused)} got no place in the charter")
     workers = [aid for aid, r in agent_roles.items() if r != "project_manager"]
     if agents and not workers:
         errors.append("team.agents: no AI besides the project manager does the work")
