@@ -5251,7 +5251,7 @@ class WorkbenchApp:
                 out["text"] = box.get("1.0", "end-1c")
                 top.destroy()
             ttk.Button(top, text="Use this answer", style="Accent.TButton", command=ok).pack(pady=(0, 8))
-            ui_layout.place_dialog(top, self.root)
+            ui_layout.place_dialog(top, 820, 520, self.root)
             box.focus_set()
             top.grab_set()
             top.wait_window()
