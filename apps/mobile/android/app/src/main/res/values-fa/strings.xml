@@ -89,4 +89,26 @@
     <string name="github_confirm">%1$s\n\n%2$s\n\nتا «ارسال» را نزنید چیزی به گیت‌هاب فرستاده نمی‌شود.</string>
     <string name="github_send">ارسال</string>
     <string name="github_sending">در حال ارسال به گیت‌هاب…</string>
+    <!-- 6.0.0 / mobile 3.0.0: پوستهٔ 5.x (نوار پایین = ریل دسکتاپ) -->
+    <string name="tab_home">خانه</string>
+    <string name="tab_projects">پروژه‌ها</string>
+    <string name="tab_agents">Agentها</string>
+    <string name="tab_history">تاریخچه</string>
+    <string name="tab_settings">تنظیمات</string>
+    <string name="home_caps">مأموریت</string>
+    <string name="home_lead">با چند AI برنامه‌ریزی کنید، پرامپت بدهید و منتشر کنید — روی همین گوشی، یا همراه Workbench روی دسکتاپ.</string>
+    <string name="home_recent">آخرین پروژه: %1$s</string>
+    <string name="home_continue">ادامهٔ %1$s</string>
+    <string name="projects_caps">پروژه‌های شما</string>
+    <string name="projects_manage">پروژهٔ جدید یا وارد کردن بسته</string>
+    <string name="agents_caps">همراه دسکتاپ</string>
+    <string name="agents_lead">با Workbench روی دسکتاپ جفت شوید تا تسک‌های هر AI را دنبال کنید، تسک بسازید و پاسخ AI را از گوشی بفرستید.</string>
+    <string name="history_caps">انتشارها</string>
+    <string name="history_lead">تایم‌لاین هر پروژه داخل خود پروژه است (پروژه‌ها ← باز کردن ← تایم‌لاین). اینجا: انتشارهای منتشرشدهٔ برنامه.</string>
+    <string name="settings_appearance">ظاهر</string>
+    <string name="theme_midnight">Midnight (تیره)</string>
+    <string name="theme_daylight">Daylight (روشن)</string>
+    <string name="theme_current">تم: %1$s</string>
+    <string name="theme_switch">تغییر به %1$s</string>
+    <string name="settings_build">Build</string>
 </resources>
