@@ -6114,10 +6114,11 @@ class WorkbenchApp:
 
     def _make_history_tab(self) -> None:
         tab = self.history_tab
-        ttk.Label(tab, text="Project conversation history", style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(tab, text="History", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             tab,
-            text="All prompts, model outputs and errors are kept in the local project audit history. Save a successful turn as a curated checkpoint when it matters; applied file changes automatically create a linked project-version record. Right-click a step to rename/delete it, move it, or change its parent/indentation. History lives in this project's .workbench folder and is not uploaded automatically.",
+            text="Everything that happened in this project: events on the timeline, then every prompt and response. "
+                 "Right-click a step to rename, move or delete it. Kept locally in .workbench, never uploaded.",
             style="Hint.TLabel", wraplength=1160, justify="left",
         ).pack(anchor="w", pady=(2, 8))
         self._make_history_timeline(tab)
