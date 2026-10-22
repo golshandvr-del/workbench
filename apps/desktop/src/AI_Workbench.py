@@ -5319,7 +5319,7 @@ class WorkbenchApp:
         from aiwb.ui.projects5 import ProjectCards
         tab = self.workbench_tab
         strip = ttk.Frame(tab, padding=(10, 8, 10, 0))
-        strip._aiwb_section = "Projects library"  # type: ignore[attr-defined]
+        # App Map: the header row (title label first) is the section "Your projects" with its commands
         strip.pack(side="top", fill="x")
         self.projects_strip = strip
         row = ttk.Frame(strip)
