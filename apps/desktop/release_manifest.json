@@ -246,6 +246,10 @@
       "source": "apps/desktop/tests/test_shared_tokens.py"
     },
     {
+      "path": "test_mission_fixture.py",
+      "source": "apps/desktop/tests/test_mission_fixture.py"
+    },
+    {
       "path": "test_ui_tree.py",
       "source": "apps/desktop/tests/test_ui_tree.py"
     },
