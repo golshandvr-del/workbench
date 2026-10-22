@@ -1,5 +1,6 @@
 package io.github.golshandvr.aiworkbench
 
+import io.github.golshandvr.aiworkbench.core.Tokens5
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -31,10 +32,12 @@ class CompanionActivity : Activity() {
     private var pairing: Pairing? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Ui5.apply(this)  // 6.0.0: Midnight / Daylight
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_companion)
         status = findViewById(R.id.companion_status)
         stateText = findViewById(R.id.state_text)
+        stateText.background = Ui5.shape(this, Ui5.c(this, "field"), Tokens5.GEOMETRY.getValue("radius_ctl"), Ui5.c(this, "line"))
         pairing = Pairing.decode(prefs().getString(KEY_PAIRING, null))
         findViewById<Button>(R.id.pair_button).setOnClickListener {
             val code = PairingCode.manual(findViewById<EditText>(R.id.pair_address).text.toString(),

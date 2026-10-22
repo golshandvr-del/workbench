@@ -1,5 +1,23 @@
 # AI Workbench Mobile — Changelog
 
+## [3.0.0] - 2026-10-22
+
+### Mobile theme — the "Mission Map" look on the phone (Roadmap 6.0.0)
+
+- **Shared tokens:** `packages/design/tokens5.json` is the desktop `tokens5.py` written out (colours of Midnight and
+  Daylight, type scale, geometry, motion, the five rail destinations). `core/Tokens5.kt` holds the same values;
+  `Tokens5Test` fails if the phone and the JSON differ, and desktop `test_shared_tokens` fails if the JSON and the
+  desktop differ — one palette for both apps.
+- **Midnight is the default**, Daylight mirrors every role (`Theme.AIWB.Midnight` / `Theme.AIWB.Daylight`); text keeps
+  WCAG ≥ 7:1 on every surface in both themes.
+- **New shell:** a bottom bar with the desktop rail's five destinations — Home · Projects · Agents · History ·
+  Settings — drawn anti-aliased with the same line icons and an active pill. Home continues the last project,
+  Projects lists and opens projects (Standalone), Agents pairs with the desktop (Companion), History lists the
+  published releases, Settings has the theme switch and the build provenance.
+- Cards, caps labels, titles and rounded buttons in the desktop's visual language (`Ui5`); Standalone, Companion and
+  the project timeline draw with token colours (no hard-coded colour left in the views).
+- Tests: `Tokens5Test`, `Shell5Test`.
+
 ## [2.0.0] - 2026-10-20
 
 ### The whole algorithm — gate (Roadmap 4.7.0, every node F1–F28)

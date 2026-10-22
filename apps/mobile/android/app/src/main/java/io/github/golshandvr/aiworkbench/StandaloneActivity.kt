@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.text.InputType
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -40,15 +39,18 @@ class StandaloneActivity : Activity() {
     private val projectsDir: File get() = File(filesDir, "projects").apply { mkdirs() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Ui5.apply(this)  // 6.0.0: Midnight / Daylight
         super.onCreate(savedInstanceState)
-        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(32, 32, 32, 32) }
-        status = TextView(this).apply { textSize = 14f; setPadding(0, 8, 0, 16) }
+        val pad = Ui5.dp(this, 16)
+        val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(pad, pad, pad, pad) }
+        status = TextView(this).apply { textSize = Ui5.sp("body"); setPadding(0, 8, 0, 16) }
         body = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(status)
         root.addView(body)
-        setContentView(ScrollView(this).apply { addView(root) })
+        setContentView(ScrollView(this).apply { setBackgroundColor(Ui5.c(this@StandaloneActivity, "window")); addView(root) })
         title = getString(R.string.standalone_title)
-        showProjects()
+        val wanted = intent?.getStringExtra(EXTRA_OPEN)
+        if (wanted != null && wanted in projectIds()) open(wanted) else showProjects()
     }
 
     // ---------------------------------------------------------------- project list
@@ -311,7 +313,7 @@ class StandaloneActivity : Activity() {
 
     private fun say(msg: String) {
         status.text = msg; status.visibility = View.VISIBLE
-        status.setTextColor(if (msg.startsWith(getString(R.string.standalone_error, "").trimEnd())) 0xFFC42B1C.toInt() else 0xFF1C1C1C.toInt())
+        status.setTextColor(Ui5.c(this, if (msg.startsWith(getString(R.string.standalone_error, "").trimEnd())) "danger" else "text"))
         (status.parent?.parent as? ScrollView)?.post { (status.parent?.parent as? ScrollView)?.smoothScrollTo(0, 0) }
     }
 
@@ -358,16 +360,17 @@ class StandaloneActivity : Activity() {
     }
 
     private fun heading(t: String) = body.addView(TextView(this).apply {
-        text = t; textSize = 16f; setTypeface(null, Typeface.BOLD); setPadding(0, 24, 0, 8)
+        text = t; textSize = Ui5.sp("title"); setTypeface(null, Typeface.BOLD); setPadding(0, 24, 0, 8)
+        setTextColor(Ui5.c(this@StandaloneActivity, "text"))
     })
 
-    private fun text(t: String) = body.addView(TextView(this).apply { text = t; textSize = 14f })
+    private fun text(t: String) = body.addView(Ui5.body(this, t))
 
-    private fun button(label: String, onClick: () -> Unit) = body.addView(Button(this).apply {
-        text = label; isAllCaps = false; setOnClickListener { onClick() }
-    })
+    private fun button(label: String, onClick: () -> Unit) = body.addView(Ui5.button(this, label) { onClick() })
 
     companion object {
+        /** Project id to open directly (Home → Continue, Projects → a project). */
+        const val EXTRA_OPEN = "io.github.golshandvr.aiworkbench.OPEN_PROJECT"
         private const val REQ_EXPORT = 41
         private const val REQ_IMPORT = 42
         private const val REQ_ZIP_EXPORT = 43
