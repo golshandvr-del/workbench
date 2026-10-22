@@ -701,6 +701,15 @@ def repair(data: Any, state: dict[str, Any] | None = None) -> tuple[Any, list[st
                     _fix(fixes, f"architecture.modules[{i}].depends_on: module names matched to ids")
                 mo["depends_on"] = new
         if isinstance(d.get("team"), dict):
+            # Charter v2: a module names its owner → that AI's owns_modules
+            by_id = {a.get("agent_id"): a for a in d["team"].get("agents", []) if isinstance(a, dict)}
+            for i, mo in enumerate(arch.get("modules", [])):
+                if isinstance(mo, dict) and mo.get("owner_agent_id") not in (None, ""):
+                    owner = agents.fix(mo.pop("owner_agent_id"), f"architecture.modules[{i}].owner_agent_id", fixes)
+                    if owner in by_id:
+                        own = by_id[owner].setdefault("owns_modules", [])
+                        if mo["id"] not in own:
+                            own.append(mo["id"])
             for i, a in enumerate(d["team"].get("agents", [])):
                 if isinstance(a, dict) and a.get("owns_modules"):
                     new = [ids.get(x) or names.get(_slug(x)) or x for x in a["owns_modules"]]
