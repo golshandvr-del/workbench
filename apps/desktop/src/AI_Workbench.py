@@ -4759,9 +4759,9 @@ class WorkbenchApp:
         self.agents_cards.pack(fill="x", pady=(6, 0))
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
-            team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),
-                           ("Plan team & tasks…", lambda: self.agents_workbench("team"))),
-            more=(("", (("Copy team summary", self.agents_copy_team),)),), style="Card.TFrame")
+            team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
+            more=(("", (("Plan team & tasks…", lambda: self.agents_workbench("team")),
+                        ("Copy team summary", self.agents_copy_team))),), style="Card.TFrame")
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
         pair.pack(fill="x", pady=(0, 9))
@@ -4797,8 +4797,7 @@ class WorkbenchApp:
                            ("Parallel chats…", self.agents_set_parallel),
                            ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
-        for bar, label in ((self.agents_team_bar, "Plan team & tasks…"), (self.agents_desk_bar, "Open task queue")):
-            bar.buttons[label]._aiwb_link = "workbench"  # type: ignore[attr-defined]  # home: Projects › Workbench
+        self.agents_desk_bar.buttons["Open task queue"]._aiwb_link = "workbench"  # type: ignore[attr-defined]
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
 
     TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
