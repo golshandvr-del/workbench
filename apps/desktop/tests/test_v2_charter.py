@@ -68,9 +68,11 @@ class CharterValidationTests(unittest.TestCase):
         self.assertIn("tasks[1].owner_agent_id: agent-nobody is not in team.agents", errs)
         self.assertIn("tasks[2].milestone_ref: m9 is not a roadmap milestone", errs)
         self.assertIn("roadmap.milestones[1].version: 0.0.9 does not grow", errs)
-        self.assertIn("own the same path", errs)
         self.assertIn("start_prompts: no start prompt for agent-mobile-dev", errs)
         self.assertIn("dependency cycle", errs)
+        # 5.10.0 (A12): overlapping ownership is a warning with the fix, not a rejection
+        self.assertNotIn("own the same path", errs)
+        self.assertIn("own the same path", "\n".join(validate_charter(bad)["warnings"]))
 
     def test_chat_copy_damage_is_repaired(self):
         raw = json.dumps(self.good, indent=1).replace('"schema_version"', '\u201cschema_version\u201d', 0)
@@ -89,10 +91,10 @@ class CharterValidationTests(unittest.TestCase):
 
     def test_fix_prompt_lists_problems_and_asks_for_the_full_block(self):
         bad = copy.deepcopy(self.good)
-        del bad["coordination"]
+        bad["tasks"][1]["owner_agent_id"] = "agent-nobody"   # ambiguous: who does this task? → rejected
         r = parse_charter(block(bad))
         fp = charter_fix_prompt(r)
-        self.assertIn("coordination: section missing", fp)
+        self.assertIn("tasks[1].owner_agent_id: agent-nobody is not in team.agents", fp)
         self.assertIn("<<<AIWB_PROJECT_CHARTER>>>", fp)
         self.assertIn("COMPLETE", fp)
 
@@ -147,14 +149,27 @@ class CharterImportTests(unittest.TestCase):
         ms = [m for m in self.c.state()["milestones"].values() if m["title"] == "Both apps usable"][0]
         self.assertEqual(len(ms["task_ids"]), 1)
 
+    def test_missing_parts_with_one_obvious_answer_are_filled_and_listed(self):
+        """5.10.0: no coordination and no start prompts → Workbench builds them and says so (Charter v2)."""
+        bad = copy.deepcopy(self.good)
+        del bad["start_prompts"], bad["coordination"]
+        bad["base_state_revision"] = self.c.state()["state_revision"]
+        r = self.c.route_answer(block(bad))
+        self.assertEqual(r.kind, "proposal", r.message)
+        res = parse_charter(block(bad), self.c.state())
+        self.assertTrue(res["ok"], res["errors"])
+        joined = "\n".join(res["fixes"])
+        self.assertIn("start_prompts: written by Workbench for agent-core-dev", joined)
+        self.assertIn("coordination: missing — built from the modules and tasks", joined)
+
     def test_incomplete_charter_is_rejected_with_fix_prompt(self):
         bad = copy.deepcopy(self.good)
-        del bad["start_prompts"]
+        bad["tasks"][0]["depends_on_refs"] = ["t9"]
         before = self.c.state()["state_revision"]
         r = self.c.route_answer(block(bad))
         self.assertEqual(r.kind, "charter_rejected")
-        self.assertIn("start_prompts: section missing", r.message)
-        self.assertIn("start_prompts: section missing", r.record["fix_prompt"])
+        self.assertIn("tasks[0].depends_on_refs: unknown task 't9'", r.message)
+        self.assertIn("tasks[0].depends_on_refs: unknown task 't9'", r.record["fix_prompt"])
         self.assertEqual(self.c.state()["proposals"], {})
         self.assertEqual(self.c.state()["state_revision"], before)
 
