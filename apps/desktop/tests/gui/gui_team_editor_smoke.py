@@ -34,9 +34,9 @@ def open_workbench(app, root, project: Path):
     app.set_workspace(project, focus_project=True)
     wait_for_project_ready(app, root, project)
     app.open_project_workbench()
-    for _ in range(200):
+    for _ in range(400):  # compare with app.workspace: Windows may resolve the temp folder differently (8.3 names)
         ws = getattr(app, "workspace_window", None)
-        if ws is not None and getattr(ws, "_project_root", None) == str(project):
+        if ws is not None and getattr(ws, "_project_root", None) in (str(app.workspace), str(project)):
             return ws
         pump(root, 2)
     raise AssertionError("the Workbench did not open")
