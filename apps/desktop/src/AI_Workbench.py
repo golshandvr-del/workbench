@@ -4714,7 +4714,8 @@ class WorkbenchApp:
             return ws.wc.ctl.state()
         path = Path(self.workspace) / ".workbench" / "v2" / "state.json"
         if not path.is_file():
-            return None
+            # a project is open but not planned yet: an empty state, so the status bar never says "No project open"
+            return {"agents": {}, "tasks": {}, "handoffs": {}, "milestones": {}, "versions": {}, "settings": {}}
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
