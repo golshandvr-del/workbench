@@ -17,19 +17,18 @@
 `tools/e2e_github_sandbox.py` — run 2026-10-18, all PASS (see `E2E_REPORT_v5.5.0.md (unchanged GitHub code paths)`):
 preflight · sensitive file blocked · commit · idempotent commit · push · idempotent push · exact run of the pushed SHA (not the seed push) · build passed · artifact SHA-256 matched GitHub's digest · artifact content = pushed SHA · build-metadata contract · stale plan refused after a concurrent push · manual dispatch confirmed with run ID · no token in records/events/`.git/config` · branch cleanup. Paths contain spaces and Unicode.
 
-## 5.8.0 specific
+## 5.8.0 specific (core-path repair, step 1: stop the bleeding)
 
-- [x] `test_projects_cards.py` — project card rows: active first, then most recently opened; search filters name,
-      description and path; missing folders shown as such
-- [x] `test_mission_model.py` — Map view options: *hide finished* drops done circles, *only AIs with open work* drops
-      finished lanes, lane numbers and counts unchanged
-- [x] `gui_v5_polish_smoke.py` — Home shows only the active project (Mission Map · Map view · Task details · Next
-      step); Projects owns the library cards (select, double-click opens, Find filters); Copy map summary writes
-      nothing; History › Timeline draws the ledger in Midnight and Daylight
-- [x] Layout smoke at 1024x640: project cards and the History timeline fold away on short windows, nothing clipped;
-      no layout feedback loop on Home; App Map regenerated, audit balanced
-- [x] All 5.1.0 – 5.6.0 gates stay green
-- [ ] NOT RUN: Home / Projects / History on real Windows 10/11 at 100/150 % scaling
+- [x] `test_ui_call_signatures.py` — every `ui_layout.*` call matches the helper's real signature (catches the 5.7.0
+      `place_dialog() missing 1 required positional argument: 'height'` crash; verified red on the old code)
+- [x] `test_profile_to_charter.py` — the saved Project Profile (platform, language, framework …) is in the charter
+      prompt; defaults such as "Let AI recommend" are left out; a missing or broken `project.json` is harmless
+- [x] `gui_owner_path_smoke.py` — the owner's path with **real widgets**: New Project › Guided → Workbench (not the
+      old Profile) → the five start questions in their real dialogs → Copy the charter prompt → More › Paste the
+      charter in the **real paste box** → Accept → task prompt → I sent it → real paste box → Accept → the file is
+      on disk; status bar never says "No project open"; no callback error (verified red with the 5.7.0 call)
+- [x] All 5.1.0 – 5.7.0 gates stay green
+- [ ] NOT RUN: the same path on real Windows 10/11 with a real GPT / Claude answer pasted from the chat window
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
