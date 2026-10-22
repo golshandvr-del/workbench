@@ -89,7 +89,6 @@ class PasteBox:
         return self.preview
 
     def _show(self, p: Any) -> None:
-        mark = {True: "✓", False: "✗"}
         self.status_var.set(p.line)
         self.details_var.set(p.details())
         try:
@@ -97,7 +96,6 @@ class PasteBox:
             self.status.configure(foreground=colour)
         except tk.TclError:
             pass
-        del mark
 
     # ------------------------------------------------------------------ actions
     def load_zip(self, path: str | None = None) -> Any:
