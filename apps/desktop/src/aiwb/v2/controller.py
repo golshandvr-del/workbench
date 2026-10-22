@@ -38,6 +38,7 @@ class RouteResult:
     message: str = ""
     reference_id: str = ""
     record: dict[str, Any] = field(default_factory=dict)
+    text: str = ""                  # 5.10.0: the canonical answer text the loop read (files as AIWB blocks)
 
 
 class ProjectsController:
@@ -446,7 +447,10 @@ class ProjectsController:
         return render_status_md(build_snapshot(st), st)
 
     # -- one paste box for every answer
-    def route_answer(self, text: str, *, file_hashes: dict[str, str] | None = None) -> RouteResult:
+    def route_answer(self, text: str, *, file_hashes: dict[str, str] | None = None,
+                     handoff_hint: str = "") -> RouteResult:
+        """Read one pasted answer. ``handoff_hint``: the handoff the user pasted it for (a guide step), used when
+        the answer itself does not say (5.10.0: Markdown / JSON / ZIP answers often carry no manifest)."""
         if not text.strip():
             return RouteResult("rejected", message="The answer is empty.")
         rid = ""
@@ -481,17 +485,33 @@ class ProjectsController:
                 if p.get("stale"):
                     msg += " It was written for an older project state: review carefully."
                 return RouteResult("proposal", rid, msg, p["proposal_id"], p)
-            if HANDOFF_RE.search(text):
-                hid = self._match_handoff(text)
+            from ..intake.answer_files import canonical
+            canon, ex = canonical(text)   # 5.10.0 (A13): Markdown, Strict JSON, ZIP, damaged markers → AIWB blocks
+            if ex.files or HANDOFF_RE.search(canon):
+                hid = self._match_handoff(canon, attempt_id=ex.attempt_id, hint=handoff_hint)
+                if not hid and not HANDOFF_RE.search(canon):
+                    return RouteResult("rejected", rid, f"{len(ex.files)} file(s) found ({ex.label}), but this "
+                                       "project is not waiting for an answer they belong to. Copy a task prompt "
+                                       "first. The answer is kept in the Inbox; nothing was changed.", text=canon)
+                text = canon
+            if HANDOFF_RE.search(text) or ex.files:
+                hid = self._match_handoff(text, attempt_id=ex.attempt_id, hint=handoff_hint)
                 if not hid:
                     return RouteResult("rejected", rid, "This answer names a task/attempt this project is not waiting "
                                        "for. It is kept in the Inbox; nothing was changed.")
-                h = self.project.handoffs.ingest(hid, rid, text, file_hashes=file_hashes)
+                h = self.project.handoffs.ingest(hid, rid, text, file_hashes=file_hashes,
+                                                 declared_attempt=ex.attempt_id if ex.attempt_id else "")
                 self._dirty("handoff answer")
                 msg = f"Answer linked to {hid} ({h['status']}, {h['outcome'] or 'no outcome'})."
+                if ex.files:
+                    msg += f" {len(ex.files)} file(s) read from {ex.label}."
+                if ex.fixes:
+                    msg += " Fixed automatically: " + "; ".join(ex.fixes[:3]) + (" …" if len(ex.fixes) > 3 else "") + "."
+                if ex.problems:
+                    msg += " Skipped: " + "; ".join(ex.problems[:3]) + (" …" if len(ex.problems) > 3 else "") + "."
                 if h["unresolved_items"]:
                     msg += " Still open: " + "; ".join(h["unresolved_items"][:5])
-                return RouteResult("handoff", rid, msg, hid, h)
+                return RouteResult("handoff", rid, msg, hid, h, text=text)
         except ModelError as exc:
             return RouteResult("rejected", rid, f"{exc} The raw answer is kept in the Inbox.")
         from .changes import detect_context_request, note_context_request
@@ -508,7 +528,11 @@ class ProjectsController:
         return RouteResult("inbox_only", rid, "No manager proposal or handoff block found. If it contains files, "
                            "use the normal Analyze / preview flow on the Response tab.")
 
-    def _match_handoff(self, text: str) -> str:
+    WAITING = ("prepared", "prompt_exported", "response_received")
+
+    def _match_handoff(self, text: str, *, attempt_id: str = "", hint: str = "") -> str:
+        """The handoff an answer belongs to: its manifest, its ``AIWB_ATTEMPT_ID`` line, the guide step it was
+        pasted for, or — 5.10.0 — the only handoff the project is waiting for."""
         from .handoff import find_manifest
         try:
             data = find_manifest(text) or {}
@@ -518,11 +542,16 @@ class ProjectsController:
         hid = str(data.get("handoff_id", ""))
         if hid in st["handoffs"]:
             return hid
-        att = str(data.get("attempt_id", ""))
-        for h in st["handoffs"].values():
-            if att and h["attempt_id"] == att:
-                return h["handoff_id"]
-        return ""
+        for att in (str(data.get("attempt_id", "")), attempt_id):
+            for h in st["handoffs"].values():
+                if att and h["attempt_id"] == att:
+                    return h["handoff_id"]
+        if data.get("handoff_id") or data.get("attempt_id") or attempt_id:
+            return ""   # the answer names another task/attempt: never guess
+        if hint in st["handoffs"] and st["handoffs"][hint]["status"] in self.WAITING:
+            return hint
+        waiting = [h["handoff_id"] for h in st["handoffs"].values() if h["status"] in self.WAITING]
+        return waiting[0] if len(waiting) == 1 else ""
 
     # -- review actions (the only state changes, each one a user decision)
     def accept_proposal(self, proposal_id: str, indices: list[int], *, confirm_stale: bool = False) -> dict[str, Any]:
