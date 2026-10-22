@@ -319,6 +319,10 @@ def zip_files(data: bytes, *, name: str = "answer.zip") -> Extracted:
         noise = len([i for i in z.infolist() if not i.is_dir()]) - len(infos)
         if noise:
             ex.fixes.append(f"{noise} system file(s) (__MACOSX, .DS_Store…) ignored")
+        unsafe = [i for i in infos if not safe_path(i.filename) or safe_path(i.filename) != i.filename.replace("\\", "/")]
+        for i in unsafe:
+            ex.problems.append(f"{i.filename} is an unsafe path — skipped")
+        infos = [i for i in infos if i not in unsafe]
         names = [i.filename.replace("\\", "/") for i in infos]
         # one top folder that is itself the project root (it holds README/package.json/…) → strip it
         tops = {n.split("/", 1)[0] for n in names}
