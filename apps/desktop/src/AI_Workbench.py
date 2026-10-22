@@ -5121,7 +5121,7 @@ class WorkbenchApp:
             return "Mission Map: no project or no tasks yet."
         c = m["counts"]
         lines = [f"Mission Map — {len(m['lanes'])} AI lanes, {len(m['columns'])} columns: {c['done']} done, "
-                 f"{c['active']} in progress, {c['blocked']} blocked, {c['attention']} need you, {c['idle']} waiting"]
+                 f"{c['active']} ready or working, {c['blocked']} blocked, {c['attention']} need you, {c['idle']} waiting"]
         for ln in m["lanes"]:
             lines.append(f"AI {ln['number']} ({ln['name']}):")
             for n in ln["nodes"]:
@@ -5151,7 +5151,7 @@ class WorkbenchApp:
         c = model["counts"]
         self.mission_summary_var.set("" if model["empty"] else
                                      f"{len(model['lanes'])} AI lanes · {len(model['columns'])} columns · "
-                                     f"{c['done']} done · {c['active']} in progress · {c['blocked']} blocked")
+                                     f"{c['done']} done · {c['active']} ready or working · {c['blocked']} blocked")
         if self.mission.selected and self.mission.node(self.mission.selected) is None:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
