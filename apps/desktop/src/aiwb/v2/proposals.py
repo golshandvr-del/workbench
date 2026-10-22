@@ -73,7 +73,7 @@ class ProposalService:
         return self.import_data(data, response_id=response_id, kind=kind)
 
     def import_data(self, data: dict[str, Any], *, response_id: str = "", kind: str = "update",
-                    charter: dict[str, Any] | None = None) -> dict[str, Any]:
+                    charter: dict[str, Any] | None = None, fixes: list[str] | None = None) -> dict[str, Any]:
         """Import an already parsed proposal (also used for a Project Charter, 3.4.0)."""
         from .report import parse_emergency, parse_remaining
         ops = data.get("operations")
@@ -137,8 +137,11 @@ class ProposalService:
                  "roadmap_remaining": remaining, "emergency_tasks": parse_emergency(data.get("emergency_tasks")),
                  "has_decision": "roadmap_remaining" in data or "emergency_tasks" in data,
                  "created_at": now_utc(), "updated_at": now_utc(), "result": {}}
+            if fixes:  # 5.10.0: automatic repairs of the model's answer are kept with it, never hidden
+                p["auto_fixes"] = [str(f)[:300] for f in fixes][:200]
             s["proposals"][pid] = p
-            emit(s, "proposal_imported", proposal_id=pid, operations=len(normalized), stale=stale)
+            emit(s, "proposal_imported", proposal_id=pid, operations=len(normalized), stale=stale,
+                 **({"auto_fixes": len(fixes)} if fixes else {}))
         return p
 
     # -- review
