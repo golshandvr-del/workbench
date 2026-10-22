@@ -103,7 +103,8 @@ def build(state: dict[str, Any] | None, *, hide_done: bool = False, open_only: b
     slots = [1] * len(cols)
     lanes = []
     counts = {s: 0 for s in NODE_STATES}
-    for i, aid in enumerate(sorted(by_lane, key=lambda a: (a == "unassigned", a))):
+    order = {a: k for k, a in enumerate((state.get("settings") or {}).get("team_order") or [])}  # 5.9.0: user's order
+    for i, aid in enumerate(sorted(by_lane, key=lambda a: (a == "unassigned", order.get(a, len(order)), a))):
         per_col: dict[int, int] = {}
         nodes = []
         states = [node_state(tasks[tid], handoff_open=tid in open_h) for tid in by_lane[aid]]
