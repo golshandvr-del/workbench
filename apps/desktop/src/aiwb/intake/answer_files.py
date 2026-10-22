@@ -385,13 +385,6 @@ def zip_files(data: bytes, *, name: str = "answer.zip") -> Extracted:
 
 # --------------------------------------------------------------------------- the one entry point
 
-def _manifest_in(text: str) -> tuple[dict[str, Any] | None, str]:
-    m = MAN_RE.search(text or "")
-    if not m:
-        return None, ""
-    return None, m.group(0)
-
-
 def extract(text: str) -> Extracted:
     """Every file the answer delivers, in whatever format it came, plus its manifest block and attempt id."""
     raw = (text or "").replace("\r\n", "\n")
@@ -439,7 +432,8 @@ def fence_for(body: str) -> str:
 
 
 def to_aiwb_text(ex: Extracted, *, original: str = "") -> str:
-    """The canonical answer text: attempt line, one AIWB block per file, the manifest; ``original`` kept below."""
+    """The canonical answer text: attempt line, one AIWB block per file, then the manifest (from ``original``'s
+    ``AIWB_HANDOFF`` block when it has one). The original text itself stays in the Inbox."""
     out: list[str] = []
     if ex.attempt_id:
         out.append(f"AIWB_ATTEMPT_ID: {ex.attempt_id}")
@@ -453,9 +447,6 @@ def to_aiwb_text(ex: Extracted, *, original: str = "") -> str:
         out += ["<<<AIWB_HANDOFF>>>", json.dumps(ex.manifest, ensure_ascii=False, indent=1), "<<<AIWB_END_HANDOFF>>>"]
     elif has_block:
         out.append(MAN_RE.search(original).group(0))
-    if original.strip():
-        out += ["", "--- original answer (kept for the record; not read for files) ---",
-                re.sub(r"(?m)^(\s*)<<<", r"\1‹‹‹", original)]
     return "\n".join(out).rstrip() + "\n"
 
 
