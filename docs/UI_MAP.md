@@ -17,7 +17,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Projects | 13 | 7 | 21 | 9 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
-| Agents | 7 | 0 | 6 | 10 | 4 |
+| Agents | 7 | 0 | 7 | 10 | 3 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
 | History | 7 | 6 | 12 | 10 | 0 |
@@ -138,8 +138,9 @@ Audit:
   - Agents [page]
     - Agents [section]
       - Team [section]
-        - Copy team summary [button]
-        - Plan team & tasks… [link]
+        - Edit team… [button]
+        - More [menu]
+          - Copy team summary [item]
       - Selected AI [section]
         - Copy briefing [button]
         - Memory note… [button]
