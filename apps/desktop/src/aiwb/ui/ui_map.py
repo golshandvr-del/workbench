@@ -87,9 +87,12 @@ def _ordered(w: Any) -> list[Any]:
         return kids
     try:  # a frame whose children are all packed side by side is ONE row, whatever the heights (Windows fonts)
         packed = w.pack_slaves()
-        if packed and len(packed) == len(kids) and all(str(c.pack_info().get("side")) in ("left", "right")
-                                                       for c in packed):
-            return [kids[i] for _y, _x, i in sorted(pos, key=lambda q: (q[1], q[2]))]
+        sides = {str(c.pack_info().get("side")) for c in packed}
+        if packed and len(sides) == 1 and sides <= {"left", "right"}:
+            # pack order, not geometry: squeezed widgets (narrow window, Windows fonts) keep their place
+            row = list(packed) if sides == {"left"} else list(reversed(packed))
+            rest = [kids[i] for _y, _x, i in sorted(pos) if kids[i] not in row]
+            return row + rest
     except Exception:  # noqa: BLE001
         pass
     rows: list[list[tuple[float, int, int]]] = []
