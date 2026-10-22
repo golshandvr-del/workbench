@@ -189,7 +189,7 @@ def main() -> None:
             click_more(ws, "Paste the charter")
             o.pump(600)
             assert o.answered[-1] == "Paste the charter", o.answered
-            assert "imported" in ws.status_var.get(), ws.status_var.get()
+            assert "Imported as PROP-" in ws.status_var.get(), ws.status_var.get()   # 5.10.0: "Charter ✓ · …"
             o.shot("04_charter_pasted")
             # 5) Accept the plan
             assert ws.next_btn.cget("text").startswith("Accept"), ws.next_btn.cget("text")
