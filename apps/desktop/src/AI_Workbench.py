@@ -4603,7 +4603,7 @@ class WorkbenchApp:
         self.project_tab = self.shell.add_page("prompt", padding=8)
         self.response_tab = self.shell.add_page("response", padding=8)
         self.profile_tab = self.shell.add_page("profile", padding=10)
-        self.history_tab = self.shell.add_page("history", padding=8)
+        self.history_tab = self.shell.add_page("history", padding=8, on_show=self.refresh_history_timeline)
         self.run_tab = self.shell.add_page("run", padding=8)
         self.git_tab = self.shell.add_page("git", padding=8)
         self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
@@ -6051,6 +6051,67 @@ class WorkbenchApp:
         response_frame.rowconfigure(0, weight=1)
         response_frame.columnconfigure(0, weight=1)
 
+    @staticmethod
+    def _timeline_palette(theme: str) -> dict[str, str]:
+        """The 5.x tokens under the names :class:`TimelineCanvas` reads (5.7.0: History in the new look)."""
+        from aiwb.ui.tokens5 import palette5
+        p = palette5(theme)
+        return {"surface": p["panel"], "text": p["text"], "muted": p["text_dim"], "divider": p["line_soft"],
+                "accent": p["active"], "success": p["go"], "warning": p["warn"], "danger": p["danger"]}
+
+    def _make_history_timeline(self, tab: tk.Misc) -> None:
+        """History › Timeline (5.7.0): every ledger event of the open project on one zoomable timeline."""
+        from aiwb.ui.timeline_canvas import TimelineCanvas
+        box = ttk.Frame(tab, style="Card.TFrame", padding=(10, 6))
+        box._aiwb_section = "Timeline"  # type: ignore[attr-defined]
+        box.pack(fill="x", pady=(0, 8))
+        head = ttk.Frame(box, style="Card.TFrame")
+        head._aiwb_noflow = True  # type: ignore[attr-defined]
+        head.pack(fill="x")
+        ttk.Label(head, text="Timeline", style="CardTitle.TLabel").pack(side="left")
+        self.history_tl_var = tk.StringVar(value="Open a project to see what happened.")
+        ttk.Label(head, textvariable=self.history_tl_var, style="CardMuted.TLabel").pack(side="left", padx=(12, 0))
+        self.history_tl = TimelineCanvas(box, palette=self._timeline_palette(self.prefs.theme), height=150,
+                                         on_select=self._history_tl_select)
+        self.history_tl._aiwb_keep_colours = True  # type: ignore[attr-defined]
+        self.history_tl.pack(fill="x", pady=(6, 0))
+        self.shell.on_pref(lambda key: self.refresh_history_timeline() if key == "theme" else None)
+
+    def refresh_history_timeline(self) -> dict[str, Any] | None:
+        """Redraw History › Timeline from the open project (reading never writes)."""
+        tl = getattr(self, "history_tl", None)
+        if tl is None:
+            return None
+        pal = self._timeline_palette(self.prefs.theme)
+        tl.p.update({"text": pal["text"], "muted": pal["muted"], "grid": pal["divider"], "accent": pal["accent"],
+                     "success": pal["success"], "warning": pal["warning"], "danger": pal["danger"],
+                     "surface": pal["surface"]})
+        tl.configure(background=pal["surface"])
+        model = {"events": [], "versions": [], "lanes": [], "t0": 0.0, "t1": 1.0}
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and self.workspace is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                model = ws.wc.timeline_model()
+            except Exception:  # noqa: BLE001 - a broken ledger must not break History
+                pass
+        tl.set_model(model)
+        n, v = len(model["events"]), len(model["versions"])
+        self.history_tl_var.set(f"{n} event(s) · {v} version(s) · {len(model['lanes'])} lane(s) — wheel to zoom, "
+                                "drag to pan, click an event" if n else "No events yet in this project.")
+        return model
+
+    def _history_tl_select(self, event_id: str) -> None:
+        """Click on History › Timeline: open the event in the Workbench Inspector."""
+        ws = getattr(self, "workspace_window", None)
+        if ws is None:
+            return
+        self.shell.show("workbench")
+        try:
+            ws.wc.select("event", event_id)
+            ws._render_inspector()
+        except Exception:  # noqa: BLE001 - a stale selection must not break navigation
+            pass
+
     def _make_history_tab(self) -> None:
         tab = self.history_tab
         ttk.Label(tab, text="Project conversation history", style="SectionTitle.TLabel").pack(anchor="w")
@@ -6059,6 +6120,7 @@ class WorkbenchApp:
             text="All prompts, model outputs and errors are kept in the local project audit history. Save a successful turn as a curated checkpoint when it matters; applied file changes automatically create a linked project-version record. Right-click a step to rename/delete it, move it, or change its parent/indentation. History lives in this project's .workbench folder and is not uploaded automatically.",
             style="Hint.TLabel", wraplength=1160, justify="left",
         ).pack(anchor="w", pady=(2, 8))
+        self._make_history_timeline(tab)
         split = ttk.Panedwindow(tab, orient="horizontal")
         split.pack(fill="both", expand=True)
         left = ttk.Frame(split, padding=(0, 0, 8, 0))
