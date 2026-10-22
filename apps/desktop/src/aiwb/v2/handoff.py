@@ -30,6 +30,29 @@ FILE_RULES = [
     "<<<AIWB_FILE path=\"relative/path.ext\" action=\"write\">>>", "````", "(the complete file)", "````", "<<<AIWB_END_FILE>>>",
 ]
 
+# 5.10.0 (A13): the other two answer formats of the New Project wizard. Workbench reads all three (and Markdown with
+# file names) whatever was chosen; the choice only decides what the prompt asks for.
+JSON_RULES = [
+    "- Files: answer with ONE JSON object (it may sit in a ```json block) and nothing else after it:",
+    '{"attempt_id": "<the AIWB_ATTEMPT_ID above>", "files": [{"path": "relative/path.ext", "content": "the complete '
+    'file"}], "handoff": {<the manifest fields below>}}',
+    "- Complete files only; escape newlines and quotes as JSON requires. No comments.",
+]
+ZIP_RULES = [
+    "- Files: put every file in ONE downloadable ZIP with the project's folder layout (relative paths, no top folder "
+    "needed), plus a file AIWB_HANDOFF.json at the ZIP root holding the manifest below.",
+    "- In the chat, give the download link and repeat the manifest block below as text.",
+    "- If you cannot create files, use AIWB file blocks instead:",
+    *FILE_RULES[1:],
+]
+
+
+def format_rules(state: dict[str, Any], agent_id: str = "") -> list[str]:
+    """The delivery rules for the answer format the user chose (per AI, else for the project; default AIWB)."""
+    agent = (state.get("agents") or {}).get(agent_id) or {}
+    fmt = agent.get("answer_format") or (state.get("settings") or {}).get("answer_format") or "aiwb"
+    return {"json": JSON_RULES, "zip": ZIP_RULES}.get(fmt, FILE_RULES)
+
 
 def find_manifest(text: str) -> dict[str, Any] | None:
     m = BLOCK_RE.search(text or "")
@@ -315,7 +338,7 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
     if h.get("note"):
         lines += _section("Note from the user", [h["note"]])
     lines += _section("9. Expected delivery", [
-        *FILE_RULES,
+        *format_rules(s, h["to_agent_id"]),
         "- Then exactly one manifest block:",
         "<<<AIWB_HANDOFF>>>",
         json.dumps({"schema_version": "1.0", "handoff_id": h["handoff_id"], "task_id": h["task_id"],
