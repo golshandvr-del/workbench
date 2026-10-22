@@ -6085,6 +6085,7 @@ class WorkbenchApp:
         box.pack(fill="x", pady=(0, 8))
         head = ttk.Frame(box, style="Card.TFrame")
         head._aiwb_noflow = True  # type: ignore[attr-defined]
+        head._aiwb_section = ""  # type: ignore[attr-defined]  # the box's title row, not a section of its own
         head.pack(fill="x")
         ttk.Label(head, text="Timeline", style="CardTitle.TLabel").pack(side="left")
         self.history_tl_var = tk.StringVar(value="Open a project to see what happened.")
