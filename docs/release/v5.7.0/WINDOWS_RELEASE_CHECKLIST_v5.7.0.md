@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.7.0 (5.x — Agents hub)
+# Windows Release Checklist — AI Workbench 5.7.0 (5.x — one job per page)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -19,16 +19,17 @@ preflight · sensitive file blocked · commit · idempotent commit · push · id
 
 ## 5.7.0 specific
 
-- [x] `test_agent_hub.py` — per-AI stats from recorded facts only, idle/stuck/overloaded alerts, rebalance plan moves
-      only unstarted `ready` tasks, queue order, self-contained briefing, memory note goes into "Your role"
-- [x] `test_agents_cards.py` — card numbers = Mission Map lane numbers, state words, note round-trip, rebalance writes
-      in one store transaction
-- [x] `gui_v5_agents_smoke.py` — one card per enabled AI, alerts + suggested move under Balance, card click selects,
-      Copy briefing writes nothing, Memory note… persists and reaches the next prompt, Apply suggested moves evens the
-      load; Midnight and Daylight screenshots in `docs/design/screens/`
-- [x] Layout smoke at 1024x640: the Agents page scrolls, nothing clipped; App Map regenerated, audit balanced
-- [x] All 5.1.0 – 5.5.0 gates stay green
-- [ ] NOT RUN: Agents page on real Windows 10/11 at 100/150 % scaling
+- [x] `test_projects_cards.py` — project card rows: active first, then most recently opened; search filters name,
+      description and path; missing folders shown as such
+- [x] `test_mission_model.py` — Map view options: *hide finished* drops done circles, *only AIs with open work* drops
+      finished lanes, lane numbers and counts unchanged
+- [x] `gui_v5_polish_smoke.py` — Home shows only the active project (Mission Map · Map view · Task details · Next
+      step); Projects owns the library cards (select, double-click opens, Find filters); Copy map summary writes
+      nothing; History › Timeline draws the ledger in Midnight and Daylight
+- [x] Layout smoke at 1024x640: project cards and the History timeline fold away on short windows, nothing clipped;
+      no layout feedback loop on Home; App Map regenerated, audit balanced
+- [x] All 5.1.0 – 5.6.0 gates stay green
+- [ ] NOT RUN: Home / Projects / History on real Windows 10/11 at 100/150 % scaling
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
