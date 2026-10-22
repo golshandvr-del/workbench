@@ -14,6 +14,8 @@ import java.io.File
  * this test keeps [Tokens5] equal to the same JSON, so both apps share one palette, type scale, geometry and rail.
  */
 class Tokens5Test {
+    private fun JSONObject.keySet(): Set<String> = keys().asSequence().toSet()
+
     private fun json(): JSONObject {
         var dir: File? = File("").absoluteFile
         while (dir != null && !File(dir, "packages/design/tokens5.json").isFile) dir = dir.parentFile
