@@ -5047,7 +5047,7 @@ class WorkbenchApp:
 
     # -- Home › Mission Map (roadmap 5.2.0)
     def _make_home_page(self) -> None:
-        """Home: the Mission Map (parallel timelines, one lane per AI) above the project list. Read-only view."""
+        """Home: the active project only — Mission Map (one lane per AI), task details and the next step (5.7.0)."""
         from aiwb.ui.mission_canvas import MissionCanvas
         self.home_scroll = ui_layout.ScrollPage(self.manager_tab)
         self.home_scroll.pack(fill="both", expand=True)
@@ -5079,8 +5079,7 @@ class WorkbenchApp:
         self.mission_jump_btn = ttk.Button(detail, text="Jump to active task", command=self.mission_jump_active)
         self.mission_jump_btn.pack(side="right", padx=(0, 6))  # 5.6.0
         self._mission_rev: tuple[str, int] | None = None
-        self.home_projects_frame = ttk.Frame(body)
-        self.home_projects_frame.pack(fill="both", expand=True)
+        self._make_home_next_card(body)
         self.shell.status_listeners.append(self.refresh_mission)
         self.shell.on_pref(lambda key: self.mission.redraw() if key in ("theme", "motion") else None)
         self.refresh_mission(self.status_state())
@@ -5265,68 +5264,65 @@ class WorkbenchApp:
                 pass
 
     def _make_projects_dashboard(self) -> None:
-        tab = getattr(self, "home_projects_frame", self.manager_tab)
-        ttk.Label(tab, text="Your projects", style="SectionTitle.TLabel").pack(anchor="w")
-        ttk.Label(tab, text="Create independent workspaces, switch between existing projects, and keep each project's profile and last task separate.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(3, 12))
+        """Projects page header (5.7.0): the project library as cards, above the Workbench of the open project.
 
-        toolbar = ttk.Frame(tab, style="Card.TFrame", padding=10)
-        toolbar.pack(fill="x", pady=(0, 9))
-        ui_actions.ActionBar(
-            toolbar,
+        Home shows only the active project; the library (create, open, find, reveal, remove) lives here. The old
+        table ``projects_tree`` stays as the selection model behind the cards (not laid out, so not on screen).
+        """
+        from aiwb.ui.projects5 import ProjectCards
+        tab = self.workbench_tab
+        strip = ttk.Frame(tab, padding=(10, 8, 10, 0))
+        strip._aiwb_section = "Project cards"  # type: ignore[attr-defined]
+        strip.pack(side="top", fill="x")
+        self.projects_strip = strip
+        row = ttk.Frame(strip)
+        row.pack(fill="x")
+        ttk.Label(row, text="Your projects", style="SectionTitle.TLabel").pack(side="left")
+        self.projects_bar = ui_actions.ActionBar(
+            row,
             primary=(("+ New project", self.new_project, "Primary.TButton"),
                      ("Open selected", self.open_selected_project)),  # Add existing folder…: Toolbar › New Project
             more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
-                                        ("Remove from list", self.forget_selected_project))),),
-            style="Card.TFrame").pack(side="left")
-
-        search_row = ttk.Frame(tab)
-        search_row.pack(fill="x", pady=(0, 7))
-        ttk.Label(search_row, text="Find a project").pack(side="left")
-        search_entry = ttk.Entry(search_row, textvariable=self.project_search_var, width=38)
-        search_entry.pack(side="left", padx=(9, 8))
-        ttk.Label(search_row, text="Search by name, folder, path, or description. Removing a project only removes it from this list; it never deletes project files.", style="Hint.TLabel", wraplength=900).pack(side="left", fill="x", expand=True)
+                                        ("Remove from list", self.forget_selected_project))),))
+        self.projects_bar.pack(side="right")
+        search_entry = ttk.Entry(row, textvariable=self.project_search_var, width=26)
+        search_entry.pack(side="right", padx=(8, 10))
+        ttk.Label(row, text="Find", style="Hint.TLabel").pack(side="right")
         self.project_search_var.trace_add("write", lambda *_: self.refresh_project_list())
+        self.project_cards = ProjectCards(strip, self.shell.assets, on_select=self._project_card_selected,
+                                          on_open=self._project_card_open)
+        self.project_cards.pack(fill="x", pady=(6, 0))
+        self.shell.on_pref(lambda key: self.project_cards.draw() if key == "theme" else None)
+        ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", wraplength=1180).pack(
+            anchor="w", pady=(4, 0))
 
-        table_frame = ttk.Frame(tab)
-        table_frame.pack(fill="both", expand=True)
+        # selection model behind the cards (kept for callers and tests; never laid out)
         columns = ("description", "state", "last_opened", "path")
-        self.projects_tree = ttk.Treeview(table_frame, columns=columns, show="tree headings", selectmode="browse")
-        self.projects_tree.heading("#0", text="Project")
-        self.projects_tree.heading("description", text="Purpose / description")
-        self.projects_tree.heading("state", text="State")
-        self.projects_tree.heading("last_opened", text="Last opened")
-        self.projects_tree.heading("path", text="Location")
-        self.projects_tree.column("#0", width=190, minwidth=135, stretch=False)
-        self.projects_tree.column("description", width=250, minwidth=150, stretch=True)
-        self.projects_tree.column("state", width=95, minwidth=80, stretch=False, anchor="center")
-        self.projects_tree.column("last_opened", width=145, minwidth=125, stretch=False)
-        self.projects_tree.column("path", width=390, minwidth=210, stretch=True)
-        scroll_y = ttk.Scrollbar(table_frame, orient="vertical", command=self.projects_tree.yview)
-        scroll_x = ttk.Scrollbar(table_frame, orient="horizontal", command=self.projects_tree.xview)
-        self.projects_tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
-        self.projects_tree.grid(row=0, column=0, sticky="nsew")
-        scroll_y.grid(row=0, column=1, sticky="ns")
-        scroll_x.grid(row=1, column=0, sticky="ew")
-        table_frame.rowconfigure(0, weight=1)
-        table_frame.columnconfigure(0, weight=1)
-        self.projects_tree.bind("<Double-1>", lambda _event: self.open_selected_project())
+        self.projects_tree = ttk.Treeview(strip, columns=columns, show="tree headings", selectmode="browse")
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
 
-        # 3.5.0: the active project's next guided step, so Home never leaves the user without a way forward
+    def _project_card_selected(self, path: str) -> None:
+        if self.projects_tree.exists(path):
+            self.projects_tree.selection_set(path)
+            self._project_selection_changed()
+
+    def _project_card_open(self, path: str) -> None:
+        self._project_card_selected(path)
+        self.open_selected_project()
+
+    def _make_home_next_card(self, body: tk.Misc) -> None:
+        """Home › Next step (3.5.0, 5.7.0): the active project's next guided step and a way to continue."""
         self.home_next_var = tk.StringVar(value="Open or create a project to see its next step.")
-        nxt = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
-        nxt.pack(fill="x", pady=(9, 0))
+        nxt = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
+        nxt._aiwb_section = "Next step"  # type: ignore[attr-defined]
+        nxt.pack(fill="x", pady=(0, 9))
         ttk.Label(nxt, text="Next step", style="CardAccent.TLabel").pack(side="left", padx=(0, 10))
-        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=900).pack(
+        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=760).pack(
             side="left", fill="x", expand=True)
         self.home_next_btn = ttk.Button(nxt, text="Continue in Workbench", style="Primary.TButton",
                                         command=lambda: self.shell.show("workbench"))
         self.home_next_btn.pack(side="right")
-        detail = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
-        detail.pack(fill="x", pady=(9, 0))
-        ttk.Label(detail, textvariable=self.manager_active_var, style="CardAccent.TLabel").pack(anchor="w")
-        ttk.Label(detail, textvariable=self.manager_detail_var, style="CardMuted.TLabel", wraplength=1170).pack(anchor="w", pady=(4, 0))
-        ttk.Label(tab, text="Tip: double-click a project to open it. Each project stores its profile and resumable task in its own .workbench/project.json; that metadata is excluded from model edits and local Git commits.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(8, 0))
+        ttk.Label(body, textvariable=self.manager_active_var, style="Hint.TLabel").pack(anchor="w")
 
     def home_next_step(self) -> dict[str, Any] | None:
         """First guided step of the active project (read from its local V2 state; nothing is written)."""
