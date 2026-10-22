@@ -34,6 +34,7 @@ MODES = ("simple", "advanced")
 @dataclass
 class RouteResult:
     kind: str                       # proposal | charter_rejected | handoff | context_request | inbox_only | rejected
+    #                                 | truncated (5.10.0: files found but the answer was cut off)
     response_id: str = ""
     message: str = ""
     reference_id: str = ""
@@ -487,6 +488,10 @@ class ProjectsController:
                 return RouteResult("proposal", rid, msg, p["proposal_id"], p)
             from ..intake.answer_files import canonical
             canon, ex = canonical(text)   # 5.10.0 (A13): Markdown, Strict JSON, ZIP, damaged markers → AIWB blocks
+            if ex.truncated and not HANDOFF_RE.search(canon):
+                # cut off before the end and nothing says what was finished: ask to continue, link nothing yet
+                return RouteResult("truncated", rid, f"The answer was cut off ({len(ex.files)} file(s) so far, "
+                                   f"{ex.label}). Nothing was linked; a continue prompt is ready.", text=canon)
             if ex.files or HANDOFF_RE.search(canon):
                 text = canon
                 hid = self._match_handoff(text, attempt_id=ex.attempt_id, hint=handoff_hint)
