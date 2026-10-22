@@ -704,6 +704,11 @@ class Guide:
         att = st["attempts"].get(h["attempt_id"]) or {}
         res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=task_paths(t),
                        expected_paths=list(att.get("expected_paths") or []))
+        if h.get("staged_files"):
+            # 5.10.0 (A13): Markdown / JSON / ZIP answers rarely carry a manifest; the files are what matters
+            for p in res["problems"]:
+                if p["code"] == "no_manifest":
+                    p["severity"] = "warning"
         with self.p.store.transaction("diagnose answer") as s:
             s["handoffs"][handoff_id]["diagnosis"] = res["problems"]
         return res["problems"]
