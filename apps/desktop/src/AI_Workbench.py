@@ -5398,6 +5398,12 @@ class WorkbenchApp:
             self.projects_tree.selection_set(str(self.workspace))
             self.projects_tree.see(str(self.workspace))
             self._project_selection_changed()
+        cards = getattr(self, "project_cards", None)
+        if cards is not None:
+            from aiwb.ui import projects5
+            sel = self.projects_tree.selection()
+            cards.set_rows(projects5.rows(projects, self.workspace, query, manifest=read_project_manifest),
+                           selected=sel[0] if sel else "")
 
     def open_selected_project(self) -> None:
         path = self._selected_project_path()
