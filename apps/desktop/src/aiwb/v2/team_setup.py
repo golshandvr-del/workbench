@@ -197,6 +197,7 @@ def apply_wizard(project: Any, brief: dict[str, Any], rows: list[dict[str, Any]]
                 continue
             s["agents"][aid] = normalize_agent({**_agent_data(aid, row), "revision": 1})
         s["settings"]["team_source"] = "wizard"
+        s["settings"]["team_order"] = list(ids)
         s["settings"]["answer_format"] = answer_format
         emit(s, "team_defined", agent_ids=ids, workers=workers, source="wizard", importance="major")
     return {"agents": ids, "workers": workers}
@@ -217,8 +218,9 @@ def _references(state: dict[str, Any]) -> set[str]:
 def team_rows(state: dict[str, Any]) -> list[dict[str, Any]]:
     """The editable table of the current team (enabled agents; project manager first). Pure."""
     agents = [a for a in (state.get("agents") or {}).values() if a.get("enabled", True)]
-    agents.sort(key=lambda a: (a["role"] != "project_manager", a["agent_id"] != PM_ID, a.get("created_at", ""),
-                               a["agent_id"]))
+    order = {aid: i for i, aid in enumerate((state.get("settings") or {}).get("team_order") or [])}
+    agents.sort(key=lambda a: (a["role"] != "project_manager", a["agent_id"] != PM_ID,
+                               order.get(a["agent_id"], len(order)), a.get("created_at", ""), a["agent_id"]))
     refs = _references(state)
     unused_tpl = set(unused_template_agents(state))
     return [{"agent_id": a["agent_id"], "name": a.get("name", ""), "role": a["role"],
@@ -290,6 +292,7 @@ def save_team(store: Any, rows: list[dict[str, Any]]) -> dict[str, list[str]]:
             else:
                 del agents[aid]
                 out["removed"].append(aid)
+        s["settings"]["team_order"] = list(ids)
         workers = len([a for a in agents.values() if a.get("enabled", True) and a["role"] != "project_manager"])
         if workers:
             s["settings"].setdefault("team", {})["max_parallel_chats"] = min(MAX_WORKERS, workers)
@@ -306,9 +309,7 @@ def team_prompt_lines(state: dict[str, Any]) -> list[str]:
              "The user decided how many AIs work on this project and who they are. Use EXACTLY these agent_ids, "
              "names and roles in team.agents; give every task an owner from this list; do not add, rename or drop "
              "agents (explain in questions_for_user if you think the team should change)."]
-    for a in sorted((state.get("agents") or {}).values(), key=lambda a: (a["role"] != "project_manager", a["agent_id"])):
-        if not a.get("enabled", True):
-            continue
-        model = f", model: {a['preferred_model_label']}" if a.get("preferred_model_label") else ""
+    for a in team_rows(state):
+        model = f", model: {a['model']}" if a.get("model") else ""
         lines.append(f"- {a['agent_id']} — \"{a.get('name', '')}\" (role {a['role']}{model})")
     return lines
