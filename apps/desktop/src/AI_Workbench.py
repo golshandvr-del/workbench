@@ -5298,13 +5298,31 @@ class WorkbenchApp:
         self.project_cards.pack(fill="x", pady=(6, 0))
         self.shell.on_pref(lambda key: self.project_cards.draw() if key == "theme" else None)
         # the selected card's details as one line (no wrapping: a wrapped label here would drive the page width)
-        ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", width=1).pack(
-            fill="x", pady=(4, 0))
+        self.projects_detail = ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", width=1)
+        self.projects_detail.pack(fill="x", pady=(4, 0))
+        # short windows: the cards fold away so the Workbench below keeps its room (the header row stays)
+        self.projects_compact = False
+        tab.bind("<Configure>", self._fit_project_cards, add="+")
 
         # selection model behind the cards (kept for callers and tests; never laid out)
         columns = ("description", "state", "last_opened", "path")
         self.projects_tree = ttk.Treeview(strip, columns=columns, show="tree headings", selectmode="browse")
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
+
+    COMPACT_BELOW = 700  # px of Projects page height under which the project cards fold away
+
+    def _fit_project_cards(self, event: Any = None) -> None:
+        h = event.height if event is not None else self.workbench_tab.winfo_height()
+        compact = 1 < h < self.COMPACT_BELOW
+        if compact == self.projects_compact:
+            return
+        self.projects_compact = compact
+        if compact:
+            self.project_cards.pack_forget()
+            self.projects_detail.pack_forget()
+        else:
+            self.project_cards.pack(fill="x", pady=(6, 0))
+            self.projects_detail.pack(fill="x", pady=(4, 0))
 
     def _project_card_selected(self, path: str) -> None:
         if self.projects_tree.exists(path):
