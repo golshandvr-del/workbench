@@ -121,7 +121,7 @@ object MissionModel {
         if (byLane.isEmpty()) {  // a planned team without tasks still shows its lanes
             for (aid in agents.keys.sorted()) {
                 val a = Json.obj(agents[aid])
-                if (truthy(a["enabled"] ?: true) && a["role"] != "project_manager") byLane[aid] = ArrayList()
+                if ((if ("enabled" in a) truthy(a["enabled"]) else true) && a["role"] != "project_manager") byLane[aid] = ArrayList()
             }
         }
         val slots = MutableList(cols.size) { 1L }
