@@ -987,6 +987,18 @@ def repair(data: Any, state: dict[str, Any] | None = None) -> tuple[Any, list[st
             if changed:
                 _fix(fixes, f"{k}: turned into a list")
             d[k] = vals
+
+    # 11. Charter v2: what the v2 prompt told the model to leave out is by design, not a repair
+    if wizard and "team" not in data:
+        expected: tuple[str, ...] = ("team: taken from", "team.agents: taken from", "team.agents: added from",
+                                     "team.pm_counted:", "team.total_agents: set", "team.parallel_chats: set",
+                                     "team.rationale: missing", "start_prompts: written by Workbench",
+                                     "coordination.conflict_resolution: missing", "coordination.sync_points: missing")
+        if "coordination" not in data:
+            expected += ("coordination: missing", "coordination.file_ownership: missing")
+        fixes[:] = [f for f in fixes if not f.startswith(expected)]
+        if isinstance(d.get("team"), dict) and not _text(d["team"].get("simpler_alternative")):
+            d["team"]["simpler_alternative"] = "The user decided the team size."
     return d, fixes
 
 
