@@ -211,6 +211,14 @@ def main() -> None:
             assert any(a["id"] == "approve" for a in rev["actions"]), rev     # task 1 waits for the user's review
             ws.guide_action(rev["key"], "approve", {"note": ""})
             o.pump(200)
+            ws.guide_action(rev["key"], "validation_passed", {"run_id": ""})
+            o.pump(200)
+            while any(s["key"] == rev["key"] for s in ws.wc.guide_steps()):    # e.g. close / done steps, if any
+                st_ = next(s for s in ws.wc.guide_steps() if s["key"] == rev["key"])
+                prim = next(a for a in st_["actions"] if a["primary"])
+                assert prim["id"] not in ("approve", "validation_passed"), st_
+                ws.guide_action(rev["key"], prim["id"], {n: "" for n in prim["needs"]})
+                o.pump(200)
             nxt = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:")
                        and any(a["id"] == "prepare" for a in s["actions"]))
             ws.guide_action(nxt["key"], "prepare", {})
