@@ -4676,10 +4676,13 @@ class WorkbenchApp:
     # -- 5.x shell commands (roadmap 5.1.0): toolbar New Project ▾ · Open · Save · Run, Agents page, status bar
     def new_guided_project(self) -> None:
         """Toolbar › New Project › Guided project: create the folder, then start the guided Workbench (F1)."""
-        before = self.workspace
-        self.new_project()
-        if self.workspace is not None and self.workspace != before:
-            self.shell.show("workbench")
+        # new_project() is non-blocking (its window stays open): continue only once the folder exists (audit A3)
+        self.new_project(on_created=self._start_guided_after_create)
+
+    def _start_guided_after_create(self, created: Path) -> None:
+        """After Guided › Create: open the Workbench on its first guided step (Start the project), not the old Profile."""
+        self.shell.show("workbench")
+        self.set_status(f"Created {created.name}. Next: Start the project — give the goal and how many AI chats you use.")
 
     def save_now(self) -> None:
         """Toolbar › Save: write the profile and settings now (the V2 project state is saved on every change)."""
@@ -5520,7 +5523,7 @@ class WorkbenchApp:
         if chosen:
             self.set_workspace(Path(chosen), focus_project=True)
 
-    def new_project(self) -> None:
+    def new_project(self, on_created: Callable[[Path], Any] | None = None) -> None:
         win = tk.Toplevel(self.root)
         win.title("Create a new project")
         win.geometry("700x680")
@@ -5602,9 +5605,12 @@ class WorkbenchApp:
                         except (WorkbenchError, OSError, subprocess.SubprocessError) as exc:
                             git_note = f"\nProject was created, but Git init failed: {redact(str(exc))}"
                 win.destroy()
-                self.set_workspace(created, focus_project=True)
+                self.set_workspace(created, focus_project=on_created is None)
                 self.refresh_project_list()
                 self.set_status(f"Created project: {created}")
+                if on_created is not None:
+                    on_created(created)
+                    return
                 messagebox.showinfo("Project created", f"Project folder created successfully:\n{created}\n\nSettings: {created / PROJECT_MANIFEST_RELATIVE}{git_note}\n\nReview the Project Profile, then describe your first task.", parent=self.root)
             except Exception as exc:
                 messagebox.showerror("Could not create project", str(exc), parent=win)
