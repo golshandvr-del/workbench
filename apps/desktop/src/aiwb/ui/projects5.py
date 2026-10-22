@@ -46,8 +46,6 @@ def rows(records: list[Any], active: str | Path | None, query: str = "",
         if q and q not in " ".join((name, desc, str(path))).casefold():
             continue
         out.append({"path": str(path), "name": name, "description": desc, "state": state, "last_opened": last})
-    out.sort(key=lambda r: (r["state"] != "Active", "" if not r["last_opened"] else "~" + r["last_opened"]),
-             reverse=False)
     # most recent first after the active one (stable: ties keep the library order)
     active_rows = [r for r in out if r["state"] == "Active"]
     rest = sorted((r for r in out if r["state"] != "Active"), key=lambda r: r["last_opened"], reverse=True)
