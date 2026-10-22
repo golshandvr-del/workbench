@@ -111,4 +111,9 @@
     <string name="theme_current">Theme: %1$s</string>
     <string name="theme_switch">Switch to %1$s</string>
     <string name="settings_build">Build</string>
+    <!-- 6.1.0 / mobile 3.1.0: Mission Map -->
+    <string name="mission_map">Mission Map</string>
+    <string name="mission_hint">One lane per AI, one circle per task in its version. Pinch to zoom, drag to move, tap a circle for details, long-press for COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE.</string>
+    <string name="mission_node">%1$s\n%2$s · %3$s</string>
+    <string name="mission_moved">The project changed — here is the current step.</string>
 </resources>
