@@ -71,13 +71,46 @@ def table(tree: dict) -> str:
     return "\n".join(rows) + "\n"
 
 
+MOBILE = """
+## Mobile (Android, roadmap 6.0.0–6.1.0)
+
+The phone uses the same five destinations as the desktop rail (bottom bar, `core/Shell5.kt`) and the same four-item
+task menu (long press on a Mission Map circle, `core/TaskMenu.kt`). `test_ui_map.py` checks this section against
+`structure5`; the Kotlin tests `Shell5Test` / `TaskMenuTest` check the app against the same lists.
+
+<!-- ui-map-mobile:start -->
+- Bottom bar [area]
+  - Home [page]
+    - Mission [section]
+  - Projects [page]
+    - Your projects [section]
+    - Project [section]
+      - Next step [section]
+      - Mission Map [section]
+        - Task menu [menu]
+          - COPY PROMPT [item]
+          - SEND PROMPT [item]
+          - GET AI RESPONSE [item]
+          - MARK AS DONE [item]
+      - Timeline [section]
+  - Agents [page]
+    - Desktop companion [section]
+  - History [page]
+    - Releases [section]
+  - Settings [page]
+    - Appearance [section]
+    - Build [section]
+<!-- ui-map-mobile:end -->
+"""
+
+
 def document(tree: dict) -> str:
     from aiwb.ui import ui_map
     problems = ui_map.audit(tree)
     rules = "\n".join(f"- `{k}` = {v}" for k, v in ui_map.RULES.items())
     audit = "\n".join(f"- {p}" for p in problems) if problems else "- none: the map is balanced."
     return (HEAD + "\n## Counts\n\n" + table(tree) + "\n## Balance rules\n\n" + rules + "\n\nAudit:\n\n" + audit
-            + "\n\n## Tree\n\n<!-- ui-map:start -->\n" + ui_map.to_markdown(tree) + "<!-- ui-map:end -->\n")
+            + "\n\n## Tree\n\n<!-- ui-map:start -->\n" + ui_map.to_markdown(tree) + "<!-- ui-map:end -->\n" + MOBILE)
 
 
 def main(argv: list[str] | None = None) -> int:
