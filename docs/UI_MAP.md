@@ -273,3 +273,33 @@ Audit:
   - Milestone [item]
   - Autosaved [item]
 <!-- ui-map:end -->
+
+## Mobile (Android, roadmap 6.0.0–6.1.0)
+
+The phone uses the same five destinations as the desktop rail (bottom bar, `core/Shell5.kt`) and the same four-item
+task menu (long press on a Mission Map circle, `core/TaskMenu.kt`). `test_ui_map.py` checks this section against
+`structure5`; the Kotlin tests `Shell5Test` / `TaskMenuTest` check the app against the same lists.
+
+<!-- ui-map-mobile:start -->
+- Bottom bar [area]
+  - Home [page]
+    - Mission [section]
+  - Projects [page]
+    - Your projects [section]
+    - Project [section]
+      - Next step [section]
+      - Mission Map [section]
+        - Task menu [menu]
+          - COPY PROMPT [item]
+          - SEND PROMPT [item]
+          - GET AI RESPONSE [item]
+          - MARK AS DONE [item]
+      - Timeline [section]
+  - Agents [page]
+    - Desktop companion [section]
+  - History [page]
+    - Releases [section]
+  - Settings [page]
+    - Appearance [section]
+    - Build [section]
+<!-- ui-map-mobile:end -->

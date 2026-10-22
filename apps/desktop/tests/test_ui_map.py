@@ -136,6 +136,16 @@ class DocumentTests(unittest.TestCase):
         menu = next(n for _p, n in ui_map.iter_nodes(home) if n["kind"] == "menu" and n["label"] == "Task menu")
         self.assertEqual([c["label"] for c in menu["children"]], [m[1] for m in structure5.TASK_MENU])
 
+    def test_mobile_section_matches_design(self):
+        """Roadmap 6.1.0: the phone's bottom bar is the rail and its long-press menu is the task menu."""
+        part = self.text.split("<!-- ui-map-mobile:start -->", 1)[1].split("<!-- ui-map-mobile:end -->", 1)[0]
+        mobile = ui_map.parse_markdown(part, "AI Workbench Mobile")
+        bar = mobile["children"][0]
+        self.assertEqual(bar["label"], "Bottom bar")
+        self.assertEqual([c["label"] for c in bar["children"]], [r[1] for r in structure5.RAIL])
+        menu = next(n for _p, n in ui_map.iter_nodes(mobile) if n["kind"] == "menu")
+        self.assertEqual([c["label"] for c in menu["children"]], [m[1] for m in structure5.TASK_MENU])
+
     def test_counts_table_matches_tree(self):
         for r in ui_map.stats(self.tree):
             self.assertIn(f"| {r['page']} | {r['sections']} | {r['tabs']} | {r['commands']} |", self.text, r)

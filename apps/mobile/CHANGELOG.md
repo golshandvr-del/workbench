@@ -1,5 +1,22 @@
 # AI Workbench Mobile — Changelog
 
+## [3.1.0] - 2026-10-22
+
+### Mission Map on the phone (Roadmap 6.1.0)
+- **Parallel timelines:** each project now opens with the desktop's Mission Map — a green PROJECT START capsule, the gold
+  source node, curved branches to one numbered green hexagon per AI, one lane per AI and one circle per task in its
+  version's column (done = green tick, active = glowing blue, blocked, needs a decision, idle = grey), dashed version
+  columns with monospace labels and a chevron at each lane's end. Drawn anti-aliased on a Canvas, in Midnight or Daylight.
+- **Touch:** pinch to zoom, drag to pan, tap a circle for its title and status.
+- **Long press = the desktop's four-item menu:** COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE. Each item is
+  enabled only when the guided loop offers that action for the task right now; a disabled item says why.
+- **Motion:** active circles pulse softly; the pulse stops when Android's "Remove animations" (Reduce motion) is on.
+- **Same map as the desktop:** `core/MissionModel.kt` is a port of the desktop `mission_model`; `MissionModelTest`
+  builds every case of the shared fixture `packages/contracts/fixtures/mission/mission-map.v1.json` (written from the
+  desktop by `tools/gen_mission_fixture.py`, kept fresh by desktop `test_mission_fixture`) and must return the exact same data.
+- `docs/UI_MAP.md` has a mobile section (bottom bar, Mission Map, task menu), checked against the desktop design tree.
+- Tests: `MissionModelTest`, `TaskMenuTest`.
+
 ## [3.0.0] - 2026-10-22
 
 ### Mobile theme — the "Mission Map" look on the phone (Roadmap 6.0.0)
