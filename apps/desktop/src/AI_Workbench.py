@@ -4760,8 +4760,8 @@ class WorkbenchApp:
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
             team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),
-                           ("Copy team summary", self.agents_copy_team),
-                           ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
+                           ("Plan team & tasks…", lambda: self.agents_workbench("team"))),
+            more=(("", (("Copy team summary", self.agents_copy_team),)),), style="Card.TFrame")
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
         pair.pack(fill="x", pady=(0, 9))
