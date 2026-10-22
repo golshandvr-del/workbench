@@ -159,6 +159,9 @@ class MissionCanvas(tk.Canvas):
             self.create_image(g["hex_x"], y, image=self.assets.sprite("hex"), tags=("hex", f"lane:{lane['agent_id']}"))
             self.create_text(g["hex_x"], y, text=str(lane["number"]), fill=p["go_hi"], font=font5("capsule", s),
                              tags=("hex", f"lane:{lane['agent_id']}"))
+            # 5.9.0 (A5): the AI's own name under its hexagon, so a lane is never just a number
+            self.create_text(g["hex_x"], y + 15 * s, text=mission_model.short_name(lane["name"]), anchor="n",
+                             fill=p["text_dim"], font=font5("small", s), tags=("lane_name", f"lane:{lane['agent_id']}"))
         # task circles
         for lane in m["lanes"]:
             for nd in lane["nodes"]:

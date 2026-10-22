@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.8.0",
+  "version": "5.9.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -278,8 +278,8 @@
       "source": "apps/desktop/tests/test_ui_balance.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.8.0.md",
-      "source": "docs/release/v5.8.0/WINDOWS_RELEASE_CHECKLIST_v5.8.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.9.0.md",
+      "source": "docs/release/v5.9.0/WINDOWS_RELEASE_CHECKLIST_v5.9.0.md"
     },
     {
       "path": "install.ps1",
@@ -760,6 +760,22 @@
     {
       "path": "aiwb/ui/projects5.py",
       "source": "apps/desktop/src/aiwb/ui/projects5.py"
+    },
+    {
+      "path": "aiwb/v2/team_setup.py",
+      "source": "apps/desktop/src/aiwb/v2/team_setup.py"
+    },
+    {
+      "path": "aiwb/ui/team_table.py",
+      "source": "apps/desktop/src/aiwb/ui/team_table.py"
+    },
+    {
+      "path": "aiwb/ui/project_wizard.py",
+      "source": "apps/desktop/src/aiwb/ui/project_wizard.py"
+    },
+    {
+      "path": "test_team_setup.py",
+      "source": "apps/desktop/tests/test_team_setup.py"
     }
   ],
   "zip_timestamp": [

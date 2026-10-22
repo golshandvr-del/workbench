@@ -45,10 +45,22 @@ plain text. On short windows the project cards (Projects) and the History timeli
 
 ## 3. Your first project (the guided loop)
 
-1. **Projects → + New project** (or Toolbar › New Project), pick a folder.
-2. The Next step asks for your **goal** ("An offline todo app for desktop and mobile").
+1. **Toolbar › New Project**. One window with three steps (5.9.0):
+   * **Project** — name, parent folder, your **goal** in one or two sentences ("An offline todo app for desktop and
+     mobile"), the kind of project (it fills *Platform / technology*; change it freely) and, folded away,
+     technical details (constraints, README, Git).
+   * **Team** — *how many AIs work in parallel* besides the project manager, then one row per AI: a **name you
+     choose** (any language), its role (Developer, Reviewer / tester, Architect, Researcher), the model or account
+     it runs on (just a label) and a note. Every AI gets its own lane on the Mission Map under that name.
+   * **Answers** — how the AIs return files. *AIWB file blocks* are what the app reads today; Strict JSON and
+     GPT ZIP arrive in 5.10.0.
+   *Create project* makes the folder and the team — nothing is asked again afterwards. Change the team any time:
+   **Agents › Team › Edit team…** (an AI that already has work is switched off, never deleted). Projects made
+   before 5.9.0 keep their AIs; *Edit team…* offers to remove template AIs that never got a task.
+2. For a folder added with *Add existing folder…* the Workbench's first step **Start the project…** opens the same
+   window without the folder fields.
 3. Next step: **Project Charter**. Click *Copy prompt*, paste it into your project-manager chat, click
-   *I sent it*.
+   *I sent it*. The prompt tells the project manager that your team is binding.
 4. Copy the whole answer from the chat and click *Paste answer*. The app cleans what chat copies break
    (smart quotes, invisible spaces, escaped markers, extra code fences). If the answer was cut off, you get
    a ready *continue from where you stopped* prompt.

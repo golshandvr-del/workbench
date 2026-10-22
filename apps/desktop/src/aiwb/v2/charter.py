@@ -124,10 +124,15 @@ def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
             lines.append(f"- {a['account_profile_id']}: {a['display_name']} ({a['provider']}, plan {a['plan']})")
     else:
         lines.append("- (no account profiles registered)")
-    lines += [f"- Maximum chats the user will follow at the same time: {r['max_parallel_chats']}", "",
-              "## Existing agents (you may reuse them by agent_id)"]
-    for a in r["agents"]:
-        lines.append(f"- {a['agent_id']} ({a['role']}): {a['purpose']}")
+    lines.append(f"- Maximum chats the user will follow at the same time: {r['max_parallel_chats']}")
+    from .team_setup import team_prompt_lines
+    chosen = team_prompt_lines(state)  # 5.9.0: the team from the New Project wizard is binding
+    if chosen:
+        lines += [""] + chosen
+    else:
+        lines += ["", "## Existing agents (you may reuse them by agent_id)"]
+        for a in r["agents"]:
+            lines.append(f"- {a['agent_id']} ({a['role']}): {a['purpose']}")
     lines += ["", "## Your task — answer ALL of these",
               "1. Architecture: the modules of the whole project, their purpose, the paths each one owns and how they "
               "depend on each other.",
@@ -340,6 +345,14 @@ def validate_charter(data: dict[str, Any], state: dict[str, Any] | None = None) 
         actual = len(agent_roles) if team.get("pm_counted", True) else len([r for r in agent_roles.values() if r != "project_manager"])
         if declared != actual:
             warnings.append(f"team.total_agents: says {declared} but team.agents lists {actual} counted agent(s)")
+    if agents and (state.get("settings") or {}).get("team_source") == "wizard":  # 5.9.0: the user chose the team
+        mine = {aid for aid, ag in state["agents"].items() if ag.get("enabled", True)}
+        extra = sorted(set(agent_roles) - mine)
+        if extra:
+            warnings.append(f"team.agents: {', '.join(extra)} not in the team you chose; accepting adds them")
+        unused = sorted(aid for aid in mine - set(agent_roles) if state["agents"][aid]["role"] != "project_manager")
+        if unused:
+            warnings.append(f"team.agents: your AI(s) {', '.join(unused)} got no place in the charter")
     workers = [aid for aid, r in agent_roles.items() if r != "project_manager"]
     if agents and not workers:
         errors.append("team.agents: no AI besides the project manager does the work")

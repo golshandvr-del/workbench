@@ -354,6 +354,35 @@ class WorkspaceWindow:
         top.wait_window()
         return out["text"]
 
+    def _start_form(self, key: str, action: str, label: str) -> Any:
+        """"Start the project…" / "Change the project details…": the New Project wizard without the folder fields.
+
+        Prefilled from what the project already knows (goal, brief, the user's team or N developers), so nothing is
+        asked twice; Finish sends brief + team to the guide in one step. Non-blocking: returns the wizard.
+        """
+        from ..ui.project_wizard import ProjectWizard
+        from ..v2 import team_setup
+        st = self.wc.ctl.state()
+        settings = st.get("settings") or {}
+        brief = settings.get("brief") or {}
+        initial = {"name": brief.get("name", "") or self.wc.ctl.root.name, "goal": settings.get("goal", ""),
+                   "platform": brief.get("platform", ""), "constraints": brief.get("constraints", ""),
+                   "team": team_setup.start_rows(st), "format": settings.get("answer_format", "aiwb")}
+        result: dict[str, Any] = {}
+
+        def finish(d: dict[str, Any]) -> Any:
+            out = self.wc.guide_perform(key, action, goal=d["goal"], name=d["name"], platform=d["platform"],
+                                        constraints=d["constraints"], team=d["team"], answer_format=d["format"])
+            result["out"] = out
+            if out.get("prompt"):
+                self.last_prompt, self.last_handoff_id = out["prompt"], out.get("handoff_id", "")
+            self.show(self.wc.section)
+            self.status_var.set(out["message"])
+            return out
+        self.start_form = ProjectWizard(self.win, mode="start", initial=initial, on_finish=finish)
+        self.start_form.win.title(label.rstrip("…"))
+        return self.start_form
+
     def guide_action(self, key: str, action: str, inputs: dict[str, Any] | None = None) -> Any:
         """Ask for the inputs an action needs (or take ``inputs``), perform it, show/copy the prompt it yields."""
         step = next((s for s in self.wc.guide_steps() if s["key"] == key), None)
@@ -365,6 +394,8 @@ class WorkspaceWindow:
         if act is None:
             return None
         inp = dict(inputs or {})
+        if inputs is None and action == "design":
+            return self._start_form(key, action, act["label"])  # 5.9.0: one window, not five questions (A8)
         if inputs is None:
             for need in act["needs"]:
                 if need == "text":

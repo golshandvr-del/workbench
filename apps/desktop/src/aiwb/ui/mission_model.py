@@ -96,14 +96,18 @@ def build(state: dict[str, Any] | None, *, hide_done: bool = False, open_only: b
         if not aid or (agents and aid not in agents):
             aid = "unassigned"
         by_lane.setdefault(aid, []).append(tid)
-    if not by_lane:  # a planned team without tasks still shows its lanes
+    user_team = (state.get("settings") or {}).get("team_source") == "wizard"
+    if not by_lane or user_team:  # a planned team without tasks still shows its lanes; 5.9.0: the user's AIs always
         for aid, a in sorted(agents.items()):
+            if aid in by_lane:
+                continue
             if a.get("enabled", True) and a.get("role") != "project_manager":
                 by_lane[aid] = []
     slots = [1] * len(cols)
     lanes = []
     counts = {s: 0 for s in NODE_STATES}
-    for i, aid in enumerate(sorted(by_lane, key=lambda a: (a == "unassigned", a))):
+    order = {a: k for k, a in enumerate((state.get("settings") or {}).get("team_order") or [])}  # 5.9.0: user's order
+    for i, aid in enumerate(sorted(by_lane, key=lambda a: (a == "unassigned", order.get(a, len(order)), a))):
         per_col: dict[int, int] = {}
         nodes = []
         states = [node_state(tasks[tid], handoff_open=tid in open_h) for tid in by_lane[aid]]
@@ -126,6 +130,12 @@ def build(state: dict[str, Any] | None, *, hide_done: bool = False, open_only: b
                       "role": str(a.get("role", "")), "nodes": nodes,
                       "live": any(n["state"] == "active" for n in nodes)})
     return {"columns": cols, "lanes": lanes, "slots": slots, "empty": not lanes, "counts": counts}
+
+
+def short_name(name: str, limit: int = 14) -> str:
+    """A lane label that fits under the hexagon: ``limit`` characters at most, with an ellipsis when cut."""
+    name = " ".join(str(name or "").split())
+    return name if len(name) <= limit else name[:limit - 1].rstrip() + "…"
 
 
 def layout(model: dict[str, Any], scale: float = 1.0) -> dict[str, Any]:

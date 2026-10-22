@@ -1,3 +1,33 @@
+## [5.9.0] - 2026-10-22
+
+### Core-path repair, step 2: you decide the AI team (Roadmap 5.9.0)
+
+- **New Project is one window with three steps** (audit A1/A2/A8/A9): *Project* (name, folder, goal, kind of
+  project → platform, optional technical details) · *Team* (how many AIs work in parallel, then name · role ·
+  model label · note for each; the project manager is always the first row and can be renamed) · *Answers* (AIWB
+  file blocks; Strict JSON and GPT ZIP are shown and arrive with their readers in 5.10.0). It is the only place
+  project data is entered: after *Create project* the Workbench is already on the project-manager prompt.
+- **No template AIs any more** (A5): a new project's AIs are exactly your team table; ids come from your names
+  (`agent-<name>`, Persian names supported). The charter prompt tells the project manager that this team is
+  binding, and the charter check warns when an answer changes it.
+- **Named lanes**: every AI's name is drawn under its hexagon on the Mission Map, lanes follow the order of your
+  table, and every AI of your team keeps its lane even before it has a task.
+- **Start the project…** (folders added with *Add existing folder…*) and *Change the project details…* open the
+  same window, prefilled — the five chained question dialogs are gone.
+- **Agents › Team › Edit team…**: rename, change role or model label, add or remove AIs at any time. An AI that
+  already has work is switched off, never deleted. Projects made before 5.9.0 open untouched; *Edit team…*
+  offers *Remove unused template AIs* for the template AIs that never got a task.
+- **Architecture plan…** left project creation; it stays under *Projects › Tools* (A2). *Copy team summary* moved
+  to *Agents › Team › More*; *Plan team & tasks…* (a duplicate of *Workbench › Team*) left the Agents page.
+- After the wizard the Mission Map is redrawn at once and the status line says what comes next.
+
+### Tests
+
+- `test_team_setup.py` (ids, wizard, sizes 1/3/5/12, edit team, older projects, lanes).
+- `gui_wizard_smoke.py` (1/3/5/12 AIs, Persian and English names, real widgets), `gui_team_editor_smoke.py`
+  (start form for an existing folder, Edit team, older project); `gui_owner_path_smoke.py` now goes through the
+  wizard. Screenshots: `docs/audit/screens/v5.9-owner-path/`.
+
 ## [5.8.0] - 2026-10-22
 
 ### Core-path repair, step 1: stop the bleeding (Roadmap 5.8.0)

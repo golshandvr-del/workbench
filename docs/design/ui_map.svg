@@ -96,6 +96,7 @@
 <path d="M618.0,819.0 C632.0,819.0 632.0,1248.0 646.0,1248.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M408.0,1853.0 C422.0,1853.0 422.0,819.0 436.0,819.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,1479.0 C1052.0,1479.0 1052.0,1468.0 1066.0,1468.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,1490.0 C1262.0,1490.0 1262.0,1490.0 1276.0,1490.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,1479.0 C1052.0,1479.0 1052.0,1490.0 1066.0,1490.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,1567.0 C842.0,1567.0 842.0,1479.0 856.0,1479.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,1523.0 C1052.0,1523.0 1052.0,1512.0 1066.0,1512.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
@@ -434,9 +435,11 @@
 <rect x="856" y="1470.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
 <text x="866" y="1483.0" fill="#22c55e" font-weight="600">Team</text>
 <rect x="1066" y="1459.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="1472.0" fill="#e6eaf2">Copy team summary</text>
-<rect x="1066" y="1481.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5b97ff" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="1494.0" fill="#e6eaf2">Plan team &amp; tasks…</text>
+<text x="1076" y="1472.0" fill="#e6eaf2">Edit team…</text>
+<rect x="1066" y="1481.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1076" y="1494.0" fill="#e6eaf2">More</text>
+<rect x="1276" y="1481.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1286" y="1494.0" fill="#e6eaf2">Copy team summary</text>
 <rect x="856" y="1514.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
 <text x="866" y="1527.0" fill="#22c55e" font-weight="600">Selected AI</text>
 <rect x="1066" y="1503.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>

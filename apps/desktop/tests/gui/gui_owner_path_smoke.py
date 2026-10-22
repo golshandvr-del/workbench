@@ -130,32 +130,49 @@ def main() -> None:
             o.pump(400)
             dlg = next(t for t in o.tops() if t.title() == "Create a new project")
             o.shot("01_create_window")
-            entries = [c for c in walk(dlg) if c.winfo_class() == "TEntry"]
+            # 5.9.0: the one-window wizard — Project · Team · Answers, typed into its real widgets
+            wiz = app.project_wizard
+            entries = [c for c in walk(wiz.pages[0]) if c.winfo_class() == "TEntry"]
             entries[0].insert(0, "Snake Game")
-            if len(entries) > 2:
-                entries[2].insert(0, "A small snake game for Windows")
-            next(c for c in walk(dlg) if c.winfo_class() == "TButton" and c.cget("text") == "Create project").invoke()
-            assert app.workspace is not None, "Create made no project"
+            wiz.goal_text.insert("1.0", "A small snake game for Windows")
+            wiz.next_btn.invoke()
+            o.pump(200)
+            assert wiz.step == 1, wiz.error_var.get()
+            box = wiz.team.count_box
+            box.focus_force()
+            o.pump(100)
+            box.delete(0, "end")
+            box.insert(0, "3")
+            box.event_generate("<Return>")
+            o.pump(200)
+            rows = wiz.team.entries()
+            assert len(rows) == 4, f"{len(rows)} team rows for 3 AIs"
+            for row, name in zip(rows[1:], ("Core dev", "Desktop dev", "Mobile dev")):
+                row["name"].set(name)
+            o.shot("01b_team")
+            wiz.next_btn.invoke()
+            o.pump(200)
+            assert wiz.next_btn.cget("text") == "Create project", wiz.next_btn.cget("text")
+            wiz.next_btn.invoke()
+            assert app.workspace is not None, "Create made no project: " + wiz.error_var.get()
             wait_for_project_ready(app, root, app.workspace)
             o.pump(1200)
             # A3: the guided start, not the 1.x Profile page and not a 'Project created' box
             assert app.shell.current == "workbench", f"after Create the app shows {app.shell.current!r}, not the Workbench"
             assert not [b for b in boxes if b[0] == "showinfo"], f"no 1.x 'Project created' box: {boxes}"
-            # A6: an open, still unplanned project
+            # A6: an open project
             app.shell.refresh_status()
             facts = app.shell.statusbar.facts_var.get()
             assert "No project open" not in facts, f"status bar with an open project: {facts!r}"
             ws = app.workspace_window
             assert ws is not None
             o.shot("02_workbench_start")
-            # 2) Start the project… → the five questions, answered in their real dialogs
-            assert ws.next_btn.cget("text").startswith("Start the project"), ws.next_btn.cget("text")
-            o.answers[:] = ["A small snake game for Windows", "Snake Game", "Windows, Python + Tkinter",
-                            "No internet", "3"]
-            ws.next_btn.invoke()
-            o.pump(500)
-            assert len(o.answered) == 5, f"start form dialogs answered: {o.answered}"
-            assert ws.wc.ctl.state()["settings"]["team"]["max_parallel_chats"] == 3
+            # A8: no start questions after the wizard — the team is the user's, the next step is the charter prompt
+            assert not o.answered, f"questions asked again after the wizard: {o.answered}"
+            st = ws.wc.ctl.state()
+            assert sorted(a for a, v in st["agents"].items() if v.get("enabled", True)) == [
+                "agent-core-dev", "agent-desktop-dev", "agent-mobile-dev", "agent-project-manager"], sorted(st["agents"])
+            assert st["settings"]["team"]["max_parallel_chats"] == 3
             # 3) Copy the charter prompt (clipboard)
             assert ws.next_btn.cget("text") == "Copy the charter prompt", ws.next_btn.cget("text")
             ws.next_btn.invoke()
@@ -223,7 +240,7 @@ def main() -> None:
             assert not [b for b in boxes if b[0] == "showerror"], f"error boxes: {boxes}"
         finally:
             root.destroy()
-    print("Owner path smoke passed: New Project > Guided -> Workbench -> start form (5 real dialogs) -> charter prompt -> "
+    print("Owner path smoke passed: New Project > wizard (project, 3 named AIs, answers) -> Workbench -> charter prompt -> "
           "real paste box -> accept -> task prompt -> real paste box -> accept -> file on disk")
 
 
