@@ -4759,7 +4759,8 @@ class WorkbenchApp:
         self.agents_cards.pack(fill="x", pady=(6, 0))
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
-            team, primary=(("Copy team summary", self.agents_copy_team),
+            team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),
+                           ("Copy team summary", self.agents_copy_team),
                            ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
@@ -4840,6 +4841,80 @@ class WorkbenchApp:
             ws.show(section)
         else:
             self.root.after(300, lambda: getattr(self, "workspace_window", None) and self.workspace_window.show(section))
+
+    def agents_edit_team(self) -> Any:
+        """Agents › Team › Edit team… (5.9.0): rename, change role or model label, add or remove AIs at any time.
+
+        Older projects (template AIs added automatically before 5.9.0) are offered the removal of the template AIs
+        that never got work; nothing is removed without this explicit choice.
+        """
+        ctl = self._mission_ctl()
+        if ctl is None:
+            self.set_status("Open or create a project first.")
+            return None
+        from aiwb.ui.team_table import TeamTable
+        from aiwb.v2 import team_setup
+        st = ctl.state()
+        rows = team_setup.team_rows(st)
+        unused = team_setup.unused_template_agents(st)
+        if not rows or rows[0]["role"] != "project_manager":
+            rows = team_setup.default_rows(0)[:1] + rows
+        if len(rows) < 2:
+            rows = team_setup.resize_rows(rows, 1)
+        win = tk.Toplevel(self.root)
+        win.title("Edit team")
+        win.transient(self.root)
+        outer = ttk.Frame(win, padding=16)
+        outer.pack(fill="both", expand=True)
+        ttk.Label(outer, text="Your AI team", style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(outer, text="Names appear on the Mission Map lanes and in every prompt. An AI that already has work is "
+                              "only switched off when you remove it, so its history stays.", style="Hint.TLabel",
+                  wraplength=720).pack(anchor="w", pady=(2, 10))
+        table = TeamTable(outer, rows, show_note=False)
+        table.pack(fill="x")
+        err = tk.StringVar()
+        ttk.Label(outer, textvariable=err, style="Danger.TLabel", wraplength=720).pack(anchor="w", pady=(6, 0))
+        bar = ttk.Frame(outer)
+        bar.pack(fill="x", pady=(10, 0))
+
+        def save() -> dict[str, list[str]] | None:
+            try:
+                out = team_setup.save_team(ctl.project.store, table.rows())
+            except Exception as exc:  # noqa: BLE001 — shown inline, never a traceback
+                err.set(str(exc))
+                return None
+            win.destroy()
+            self._after_team_change("Team saved: " + (", ".join(f"{len(v)} {k}" for k, v in out.items() if v)
+                                                      or "nothing changed") + ".")
+            return out
+
+        def drop_templates() -> list[str]:
+            gone = team_setup.remove_unused_templates(ctl.project.store)
+            win.destroy()
+            self._after_team_change(f"Removed {len(gone)} unused template AI(s): {', '.join(gone) or 'none'}.")
+            return gone
+        ttk.Button(bar, text="Cancel", command=win.destroy).pack(side="right")
+        ttk.Button(bar, text="Save team", style="Primary.TButton", command=save).pack(side="right", padx=(0, 7))
+        if unused:
+            ttk.Button(bar, text=f"Remove unused template AIs ({len(unused)})", command=drop_templates).pack(side="left")
+        ui_layout.place_dialog(win, 760, 520, self.root)
+        try:
+            win.grab_set()
+        except tk.TclError:
+            pass
+        self.team_editor = {"win": win, "table": table, "save": save, "drop_templates": drop_templates, "error": err}
+        return self.team_editor
+
+    def _after_team_change(self, message: str) -> None:
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                ws.refresh()
+            except Exception:  # noqa: BLE001
+                pass
+        self.refresh_mission(self.status_state(), force=True)
+        self.refresh_agents_page()
+        self.set_status(message)
 
     def agents_copy_team(self) -> str:
         """Copy the team list (name · role · running) for a new project-manager chat. Reading only."""
