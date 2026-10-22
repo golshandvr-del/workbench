@@ -1,0 +1,174 @@
+{
+  "schema": "aiwb-design-tokens.v1",
+  "source": "apps/desktop/src/aiwb/ui/tokens5.py",
+  "default_theme": "midnight",
+  "themes": [
+    "midnight",
+    "daylight"
+  ],
+  "palettes": {
+    "midnight": {
+      "window": "#0f131a",
+      "field": "#10151c",
+      "panel": "#151a23",
+      "raised": "#1b2130",
+      "raised_hi": "#232a3b",
+      "line": "#2a3142",
+      "line_soft": "#1d2331",
+      "text": "#e6eaf2",
+      "text_dim": "#9aa3b5",
+      "text_faint": "#5f687b",
+      "active": "#2f7bff",
+      "active_hi": "#5b97ff",
+      "active_glow": "#1d5fe0",
+      "active_text": "#ffffff",
+      "version": "#5aa9ff",
+      "go": "#22c55e",
+      "go_hi": "#4ade80",
+      "go_deep": "#0f3d26",
+      "source": "#f5c542",
+      "source_glow": "#f59e0b",
+      "idle": "#2c313d",
+      "idle_ring": "#4a5263",
+      "done": "#22c55e",
+      "warn": "#f59e0b",
+      "danger": "#f43f5e",
+      "bubble_user": "#1f2738",
+      "bubble_ai": "#181e2b",
+      "menu": "#1a202d",
+      "menu_border": "#2e3647",
+      "shadow": "#05070b",
+      "selection": "#1e3a6b"
+    },
+    "daylight": {
+      "window": "#f3f5f9",
+      "field": "#fbfcfe",
+      "panel": "#eef1f6",
+      "raised": "#ffffff",
+      "raised_hi": "#e7ecf4",
+      "line": "#d5dbe6",
+      "line_soft": "#e6eaf1",
+      "text": "#151a23",
+      "text_dim": "#4f5869",
+      "text_faint": "#8a93a5",
+      "active": "#1f66e5",
+      "active_hi": "#3b7bf0",
+      "active_glow": "#7aa7f7",
+      "active_text": "#ffffff",
+      "version": "#2563eb",
+      "go": "#16a34a",
+      "go_hi": "#22c55e",
+      "go_deep": "#dcfce7",
+      "source": "#e0a800",
+      "source_glow": "#f5c542",
+      "idle": "#e3e7ee",
+      "idle_ring": "#a8b0bf",
+      "done": "#16a34a",
+      "warn": "#b45309",
+      "danger": "#e11d48",
+      "bubble_user": "#e6eefc",
+      "bubble_ai": "#ffffff",
+      "menu": "#ffffff",
+      "menu_border": "#d5dbe6",
+      "shadow": "#9aa3b5",
+      "selection": "#dbe7fd"
+    }
+  },
+  "type": {
+    "title": {
+      "kind": "ui",
+      "pt": 11,
+      "weight": "bold"
+    },
+    "body": {
+      "kind": "ui",
+      "pt": 10,
+      "weight": "normal"
+    },
+    "small": {
+      "kind": "ui",
+      "pt": 9,
+      "weight": "normal"
+    },
+    "caption": {
+      "kind": "ui",
+      "pt": 8,
+      "weight": "normal"
+    },
+    "label_caps": {
+      "kind": "ui",
+      "pt": 8,
+      "weight": "bold"
+    },
+    "capsule": {
+      "kind": "ui",
+      "pt": 9,
+      "weight": "bold"
+    },
+    "mono": {
+      "kind": "mono",
+      "pt": 9,
+      "weight": "normal"
+    },
+    "mono_small": {
+      "kind": "mono",
+      "pt": 8,
+      "weight": "normal"
+    },
+    "brand": {
+      "kind": "ui",
+      "pt": 11,
+      "weight": "bold"
+    }
+  },
+  "geometry": {
+    "rail_w": 64,
+    "toolbar_h": 44,
+    "status_h": 30,
+    "lane_gap": 68,
+    "col_gap": 66,
+    "task_r": 11,
+    "task_ring": 2,
+    "hex_r": 12,
+    "source_r": 8,
+    "radius_ctl": 6,
+    "radius_bubble": 10,
+    "radius_menu": 10,
+    "grid": 4
+  },
+  "motion": {
+    "hover_ms": 120,
+    "menu_ms": 180,
+    "page_ms": 240,
+    "grow_ms": 600,
+    "pulse_ms": 1600,
+    "fps": 60
+  },
+  "rail": [
+    {
+      "key": "home",
+      "label": "Home",
+      "icon": "home"
+    },
+    {
+      "key": "projects",
+      "label": "Projects",
+      "icon": "projects"
+    },
+    {
+      "key": "agents",
+      "label": "Agents",
+      "icon": "agents"
+    },
+    {
+      "key": "history",
+      "label": "History",
+      "icon": "history"
+    },
+    {
+      "key": "settings",
+      "label": "Settings",
+      "icon": "settings"
+    }
+  ]
+}
