@@ -6,16 +6,20 @@ import sys
 import unittest
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "apps" / "desktop" / "src"))
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "src"))
+sys.path.insert(0, str(HERE.parent))  # installed copy: tests sit next to aiwb/
 
 from aiwb.ui import structure5, tokens5  # noqa: E402
 
-JSON = ROOT / "packages" / "design" / "tokens5.json"
+JSON = next((p / "packages" / "design" / "tokens5.json" for p in HERE.parents
+             if (p / "packages" / "design" / "tokens5.json").is_file()), None)
 
 
+@unittest.skipIf(JSON is None, "packages/design/tokens5.json is only in the repository (not in an installed copy)")
 class SharedTokensTest(unittest.TestCase):
     def setUp(self) -> None:
+        assert JSON is not None
         self.d = json.loads(JSON.read_text(encoding="utf-8"))
 
     def test_palettes_equal_desktop(self) -> None:
