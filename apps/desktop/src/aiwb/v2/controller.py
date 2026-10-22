@@ -488,17 +488,15 @@ class ProjectsController:
             from ..intake.answer_files import canonical
             canon, ex = canonical(text)   # 5.10.0 (A13): Markdown, Strict JSON, ZIP, damaged markers → AIWB blocks
             if ex.files or HANDOFF_RE.search(canon):
-                hid = self._match_handoff(canon, attempt_id=ex.attempt_id, hint=handoff_hint)
-                if not hid and not HANDOFF_RE.search(canon):
+                text = canon
+                hid = self._match_handoff(text, attempt_id=ex.attempt_id, hint=handoff_hint)
+                if not hid and not HANDOFF_RE.search(text) and not ex.attempt_id:
                     return RouteResult("rejected", rid, f"{len(ex.files)} file(s) found ({ex.label}), but this "
                                        "project is not waiting for an answer they belong to. Copy a task prompt "
-                                       "first. The answer is kept in the Inbox; nothing was changed.", text=canon)
-                text = canon
-            if HANDOFF_RE.search(text) or ex.files:
-                hid = self._match_handoff(text, attempt_id=ex.attempt_id, hint=handoff_hint)
+                                       "first. The answer is kept in the Inbox; nothing was changed.", text=text)
                 if not hid:
                     return RouteResult("rejected", rid, "This answer names a task/attempt this project is not waiting "
-                                       "for. It is kept in the Inbox; nothing was changed.")
+                                       "for. It is kept in the Inbox; nothing was changed.", text=text)
                 h = self.project.handoffs.ingest(hid, rid, text, file_hashes=file_hashes,
                                                  declared_attempt=ex.attempt_id if ex.attempt_id else "")
                 self._dirty("handoff answer")
