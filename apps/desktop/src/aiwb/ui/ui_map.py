@@ -250,6 +250,9 @@ def _workbench(app: Any) -> list[dict[str, Any]]:
     """The Project Workbench: its guide bar, then one tab per sidebar section (each visited once)."""
     ws = app.workspace_window
     out: list[dict[str, Any]] = []
+    strip = getattr(app, "projects_strip", None)  # 5.7.0: the project library cards above the Workbench
+    if strip is not None and _mapped(strip):
+        _visit(strip, out)
     guide = node("Next step", "section")
     walk(ws.next_frame, guide["children"])
     out.append(guide)
