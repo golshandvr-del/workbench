@@ -1,3 +1,29 @@
+## [5.8.0] - 2026-10-22
+
+### Core-path repair, step 1: stop the bleeding (Roadmap 5.8.0)
+
+A scripted run of the owner's real path on 5.7.0 (`docs/audit/screens/v5.7-owner-path/`) found crashes and dead
+ends on the way from *New Project* to the first file. This release removes them; the bigger redesign follows in
+5.9.0 – 5.13.0 (`ROADMAP.md`).
+
+- **Paste boxes no longer crash** (audit A11): *More › Paste the charter* / *Paste the answer* in the Workbench and
+  *GET AI RESPONSE* on the Mission Map called `place_dialog` without its size and failed with
+  `place_dialog() missing 1 required positional argument: 'height'`.
+- **Guided project goes to the guided start** (A3): after *Create* the app opens the Workbench on *Start the
+  project*, instead of the old Project Profile page and a "Project created" box.
+- **Save profile continues** (A4): it saves and goes on to the Workbench; the profile's choices (platform,
+  language, GUI framework, toolchain, …) are now part of the project manager's charter prompt.
+- **Status bar** (A6): an open project that is not planned yet no longer shows "No project open".
+- **Mission Map counts** (A14): blue circles are counted as "ready or working", not "in progress".
+- **Application error box**: says what happened and what to do next.
+
+### Tests
+
+- `test_ui_call_signatures.py`: every call of a shared UI helper must match its real signature.
+- `test_profile_to_charter.py`: the Project Profile reaches the charter prompt.
+- `gui_owner_path_smoke.py`: the owner's whole path with real widgets and real dialogs, from New Project to a file
+  on disk. Both new gates were checked to fail on the 5.7.0 code.
+
 ## [5.7.0] - 2026-10-22
 
 ### One job per page (Roadmap 5.7.0)
