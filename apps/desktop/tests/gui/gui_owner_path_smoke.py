@@ -223,8 +223,8 @@ def main() -> None:
             assert not [b for b in boxes if b[0] == "showerror"], f"error boxes: {boxes}"
         finally:
             root.destroy()
-    print("Owner path smoke passed: New Project › Guided → Workbench → start form (5 real dialogs) → charter prompt → "
-          "real paste box → accept → task prompt → real paste box → accept → file on disk")
+    print("Owner path smoke passed: New Project > Guided -> Workbench -> start form (5 real dialogs) -> charter prompt -> "
+          "real paste box -> accept -> task prompt -> real paste box -> accept -> file on disk")
 
 
 if __name__ == "__main__":
