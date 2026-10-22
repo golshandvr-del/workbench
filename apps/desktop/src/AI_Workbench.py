@@ -4559,6 +4559,15 @@ class WorkbenchApp:
         self._save_settings()
         self.set_status("Project profile saved for this workspace.")
 
+    def save_profile_and_continue(self) -> None:
+        """Profile › Save profile: save, then go on to the guided Workbench (audit A4: it used to stop here)."""
+        if self.workspace is None:
+            self.save_profile()
+            return
+        self.save_profile()
+        self.shell.show("workbench")
+        self.set_status("Profile saved — it will be part of the project manager's prompt. Next: Start the project.")
+
     def _make_menu(self) -> None:
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)
@@ -5980,7 +5989,8 @@ class WorkbenchApp:
         self._set_text(self.profile_constraints, DEFAULT_PROJECT_PROFILE.get("constraints", ""))
         actions = ttk.Frame(tab)
         actions.pack(fill="x", pady=(8, 0))
-        ttk.Button(actions, text="Save profile", style="Primary.TButton", command=self.save_profile).pack(side="left")
+        ttk.Button(actions, text="Save profile", style="Primary.TButton",
+                   command=self.save_profile_and_continue).pack(side="left")
         ttk.Button(actions, text="Restore defaults", command=self.reset_profile_defaults).pack(side="left", padx=(7, 0))
         ttk.Label(actions, text="Preset suggestions are editable; save to keep them with this project.", style="Hint.TLabel").pack(side="left", padx=(12, 0))
 
