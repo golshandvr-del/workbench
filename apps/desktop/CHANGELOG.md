@@ -1,3 +1,34 @@
+## [5.5.0] - 2026-10-21
+
+### App Map (Roadmap 5.5.0)
+
+- **The whole application as one tree**, taken from the running app (`aiwb/ui/ui_map.py`): Toolbar · Rail ·
+  Status bar → page → section / tab → button / menu → item. `docs/UI_MAP.md` holds the tree and a counts table;
+  `docs/design/ui_map.png` / `.svg` draw it. `tools/ui_map.py` regenerates all three (`--check` compares).
+- **Settings › App Map…** draws the same map inside the app: curved connectors, kind-coloured pills, a filter
+  box, zoom, drag to pan, and a summary line (*10 pages · 135 commands · balanced*).
+- **Balance rules** (`ui_map.RULES`): every page has at least 3 own commands, a section shows at most 7 direct
+  controls, a page at most 10 controls at once, a menu at most 12 items, no command has two homes, and the
+  heaviest rail destination weighs at most 4 × the lightest.
+
+### Fixes the audit found
+
+- Expert tools now live under the destination they belong to (`structure5.TOOL_HOME`):
+  **Projects › Tools** (Project Profile, Run & Report) · **Agents › Tools** (Prompt, AI Response) ·
+  **History › Tools** (Git / GitHub). Before, all five sat under Agents (79 commands vs 7 on Home).
+- Commands with two homes: 8 → 0. *Add existing folder…* lives in Toolbar › New Project only; Run & Report's
+  *Run…* is now **Run command…** (Toolbar › Run is the Guide's next step); Team planning's *Save* is
+  **Save team settings**; Workbench tool buttons are links to their page.
+- **Agents** got real commands: Team (*Copy team summary*, *Plan team & tasks…*) and Dispatch desk
+  (*Prepare all prompts*, *Parallel chats…*, *Open task queue*).
+- **Home** is three named sections (Mission Map with its task menu, Task details, Your projects); History groups
+  its filter and selected-step commands.
+
+### Tests
+
+- `test_ui_map.py` (13), `test_ui_balance.py` (11) and the 5.5.0 gate `gui_v5_map_smoke.py` (live map ==
+  `docs/UI_MAP.md`, audit clean, extraction writes nothing, the viewer draws/filters/zooms).
+
 ## [5.4.0] - 2026-10-21
 
 ### Mission Map right-click menu (Roadmap 5.4.0)

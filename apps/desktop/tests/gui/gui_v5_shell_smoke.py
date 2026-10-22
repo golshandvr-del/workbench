@@ -82,7 +82,7 @@ def main() -> None:
             facts = sh.refresh_status()
             assert facts["text"] in ("No agents running",) or "running" in facts["text"], facts
             assert sh.statusbar.saved_var.get() == "Saved"
-            # every destination opens its page; tools map to Agents
+            # every destination opens its page; each tool maps to its home destination (5.5.0 TOOL_HOME)
             for dest in sh.nav:
                 sh.nav[dest].invoke()
                 settle(root, 3)
@@ -90,7 +90,7 @@ def main() -> None:
             for key, _label in structure5.TOOLS:
                 app.agents_tool_buttons[key].invoke()
                 settle(root, 2)
-                assert sh.current == key and sh.rail.current == "agents", (key, sh.current)
+                assert sh.current == key and sh.rail.current == structure5.TOOL_HOME[key], (key, sh.rail.current)
             failures = []
             for theme in ("dark", "light"):
                 app.prefs.set_theme(theme)

@@ -25,13 +25,14 @@ TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
 # Rail destinations: (key, label, icon, sections)
 RAIL: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("home", "Home", "home", ("Mission Map", "Task details", "Your projects")),
-    ("projects", "Projects", "projects", ("Project cards", "Project Workbench")),
+    ("projects", "Projects", "projects", ("Project cards", "Project Workbench", "Tools")),
     ("agents", "Agents", "agents", ("Team", "Dispatch desk", "Tools")),
-    ("history", "History", "history", ("Timeline", "Prompts & responses", "Versions")),
+    ("history", "History", "history", ("Timeline", "Prompts & responses", "Versions", "Tools")),
     ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application")),
 )
 
-# Tools reached from Agents › Tools: the expert pages of 3.x/4.x (page key, label).
+# The expert pages of 3.x/4.x (page key, label), each reached from the "Tools" section of the destination it belongs to
+# (5.5.0 App Map balance: talking to an AI → Agents; describing and running the project → Projects; Git → History).
 TOOLS: tuple[tuple[str, str], ...] = (
     ("prompt", "Prompt"),
     ("response", "AI Response"),
@@ -39,6 +40,13 @@ TOOLS: tuple[tuple[str, str], ...] = (
     ("run", "Run & Report"),
     ("git", "Git / GitHub"),
 )
+TOOL_HOME: dict[str, str] = {"prompt": "agents", "response": "agents", "profile": "projects", "run": "projects",
+                             "git": "history"}
+
+
+def tools_of(dest: str) -> tuple[tuple[str, str], ...]:
+    """The expert pages listed under ``dest`` › Tools, in :data:`TOOLS` order."""
+    return tuple(t for t in TOOLS if TOOL_HOME[t[0]] == dest)
 
 # Right-click menu of a task circle on the Mission Map: (id, label, icon, guide actions that enable it)
 TASK_MENU: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
@@ -55,8 +63,8 @@ def tree() -> dict[str, Any]:
     """The whole tree as nested ``{label: children}`` (used by the tests and by ``UI_TREE.md``)."""
     return {
         "Toolbar": {label: {c[1]: {} for c in kids} for _id, label, _i, kids in TOOLBAR},
-        "Rail": {label: ({s: ({t[1]: {} for t in TOOLS} if s == "Tools" else {}) for s in sections})
-                 for _k, label, _i, sections in RAIL},
+        "Rail": {label: ({s: ({t[1]: {} for t in tools_of(k)} if s == "Tools" else {}) for s in sections})
+                 for k, label, _i, sections in RAIL},
         "Task menu": {label: {} for _id, label, _i, _a in TASK_MENU},
         "Status bar": {s: {} for s in STATUS_BAR},
     }

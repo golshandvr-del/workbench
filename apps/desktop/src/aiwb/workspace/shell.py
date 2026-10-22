@@ -402,8 +402,9 @@ class WorkspaceWindow:
         box = ttk.Frame(parent, style="WS.TFrame")
         box.grid(row=row, column=0, sticky="ew", pady=4)
         for key, label in items:
-            ttk.Button(box, text=label, command=lambda k=key: self._guard(lambda: self.wc.open_tool(k))).pack(
-                side="right" if self.wc.rtl else "left", padx=2)
+            b = ttk.Button(box, text=label, command=lambda k=key: self._guard(lambda: self.wc.open_tool(k)))
+            b._aiwb_link = key  # type: ignore[attr-defined]  # App Map: opens a tool whose home is elsewhere
+            b.pack(side="right" if self.wc.rtl else "left", padx=2)
 
     def _view_overview(self, f: ttk.Frame) -> None:
         ov = self.wc.overview()
@@ -663,7 +664,8 @@ class WorkspaceWindow:
         self.pm_var = tk.StringVar(value=ts["pm_agent_id"])
         ttk.Combobox(box, textvariable=self.pm_var, values=[a for a, _ in self.wc.pm_choices()], width=24,
                      state="readonly").pack(side=side, padx=4)
-        ttk.Button(box, text=self.wc.tr(("Save", "ذخیره")), command=self.save_team_settings).pack(side=side)
+        ttk.Button(box, text=self.wc.tr(("Save team settings", "ذخیرهٔ تنظیمات تیم")),
+                   command=self.save_team_settings).pack(side=side)
         ttk.Button(box, text=self.wc.tr(("Plan team & tasks…", "برنامه‌ریزی تیم و Taskها…")), style="WS.Primary.TButton",
                    command=self.dialog_plan_team).pack(side=side, padx=8)
         ch = self.wc.ctl.charter()

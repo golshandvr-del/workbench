@@ -61,9 +61,17 @@ def main() -> None:
                                     "scope": {"include": [f"m{i}/**"]}, "acceptance_criteria": ["ok"]})
                 tids.append(t["task_id"])
             p.timeline.propose_version({"label": "0.1.0", "task_ids": tids})
+            grows: list[bool] = []
+            real_grow = app.mission.grow
+
+            def counted_grow() -> None:
+                real_grow()
+                grows.append(bool(mo.active("mission:grow") and app.mission.find_withtag("grow_mask")))
+            app.mission.grow = counted_grow  # type: ignore[method-assign]
             sh.refresh_status()
             sh.show("home")
-            assert mo.active("mission:grow") and app.mission.find_withtag("grow_mask"), "branch growth starts"
+            # checked at the moment growth starts: a slow Windows runner may already have finished the 600 ms tween
+            assert grows and grows[0], f"branch growth starts: {grows}"
             assert mo.active("shell:page"), "page slides in"
             pump(root, 800)
             assert not mo.active("mission:grow") and not app.mission.find_withtag("grow_mask"), "growth ends clean"

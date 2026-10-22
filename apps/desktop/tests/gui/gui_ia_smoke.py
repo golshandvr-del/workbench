@@ -20,7 +20,8 @@ from gui_smoke_helpers import wait_for_project_ready
 
 # Commands present before the 3.3.0 rearrangement (from the 3.2.0 UI tree) — none may disappear.
 REQUIRED = {
-    "home": ["+ New project", "Add existing folder…", "Open selected", "Reveal folder", "Remove from list"],
+    "home": ["+ New project", "Open selected", "Reveal folder", "Remove from list"],  # 5.5.0: Add existing folder…
+    # has one home, Toolbar › New Project
     "prompt": ["Select recommended context", "Why these files?", "Select all", "Clear", "Build prompt", "Copy prompt",
                "Save prompt…", "Add history to prompt", "Manage custom instructions…"],
     "response": ["Paste & detect format", "Load response / ZIP…", "Analyze / preview files…", "Import diagnostics…",
@@ -31,7 +32,7 @@ REQUIRED = {
     "history": ["Project versions…", "Refresh", "Report error…", "Search", "Clear", "Save metadata / notes",
                 "Delete selected entry…", "Copy prompt", "Copy model output", "Edit prompt as new revision…",
                 "Create repair prompt from this step"],
-    "run": ["Run…", "Browse…", "Run / simulate selected file…", "Run selected / retry…", "Run all pending…",
+    "run": ["Run command…", "Browse…", "Run / simulate selected file…", "Run selected / retry…", "Run all pending…",
             "Remove selected", "Repair prompt from latest failure…", "Build continuation handoff…",
             "Copy report", "Save report…", "Refresh report"],
     "git": ["Refresh Git status / project history", "Create work branch", "Commit changes…", "Push to GitHub…",
@@ -39,7 +40,7 @@ REQUIRED = {
             "Replace Credential…", "Refresh Accounts", "Disconnect", "Refresh Repositories", "Link to Active Project…",
             "Unlink Project", "Open on GitHub", "Clone Selected…", "Initialize & Link Local…", "Initial Push Review…",
             "Binding Settings…", "Refresh Binding Metadata", "Build Center…", "Sync & Build…"],
-    "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "Export redacted diagnostics…",
+    "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
 }

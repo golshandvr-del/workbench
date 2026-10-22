@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.4.0"
+APP_VERSION = "5.5.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4617,6 +4617,8 @@ class WorkbenchApp:
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
+        self.tool_cards = {"projects": self._make_tools_card(self.workbench_tab, "projects"),
+                           "history": self._make_tools_card(self.history_tab, "history")}
         self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
         self.settings_scroll.pack(fill="both", expand=True)
         self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
@@ -4655,12 +4657,21 @@ class WorkbenchApp:
         bar = ui_actions.ActionBar(
             card,
             primary=(("Mobile Companion…", self.open_companion),
-                     ("Restore Manager…", self.open_restore_manager)),
+                     ("Restore Manager…", self.open_restore_manager),
+                     ("App Map…", self.open_app_map)),
             more=(("Tools", (("Validation Profiles…", self.manage_validation_profiles),)),
                   ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
             style=ui_layout.row_style(card))
         bar.grid(row=2, column=0, sticky="w")
+
+    def open_app_map(self) -> Any:
+        """Settings › App Map…: every page, section and command of this running app, drawn (roadmap 5.5.0)."""
+        from aiwb.ui import map_view, ui_map
+        tree = ui_map.extract(self)
+        win = map_view.open_window(self.root, tree, theme=self.prefs.theme)
+        self.set_status(f"App Map: {map_view.summary(tree)}.")
+        return win
 
     # -- 5.x shell commands (roadmap 5.1.0): toolbar New Project ▾ · Open · Save · Run, Agents page, status bar
     def new_guided_project(self) -> None:
@@ -4720,24 +4731,120 @@ class WorkbenchApp:
         self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")
         ttk.Label(team, textvariable=self.agents_team_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_team_bar = ui_actions.ActionBar(
+            team, primary=(("Copy team summary", self.agents_copy_team),
+                           ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
+        self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         desk = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         desk.pack(fill="x", pady=(0, 9))
         ttk.Label(desk, text="Dispatch desk", style="CardTitle.TLabel").pack(anchor="w")
         self.agents_dispatch_var = tk.StringVar(value="—")
         ttk.Label(desk, textvariable=self.agents_dispatch_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
-        tools = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
-        tools.pack(fill="x")
-        ttk.Label(tools, text="Tools", style="CardTitle.TLabel").pack(anchor="w")
-        ttk.Label(tools, text="Expert pages for manual prompt work, project profile, running and Git.",
-                  style="CardMuted.TLabel").pack(anchor="w", pady=(2, 8))
-        row = ttk.Frame(tools, style="Card.TFrame")
-        row.pack(anchor="w")
-        self.agents_tool_buttons: dict[str, ttk.Button] = {}
-        for key, label in structure5.TOOLS:
-            b = ttk.Button(row, text=label, command=lambda k=key: self.shell.show(k))
-            b.pack(side="left", padx=(0, 6))
-            self.agents_tool_buttons[key] = b
+        self.agents_desk_bar = ui_actions.ActionBar(
+            desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),
+                           ("Parallel chats…", self.agents_set_parallel),
+                           ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
+        self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
+        for bar, label in ((self.agents_team_bar, "Plan team & tasks…"), (self.agents_desk_bar, "Open task queue")):
+            bar.buttons[label]._aiwb_link = "workbench"  # type: ignore[attr-defined]  # home: Projects › Workbench
+        self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
+
+    TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
+                  "history": "Commits, pushes, branches and GitHub releases of this project."}
+
+    def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "") -> ttk.Frame:
+        """The "Tools" card of a rail destination (5.5.0): links to the expert pages that belong to it.
+
+        Packed first with ``side="bottom"`` so it stays visible under a page body that expands; every button is a
+        *link* (``_aiwb_link``) for the App Map, because the page it opens is the command's one home.
+        """
+        from aiwb.ui import structure5
+        if not hasattr(self, "tool_buttons"):
+            self.tool_buttons: dict[str, ttk.Button] = {}
+            self.agents_tool_buttons = self.tool_buttons  # 5.1.0 name, kept for callers and tests
+        card = ttk.Frame(page, style="Card.TFrame", padding=(14, 8))
+        card._aiwb_section = "Tools"  # type: ignore[attr-defined]
+        slaves = page.pack_slaves()
+        card.pack(side="bottom", fill="x", pady=(9, 0), **({"before": slaves[0]} if slaves else {}))
+        head = ttk.Frame(card, style="Card.TFrame")
+        head.pack(fill="x")
+        ttk.Label(head, text="Tools", style="CardTitle.TLabel").pack(side="left")
+        ttk.Label(head, text=hint or self.TOOLS_HINT.get(dest, ""), style="CardMuted.TLabel").pack(side="left",
+                                                                                                padx=(12, 0))
+        for key, label in reversed(structure5.tools_of(dest)):  # packed from the right: reversed = reading order
+            b = ttk.Button(head, text=label, command=lambda k=key: self.shell.show(k))
+            b._aiwb_link = key  # type: ignore[attr-defined]
+            b.pack(side="right", padx=(6, 0))
+            self.tool_buttons[key] = b
+        return card
+
+    def agents_workbench(self, section: str) -> None:
+        """Open the Project Workbench on one of its sections (the command's home)."""
+        if self.workspace is None:
+            self.set_status("Open or create a project first.")
+            return
+        self.shell.show("workbench")
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None:
+            ws.show(section)
+        else:
+            self.root.after(300, lambda: getattr(self, "workspace_window", None) and self.workspace_window.show(section))
+
+    def agents_copy_team(self) -> str:
+        """Copy the team list (name · role · running) for a new project-manager chat. Reading only."""
+        text = self.agents_team_var.get() if hasattr(self, "agents_team_var") else ""
+        if self.status_state() is None:
+            self.set_status("Open or create a project first.")
+            return ""
+        self._copy_text_to_clipboard("AI team of this project:\n" + text)
+        self.set_status("Team summary copied.")
+        return text
+
+    def agents_set_parallel(self, value: int | None = None) -> dict[str, Any] | None:
+        """Dispatch desk › Parallel chats…: how many AI chats you follow at the same time (team settings)."""
+        ctl = self._mission_ctl()
+        if ctl is None:
+            self.set_status("Open or create a project first.")
+            return None
+        if value is None:
+            value = simpledialog.askinteger("Parallel chats", "How many AI chats do you follow at the same time?",
+                                            parent=self.root, minvalue=1, maxvalue=12,
+                                            initialvalue=int(ctl.team_settings()["max_parallel_chats"]))
+            if value is None:
+                self.set_status("Cancelled — nothing changed.")
+                return None
+        try:
+            out = ctl.set_team_settings(max_parallel_chats=int(value))
+        except Exception as exc:  # noqa: BLE001 - invalid values are reported, never hidden
+            messagebox.showerror("Agents", redact(str(exc)))
+            return None
+        self.set_status(f"Parallel chats: {out['max_parallel_chats']}.")
+        self.refresh_agents_page()
+        return out
+
+    def agents_prepare_all(self) -> dict[str, Any] | None:
+        """Dispatch desk › Prepare all prompts: the Guide's prepare_all step (one prompt per free chat)."""
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        if ctl is None:
+            self.set_status("Open or create a project first.")
+            return None
+        guide = Guide(ctl)
+        step = next((st for st in guide.steps() if any(a["id"] == "prepare_all" for a in st["actions"])), None)
+        if step is None:
+            self.set_status("Nothing to prepare now — every free chat already has its prompt.")
+            return None
+        try:
+            out = guide.perform(step["key"], "prepare_all")
+        except Exception as exc:  # noqa: BLE001 - the Guide refuses impossible steps with a clear message
+            messagebox.showerror("Agents", redact(str(exc)))
+            return None
+        self.set_status(out.get("message", "Prompts ready."))
+        self.refresh_mission(self.status_state(), force=True)
+        self.shell.refresh_status()
+        self.refresh_agents_page()
+        return out
 
     def refresh_agents_page(self) -> None:
         if not hasattr(self, "agents_team_var"):
@@ -4797,8 +4904,13 @@ class WorkbenchApp:
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
+        from aiwb.ui import structure5
+        head._aiwb_section = ""  # type: ignore[attr-defined]  # App Map: the title row, not a section of its own
+        self.mission._aiwb_section = "Mission Map"  # type: ignore[attr-defined]
+        self.mission._aiwb_menu = ("Task menu", tuple(m[1] for m in structure5.TASK_MENU))  # type: ignore[attr-defined]
         self.mission_detail_var = tk.StringVar(value="Click a task circle to see its details.")
         detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
+        detail._aiwb_section = "Task details"  # type: ignore[attr-defined]
         detail.pack(fill="x", pady=(8, 12))
         ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(side="left", fill="x", expand=True)
@@ -4969,8 +5081,7 @@ class WorkbenchApp:
         ui_actions.ActionBar(
             toolbar,
             primary=(("+ New project", self.new_project, "Primary.TButton"),
-                     ("Open selected", self.open_selected_project),
-                     ("Add existing folder…", self.add_existing_project)),
+                     ("Open selected", self.open_selected_project)),  # Add existing folder…: Toolbar › New Project
             more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
                                         ("Remove from list", self.forget_selected_project))),),
             style="Card.TFrame").pack(side="left")
@@ -5759,6 +5870,7 @@ class WorkbenchApp:
                              more=(("History", (("Refresh", self._refresh_history_view),
                                                 ("Report error…", self.report_manual_runtime_error))),)).pack(side="left")
         filter_row = ttk.Frame(left)
+        filter_row._aiwb_section = "Filter"  # type: ignore[attr-defined]  # App Map: search controls as one group
         filter_row.pack(fill="x", pady=(0, 5))
         ttk.Label(filter_row, text="Filter history").pack(side="left", padx=(0, 5))
         self.history_filter_var = tk.StringVar()
@@ -5818,6 +5930,7 @@ class WorkbenchApp:
         self.history_output_view = self._make_history_text_page("Model output")
         self.history_error_view = self._make_history_text_page("Errors / context requests")
         action_row = ttk.Frame(right)
+        action_row._aiwb_section = "Selected step"  # type: ignore[attr-defined]  # App Map: acts on the chosen step
         action_row.pack(fill="x", pady=(6, 0))
         ui_actions.ActionBar(
             action_row,
@@ -6958,7 +7071,7 @@ class WorkbenchApp:
         ttk.Label(cmd_frame, text="Manual command:").pack(side="left")
         cmd_entry = ttk.Entry(cmd_frame, textvariable=self.command_var)
         cmd_entry.pack(side="left", fill="x", expand=True, padx=6)
-        ttk.Button(cmd_frame, text="Run…", command=self.run_custom_command).pack(side="left")
+        ttk.Button(cmd_frame, text="Run command…", command=self.run_custom_command).pack(side="left")
 
         file_run_box = ttk.LabelFrame(tab, text="Run a project file / simulate a circuit", padding=7)
         file_run_box.pack(fill="x", pady=(0, 7))

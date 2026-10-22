@@ -54,9 +54,10 @@ def fit_to_screen(root: tk.Tk, want: tuple[int, int] = (1280, 820), minimum: tup
     return geo
 
 
-# Page -> rail destination of the 5.x shell (roadmap 5.1.0, docs/UI_TREE.md): expert pages live under Agents › Tools.
+# Page -> rail destination of the 5.x shell (roadmap 5.1.0/5.5.0, docs/UI_TREE.md): an expert page lives under the
+# Tools section of its home destination (structure5.TOOL_HOME).
 RAIL_OF: dict[str, str] = {"home": "home", "workbench": "projects", "agents": "agents", "prompt": "agents",
-                           "response": "agents", "profile": "agents", "run": "agents", "git": "agents",
+                           "response": "agents", "profile": "projects", "run": "projects", "git": "history",
                            "history": "history", "settings": "settings"}
 # Rail destination -> page shown when it is clicked
 RAIL_PAGE: dict[str, str] = {"home": "home", "projects": "workbench", "agents": "agents", "history": "history",

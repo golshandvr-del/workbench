@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -262,8 +262,16 @@
       "source": "apps/desktop/tests/test_task_menu.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.4.0.md",
-      "source": "docs/release/v5.4.0/WINDOWS_RELEASE_CHECKLIST_v5.4.0.md"
+      "path": "test_ui_map.py",
+      "source": "apps/desktop/tests/test_ui_map.py"
+    },
+    {
+      "path": "test_ui_balance.py",
+      "source": "apps/desktop/tests/test_ui_balance.py"
+    },
+    {
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.5.0.md",
+      "source": "docs/release/v5.5.0/WINDOWS_RELEASE_CHECKLIST_v5.5.0.md"
     },
     {
       "path": "install.ps1",
@@ -704,6 +712,14 @@
     {
       "path": "aiwb/ui/menu5.py",
       "source": "apps/desktop/src/aiwb/ui/menu5.py"
+    },
+    {
+      "path": "aiwb/ui/ui_map.py",
+      "source": "apps/desktop/src/aiwb/ui/ui_map.py"
+    },
+    {
+      "path": "aiwb/ui/map_view.py",
+      "source": "apps/desktop/src/aiwb/ui/map_view.py"
     }
   ],
   "zip_timestamp": [
