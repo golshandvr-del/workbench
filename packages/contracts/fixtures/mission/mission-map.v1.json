@@ -1,0 +1,3628 @@
+{
+ "cases": [
+  {
+   "expect": {
+    "columns": [],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 0,
+     "idle": 0
+    },
+    "empty": true,
+    "lanes": [],
+    "slots": []
+   },
+   "name": "empty",
+   "options": {},
+   "state": {}
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "v3",
+      "kind": "version",
+      "label": "0.1.0",
+      "status": "planned"
+     },
+     {
+      "key": "v1",
+      "kind": "version",
+      "label": "0.2.0",
+      "status": "planned"
+     },
+     {
+      "key": "v2",
+      "kind": "version",
+      "label": "0.10.0",
+      "status": "planned"
+     },
+     {
+      "key": "v0",
+      "kind": "version",
+      "label": "1.0.0",
+      "status": "planned"
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 0,
+     "idle": 20
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-1",
+        "title": "0.1.0 #1"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": false,
+      "name": "Agent 2",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-2",
+        "title": "0.1.0 #2"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-2",
+        "title": "0.10.0 #2"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-2",
+        "title": "0.2.0 #2"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-2",
+        "title": "1.0.0 #2"
+       }
+      ],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-3",
+        "title": "0.1.0 #3"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-4",
+        "title": "0.1.0 #4"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-5",
+        "title": "0.1.0 #5"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "name": "five_ai_semver",
+   "options": {},
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {
+     "v0": {
+      "label": "1.0.0",
+      "status": "planned",
+      "task_ids": [
+       "t-1.0.0-1",
+       "t-1.0.0-2",
+       "t-1.0.0-3",
+       "t-1.0.0-4",
+       "t-1.0.0-5"
+      ],
+      "version_id": "v0"
+     },
+     "v1": {
+      "label": "0.2.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.2.0-1",
+       "t-0.2.0-2",
+       "t-0.2.0-3",
+       "t-0.2.0-4",
+       "t-0.2.0-5"
+      ],
+      "version_id": "v1"
+     },
+     "v2": {
+      "label": "0.10.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "version_id": "v2"
+     },
+     "v3": {
+      "label": "0.1.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5"
+      ],
+      "version_id": "v3"
+     }
+    }
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "v3",
+      "kind": "version",
+      "label": "0.1.0",
+      "status": "planned"
+     },
+     {
+      "key": "v1",
+      "kind": "version",
+      "label": "0.2.0",
+      "status": "planned"
+     },
+     {
+      "key": "v2",
+      "kind": "version",
+      "label": "0.10.0",
+      "status": "planned"
+     },
+     {
+      "key": "later",
+      "kind": "later",
+      "label": "Later",
+      "status": ""
+     }
+    ],
+    "counts": {
+     "active": 2,
+     "attention": 1,
+     "blocked": 1,
+     "done": 0,
+     "idle": 19
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "loose",
+        "title": "l"
+       },
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-1",
+        "title": "0.1.0 #1"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 3,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": true,
+      "name": "Agent 2",
+      "nodes": [
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "active",
+        "status": "in_progress",
+        "task_id": "extra",
+        "title": "x"
+       },
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-2",
+        "title": "0.1.0 #2"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-2",
+        "title": "0.10.0 #2"
+       },
+       {
+        "column": 1,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-2",
+        "title": "0.2.0 #2"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-2",
+        "title": "1.0.0 #2"
+       }
+      ],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": true,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "active",
+        "status": "draft",
+        "task_id": "t-0.1.0-3",
+        "title": "0.1.0 #3"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "attention",
+        "status": "needs_decision",
+        "task_id": "t-0.1.0-4",
+        "title": "0.1.0 #4"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-5",
+        "title": "0.1.0 #5"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "unassigned",
+      "live": false,
+      "name": "unassigned",
+      "nodes": [
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "blocked",
+        "status": "blocked",
+        "task_id": "orphan",
+        "title": "o"
+       }
+      ],
+      "number": 6,
+      "role": ""
+     }
+    ],
+    "slots": [
+     1,
+     2,
+     1,
+     2
+    ]
+   },
+   "name": "mixed_states_later_unassigned",
+   "options": {},
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {
+     "h": {
+      "handoff_id": "h",
+      "status": "prompt_exported",
+      "task_id": "t-0.1.0-3"
+     }
+    },
+    "milestones": {
+     "m1": {
+      "milestone_id": "m1",
+      "status": "planned",
+      "task_ids": [
+       "extra"
+      ]
+     }
+    },
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "extra": {
+      "owner_agent_id": "a2",
+      "status": "in_progress",
+      "task_id": "extra",
+      "title": "x"
+     },
+     "gone": {
+      "owner_agent_id": "a1",
+      "status": "cancelled",
+      "task_id": "gone",
+      "title": "g"
+     },
+     "loose": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "loose",
+      "title": "l"
+     },
+     "orphan": {
+      "owner_agent_id": "ghost",
+      "status": "blocked",
+      "task_id": "orphan",
+      "title": "o"
+     },
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "needs_decision",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {
+     "v0": {
+      "label": "1.0.0",
+      "status": "withdrawn",
+      "task_ids": [
+       "t-1.0.0-1",
+       "t-1.0.0-2",
+       "t-1.0.0-3",
+       "t-1.0.0-4",
+       "t-1.0.0-5"
+      ],
+      "version_id": "v0"
+     },
+     "v1": {
+      "label": "0.2.0",
+      "milestone_ids": [
+       "m1"
+      ],
+      "status": "planned",
+      "task_ids": [
+       "t-0.2.0-1",
+       "t-0.2.0-2",
+       "t-0.2.0-3",
+       "t-0.2.0-4",
+       "t-0.2.0-5"
+      ],
+      "version_id": "v1"
+     },
+     "v2": {
+      "label": "0.10.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "version_id": "v2"
+     },
+     "v3": {
+      "label": "0.1.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5"
+      ],
+      "version_id": "v3"
+     }
+    }
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "next",
+      "kind": "next",
+      "label": "Next",
+      "status": ""
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 0,
+     "idle": 20
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-1",
+        "title": "0.1.0 #1"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 0,
+        "slot": 2,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 0,
+        "slot": 3,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": false,
+      "name": "Agent 2",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-2",
+        "title": "0.1.0 #2"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-2",
+        "title": "0.10.0 #2"
+       },
+       {
+        "column": 0,
+        "slot": 2,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-2",
+        "title": "0.2.0 #2"
+       },
+       {
+        "column": 0,
+        "slot": 3,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-2",
+        "title": "1.0.0 #2"
+       }
+      ],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-3",
+        "title": "0.1.0 #3"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 0,
+        "slot": 2,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 0,
+        "slot": 3,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-4",
+        "title": "0.1.0 #4"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 0,
+        "slot": 2,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 0,
+        "slot": 3,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-5",
+        "title": "0.1.0 #5"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 0,
+        "slot": 2,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 0,
+        "slot": 3,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     4
+    ]
+   },
+   "name": "no_versions_next",
+   "options": {},
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {}
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "m1",
+      "kind": "milestone",
+      "label": "Alpha",
+      "status": "planned"
+     },
+     {
+      "key": "later",
+      "kind": "later",
+      "label": "Later",
+      "status": ""
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 0,
+     "idle": 20
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-1",
+        "title": "0.1.0 #1"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": false,
+      "name": "Agent 2",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-2",
+        "title": "0.1.0 #2"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-2",
+        "title": "0.10.0 #2"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-2",
+        "title": "0.2.0 #2"
+       },
+       {
+        "column": 1,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-2",
+        "title": "1.0.0 #2"
+       }
+      ],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-3",
+        "title": "0.1.0 #3"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-4",
+        "title": "0.1.0 #4"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.1.0-5",
+        "title": "0.1.0 #5"
+       },
+       {
+        "column": 0,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 1,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     2,
+     2
+    ]
+   },
+   "name": "milestones_as_columns",
+   "options": {},
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {
+     "m1": {
+      "milestone_id": "m1",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5",
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "title": "Alpha"
+     },
+     "m2": {
+      "milestone_id": "m2",
+      "status": "dropped",
+      "task_ids": [],
+      "title": "Beta"
+     }
+    },
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "draft",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {}
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "next",
+      "kind": "next",
+      "label": "Next",
+      "status": ""
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 0,
+     "idle": 0
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": false,
+      "name": "Agent 2",
+      "nodes": [],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     1
+    ]
+   },
+   "name": "team_without_tasks",
+   "options": {},
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {},
+    "versions": {}
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "v3",
+      "kind": "version",
+      "label": "0.1.0",
+      "status": "planned"
+     },
+     {
+      "key": "v1",
+      "kind": "version",
+      "label": "0.2.0",
+      "status": "planned"
+     },
+     {
+      "key": "v2",
+      "kind": "version",
+      "label": "0.10.0",
+      "status": "planned"
+     },
+     {
+      "key": "v0",
+      "kind": "version",
+      "label": "1.0.0",
+      "status": "planned"
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 8,
+     "idle": 12
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-1",
+        "title": "0.1.0 #1"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": false,
+      "name": "Agent 2",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-2",
+        "title": "0.1.0 #2"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.10.0-2",
+        "title": "0.10.0 #2"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.2.0-2",
+        "title": "0.2.0 #2"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-1.0.0-2",
+        "title": "1.0.0 #2"
+       }
+      ],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-3",
+        "title": "0.1.0 #3"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-4",
+        "title": "0.1.0 #4"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-5",
+        "title": "0.1.0 #5"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "name": "view_options_none",
+   "options": {},
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "done",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "done",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "done",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "done",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {
+     "v0": {
+      "label": "1.0.0",
+      "status": "planned",
+      "task_ids": [
+       "t-1.0.0-1",
+       "t-1.0.0-2",
+       "t-1.0.0-3",
+       "t-1.0.0-4",
+       "t-1.0.0-5"
+      ],
+      "version_id": "v0"
+     },
+     "v1": {
+      "label": "0.2.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.2.0-1",
+       "t-0.2.0-2",
+       "t-0.2.0-3",
+       "t-0.2.0-4",
+       "t-0.2.0-5"
+      ],
+      "version_id": "v1"
+     },
+     "v2": {
+      "label": "0.10.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "version_id": "v2"
+     },
+     "v3": {
+      "label": "0.1.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5"
+      ],
+      "version_id": "v3"
+     }
+    }
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "v3",
+      "kind": "version",
+      "label": "0.1.0",
+      "status": "planned"
+     },
+     {
+      "key": "v1",
+      "kind": "version",
+      "label": "0.2.0",
+      "status": "planned"
+     },
+     {
+      "key": "v2",
+      "kind": "version",
+      "label": "0.10.0",
+      "status": "planned"
+     },
+     {
+      "key": "v0",
+      "kind": "version",
+      "label": "1.0.0",
+      "status": "planned"
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 8,
+     "idle": 12
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a2",
+      "live": false,
+      "name": "Agent 2",
+      "nodes": [],
+      "number": 2,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "name": "view_options_hide_done",
+   "options": {
+    "hide_done": true
+   },
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "done",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "done",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "done",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "done",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {
+     "v0": {
+      "label": "1.0.0",
+      "status": "planned",
+      "task_ids": [
+       "t-1.0.0-1",
+       "t-1.0.0-2",
+       "t-1.0.0-3",
+       "t-1.0.0-4",
+       "t-1.0.0-5"
+      ],
+      "version_id": "v0"
+     },
+     "v1": {
+      "label": "0.2.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.2.0-1",
+       "t-0.2.0-2",
+       "t-0.2.0-3",
+       "t-0.2.0-4",
+       "t-0.2.0-5"
+      ],
+      "version_id": "v1"
+     },
+     "v2": {
+      "label": "0.10.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "version_id": "v2"
+     },
+     "v3": {
+      "label": "0.1.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5"
+      ],
+      "version_id": "v3"
+     }
+    }
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "v3",
+      "kind": "version",
+      "label": "0.1.0",
+      "status": "planned"
+     },
+     {
+      "key": "v1",
+      "kind": "version",
+      "label": "0.2.0",
+      "status": "planned"
+     },
+     {
+      "key": "v2",
+      "kind": "version",
+      "label": "0.10.0",
+      "status": "planned"
+     },
+     {
+      "key": "v0",
+      "kind": "version",
+      "label": "1.0.0",
+      "status": "planned"
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 8,
+     "idle": 12
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-1",
+        "title": "0.1.0 #1"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-3",
+        "title": "0.1.0 #3"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-4",
+        "title": "0.1.0 #4"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 0,
+        "slot": 0,
+        "state": "done",
+        "status": "done",
+        "task_id": "t-0.1.0-5",
+        "title": "0.1.0 #5"
+       },
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "name": "view_options_open_only",
+   "options": {
+    "open_only": true
+   },
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "done",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "done",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "done",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "done",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {
+     "v0": {
+      "label": "1.0.0",
+      "status": "planned",
+      "task_ids": [
+       "t-1.0.0-1",
+       "t-1.0.0-2",
+       "t-1.0.0-3",
+       "t-1.0.0-4",
+       "t-1.0.0-5"
+      ],
+      "version_id": "v0"
+     },
+     "v1": {
+      "label": "0.2.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.2.0-1",
+       "t-0.2.0-2",
+       "t-0.2.0-3",
+       "t-0.2.0-4",
+       "t-0.2.0-5"
+      ],
+      "version_id": "v1"
+     },
+     "v2": {
+      "label": "0.10.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "version_id": "v2"
+     },
+     "v3": {
+      "label": "0.1.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5"
+      ],
+      "version_id": "v3"
+     }
+    }
+   }
+  },
+  {
+   "expect": {
+    "columns": [
+     {
+      "key": "v3",
+      "kind": "version",
+      "label": "0.1.0",
+      "status": "planned"
+     },
+     {
+      "key": "v1",
+      "kind": "version",
+      "label": "0.2.0",
+      "status": "planned"
+     },
+     {
+      "key": "v2",
+      "kind": "version",
+      "label": "0.10.0",
+      "status": "planned"
+     },
+     {
+      "key": "v0",
+      "kind": "version",
+      "label": "1.0.0",
+      "status": "planned"
+     }
+    ],
+    "counts": {
+     "active": 0,
+     "attention": 0,
+     "blocked": 0,
+     "done": 8,
+     "idle": 12
+    },
+    "empty": false,
+    "lanes": [
+     {
+      "agent_id": "a1",
+      "live": false,
+      "name": "Agent 1",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-1",
+        "title": "0.10.0 #1"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-1",
+        "title": "0.2.0 #1"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-1",
+        "title": "1.0.0 #1"
+       }
+      ],
+      "number": 1,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a3",
+      "live": false,
+      "name": "Agent 3",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-3",
+        "title": "0.10.0 #3"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-3",
+        "title": "0.2.0 #3"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-3",
+        "title": "1.0.0 #3"
+       }
+      ],
+      "number": 3,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a4",
+      "live": false,
+      "name": "Agent 4",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-4",
+        "title": "0.10.0 #4"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-4",
+        "title": "0.2.0 #4"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-4",
+        "title": "1.0.0 #4"
+       }
+      ],
+      "number": 4,
+      "role": "implementer"
+     },
+     {
+      "agent_id": "a5",
+      "live": false,
+      "name": "Agent 5",
+      "nodes": [
+       {
+        "column": 2,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.10.0-5",
+        "title": "0.10.0 #5"
+       },
+       {
+        "column": 1,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-0.2.0-5",
+        "title": "0.2.0 #5"
+       },
+       {
+        "column": 3,
+        "slot": 0,
+        "state": "idle",
+        "status": "draft",
+        "task_id": "t-1.0.0-5",
+        "title": "1.0.0 #5"
+       }
+      ],
+      "number": 5,
+      "role": "implementer"
+     }
+    ],
+    "slots": [
+     1,
+     1,
+     1,
+     1
+    ]
+   },
+   "name": "view_options_hide_done_open_only",
+   "options": {
+    "hide_done": true,
+    "open_only": true
+   },
+   "state": {
+    "agents": {
+     "a1": {
+      "agent_id": "a1",
+      "name": "Agent 1",
+      "role": "implementer"
+     },
+     "a2": {
+      "agent_id": "a2",
+      "name": "Agent 2",
+      "role": "implementer"
+     },
+     "a3": {
+      "agent_id": "a3",
+      "name": "Agent 3",
+      "role": "implementer"
+     },
+     "a4": {
+      "agent_id": "a4",
+      "name": "Agent 4",
+      "role": "implementer"
+     },
+     "a5": {
+      "agent_id": "a5",
+      "name": "Agent 5",
+      "role": "implementer"
+     },
+     "pm": {
+      "agent_id": "pm",
+      "name": "PM",
+      "role": "project_manager"
+     }
+    },
+    "handoffs": {},
+    "milestones": {},
+    "project_id": "p",
+    "state_revision": 3,
+    "tasks": {
+     "t-0.1.0-1": {
+      "owner_agent_id": "a1",
+      "status": "done",
+      "task_id": "t-0.1.0-1",
+      "title": "0.1.0 #1"
+     },
+     "t-0.1.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.1.0-2",
+      "title": "0.1.0 #2"
+     },
+     "t-0.1.0-3": {
+      "owner_agent_id": "a3",
+      "status": "done",
+      "task_id": "t-0.1.0-3",
+      "title": "0.1.0 #3"
+     },
+     "t-0.1.0-4": {
+      "owner_agent_id": "a4",
+      "status": "done",
+      "task_id": "t-0.1.0-4",
+      "title": "0.1.0 #4"
+     },
+     "t-0.1.0-5": {
+      "owner_agent_id": "a5",
+      "status": "done",
+      "task_id": "t-0.1.0-5",
+      "title": "0.1.0 #5"
+     },
+     "t-0.10.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.10.0-1",
+      "title": "0.10.0 #1"
+     },
+     "t-0.10.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.10.0-2",
+      "title": "0.10.0 #2"
+     },
+     "t-0.10.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.10.0-3",
+      "title": "0.10.0 #3"
+     },
+     "t-0.10.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.10.0-4",
+      "title": "0.10.0 #4"
+     },
+     "t-0.10.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.10.0-5",
+      "title": "0.10.0 #5"
+     },
+     "t-0.2.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-0.2.0-1",
+      "title": "0.2.0 #1"
+     },
+     "t-0.2.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-0.2.0-2",
+      "title": "0.2.0 #2"
+     },
+     "t-0.2.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-0.2.0-3",
+      "title": "0.2.0 #3"
+     },
+     "t-0.2.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-0.2.0-4",
+      "title": "0.2.0 #4"
+     },
+     "t-0.2.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-0.2.0-5",
+      "title": "0.2.0 #5"
+     },
+     "t-1.0.0-1": {
+      "owner_agent_id": "a1",
+      "status": "draft",
+      "task_id": "t-1.0.0-1",
+      "title": "1.0.0 #1"
+     },
+     "t-1.0.0-2": {
+      "owner_agent_id": "a2",
+      "status": "done",
+      "task_id": "t-1.0.0-2",
+      "title": "1.0.0 #2"
+     },
+     "t-1.0.0-3": {
+      "owner_agent_id": "a3",
+      "status": "draft",
+      "task_id": "t-1.0.0-3",
+      "title": "1.0.0 #3"
+     },
+     "t-1.0.0-4": {
+      "owner_agent_id": "a4",
+      "status": "draft",
+      "task_id": "t-1.0.0-4",
+      "title": "1.0.0 #4"
+     },
+     "t-1.0.0-5": {
+      "owner_agent_id": "a5",
+      "status": "draft",
+      "task_id": "t-1.0.0-5",
+      "title": "1.0.0 #5"
+     }
+    },
+    "versions": {
+     "v0": {
+      "label": "1.0.0",
+      "status": "planned",
+      "task_ids": [
+       "t-1.0.0-1",
+       "t-1.0.0-2",
+       "t-1.0.0-3",
+       "t-1.0.0-4",
+       "t-1.0.0-5"
+      ],
+      "version_id": "v0"
+     },
+     "v1": {
+      "label": "0.2.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.2.0-1",
+       "t-0.2.0-2",
+       "t-0.2.0-3",
+       "t-0.2.0-4",
+       "t-0.2.0-5"
+      ],
+      "version_id": "v1"
+     },
+     "v2": {
+      "label": "0.10.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.10.0-1",
+       "t-0.10.0-2",
+       "t-0.10.0-3",
+       "t-0.10.0-4",
+       "t-0.10.0-5"
+      ],
+      "version_id": "v2"
+     },
+     "v3": {
+      "label": "0.1.0",
+      "status": "planned",
+      "task_ids": [
+       "t-0.1.0-1",
+       "t-0.1.0-2",
+       "t-0.1.0-3",
+       "t-0.1.0-4",
+       "t-0.1.0-5"
+      ],
+      "version_id": "v3"
+     }
+    }
+   }
+  }
+ ],
+ "producer": "apps/desktop/src/aiwb/ui/mission_model.py",
+ "schema": "aiwb-mission-map-fixture.v1"
+}
