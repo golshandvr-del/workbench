@@ -4699,9 +4699,18 @@ class WorkbenchApp:
         self.new_project(on_created=self._start_guided_after_create)
 
     def _start_guided_after_create(self, created: Path) -> None:
-        """After Guided › Create: open the Workbench on its first guided step (Start the project), not the old Profile."""
+        """After New Project › Create: open the guided Workbench on its next step, not the old Profile.
+
+        5.9.0: the wizard already recorded goal and team, so the next step is the project-manager prompt; the status
+        line set by the wizard is kept, and the Mission Map is redrawn now (named lanes) instead of on the next tick.
+        """
         self.shell.show("workbench")
-        self.set_status(f"Created {created.name}. Next: Start the project — give the goal and how many AI chats you use.")
+        try:
+            self.shell.refresh_status()
+        except Exception:  # noqa: BLE001 — a redraw problem must not hide the created project
+            pass
+        if not (Path(created) / ".workbench" / "v2" / "state.json").is_file():
+            self.set_status(f"Created {created.name}. Next: Start the project — give the goal and your AI team.")
 
     def save_now(self) -> None:
         """Toolbar › Save: write the profile and settings now (the V2 project state is saved on every change)."""
