@@ -27,11 +27,15 @@ object TaskMenu {
     )
 
     /** The task a Guide step belongs to ('' when it is not about one task). */
-    fun stepTask(step: Guide.Step): String = when {
-        step.key.startsWith("task:") -> step.key.substringAfter(":")
-        step.ref.isNotEmpty() && step.taskIds.isEmpty() && step.key.startsWith("handoff:") -> ""
-        else -> ""
+    fun stepTask(step: Guide.Step): String = if (step.key.startsWith("task:")) step.key.substringAfter(":") else ""
+
+    /** The task of a `handoff:<id>` step, read from the project state (the desktop step carries `task_id`). */
+    fun handoffTask(state: Map<*, *>): (Guide.Step) -> String = { step ->
+        if (step.key.startsWith("handoff:")) Json.str(Json.obj(Json.obj(state["handoffs"])[step.ref])["task_id"]) else ""
     }
+
+    /** Menu rows for [taskId] of the project behind [guide] right now. */
+    fun forTask(guide: Guide, taskId: String): List<Row> = items(guide.steps(), taskId, handoffTask(guide.project.state()))
 
     /** Steps about [taskId]: its own `task:` step, plus handoff steps whose ref names a handoff of that task. */
     fun items(steps: List<Guide.Step>, taskId: String, handoffTask: (Guide.Step) -> String = { "" }): List<Row> {
