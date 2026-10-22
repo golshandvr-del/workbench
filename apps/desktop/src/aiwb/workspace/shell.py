@@ -348,7 +348,7 @@ class WorkspaceWindow:
             out["text"] = box.get("1.0", "end-1c")
             top.destroy()
         ttk.Button(top, text="Use this answer", style="WS.Primary.TButton", command=ok).pack(pady=(0, 8))
-        ui_layout.place_dialog(top, self.win)
+        ui_layout.place_dialog(top, 820, 520, self.win)
         box.focus_set()
         top.grab_set()
         top.wait_window()
