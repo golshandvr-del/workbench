@@ -5279,6 +5279,7 @@ class WorkbenchApp:
         strip.pack(side="top", fill="x")
         self.projects_strip = strip
         row = ttk.Frame(strip)
+        row._aiwb_section = ""  # type: ignore[attr-defined]  # the strip's header row, not a nested section
         row._aiwb_noflow = True  # type: ignore[attr-defined]  # one fixed header row (title · find · actions)
         row.pack(fill="x")
         ttk.Label(row, text="Your projects", style="SectionTitle.TLabel").pack(side="left")
