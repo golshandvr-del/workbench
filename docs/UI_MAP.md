@@ -13,14 +13,14 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 3 | 0 | 12 | 8 | 0 |
-| Projects | 12 | 7 | 17 | 7 | 9 |
+| Home | 4 | 0 | 11 | 8 | 0 |
+| Projects | 13 | 7 | 21 | 9 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
 | Agents | 7 | 0 | 6 | 10 | 4 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
-| History | 6 | 6 | 12 | 10 | 0 |
+| History | 7 | 6 | 12 | 10 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 5 | 0 |
 | Settings | 4 | 0 | 11 | 9 | 0 |
 
@@ -54,18 +54,23 @@ Audit:
         - SEND PROMPT [item]
         - GET AI RESPONSE [item]
         - MARK AS DONE [item]
+    - Map view [section]
+      - Hide finished tasks [option]
+      - Only AIs with open work [option]
+      - Copy map summary [button]
     - Task details [section]
       - Jump to active task [button]
       - Copy task summary [button]
       - Open task in Workbench [button]
-    - Your projects [section]
-      - + New project [button]
-      - Open selected [button]
-      - More [menu]
-        - Reveal folder [item]
-        - Remove from list [item]
+    - Next step [section]
       - Continue in Workbench [button]
   - Projects [page]
+    - Your projects [section]
+      - + New project [button]
+      - More [menu]
+        - Open selected [item]
+        - Reveal folder [item]
+        - Remove from list [item]
     - Next step [section]
       - Start the project… [button]
     - Overview [tab]
@@ -190,6 +195,7 @@ Audit:
           - Refresh workflow [item]
           - Projects (multi-agent)… [item]
   - History [page]
+    - Timeline [section]
     - Project versions… [button]
     - More [menu]
       - Refresh [item]

@@ -72,8 +72,12 @@ def _columns(state: dict[str, Any]) -> tuple[list[dict[str, Any]], dict[str, int
     return cols, owner
 
 
-def build(state: dict[str, Any] | None) -> dict[str, Any]:
-    """The Mission Map as data: ``columns``, ``lanes`` (each with its ``nodes``), ``slots`` per column, counts."""
+def build(state: dict[str, Any] | None, *, hide_done: bool = False, open_only: bool = False) -> dict[str, Any]:
+    """The Mission Map as data: ``columns``, ``lanes`` (each with its ``nodes``), ``slots`` per column, counts.
+
+    View options (5.7.0, Home): ``hide_done`` leaves finished task circles out; ``open_only`` leaves out the lanes
+    with no unfinished task. Lane numbers and ``counts`` always describe the whole project, so "AI 3" stays AI 3.
+    """
     if not state:
         return {"columns": [], "lanes": [], "slots": [], "empty": True, "counts": {s: 0 for s in NODE_STATES}}
     agents = state.get("agents") or {}
@@ -102,14 +106,19 @@ def build(state: dict[str, Any] | None) -> dict[str, Any]:
     for i, aid in enumerate(sorted(by_lane, key=lambda a: (a == "unassigned", a))):
         per_col: dict[int, int] = {}
         nodes = []
-        for tid in by_lane[aid]:
+        states = [node_state(tasks[tid], handoff_open=tid in open_h) for tid in by_lane[aid]]
+        for ns in states:
+            counts[ns] += 1
+        if open_only and by_lane[aid] and all(ns == "done" for ns in states):
+            continue
+        for tid, ns in zip(by_lane[aid], states):
+            if hide_done and ns == "done":
+                continue
             t = tasks[tid]
             col = owner.get(tid, fallback)
             slot = per_col.get(col, 0)
             per_col[col] = slot + 1
             slots[col] = max(slots[col], slot + 1)
-            ns = node_state(t, handoff_open=tid in open_h)
-            counts[ns] += 1
             nodes.append({"task_id": tid, "title": str(t.get("title") or tid), "status": str(t.get("status", "")),
                           "state": ns, "column": col, "slot": slot})
         a = agents.get(aid) or {}

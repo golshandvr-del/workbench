@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 4.7.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.7.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -22,22 +22,30 @@ this source when Android asks).
 
 ## 2. The main window
 
-One window, a navigation rail on the left:
+One window ("Mission Map" look, Midnight or Daylight): a **toolbar** on top (New Project ▾ · Open · Save · Run),
+an **icon rail** on the left and a **status bar** at the bottom (agents running, milestone, saved state).
+Each rail page has one job:
 
 | Page | What it is for |
 |---|---|
-| **Home** | Your projects; the *Next step* card of the active project |
-| **Project Workbench** | Overview, Timeline, Tasks, Team, Files & Context, Versions & Builds |
-| **Prompt** | The prompt for the current step, ready to copy |
-| **AI Response** | Paste or load an AI answer → review → apply |
-| **Settings** | Theme (light/dark), Simple/Advanced mode, Mobile Companion, Restore Manager |
+| **Home** | The active project only: the **Mission Map** (one lane per AI, one circle per task in its version's column), **Map view**, task details and the **Next step** |
+| **Projects** | **Your projects** as cards (click = select, double-click = open, *Find* filters; *More ▾* → Open selected · Reveal folder · Remove from list), then the Workbench of the open project: Overview, Timeline, Tasks, Team, Files & Context, Versions & Builds |
+| **Agents** | One card per AI (state, current task, load, record), the selected AI's queue, *Copy briefing*, *Memory note…*, Balance alerts and suggested moves |
+| **History** | **Timeline** of everything that happened, then every prompt and AI answer of the project |
+| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Mobile Companion, Restore Manager, App Map |
 
-*Simple* mode shows only the guided pages. *Advanced* adds Project Profile, History, Run & Report and
-Git / GitHub. Every page shows at most four main buttons; the rest are under **More ▾**.
+*Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Projects › Project Profile and
+Run & Report, Agents › Prompt and AI Response, History › Git / GitHub. Every page shows at most four main buttons;
+the rest are under **More ▾**.
+
+**Mission Map tips (Home):** right-click a task circle for COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS
+DONE (only the ones possible now are enabled). *Map view* → **Hide finished tasks** and **Only AIs with open work**
+make a big project readable; the lane numbers never change. **Copy map summary** copies every lane and its tasks as
+plain text. On short windows the project cards (Projects) and the History timeline fold away.
 
 ## 3. Your first project (the guided loop)
 
-1. **Home → + New project**, pick a folder.
+1. **Projects → + New project** (or Toolbar › New Project), pick a folder.
 2. The Next step asks for your **goal** ("An offline todo app for desktop and mobile").
 3. Next step: **Project Charter**. Click *Copy prompt*, paste it into your project-manager chat, click
    *I sent it*.

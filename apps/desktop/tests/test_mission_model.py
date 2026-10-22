@@ -116,6 +116,24 @@ class BuildTests(unittest.TestCase):
         nd = next(n for n in m["lanes"][2]["nodes"] if n["task_id"] == tid)
         self.assertEqual(nd["state"], "active")
 
+    def test_view_options_hide_done_and_open_only(self) -> None:  # 5.7.0
+        st = five_ai_state()
+        for tid, t in st["tasks"].items():
+            if t["owner_agent_id"] == "a2" or tid.startswith("t-0.1.0-"):
+                t["status"] = "done"
+        full = mm.build(st)
+        self.assertEqual(full["counts"]["done"], 8)
+        hid = mm.build(st, hide_done=True)
+        self.assertEqual(hid["counts"], full["counts"])  # counts describe the whole project
+        self.assertTrue(all(n["state"] != "done" for ln in hid["lanes"] for n in ln["nodes"]))
+        self.assertEqual(len(hid["lanes"]), 5)
+        only = mm.build(st, open_only=True)
+        self.assertEqual([ln["agent_id"] for ln in only["lanes"]], ["a1", "a3", "a4", "a5"])
+        self.assertEqual([ln["number"] for ln in only["lanes"]], [1, 3, 4, 5])  # AI 3 stays AI 3
+        self.assertEqual(len(only["lanes"][0]["nodes"]), 4)
+        both = mm.build(st, hide_done=True, open_only=True)
+        self.assertEqual([len(ln["nodes"]) for ln in both["lanes"]], [3, 3, 3, 3])
+
     def test_build_never_mutates_state(self) -> None:
         st = five_ai_state()
         before = copy.deepcopy(st)

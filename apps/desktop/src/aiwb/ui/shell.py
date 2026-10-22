@@ -326,7 +326,8 @@ def build_settings_page(shell: AppShell, frame: ttk.Frame, *, extra: Callable[[t
                                        command=lambda: prefs.set_lang(lang_var.get())) for v in ("en", "fa")]
     c3 = card(2, ("Experience", "سطح تجربه"),
               ("Simple: a guided path — Home, Projects, Agents, History. "
-               "Advanced: adds the expert tools under Agents › Tools (Project Profile, Run & Report, Git / GitHub).",
+               "Advanced: adds the expert tools — Projects › Tools (Project Profile, Run & Report), Agents › Tools "
+               "(Prompt, AI Response) and History › Tools (Git / GitHub).",
                "ساده: مسیر هدایت‌شده — خانه، میز کار پروژه، پرامپت، پاسخ AI. "
                "پیشرفته: پروفایل پروژه، تاریخچه، اجرا و گزارش و گیت/گیت‌هاب هم اضافه می‌شوند."))
     row3 = no_flow(ttk.Frame(c3, style=row_style(c3)))

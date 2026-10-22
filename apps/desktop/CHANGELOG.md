@@ -1,3 +1,28 @@
+## [5.7.0] - 2026-10-22
+
+### One job per page (Roadmap 5.7.0)
+
+- **Home = the active project only**: Mission Map, **Map view**, Task details and Next step. The project list left
+  Home.
+- **Map view** (Home): *Hide finished tasks*, *Only AIs with open work* (lane numbers stay the same, so "AI 3" is
+  still AI 3) and **Copy map summary** — every lane and its tasks as plain text for a chat or a report.
+- **Projects owns the library**: one card per project (`aiwb/ui/projects5.py`) in a horizontal row — active first,
+  then most recently opened; folder icon, state, description or path, last opened. Click selects, double-click
+  opens, *Find* filters. *Open selected*, *Reveal folder* and *Remove from list* are under *More*. On short
+  windows the cards fold away so the Workbench below keeps its room.
+- **History › Timeline**: every ledger event of the open project on the zoomable 5.x timeline (Midnight and
+  Daylight); click an event to open it in the Workbench Inspector. Shorter History title and description.
+
+### Fixes
+
+- Home no longer hangs on start in a layout loop (wrapped labels and the scroll page drove each other's width).
+- Header rows with one fixed set of controls are not re-flowed.
+- App Map: the Projects library and the History timeline are mapped; the map stays balanced.
+
+### Tests
+
+- `test_projects_cards.py`, Map view options in `test_mission_model.py` and the 5.7.0 gate `gui_v5_polish_smoke.py`.
+
 ## [5.6.0] - 2026-10-22
 
 ### Agents hub (Roadmap 5.6.0)

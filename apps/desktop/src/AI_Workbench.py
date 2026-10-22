@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.6.0"
+APP_VERSION = "5.7.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4603,7 +4603,7 @@ class WorkbenchApp:
         self.project_tab = self.shell.add_page("prompt", padding=8)
         self.response_tab = self.shell.add_page("response", padding=8)
         self.profile_tab = self.shell.add_page("profile", padding=10)
-        self.history_tab = self.shell.add_page("history", padding=8)
+        self.history_tab = self.shell.add_page("history", padding=8, on_show=self.refresh_history_timeline)
         self.run_tab = self.shell.add_page("run", padding=8)
         self.git_tab = self.shell.add_page("git", padding=8)
         self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
@@ -5047,9 +5047,12 @@ class WorkbenchApp:
 
     # -- Home › Mission Map (roadmap 5.2.0)
     def _make_home_page(self) -> None:
-        """Home: the Mission Map (parallel timelines, one lane per AI) above the project list. Read-only view."""
+        """Home: the active project only — Mission Map (one lane per AI), task details and the next step (5.7.0)."""
         from aiwb.ui.mission_canvas import MissionCanvas
         self.home_scroll = ui_layout.ScrollPage(self.manager_tab)
+        # a fixed natural width: wrapped labels follow the page width, so they must never drive it (5.7.0)
+        self.home_scroll.canvas.configure(width=880, height=560)
+        self.home_scroll.canvas.itemconfigure(self.home_scroll._win, width=880)  # until the canvas is laid out
         self.home_scroll.pack(fill="both", expand=True)
         body = self.home_scroll.body
         head = ttk.Frame(body)
@@ -5060,6 +5063,7 @@ class WorkbenchApp:
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
+        self._make_mission_view_row(body)
         from aiwb.ui import structure5
         head._aiwb_section = ""  # type: ignore[attr-defined]  # App Map: the title row, not a section of its own
         self.mission._aiwb_section = "Mission Map"  # type: ignore[attr-defined]
@@ -5079,11 +5083,53 @@ class WorkbenchApp:
         self.mission_jump_btn = ttk.Button(detail, text="Jump to active task", command=self.mission_jump_active)
         self.mission_jump_btn.pack(side="right", padx=(0, 6))  # 5.6.0
         self._mission_rev: tuple[str, int] | None = None
-        self.home_projects_frame = ttk.Frame(body)
-        self.home_projects_frame.pack(fill="both", expand=True)
+        self._make_home_next_card(body)
         self.shell.status_listeners.append(self.refresh_mission)
         self.shell.on_pref(lambda key: self.mission.redraw() if key in ("theme", "motion") else None)
         self.refresh_mission(self.status_state())
+
+    def _make_mission_view_row(self, body: tk.Misc) -> None:
+        """Home › Map view (5.7.0): what the Mission Map shows, and its summary for a chat or a report."""
+        row = ttk.Frame(body)
+        row._aiwb_section = "Map view"  # type: ignore[attr-defined]
+        row._aiwb_noflow = True  # type: ignore[attr-defined]
+        row.pack(fill="x", pady=(6, 0))
+        self.mission_hide_done_var = tk.BooleanVar(value=False)
+        self.mission_open_only_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(row, text="Hide finished tasks", variable=self.mission_hide_done_var,
+                        command=self.mission_apply_view).pack(side="left")
+        ttk.Checkbutton(row, text="Only AIs with open work", variable=self.mission_open_only_var,
+                        command=self.mission_apply_view).pack(side="left", padx=(12, 0))
+        ttk.Button(row, text="Copy map summary", command=self.mission_copy_summary).pack(side="right")
+
+    def mission_apply_view(self) -> dict[str, Any]:
+        """Home › Map view options → redraw the Mission Map (nothing is written)."""
+        model = self.mission.set_view(hide_done=bool(self.mission_hide_done_var.get()),
+                                      open_only=bool(self.mission_open_only_var.get()))
+        return self.refresh_mission(getattr(self.mission, "_state", None), force=True) or model
+
+    def mission_summary_text(self) -> str:
+        """The Mission Map as plain text: one line per AI lane with its tasks per column (whole project)."""
+        from aiwb.ui import mission_model
+        from aiwb.ui.mission_canvas import STATE_TEXT
+        m = mission_model.build(getattr(self.mission, "_state", None))
+        if m["empty"]:
+            return "Mission Map: no project or no tasks yet."
+        c = m["counts"]
+        lines = [f"Mission Map — {len(m['lanes'])} AI lanes, {len(m['columns'])} columns: {c['done']} done, "
+                 f"{c['active']} in progress, {c['blocked']} blocked, {c['attention']} need you, {c['idle']} waiting"]
+        for ln in m["lanes"]:
+            lines.append(f"AI {ln['number']} ({ln['name']}):")
+            for n in ln["nodes"]:
+                lines.append(f"  - [{m['columns'][n['column']]['label']}] {n['title']} — {STATE_TEXT[n['state']]}")
+        return "\n".join(lines)
+
+    def mission_copy_summary(self) -> str:
+        """Home › Map view › Copy map summary (reading only)."""
+        text = self.mission_summary_text()
+        self._copy_text_to_clipboard(text)
+        self.set_status("Mission Map summary copied.")
+        return text
 
     def refresh_mission(self, state: dict[str, Any] | None, *, force: bool = False) -> dict[str, Any] | None:
         """Redraw the Mission Map when the open project or its state revision changed (reading never writes)."""
@@ -5265,68 +5311,87 @@ class WorkbenchApp:
                 pass
 
     def _make_projects_dashboard(self) -> None:
-        tab = getattr(self, "home_projects_frame", self.manager_tab)
-        ttk.Label(tab, text="Your projects", style="SectionTitle.TLabel").pack(anchor="w")
-        ttk.Label(tab, text="Create independent workspaces, switch between existing projects, and keep each project's profile and last task separate.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(3, 12))
+        """Projects page header (5.7.0): the project library as cards, above the Workbench of the open project.
 
-        toolbar = ttk.Frame(tab, style="Card.TFrame", padding=10)
-        toolbar.pack(fill="x", pady=(0, 9))
-        ui_actions.ActionBar(
-            toolbar,
-            primary=(("+ New project", self.new_project, "Primary.TButton"),
-                     ("Open selected", self.open_selected_project)),  # Add existing folder…: Toolbar › New Project
-            more=(("Selected project", (("Reveal folder", self.reveal_selected_project),
-                                        ("Remove from list", self.forget_selected_project))),),
-            style="Card.TFrame").pack(side="left")
-
-        search_row = ttk.Frame(tab)
-        search_row.pack(fill="x", pady=(0, 7))
-        ttk.Label(search_row, text="Find a project").pack(side="left")
-        search_entry = ttk.Entry(search_row, textvariable=self.project_search_var, width=38)
-        search_entry.pack(side="left", padx=(9, 8))
-        ttk.Label(search_row, text="Search by name, folder, path, or description. Removing a project only removes it from this list; it never deletes project files.", style="Hint.TLabel", wraplength=900).pack(side="left", fill="x", expand=True)
+        Home shows only the active project; the library (create, open, find, reveal, remove) lives here. The old
+        table ``projects_tree`` stays as the selection model behind the cards (not laid out, so not on screen).
+        """
+        from aiwb.ui.projects5 import ProjectCards
+        tab = self.workbench_tab
+        strip = ttk.Frame(tab, padding=(10, 8, 10, 0))
+        # App Map: the header row (title label first) is the section "Your projects" with its commands
+        strip.pack(side="top", fill="x")
+        self.projects_strip = strip
+        row = ttk.Frame(strip)
+        row._aiwb_noflow = True  # type: ignore[attr-defined]  # one fixed header row (title · find · actions)
+        row.pack(fill="x")
+        ttk.Label(row, text="Your projects", style="SectionTitle.TLabel").pack(side="left")
+        self.projects_bar = ui_actions.ActionBar(
+            row,
+            # Add existing folder…: Toolbar › New Project. Open: double-click a card, or More › Open selected (5.7.0)
+            primary=(("+ New project", self.new_project, "Primary.TButton"),),
+            more=(("Selected project", (("Open selected", self.open_selected_project),
+                                        ("Reveal folder", self.reveal_selected_project),
+                                        ("Remove from list", self.forget_selected_project))),))
+        self.projects_bar.pack(side="right")
+        search_entry = ttk.Entry(row, textvariable=self.project_search_var, width=26)
+        search_entry.pack(side="right", padx=(8, 10))
+        ttk.Label(row, text="Find", style="Hint.TLabel").pack(side="right")
         self.project_search_var.trace_add("write", lambda *_: self.refresh_project_list())
+        self.project_cards = ProjectCards(strip, self.shell.assets, on_select=self._project_card_selected,
+                                          on_open=self._project_card_open)
+        self.project_cards.pack(fill="x", pady=(6, 0))
+        self.shell.on_pref(lambda key: self.project_cards.draw() if key == "theme" else None)
+        # the selected card's details as one line (no wrapping: a wrapped label here would drive the page width)
+        self.projects_detail = ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", width=1)
+        self.projects_detail.pack(fill="x", pady=(4, 0))
+        # short windows: the cards fold away so the Workbench below keeps its room (the header row stays)
+        self.projects_compact = False
+        tab.bind("<Configure>", self._fit_project_cards, add="+")
 
-        table_frame = ttk.Frame(tab)
-        table_frame.pack(fill="both", expand=True)
+        # selection model behind the cards (kept for callers and tests; never laid out)
         columns = ("description", "state", "last_opened", "path")
-        self.projects_tree = ttk.Treeview(table_frame, columns=columns, show="tree headings", selectmode="browse")
-        self.projects_tree.heading("#0", text="Project")
-        self.projects_tree.heading("description", text="Purpose / description")
-        self.projects_tree.heading("state", text="State")
-        self.projects_tree.heading("last_opened", text="Last opened")
-        self.projects_tree.heading("path", text="Location")
-        self.projects_tree.column("#0", width=190, minwidth=135, stretch=False)
-        self.projects_tree.column("description", width=250, minwidth=150, stretch=True)
-        self.projects_tree.column("state", width=95, minwidth=80, stretch=False, anchor="center")
-        self.projects_tree.column("last_opened", width=145, minwidth=125, stretch=False)
-        self.projects_tree.column("path", width=390, minwidth=210, stretch=True)
-        scroll_y = ttk.Scrollbar(table_frame, orient="vertical", command=self.projects_tree.yview)
-        scroll_x = ttk.Scrollbar(table_frame, orient="horizontal", command=self.projects_tree.xview)
-        self.projects_tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
-        self.projects_tree.grid(row=0, column=0, sticky="nsew")
-        scroll_y.grid(row=0, column=1, sticky="ns")
-        scroll_x.grid(row=1, column=0, sticky="ew")
-        table_frame.rowconfigure(0, weight=1)
-        table_frame.columnconfigure(0, weight=1)
-        self.projects_tree.bind("<Double-1>", lambda _event: self.open_selected_project())
+        self.projects_tree = ttk.Treeview(strip, columns=columns, show="tree headings", selectmode="browse")
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
 
-        # 3.5.0: the active project's next guided step, so Home never leaves the user without a way forward
+    COMPACT_BELOW = 700  # px of Projects page height under which the project cards fold away
+
+    def _fit_project_cards(self, event: Any = None) -> None:
+        h = event.height if event is not None else self.workbench_tab.winfo_height()
+        compact = 1 < h < self.COMPACT_BELOW
+        if compact == self.projects_compact:
+            return
+        self.projects_compact = compact
+        if compact:
+            self.project_cards.pack_forget()
+            self.projects_detail.pack_forget()
+        else:
+            self.project_cards.pack(fill="x", pady=(6, 0))
+            self.projects_detail.pack(fill="x", pady=(4, 0))
+
+    def _project_card_selected(self, path: str) -> None:
+        if self.projects_tree.exists(path):
+            self.projects_tree.selection_set(path)
+            self._project_selection_changed()
+
+    def _project_card_open(self, path: str) -> None:
+        self._project_card_selected(path)
+        self.open_selected_project()
+
+    def _make_home_next_card(self, body: tk.Misc) -> None:
+        """Home › Next step (3.5.0, 5.7.0): the active project's next guided step and a way to continue."""
         self.home_next_var = tk.StringVar(value="Open or create a project to see its next step.")
-        nxt = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
-        nxt.pack(fill="x", pady=(9, 0))
+        nxt = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
+        nxt._aiwb_section = "Next step"  # type: ignore[attr-defined]
+        nxt._aiwb_noflow = True  # type: ignore[attr-defined]  # label + one button: a fixed row, never re-flowed
+        nxt.pack(fill="x", pady=(0, 9))
         ttk.Label(nxt, text="Next step", style="CardAccent.TLabel").pack(side="left", padx=(0, 10))
-        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=900).pack(
+        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=760).pack(
             side="left", fill="x", expand=True)
         self.home_next_btn = ttk.Button(nxt, text="Continue in Workbench", style="Primary.TButton",
                                         command=lambda: self.shell.show("workbench"))
         self.home_next_btn.pack(side="right")
-        detail = ttk.Frame(tab, style="Card.TFrame", padding=(12, 8))
-        detail.pack(fill="x", pady=(9, 0))
-        ttk.Label(detail, textvariable=self.manager_active_var, style="CardAccent.TLabel").pack(anchor="w")
-        ttk.Label(detail, textvariable=self.manager_detail_var, style="CardMuted.TLabel", wraplength=1170).pack(anchor="w", pady=(4, 0))
-        ttk.Label(tab, text="Tip: double-click a project to open it. Each project stores its profile and resumable task in its own .workbench/project.json; that metadata is excluded from model edits and local Git commits.", style="Hint.TLabel", wraplength=1180).pack(anchor="w", pady=(8, 0))
+        ttk.Label(body, textvariable=self.manager_active_var, style="Hint.TLabel").pack(anchor="w")
 
     def home_next_step(self) -> dict[str, Any] | None:
         """First guided step of the active project (read from its local V2 state; nothing is written)."""
@@ -5402,6 +5467,12 @@ class WorkbenchApp:
             self.projects_tree.selection_set(str(self.workspace))
             self.projects_tree.see(str(self.workspace))
             self._project_selection_changed()
+        cards = getattr(self, "project_cards", None)
+        if cards is not None:
+            from aiwb.ui import projects5
+            sel = self.projects_tree.selection()
+            cards.set_rows(projects5.rows(projects, self.workspace, query, manifest=read_project_manifest),
+                           selected=sel[0] if sel else "")
 
     def open_selected_project(self) -> None:
         path = self._selected_project_path()
@@ -6043,14 +6114,92 @@ class WorkbenchApp:
         response_frame.rowconfigure(0, weight=1)
         response_frame.columnconfigure(0, weight=1)
 
+    @staticmethod
+    def _timeline_palette(theme: str) -> dict[str, str]:
+        """The 5.x tokens under the names :class:`TimelineCanvas` reads (5.7.0: History in the new look)."""
+        from aiwb.ui.tokens5 import palette5
+        p = palette5(theme)
+        return {"surface": p["panel"], "text": p["text"], "muted": p["text_dim"], "divider": p["line_soft"],
+                "accent": p["active"], "success": p["go"], "warning": p["warn"], "danger": p["danger"]}
+
+    def _make_history_timeline(self, tab: tk.Misc) -> None:
+        """History › Timeline (5.7.0): every ledger event of the open project on one zoomable timeline."""
+        from aiwb.ui.timeline_canvas import TimelineCanvas
+        box = ttk.Frame(tab, style="Card.TFrame", padding=(10, 6))
+        box._aiwb_section = "Timeline"  # type: ignore[attr-defined]
+        box.pack(fill="x", pady=(0, 8))
+        head = ttk.Frame(box, style="Card.TFrame")
+        head._aiwb_noflow = True  # type: ignore[attr-defined]
+        head._aiwb_section = ""  # type: ignore[attr-defined]  # the box's title row, not a section of its own
+        head.pack(fill="x")
+        ttk.Label(head, text="Timeline", style="CardTitle.TLabel").pack(side="left")
+        self.history_tl_var = tk.StringVar(value="Open a project to see what happened.")
+        ttk.Label(head, textvariable=self.history_tl_var, style="CardMuted.TLabel").pack(side="left", padx=(12, 0))
+        self.history_tl = TimelineCanvas(box, palette=self._timeline_palette(self.prefs.theme), height=150,
+                                         on_select=self._history_tl_select)
+        self.history_tl._aiwb_keep_colours = True  # type: ignore[attr-defined]
+        self.history_tl.pack(fill="x", pady=(6, 0))
+        # short windows: the timeline canvas folds away (the header line stays) so the list keeps its room
+        self.history_tl_compact = False
+        tab.bind("<Configure>", self._fit_history_timeline, add="+")
+        self.shell.on_pref(lambda key: self.refresh_history_timeline() if key == "theme" else None)
+
+    def _fit_history_timeline(self, event: Any = None) -> None:
+        h = event.height if event is not None else self.history_tab.winfo_height()
+        compact = 1 < h < self.COMPACT_BELOW
+        if compact == self.history_tl_compact:
+            return
+        self.history_tl_compact = compact
+        if compact:
+            self.history_tl.pack_forget()
+        else:
+            self.history_tl.pack(fill="x", pady=(6, 0))
+
+    def refresh_history_timeline(self) -> dict[str, Any] | None:
+        """Redraw History › Timeline from the open project (reading never writes)."""
+        tl = getattr(self, "history_tl", None)
+        if tl is None:
+            return None
+        pal = self._timeline_palette(self.prefs.theme)
+        tl.p.update({"text": pal["text"], "muted": pal["muted"], "grid": pal["divider"], "accent": pal["accent"],
+                     "success": pal["success"], "warning": pal["warning"], "danger": pal["danger"],
+                     "surface": pal["surface"]})
+        tl.configure(background=pal["surface"])
+        model = {"events": [], "versions": [], "lanes": [], "t0": 0.0, "t1": 1.0}
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and self.workspace is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                model = ws.wc.timeline_model()
+            except Exception:  # noqa: BLE001 - a broken ledger must not break History
+                pass
+        tl.set_model(model)
+        n, v = len(model["events"]), len(model["versions"])
+        self.history_tl_var.set(f"{n} event(s) · {v} version(s) · {len(model['lanes'])} lane(s) — wheel to zoom, "
+                                "drag to pan, click an event" if n else "No events yet in this project.")
+        return model
+
+    def _history_tl_select(self, event_id: str) -> None:
+        """Click on History › Timeline: open the event in the Workbench Inspector."""
+        ws = getattr(self, "workspace_window", None)
+        if ws is None:
+            return
+        self.shell.show("workbench")
+        try:
+            ws.wc.select("event", event_id)
+            ws._render_inspector()
+        except Exception:  # noqa: BLE001 - a stale selection must not break navigation
+            pass
+
     def _make_history_tab(self) -> None:
         tab = self.history_tab
-        ttk.Label(tab, text="Project conversation history", style="SectionTitle.TLabel").pack(anchor="w")
+        ttk.Label(tab, text="History", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             tab,
-            text="All prompts, model outputs and errors are kept in the local project audit history. Save a successful turn as a curated checkpoint when it matters; applied file changes automatically create a linked project-version record. Right-click a step to rename/delete it, move it, or change its parent/indentation. History lives in this project's .workbench folder and is not uploaded automatically.",
+            text="Everything that happened in this project: events on the timeline, then every prompt and response. "
+                 "Right-click a step to rename, move or delete it. Kept locally in .workbench, never uploaded.",
             style="Hint.TLabel", wraplength=1160, justify="left",
         ).pack(anchor="w", pady=(2, 8))
+        self._make_history_timeline(tab)
         split = ttk.Panedwindow(tab, orient="horizontal")
         split.pack(fill="both", expand=True)
         left = ttk.Frame(split, padding=(0, 0, 8, 0))
