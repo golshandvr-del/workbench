@@ -5063,6 +5063,7 @@ class WorkbenchApp:
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu)
         self.mission.pack(fill="x")
+        self._make_mission_view_row(body)
         from aiwb.ui import structure5
         head._aiwb_section = ""  # type: ignore[attr-defined]  # App Map: the title row, not a section of its own
         self.mission._aiwb_section = "Mission Map"  # type: ignore[attr-defined]
@@ -5086,6 +5087,49 @@ class WorkbenchApp:
         self.shell.status_listeners.append(self.refresh_mission)
         self.shell.on_pref(lambda key: self.mission.redraw() if key in ("theme", "motion") else None)
         self.refresh_mission(self.status_state())
+
+    def _make_mission_view_row(self, body: tk.Misc) -> None:
+        """Home › Map view (5.7.0): what the Mission Map shows, and its summary for a chat or a report."""
+        row = ttk.Frame(body)
+        row._aiwb_section = "Map view"  # type: ignore[attr-defined]
+        row._aiwb_noflow = True  # type: ignore[attr-defined]
+        row.pack(fill="x", pady=(6, 0))
+        self.mission_hide_done_var = tk.BooleanVar(value=False)
+        self.mission_open_only_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(row, text="Hide finished tasks", variable=self.mission_hide_done_var,
+                        command=self.mission_apply_view).pack(side="left")
+        ttk.Checkbutton(row, text="Only AIs with open work", variable=self.mission_open_only_var,
+                        command=self.mission_apply_view).pack(side="left", padx=(12, 0))
+        ttk.Button(row, text="Copy map summary", command=self.mission_copy_summary).pack(side="right")
+
+    def mission_apply_view(self) -> dict[str, Any]:
+        """Home › Map view options → redraw the Mission Map (nothing is written)."""
+        model = self.mission.set_view(hide_done=bool(self.mission_hide_done_var.get()),
+                                      open_only=bool(self.mission_open_only_var.get()))
+        return self.refresh_mission(getattr(self.mission, "_state", None), force=True) or model
+
+    def mission_summary_text(self) -> str:
+        """The Mission Map as plain text: one line per AI lane with its tasks per column (whole project)."""
+        from aiwb.ui import mission_model
+        from aiwb.ui.mission_canvas import STATE_TEXT
+        m = mission_model.build(getattr(self.mission, "_state", None))
+        if m["empty"]:
+            return "Mission Map: no project or no tasks yet."
+        c = m["counts"]
+        lines = [f"Mission Map — {len(m['lanes'])} AI lanes, {len(m['columns'])} columns: {c['done']} done, "
+                 f"{c['active']} in progress, {c['blocked']} blocked, {c['attention']} need you, {c['idle']} waiting"]
+        for ln in m["lanes"]:
+            lines.append(f"AI {ln['number']} ({ln['name']}):")
+            for n in ln["nodes"]:
+                lines.append(f"  - [{m['columns'][n['column']]['label']}] {n['title']} — {STATE_TEXT[n['state']]}")
+        return "\n".join(lines)
+
+    def mission_copy_summary(self) -> str:
+        """Home › Map view › Copy map summary (reading only)."""
+        text = self.mission_summary_text()
+        self._copy_text_to_clipboard(text)
+        self.set_status("Mission Map summary copied.")
+        return text
 
     def refresh_mission(self, state: dict[str, Any] | None, *, force: bool = False) -> dict[str, Any] | None:
         """Redraw the Mission Map when the open project or its state revision changed (reading never writes)."""
