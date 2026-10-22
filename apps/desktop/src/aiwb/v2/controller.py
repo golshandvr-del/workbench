@@ -338,7 +338,16 @@ class ProjectsController:
             for k in ("non_goals", "success", "platform", "constraints", "limits"):
                 if project.get(k):
                     s["settings"].setdefault("brief", {})[k] = str(project[k]).strip()[:2000]
-        return charter_prompt({**project, "goal": goal}, self.state())
+        return charter_prompt({"profile": self.project_profile(), **project, "goal": goal}, self.state())
+
+    def project_profile(self) -> dict[str, Any]:
+        """The Project Profile saved by the profile page (``.workbench/project.json``); read only, {} if absent."""
+        try:
+            data = json.loads((self.root / ".workbench" / "project.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+        prof = data.get("profile") if isinstance(data, dict) else None
+        return prof if isinstance(prof, dict) else {}
 
     def import_charter(self, text: str, *, response_id: str = "") -> dict[str, Any]:
         """Parse + validate a charter answer; a valid one becomes a pending proposal (nothing applied)."""

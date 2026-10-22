@@ -79,6 +79,27 @@ Rules:
 - Prefer a small team; propose more parallel AIs only with the benefit, the risk and the coordination cost."""
 
 
+PROFILE_LABELS = (("target_platform", "Target platform"), ("languages", "Language(s)"),
+                  ("gui_framework", "GUI / application framework"), ("runtime_toolchain", "Runtime / build toolchain"),
+                  ("target_ui_language", "Language of the app's own UI"), ("architecture", "Architecture preference"),
+                  ("dependency_policy", "Dependency policy"), ("packaging", "Packaging / delivery"),
+                  ("testing", "Testing expectations"), ("coding_style", "Coding style"), ("constraints", "Constraints"))
+_NO_CHOICE = ("", "let ai recommend", "other / undecided", "not applicable", "recommend based on scope", "auto-detect")
+
+
+def profile_lines(profile: Any) -> list[str]:
+    """The Project Profile choices that say something (defaults such as 'Let AI recommend' are left out); pure."""
+    if not isinstance(profile, dict):
+        return []
+    out = []
+    for key, label in PROFILE_LABELS:
+        v = str(profile.get(key) or "").strip()
+        if v.lower() in _NO_CHOICE or v.lower().startswith("not applicable"):
+            continue
+        out.append(f"- {label}: {v[:400]}")
+    return out
+
+
 def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
     """The 'design the whole project' prompt (roadmap 3.4.0). Pure; the caller saves the goal."""
     from .team import resources_summary
@@ -94,6 +115,9 @@ def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
                      ("constraints", "Constraints"), ("limits", "Time / cost limits")):
         if project.get(k):
             lines.append(f"- {label}: {project[k]}")
+    profile = profile_lines(project.get("profile"))
+    if profile:
+        lines += ["", "## Technical profile chosen by the user (binding unless you explain a better choice)"] + profile
     lines += ["", "## Resources registered by the user (self-declared labels, NOT verified)"]
     if r["accounts"]:
         for a in r["accounts"]:

@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.7.0"
+APP_VERSION = "5.8.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4559,6 +4559,15 @@ class WorkbenchApp:
         self._save_settings()
         self.set_status("Project profile saved for this workspace.")
 
+    def save_profile_and_continue(self) -> None:
+        """Profile › Save profile: save, then go on to the guided Workbench (audit A4: it used to stop here)."""
+        if self.workspace is None:
+            self.save_profile()
+            return
+        self.save_profile()
+        self.shell.show("workbench")
+        self.set_status("Profile saved — it will be part of the project manager's prompt. Next: Start the project.")
+
     def _make_menu(self) -> None:
         menu = tk.Menu(self.root)
         file_menu = tk.Menu(menu, tearoff=False)
@@ -4676,10 +4685,13 @@ class WorkbenchApp:
     # -- 5.x shell commands (roadmap 5.1.0): toolbar New Project ▾ · Open · Save · Run, Agents page, status bar
     def new_guided_project(self) -> None:
         """Toolbar › New Project › Guided project: create the folder, then start the guided Workbench (F1)."""
-        before = self.workspace
-        self.new_project()
-        if self.workspace is not None and self.workspace != before:
-            self.shell.show("workbench")
+        # new_project() is non-blocking (its window stays open): continue only once the folder exists (audit A3)
+        self.new_project(on_created=self._start_guided_after_create)
+
+    def _start_guided_after_create(self, created: Path) -> None:
+        """After Guided › Create: open the Workbench on its first guided step (Start the project), not the old Profile."""
+        self.shell.show("workbench")
+        self.set_status(f"Created {created.name}. Next: Start the project — give the goal and how many AI chats you use.")
 
     def save_now(self) -> None:
         """Toolbar › Save: write the profile and settings now (the V2 project state is saved on every change)."""
@@ -4711,7 +4723,8 @@ class WorkbenchApp:
             return ws.wc.ctl.state()
         path = Path(self.workspace) / ".workbench" / "v2" / "state.json"
         if not path.is_file():
-            return None
+            # a project is open but not planned yet: an empty state, so the status bar never says "No project open"
+            return {"agents": {}, "tasks": {}, "handoffs": {}, "milestones": {}, "versions": {}, "settings": {}}
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
@@ -5117,7 +5130,7 @@ class WorkbenchApp:
             return "Mission Map: no project or no tasks yet."
         c = m["counts"]
         lines = [f"Mission Map — {len(m['lanes'])} AI lanes, {len(m['columns'])} columns: {c['done']} done, "
-                 f"{c['active']} in progress, {c['blocked']} blocked, {c['attention']} need you, {c['idle']} waiting"]
+                 f"{c['active']} ready or working, {c['blocked']} blocked, {c['attention']} need you, {c['idle']} waiting"]
         for ln in m["lanes"]:
             lines.append(f"AI {ln['number']} ({ln['name']}):")
             for n in ln["nodes"]:
@@ -5147,7 +5160,7 @@ class WorkbenchApp:
         c = model["counts"]
         self.mission_summary_var.set("" if model["empty"] else
                                      f"{len(model['lanes'])} AI lanes · {len(model['columns'])} columns · "
-                                     f"{c['done']} done · {c['active']} in progress · {c['blocked']} blocked")
+                                     f"{c['done']} done · {c['active']} ready or working · {c['blocked']} blocked")
         if self.mission.selected and self.mission.node(self.mission.selected) is None:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
@@ -5251,7 +5264,7 @@ class WorkbenchApp:
                 out["text"] = box.get("1.0", "end-1c")
                 top.destroy()
             ttk.Button(top, text="Use this answer", style="Accent.TButton", command=ok).pack(pady=(0, 8))
-            ui_layout.place_dialog(top, self.root)
+            ui_layout.place_dialog(top, 820, 520, self.root)
             box.focus_set()
             top.grab_set()
             top.wait_window()
@@ -5520,7 +5533,7 @@ class WorkbenchApp:
         if chosen:
             self.set_workspace(Path(chosen), focus_project=True)
 
-    def new_project(self) -> None:
+    def new_project(self, on_created: Callable[[Path], Any] | None = None) -> None:
         win = tk.Toplevel(self.root)
         win.title("Create a new project")
         win.geometry("700x680")
@@ -5602,9 +5615,12 @@ class WorkbenchApp:
                         except (WorkbenchError, OSError, subprocess.SubprocessError) as exc:
                             git_note = f"\nProject was created, but Git init failed: {redact(str(exc))}"
                 win.destroy()
-                self.set_workspace(created, focus_project=True)
+                self.set_workspace(created, focus_project=on_created is None)
                 self.refresh_project_list()
                 self.set_status(f"Created project: {created}")
+                if on_created is not None:
+                    on_created(created)
+                    return
                 messagebox.showinfo("Project created", f"Project folder created successfully:\n{created}\n\nSettings: {created / PROJECT_MANIFEST_RELATIVE}{git_note}\n\nReview the Project Profile, then describe your first task.", parent=self.root)
             except Exception as exc:
                 messagebox.showerror("Could not create project", str(exc), parent=win)
@@ -5973,7 +5989,8 @@ class WorkbenchApp:
         self._set_text(self.profile_constraints, DEFAULT_PROJECT_PROFILE.get("constraints", ""))
         actions = ttk.Frame(tab)
         actions.pack(fill="x", pady=(8, 0))
-        ttk.Button(actions, text="Save profile", style="Primary.TButton", command=self.save_profile).pack(side="left")
+        ttk.Button(actions, text="Save profile", style="Primary.TButton",
+                   command=self.save_profile_and_continue).pack(side="left")
         ttk.Button(actions, text="Restore defaults", command=self.reset_profile_defaults).pack(side="left", padx=(7, 0))
         ttk.Label(actions, text="Preset suggestions are editable; save to keep them with this project.", style="Hint.TLabel").pack(side="left", padx=(12, 0))
 
@@ -8632,7 +8649,12 @@ class WorkbenchApp:
     def _report_callback_exception(self, exc_type: type[BaseException], exc: BaseException, tb: Any) -> None:
         log_exception(exc_type, exc, tb)
         try:
-            messagebox.showerror("Application error", f"An error occurred. Details were saved to:\n{app_data_dir() / 'logs' / 'app.log'}\n\n{exc}")
+            messagebox.showerror(
+                "Application error",
+                "That action stopped because of a bug in AI Workbench. Changes already saved are kept; check the step it was on.\n\n"
+                f"What happened: {exc}\n\n"
+                "You can keep working: try the step again or use another action. To help fix it, send this file "
+                f"(File › Export redacted diagnostics…):\n{app_data_dir() / 'logs' / 'app.log'}")
         except Exception:
             pass
 
