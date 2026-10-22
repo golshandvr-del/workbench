@@ -46,6 +46,8 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
       - Run & Report
   - Agents
     - Team
+    - Selected AI
+    - Balance
     - Dispatch desk
     - Tools
       - Prompt
@@ -81,7 +83,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 | **Home › Mission Map** | Parallel timelines: one lane per AI, one circle per task in its version's column. |
 | **Home › Task details / Your projects** | The clicked task (with a link into the Workbench) · every project as a list to open. |
 | **Projects** | Every project as a card; the Project Workbench of the open project; its profile and run report. |
-| **Agents** | The team, the dispatch desk (who gets a prompt now); the manual prompt and AI-response tools. |
+| **Agents** | One card per AI (number = Mission Map lane, role, live state, current task, load, stats); the selected AI (queue, memory note, briefing for a fresh chat); balance (idle / stuck / overloaded / scope-overlap alerts, suggested moves); the dispatch desk (who gets a prompt now); the manual prompt and AI-response tools. |
 | **History** | Everything that happened, on a timeline; old prompts/responses; versions, releases and Git. |
 | **Settings** | Theme (Midnight / Daylight), Simple/Advanced, Motion (Reduce motion); application tools; **App Map…** (the live map of every page, section and command — `docs/UI_MAP.md`). |
 | **Task menu** | Right-click on a task circle. An item is enabled only when the Guide allows it now. |

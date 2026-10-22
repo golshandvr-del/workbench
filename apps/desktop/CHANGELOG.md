@@ -1,3 +1,29 @@
+## [5.6.0] - 2026-10-22
+
+### Agents hub (Roadmap 5.6.0)
+
+- **One card per AI** (`aiwb/ui/agents5.py`): numbered hexagon (the same number as its Mission Map lane), name,
+  role, live state (*Working · Free · Idle · Overloaded · Stuck*), current task, a load bar and its record
+  (*done · open · rework % · average hand-in time*). Click a card to select that AI.
+- **Selected AI**: its queue in order, **Copy briefing** (a self-contained sheet to start a fresh chat: project,
+  role, files it owns, queue, rules — writes nothing) and **Memory note…** (a short note that goes into the
+  *Your role* part of every prompt of that AI; saved in one store transaction).
+- **Balance**: alerts (idle with ready work around, stuck in one stage for more than 24 h, more than 1.5 × the
+  fair share) and **Apply suggested moves** — only unstarted `ready` tasks move, after a confirmation.
+- The pure model is `aiwb/v2/agent_hub.py` (stats from recorded facts only, alerts, rebalance plan, queue,
+  briefing, notes); the controller gained `agent_hub()`, `set_agent_note()`, `agent_briefing()` and `apply_rebalance()`.
+- The Agents page scrolls on small windows; **Home › Task details** gained *Jump to active task* and *Copy task
+  summary*.
+
+### Fixes
+
+- App Map: side-packed rows are read in pack order, so Windows (other font metrics) gives the same tree as Linux.
+- Motion smoke checks branch growth at its start, not after a timing-dependent delay.
+
+### Tests
+
+- `test_agent_hub.py`, `test_agents_cards.py` and the 5.6.0 gate `gui_v5_agents_smoke.py`.
+
 ## [5.5.0] - 2026-10-21
 
 ### App Map (Roadmap 5.5.0)

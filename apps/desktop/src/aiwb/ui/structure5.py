@@ -26,7 +26,7 @@ TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
 RAIL: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("home", "Home", "home", ("Mission Map", "Task details", "Your projects")),
     ("projects", "Projects", "projects", ("Project cards", "Project Workbench", "Tools")),
-    ("agents", "Agents", "agents", ("Team", "Dispatch desk", "Tools")),
+    ("agents", "Agents", "agents", ("Team", "Selected AI", "Balance", "Dispatch desk", "Tools")),
     ("history", "History", "history", ("Timeline", "Prompts & responses", "Versions", "Tools")),
     ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application")),
 )

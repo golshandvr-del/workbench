@@ -292,6 +292,40 @@ class ProjectsController:
                 emit(s, "team_settings_changed", **{k: str(v) for k, v in new.items()})
         return new
 
+    # -- Agents hub (5.6.0): per-AI memory note and load balancing; every write is one store transaction
+    def agent_hub(self) -> dict[str, Any]:
+        """Stats, alerts and balancing suggestions of the open project (reading only)."""
+        from . import agent_hub
+        st = self.state()
+        return {"stats": agent_hub.agent_stats(st), "alerts": agent_hub.alerts(st),
+                "moves": agent_hub.rebalance(st)}
+
+    def set_agent_note(self, agent_id: str, text: str) -> str:
+        """Save the owner's memory note of one AI; it rides along in every prompt that AI gets."""
+        from . import agent_hub
+        from .store import emit
+        with self.project.store.transaction("agent note") as s:
+            before = agent_hub.note(s, agent_id)
+            clean = agent_hub.set_note(s, agent_id, text)
+            if clean != before:
+                emit(s, "agent_note_changed", agent_id=agent_id, length=str(len(clean)))
+        return clean
+
+    def agent_briefing(self, agent_id: str) -> str:
+        from . import agent_hub
+        return agent_hub.briefing(self.state(), agent_id, project_name=self.root.name)
+
+    def apply_rebalance(self, task_id: str, to_agent_id: str) -> dict[str, Any]:
+        """Move one not-yet-started task to another AI (a suggestion of :func:`agent_hub.rebalance`)."""
+        from .models import ModelError
+        t = self.project.tasks.get(task_id)
+        if t is None:
+            raise ModelError(f"task {task_id} does not exist")
+        if t.get("active_attempt_id") or t["status"] != "ready":
+            raise ModelError(f"{task_id} has already started; only ready, unstarted tasks can move")
+        return self.project.tasks.update(task_id, {"owner_agent_id": to_agent_id},
+                                         reason=f"rebalanced to {to_agent_id}")
+
     # -- Project Charter (3.4.0)
     def charter_prompt(self, project: dict[str, Any]) -> str:
         """'Design the whole project' prompt. Saves the goal/brief only; nothing else changes."""

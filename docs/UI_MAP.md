@@ -13,11 +13,11 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 3 | 0 | 10 | 6 | 0 |
+| Home | 3 | 0 | 12 | 8 | 0 |
 | Projects | 12 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
-| Agents | 3 | 0 | 3 | 5 | 2 |
+| Agents | 7 | 0 | 6 | 10 | 4 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
 | History | 6 | 6 | 12 | 10 | 0 |
@@ -55,6 +55,8 @@ Audit:
         - GET AI RESPONSE [item]
         - MARK AS DONE [item]
     - Task details [section]
+      - Jump to active task [button]
+      - Copy task summary [button]
       - Open task in Workbench [button]
     - Your projects [section]
       - + New project [button]
@@ -129,13 +131,22 @@ Audit:
           - Save report… [item]
         - Copy report [button]
   - Agents [page]
-    - Team [section]
-      - Copy team summary [button]
-      - Plan team & tasks… [link]
-    - Dispatch desk [section]
-      - Prepare all prompts [button]
-      - Parallel chats… [button]
-      - Open task queue [link]
+    - Agents [section]
+      - Team [section]
+        - Copy team summary [button]
+        - Plan team & tasks… [link]
+      - Selected AI [section]
+        - Copy briefing [button]
+        - Memory note… [button]
+      - Balance [section]
+        - Apply suggested moves [button]
+      - Dispatch desk [section]
+        - Prepare all prompts [button]
+        - Parallel chats… [button]
+        - Open task queue [link]
+      - Tools [section]
+        - Prompt [link]
+        - AI Response [link]
     - Tools [section]
       - Prompt [page]
         - Select recommended context [button]

@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.5.0"
+APP_VERSION = "5.6.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4721,20 +4721,47 @@ class WorkbenchApp:
     def _make_agents_page(self) -> None:
         """Rail › Agents: Team · Dispatch desk · Tools (the expert pages of 3.x/4.x), as in docs/UI_TREE.md."""
         from aiwb.ui import structure5
-        tab = self.agents_tab
+        self.agents_scroll = ui_layout.ScrollPage(self.agents_tab)  # 5.6.0: the hub scrolls on small windows
+        self.agents_scroll.pack(fill="both", expand=True)
+        tab = self.agents_scroll.body
         ttk.Label(tab, text="Agents", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(tab, text="Your AI team, who gets a prompt now, and the expert tools.", style="Hint.TLabel",
                   wraplength=900).pack(anchor="w", pady=(3, 10))
         team = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         team.pack(fill="x", pady=(0, 9))
         ttk.Label(team, text="Team", style="CardTitle.TLabel").pack(anchor="w")
-        self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")
-        ttk.Label(team, textvariable=self.agents_team_var, style="CardMuted.TLabel", wraplength=900,
-                  justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")  # plain-text twin of the cards
+        from aiwb.ui import agents5
+        self.agents_cards = agents5.AgentCards(team, self.shell.assets, on_select=self.agents_select)
+        self.agents_cards.pack(fill="x", pady=(6, 0))
+        self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
             team, primary=(("Copy team summary", self.agents_copy_team),
                            ("Plan team & tasks…", lambda: self.agents_workbench("team"))), style="Card.TFrame")
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
+        pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
+        pair.pack(fill="x", pady=(0, 9))
+        pair.columnconfigure(0, weight=1, uniform="pair")
+        pair.columnconfigure(1, weight=1, uniform="pair")
+        who = ttk.Frame(pair, style="Card.TFrame", padding=(14, 10))  # the AI picked on a card
+        who.grid(row=0, column=0, sticky="nsew", padx=(0, 5))
+        ttk.Label(who, text="Selected AI", style="CardTitle.TLabel").pack(anchor="w")
+        self.agents_who_var = tk.StringVar(value="Pick an AI card above.")
+        ttk.Label(who, textvariable=self.agents_who_var, style="CardMuted.TLabel", wraplength=560,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_who_bar = ui_actions.ActionBar(
+            who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),
+                          ("Memory note…", self.agents_edit_note)), style="Card.TFrame")
+        self.agents_who_bar.pack(anchor="w", pady=(6, 0))
+        bal = ttk.Frame(pair, style="Card.TFrame", padding=(14, 10))  # alerts + load balancing
+        bal.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
+        ttk.Label(bal, text="Balance", style="CardTitle.TLabel").pack(anchor="w")
+        self.agents_balance_var = tk.StringVar(value="—")
+        ttk.Label(bal, textvariable=self.agents_balance_var, style="CardMuted.TLabel", wraplength=560,
+                  justify="left").pack(anchor="w", pady=(4, 0))
+        self.agents_balance_bar = ui_actions.ActionBar(
+            bal, primary=(("Apply suggested moves", self.agents_apply_moves),), style="Card.TFrame")
+        self.agents_balance_bar.pack(anchor="w", pady=(6, 0))
         desk = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         desk.pack(fill="x", pady=(0, 9))
         ttk.Label(desk, text="Dispatch desk", style="CardTitle.TLabel").pack(anchor="w")
@@ -4846,20 +4873,149 @@ class WorkbenchApp:
         self.refresh_agents_page()
         return out
 
+    # -- Agents hub (5.6.0)
+    def agents_select(self, agent_id: str) -> None:
+        """A card was picked: show that AI's queue, note and alerts under "Selected AI"."""
+        row = next((r for r in getattr(self, "agents_rows", []) if r["agent_id"] == agent_id), None)
+        st = self.status_state()
+        if row is None or st is None:
+            self.agents_who_var.set("Pick an AI card above.")
+            return
+        from aiwb.ui import agents5
+        from aiwb.v2 import agent_hub
+        q = agent_hub.queue(st, agent_id)
+        lines = [f"{row['number']}. {row['name']} · {row['role_text']} · {agents5.state_of(row)}",
+                 "Queue: " + (", ".join(f"{x['task_id']} ({x['status'].replace('_', ' ')})" for x in q[:6])
+                              + (f" +{len(q) - 6}" if len(q) > 6 else "") if q else "empty"),
+                 "Memory note: " + (row["note"].splitlines()[0][:120] if row["note"] else "none — add one with "
+                                    "Memory note… (it goes into every prompt of this AI)")]
+        lines += [f"⚠ {t}" for t in row["alert_text"]]
+        self.agents_who_var.set("\n".join(lines))
+
+    def _agents_selected(self) -> str:
+        cards = getattr(self, "agents_cards", None)
+        return cards.selected if cards is not None else ""
+
+    def agents_copy_briefing(self, agent_id: str = "") -> str:
+        """Selected AI › Copy briefing: the first message of a fresh chat with this AI. Reading only."""
+        ctl = self._mission_ctl()
+        aid = agent_id or self._agents_selected()
+        if ctl is None or not aid:
+            self.set_status("Open a project and pick an AI card first.")
+            return ""
+        text = ctl.agent_briefing(aid)
+        self._copy_text_to_clipboard(text)
+        self.set_status(f"Briefing for {aid} copied — paste it as the first message of a new chat.")
+        return text
+
+    def agents_edit_note(self, text: str | None = None, agent_id: str = "") -> str | None:
+        """Selected AI › Memory note…: what this AI should always remember (added to each of its prompts)."""
+        ctl = self._mission_ctl()
+        aid = agent_id or self._agents_selected()
+        if ctl is None or not aid:
+            self.set_status("Open a project and pick an AI card first.")
+            return None
+        if text is None:
+            from aiwb.v2 import agent_hub
+            text = self._ask_note(aid, agent_hub.note(ctl.state(), aid))
+            if text is None:
+                self.set_status("Cancelled — nothing changed.")
+                return None
+        try:
+            out = ctl.set_agent_note(aid, text)
+        except Exception as exc:  # noqa: BLE001 - reported, never hidden
+            messagebox.showerror("Agents", redact(str(exc)))
+            return None
+        self.set_status(f"Memory note of {aid} saved." if out else f"Memory note of {aid} removed.")
+        self.refresh_agents_page()
+        return out
+
+    def _ask_note(self, agent_id: str, current: str) -> str | None:
+        """A small modal multi-line editor; returns the text or None when cancelled."""
+        win = tk.Toplevel(self.root)
+        win.title(f"Memory note — {agent_id}")
+        win.transient(self.root)
+        ttk.Label(win, text="Everything here is added to every prompt this AI gets (max 2000 characters).",
+                  padding=(12, 10, 12, 4)).pack(anchor="w")
+        box = tk.Text(win, width=72, height=10, wrap="word")
+        box.pack(fill="both", expand=True, padx=12)
+        box.insert("1.0", current)
+        result: dict[str, str | None] = {"text": None}
+
+        def done(save: bool) -> None:
+            if save:
+                result["text"] = box.get("1.0", "end-1c")
+            win.destroy()
+        bar = ttk.Frame(win, padding=12)
+        bar.pack(fill="x")
+        ttk.Button(bar, text="Save note", style="Primary.TButton", command=lambda: done(True)).pack(side="right")
+        ttk.Button(bar, text="Cancel", command=lambda: done(False)).pack(side="right", padx=(0, 6))
+        win.bind("<Escape>", lambda _e: done(False))
+        box.focus_set()
+        win.grab_set()
+        self.root.wait_window(win)
+        return result["text"]
+
+    def agents_apply_moves(self, confirm: bool = True) -> list[dict[str, Any]]:
+        """Balance › Apply suggested moves: hand unstarted tasks from overloaded AIs to free ones (asks first)."""
+        ctl = self._mission_ctl()
+        if ctl is None:
+            self.set_status("Open or create a project first.")
+            return []
+        moves = ctl.agent_hub()["moves"]
+        if not moves:
+            self.set_status("The load is balanced — nothing to move.")
+            return []
+        text = "\n".join(f"{m['task_id']} {m['title'][:50]}: {m['from_agent_id']} → {m['to_agent_id']}" for m in moves)
+        if confirm and not messagebox.askyesno("Balance the team", f"Move these unstarted tasks?\n\n{text}",
+                                               parent=self.root):
+            self.set_status("Cancelled — nothing changed.")
+            return []
+        done = []
+        for m in moves:
+            try:
+                ctl.apply_rebalance(m["task_id"], m["to_agent_id"])
+                done.append(m)
+            except Exception as exc:  # noqa: BLE001 - one refused move must not hide the others
+                self.set_status(redact(str(exc)))
+        self.set_status(f"Moved {len(done)} task(s).")
+        self.refresh_mission(self.status_state(), force=True)
+        self.refresh_agents_page()
+        return done
+
     def refresh_agents_page(self) -> None:
         if not hasattr(self, "agents_team_var"):
             return
+        from aiwb.ui import agents5
         st = self.status_state()
         if st is None:
             self.agents_team_var.set("Open a project to see its AI team.")
             self.agents_dispatch_var.set("—")
+            self.agents_balance_var.set("—")
+            self.agents_rows = []
+            self.agents_cards.set_rows([])
+            self.agents_who_var.set("Open a project to see its AI team.")
             return
-        from aiwb.ui import status5
-        running = set(status5.running_agents(st))
-        agents = sorted((st.get("agents") or {}).values(), key=lambda a: str(a.get("agent_id", "")))
-        lines = [f"{'●' if a.get('agent_id') in running else '○'}  {a.get('name') or a.get('agent_id')}"
-                 f"  ·  {a.get('role', '')}" for a in agents]
-        self.agents_team_var.set("\n".join(lines) or "No AI team yet — plan the project in the Workbench.")
+        try:
+            self.agents_rows = agents5.cards(st)
+        except Exception:  # noqa: BLE001 - an incomplete plan must not break the page
+            self.agents_rows = []
+        self.agents_cards.set_rows(self.agents_rows)
+        self.agents_team_var.set(agents5.summary(self.agents_rows) or "No AI team yet — plan the project in the Workbench.")
+        self.agents_select(self.agents_cards.selected)
+        try:
+            from aiwb.v2 import agent_hub
+            found, moves = agent_hub.alerts(st), agent_hub.rebalance(st)
+            kinds = sorted({a["kind"] for a in found}, key=lambda k: list(agents5.ALERT_TEXT).index(k))
+            lines = [" · ".join(f"{agents5.ALERT_TEXT[k]} {sum(a['kind'] == k for a in found)}" for k in kinds)
+                     if found else "No alerts — every AI has fair work."]
+            lines += [f"⚠ {a['text']}" for a in found if a["kind"] in ("stuck", "overloaded", "overlap")][:2]
+            lines += [f"Suggest: {m['task_id']} {m['from_agent_id']} → {m['to_agent_id']}" for m in moves[:2]]
+            if len(moves) > 2:
+                lines[-1] += f"  (+{len(moves) - 2} more)"
+            self.agents_balance_var.set("\n".join(lines))
+        except Exception:  # noqa: BLE001
+            self.agents_balance_var.set("The plan is not complete yet.")
         try:
             from aiwb.v2.waves import dispatch
             d = dispatch(st)
@@ -4917,6 +5073,11 @@ class WorkbenchApp:
         self.mission_open_btn = ttk.Button(detail, text="Open task in Workbench", command=self.mission_open_task)
         self.mission_open_btn.pack(side="right")
         self.mission_open_btn.state(["disabled"])
+        self.mission_copy_btn = ttk.Button(detail, text="Copy task summary", command=self.mission_copy_task)  # 5.6.0
+        self.mission_copy_btn.pack(side="right", padx=(0, 6))
+        self.mission_copy_btn.state(["disabled"])
+        self.mission_jump_btn = ttk.Button(detail, text="Jump to active task", command=self.mission_jump_active)
+        self.mission_jump_btn.pack(side="right", padx=(0, 6))  # 5.6.0
         self._mission_rev: tuple[str, int] | None = None
         self.home_projects_frame = ttk.Frame(body)
         self.home_projects_frame.pack(fill="both", expand=True)
@@ -4945,7 +5106,38 @@ class WorkbenchApp:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
             self.mission_open_btn.state(["disabled"])
+            self.mission_copy_btn.state(["disabled"])
         return model
+
+    def mission_jump_active(self) -> str:
+        """Home › Task details › Jump to active task: select and scroll to the first task in progress (or needing you)."""
+        m = self.mission.model
+        order = {"active": 0, "attention": 1, "blocked": 2, "idle": 3}
+        nodes = [(order[n["state"]], n["column"], n["task_id"]) for ln in m["lanes"] for n in ln["nodes"]
+                 if n["state"] in order]
+        if not nodes:
+            self.set_status("Nothing in progress on the Mission Map.")
+            return ""
+        tid = min(nodes)[2]
+        x, y = self.mission.geo["nodes"][tid]
+        sr = [float(v) for v in str(self.mission.cget("scrollregion") or "0 0 1 1").split()]
+        w, h = max(1.0, sr[2] - sr[0]), max(1.0, sr[3] - sr[1])
+        self.mission.xview_moveto(max(0.0, (x - self.mission.winfo_width() / 2) / w))
+        self.mission.yview_moveto(max(0.0, (y - self.mission.winfo_height() / 2) / h))
+        self.mission.selected = tid
+        self.mission.redraw()
+        self.mission_select(tid)
+        return tid
+
+    def mission_copy_task(self) -> str:
+        """Home › Task details › Copy task summary: the selected task's one-line summary. Reading only."""
+        if not self.mission.selected:
+            self.set_status("Click a task circle first.")
+            return ""
+        text = self.mission_detail_var.get()
+        self._copy_text_to_clipboard(text)
+        self.set_status("Task summary copied.")
+        return text
 
     def mission_select(self, task_id: str) -> None:
         """Mission Map click → task details below the map (nothing is written)."""
@@ -4959,6 +5151,7 @@ class WorkbenchApp:
                                     f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
                                     f"[{nd['status']}]")
         self.mission_open_btn.state(["!disabled"])
+        self.mission_copy_btn.state(["!disabled"])
 
     # -- Mission Map › right-click menu (roadmap 5.4.0)
     def _mission_ctl(self) -> Any:
