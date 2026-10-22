@@ -101,8 +101,12 @@ def menu_labels(menu: tk.Menu) -> list[str]:
 
 
 def click_more(ws: Any, label: str) -> None:
+    """Press the action ``label`` of the current step: the primary button if it is that action, else More › label."""
+    if ws.next_btn.cget("text").rstrip("…") == label.rstrip("…"):
+        ws.next_btn.invoke()
+        return
     labels = menu_labels(ws.next_menu)
-    assert label in labels, f"More menu has no {label!r}: {labels}"
+    assert label in labels, f"neither the button ({ws.next_btn.cget('text')!r}) nor More has {label!r}: {labels}"
     ws.next_menu.invoke(labels.index(label))
 
 
