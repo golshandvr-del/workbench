@@ -383,9 +383,9 @@ def validate_charter(data: dict[str, Any], state: dict[str, Any] | None = None) 
             for y in range(x + 1, len(owners)):
                 for pa in ownership[owners[x]]:
                     for pb in ownership[owners[y]]:
-                        if _paths_overlap(pa, pb):
-                            errors.append(f"coordination.file_ownership: {owners[x]} ({pa}) and {owners[y]} ({pb}) own the "
-                                          "same path — give it to one AI or make it a shared contract")
+                        if _paths_overlap(pa, pb):  # 5.10.0: a warning with the fix, not a rejection (A12)
+                            warnings.append(f"coordination.file_ownership: {owners[x]} ({pa}) and {owners[y]} ({pb}) own "
+                                            "the same path — give it to one AI or make it a shared contract")
         for i, sc in enumerate(_list(co, "shared_contracts", "coordination", errors, required=False)):
             p = f"coordination.shared_contracts[{i}]"
             if not isinstance(sc, dict):
@@ -399,7 +399,9 @@ def validate_charter(data: dict[str, Any], state: dict[str, Any] | None = None) 
                     errors.append(f"{p}.consumers: {c} is not in team.agents")
         if not _list(co, "shared_contracts", "coordination", [], required=False) and len(workers) > 1:
             warnings.append("coordination.shared_contracts: several AIs work in parallel but no shared contract is defined")
-        sync = _list(co, "sync_points", "coordination", errors, required=len(workers) > 1)
+        sync = _list(co, "sync_points", "coordination", errors, required=False)
+        if not sync and len(workers) > 1:  # 5.10.0: missing coordination detail is a warning (A12)
+            warnings.append("coordination.sync_points: several AIs work in parallel but no sync point is defined")
         _str(co, "conflict_resolution", "coordination", errors)
     else:
         sync = []
