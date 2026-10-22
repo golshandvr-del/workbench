@@ -70,12 +70,20 @@ class MissionCanvas(tk.Canvas):
 
     # -- data
     def set_state(self, state: dict[str, Any] | None) -> dict[str, Any]:
-        self.model = mission_model.build(state)
+        self._state = state
+        self.model = mission_model.build(state, **getattr(self, "view", {}))
         self.redraw()
         pid = str((state or {}).get("project_id", "")) if not self.model["empty"] else ""
         if pid and pid != self._grown_for:
             self._grown_for = pid
             self.grow()
+        return self.model
+
+    def set_view(self, **view: bool) -> dict[str, Any]:
+        """View options of :func:`mission_model.build` (5.7.0): ``hide_done``, ``open_only``. Rebuilds the map."""
+        self.view = {**getattr(self, "view", {}), **view}
+        self.model = mission_model.build(getattr(self, "_state", None), **self.view)
+        self.redraw()
         return self.model
 
     def set_theme(self, theme: str) -> None:
