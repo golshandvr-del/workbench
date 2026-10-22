@@ -96,8 +96,11 @@ def build(state: dict[str, Any] | None, *, hide_done: bool = False, open_only: b
         if not aid or (agents and aid not in agents):
             aid = "unassigned"
         by_lane.setdefault(aid, []).append(tid)
-    if not by_lane:  # a planned team without tasks still shows its lanes
+    user_team = (state.get("settings") or {}).get("team_source") == "wizard"
+    if not by_lane or user_team:  # a planned team without tasks still shows its lanes; 5.9.0: the user's AIs always
         for aid, a in sorted(agents.items()):
+            if aid in by_lane:
+                continue
             if a.get("enabled", True) and a.get("role") != "project_manager":
                 by_lane[aid] = []
     slots = [1] * len(cols)
