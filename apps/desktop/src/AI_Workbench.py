@@ -5316,6 +5316,7 @@ class WorkbenchApp:
         self.home_next_var = tk.StringVar(value="Open or create a project to see its next step.")
         nxt = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
         nxt._aiwb_section = "Next step"  # type: ignore[attr-defined]
+        nxt._aiwb_noflow = True  # type: ignore[attr-defined]  # label + one button: a fixed row, never re-flowed
         nxt.pack(fill="x", pady=(0, 9))
         ttk.Label(nxt, text="Next step", style="CardAccent.TLabel").pack(side="left", padx=(0, 10))
         ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=760).pack(
