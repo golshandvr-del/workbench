@@ -106,7 +106,8 @@ def _preview(text: str, state: dict[str, Any] | None) -> Preview:
     if HANDOFF_RE.search(text):
         return Preview("files", True, "Handoff report ✓ · no files (summary and open items only).",
                        counts={"files": 0})
-    if ex.truncated:
+    from .normalize import truncation_report
+    if ex.truncated or truncation_report(text).truncated:
         return Preview("truncated", False, "Cut off ✗ — the answer ends in the middle; paste it to get a continue prompt.",
                        problems=list(ex.problems))
     return Preview("unknown", False, "Nothing Workbench can read yet: no charter, no files, no handoff. "
