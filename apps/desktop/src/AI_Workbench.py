@@ -8651,7 +8651,7 @@ class WorkbenchApp:
         try:
             messagebox.showerror(
                 "Application error",
-                "That action stopped because of a bug in AI Workbench. Your project files and plan were not changed.\n\n"
+                "That action stopped because of a bug in AI Workbench. Changes already saved are kept; check the step it was on.\n\n"
                 f"What happened: {exc}\n\n"
                 "You can keep working: try the step again or use another action. To help fix it, send this file "
                 f"(File › Export redacted diagnostics…):\n{app_data_dir() / 'logs' / 'app.log'}")
