@@ -13,8 +13,8 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 3 | 0 | 8 | 5 | 0 |
-| Projects | 14 | 7 | 21 | 10 | 9 |
+| Home | 4 | 0 | 11 | 8 | 0 |
+| Projects | 13 | 7 | 17 | 7 | 9 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 9 | 0 |
 | Agents | 7 | 0 | 6 | 10 | 4 |
@@ -34,7 +34,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 Audit:
 
-- rail destinations unbalanced: {'Home': 8, 'Projects': 36, 'Agents': 41, 'History': 36, 'Settings': 11} (max ratio 4.0)
+- none: the map is balanced.
 
 ## Tree
 
@@ -54,6 +54,10 @@ Audit:
         - SEND PROMPT [item]
         - GET AI RESPONSE [item]
         - MARK AS DONE [item]
+    - Map view [section]
+      - Hide finished tasks [option]
+      - Only AIs with open work [option]
+      - Copy map summary [button]
     - Task details [section]
       - Jump to active task [button]
       - Copy task summary [button]
@@ -62,12 +66,6 @@ Audit:
       - Continue in Workbench [button]
   - Projects [page]
     - Project cards [section]
-      - Your projects [section]
-        - + New project [button]
-        - Open selected [button]
-        - More [menu]
-          - Reveal folder [item]
-          - Remove from list [item]
     - Next step [section]
       - Start the project… [button]
     - Overview [tab]

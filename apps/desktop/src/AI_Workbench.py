@@ -5319,11 +5319,10 @@ class WorkbenchApp:
         from aiwb.ui.projects5 import ProjectCards
         tab = self.workbench_tab
         strip = ttk.Frame(tab, padding=(10, 8, 10, 0))
-        strip._aiwb_section = "Project cards"  # type: ignore[attr-defined]
+        strip._aiwb_section = "Projects library"  # type: ignore[attr-defined]
         strip.pack(side="top", fill="x")
         self.projects_strip = strip
         row = ttk.Frame(strip)
-        row._aiwb_section = ""  # type: ignore[attr-defined]  # the strip's header row, not a nested section
         row._aiwb_noflow = True  # type: ignore[attr-defined]  # one fixed header row (title · find · actions)
         row.pack(fill="x")
         ttk.Label(row, text="Your projects", style="SectionTitle.TLabel").pack(side="left")
