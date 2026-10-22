@@ -44,7 +44,7 @@ REQUIRED = {
     "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
-    "agents": ["Copy team summary", "Copy briefing", "Memory note…", "Apply suggested moves", "Prepare all prompts",
+    "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Apply suggested moves", "Prepare all prompts",
                "Parallel chats…"],  # 5.6.0 Agents hub
 }
 # Buttons that would only duplicate a rail page.
