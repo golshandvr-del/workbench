@@ -5050,6 +5050,8 @@ class WorkbenchApp:
         """Home: the active project only — Mission Map (one lane per AI), task details and the next step (5.7.0)."""
         from aiwb.ui.mission_canvas import MissionCanvas
         self.home_scroll = ui_layout.ScrollPage(self.manager_tab)
+        # a fixed natural width: wrapped labels follow the page width, so they must never drive it (5.7.0)
+        self.home_scroll.canvas.configure(width=880, height=560)
         self.home_scroll.pack(fill="both", expand=True)
         body = self.home_scroll.body
         head = ttk.Frame(body)
