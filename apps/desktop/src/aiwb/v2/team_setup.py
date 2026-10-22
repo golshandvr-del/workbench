@@ -173,34 +173,82 @@ def plan_ids(rows: list[dict[str, Any]], existing: set[str] | None = None) -> li
 
 
 def apply_wizard(project: Any, brief: dict[str, Any], rows: list[dict[str, Any]], answer_format: str = "aiwb") -> dict[str, Any]:
-    """Record the wizard: the brief (goal, name, platform, constraints), the team and the answer format.
+    """Record the New Project wizard: the brief (goal, name, platform, constraints), the team and the answer format.
 
     ``project`` is a :class:`aiwb.v2.V2Project` whose store was **not** opened with templates (call this before the
     Workbench opens the project). Returns ``{"agents": [ids], "workers": n}``.
     """
+    _check_all(brief, rows, answer_format)
+    project.store.ensure_migrated()
+    return apply_start(project.store, brief, rows, answer_format, event="team_defined")
+
+
+def apply_start(store: Any, brief: dict[str, Any], rows: list[dict[str, Any]], answer_format: str = "aiwb", *,
+                event: str = "team_defined") -> dict[str, Any]:
+    """The guided "Start the project" form (one window, same fields as the wizard minus the folder).
+
+    Used for projects added from an existing folder and for "Change the project details…": records the brief, then
+    makes the team equal to ``rows`` — unused template AIs of older projects are deleted, an AI with history is only
+    disabled (see :func:`save_team`).
+    """
     from .flow import start_project
+    _check_all(brief, rows, answer_format)
+    start_project(store, {**{k: brief.get(k, "") for k in ("goal", "name", "platform", "constraints")},
+                          "ais": str(len(rows) - 1)})
+    with store.transaction("team from the start form") as s:
+        out = _write_team(s, rows)
+        s["settings"]["team_source"] = "wizard"
+        s["settings"]["answer_format"] = answer_format
+        emit(s, event, agent_ids=out["ids"], workers=len(rows) - 1, source="wizard", importance="major")
+    return {"agents": out["ids"], "workers": len(rows) - 1}
+
+
+def _check_all(brief: dict[str, Any], rows: list[dict[str, Any]], answer_format: str) -> None:
     errors = check_rows(rows)
+    if not str(brief.get("goal", "") or "").strip():
+        errors.insert(0, "describe the goal of the project (one or two sentences)")
+    if answer_format not in dict(ANSWER_FORMATS):
+        errors.append(f"answer format must be one of {', '.join(dict(ANSWER_FORMATS))}")
     if errors:
         raise ModelError("; ".join(errors))
-    if answer_format not in dict(ANSWER_FORMATS):
-        raise ModelError(f"answer format must be one of {', '.join(dict(ANSWER_FORMATS))}")
-    store = project.store
-    store.ensure_migrated()
-    workers = len(rows) - 1
-    start_project(store, {**{k: brief.get(k, "") for k in ("goal", "name", "platform", "constraints")},
-                          "ais": str(workers)})
-    with store.transaction("team from the New Project wizard") as s:
-        existing = set(s["agents"])
-        ids = plan_ids(rows, existing - {PM_ID})
-        for aid, row in zip(ids, rows):
-            if aid in s["agents"]:
-                continue
-            s["agents"][aid] = normalize_agent({**_agent_data(aid, row), "revision": 1})
-        s["settings"]["team_source"] = "wizard"
-        s["settings"]["team_order"] = list(ids)
-        s["settings"]["answer_format"] = answer_format
-        emit(s, "team_defined", agent_ids=ids, workers=workers, source="wizard", importance="major")
-    return {"agents": ids, "workers": workers}
+
+
+def _write_team(s: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """Inside a transaction: make the enabled team equal to ``rows`` (shared by the wizard, start form and editor)."""
+    out: dict[str, list[str]] = {"created": [], "updated": [], "removed": [], "disabled": []}
+    agents = s["agents"]
+    ids = plan_ids(rows, set(agents))
+    refs = _references(s)
+    for aid, row in zip(ids, rows):
+        if aid in agents:
+            cur = agents[aid]
+            role = "project_manager" if aid == PM_ID else role_of(row.get("role", ""))
+            changes = {"name": str(row.get("name", "")).strip()[:120], "role": role,
+                       "preferred_model_label": str(row.get("model", "") or "").strip()[:80], "enabled": True}
+            if any(cur.get(k) != v for k, v in changes.items()):
+                merged = normalize_agent({**cur, **changes})
+                merged["revision"] = int(cur.get("revision", 1)) + 1
+                merged["created_at"] = cur.get("created_at", merged["created_at"])
+                merged["updated_at"] = now_utc()
+                agents[aid] = merged
+                out["updated"].append(aid)
+        else:
+            agents[aid] = normalize_agent({**_agent_data(aid, row), "revision": 1})
+            out["created"].append(aid)
+    keep = set(ids) | {PM_ID}
+    for aid in [a for a, v in agents.items() if v.get("enabled", True) and a not in keep]:
+        if aid in refs:
+            agents[aid] = {**agents[aid], "enabled": False, "updated_at": now_utc(),
+                           "revision": int(agents[aid].get("revision", 1)) + 1}
+            out["disabled"].append(aid)
+        else:
+            del agents[aid]
+            out["removed"].append(aid)
+    s["settings"]["team_order"] = list(ids)
+    workers = len([a for a in agents.values() if a.get("enabled", True) and a["role"] != "project_manager"])
+    if workers:
+        s["settings"].setdefault("team", {})["max_parallel_chats"] = min(MAX_WORKERS, workers)
+    return {**out, "ids": ids}
 
 
 def _references(state: dict[str, Any]) -> set[str]:
@@ -262,43 +310,21 @@ def save_team(store: Any, rows: list[dict[str, Any]]) -> dict[str, list[str]]:
     errors = check_rows(rows)
     if errors:
         raise ModelError("; ".join(errors))
-    out: dict[str, list[str]] = {"created": [], "updated": [], "removed": [], "disabled": []}
     with store.transaction("edit team") as s:
-        agents = s["agents"]
-        ids = plan_ids(rows, set(agents))
-        refs = _references(s)
-        for aid, row in zip(ids, rows):
-            if aid in agents:
-                cur = agents[aid]
-                role = "project_manager" if aid == PM_ID else role_of(row.get("role", ""))
-                changes = {"name": str(row.get("name", "")).strip()[:120], "role": role,
-                           "preferred_model_label": str(row.get("model", "") or "").strip()[:80], "enabled": True}
-                if any(cur.get(k) != v for k, v in changes.items()):
-                    merged = normalize_agent({**cur, **changes})
-                    merged["revision"] = int(cur.get("revision", 1)) + 1
-                    merged["created_at"] = cur.get("created_at", merged["created_at"])
-                    merged["updated_at"] = now_utc()
-                    agents[aid] = merged
-                    out["updated"].append(aid)
-            else:
-                agents[aid] = normalize_agent({**_agent_data(aid, row), "revision": 1})
-                out["created"].append(aid)
-        keep = set(ids) | {PM_ID}
-        for aid in [a for a, v in agents.items() if v.get("enabled", True) and a not in keep]:
-            if aid in refs:
-                agents[aid] = {**agents[aid], "enabled": False, "updated_at": now_utc(),
-                               "revision": int(agents[aid].get("revision", 1)) + 1}
-                out["disabled"].append(aid)
-            else:
-                del agents[aid]
-                out["removed"].append(aid)
-        s["settings"]["team_order"] = list(ids)
-        workers = len([a for a in agents.values() if a.get("enabled", True) and a["role"] != "project_manager"])
-        if workers:
-            s["settings"].setdefault("team", {})["max_parallel_chats"] = min(MAX_WORKERS, workers)
+        out = _write_team(s, rows)
+        out.pop("ids")
         if any(out.values()):
+            s["settings"]["team_source"] = "wizard"
             emit(s, "team_edited", **{k: v for k, v in out.items() if v})
     return out
+
+
+def start_rows(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Rows to prefill the start form: the user's team, or (older projects) the PM plus N developers. Pure."""
+    if (state.get("settings") or {}).get("team_source") == "wizard":
+        return team_rows(state)
+    n = int(((state.get("settings") or {}).get("team") or {}).get("max_parallel_chats") or DEFAULT_WORKERS)
+    return default_rows(max(1, min(MAX_WORKERS, n)))
 
 
 def team_prompt_lines(state: dict[str, Any]) -> list[str]:
