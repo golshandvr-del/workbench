@@ -65,9 +65,14 @@ def run_one(wb, root, app, tmp: Path, workers: int, names: list[str]) -> None:
     wiz.next_btn.invoke()
     pump(root)
     assert wiz.step == 2, f"Next must go to the Answers step: {wiz.error_var.get()}"
-    # step 3 — Answers: AIWB is selected; JSON/ZIP are visible but not selectable yet
+    # step 3 — Answers: AIWB is selected; 5.10.0: JSON and ZIP can be chosen too (clicked on the real radio button)
     assert wiz.vars["format"].get() == "aiwb"
-    assert str(wiz.format_buttons["zip"].cget("state")) == "disabled"
+    for key in ("aiwb", "json", "zip"):
+        assert str(wiz.format_buttons[key].cget("state")) == "normal", key
+    fmt = "json" if workers == 5 else "aiwb"
+    wiz.format_buttons[fmt].invoke()
+    pump(root)
+    assert wiz.vars["format"].get() == fmt
     assert wiz.next_btn.cget("text") == "Create project"
     wiz.next_btn.invoke()
     pump(root, 20)
@@ -91,6 +96,7 @@ def run_one(wb, root, app, tmp: Path, workers: int, names: list[str]) -> None:
     # no repeated question: the guided Workbench is on the project-manager prompt, not on "Start the project"
     assert ws.next_btn.cget("text") == "Copy the charter prompt", ws.next_btn.cget("text")
     assert st["settings"]["goal"].startswith("A test project")
+    assert st["settings"]["answer_format"] == fmt, st["settings"].get("answer_format")
     ws.next_btn.invoke()
     pump(root)
     prompt = root.clipboard_get()
