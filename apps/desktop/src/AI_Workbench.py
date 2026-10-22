@@ -8649,7 +8649,12 @@ class WorkbenchApp:
     def _report_callback_exception(self, exc_type: type[BaseException], exc: BaseException, tb: Any) -> None:
         log_exception(exc_type, exc, tb)
         try:
-            messagebox.showerror("Application error", f"An error occurred. Details were saved to:\n{app_data_dir() / 'logs' / 'app.log'}\n\n{exc}")
+            messagebox.showerror(
+                "Application error",
+                "That action stopped because of a bug in AI Workbench. Your project files and plan were not changed.\n\n"
+                f"What happened: {exc}\n\n"
+                "You can keep working: try the step again or use another action. To help fix it, send this file "
+                f"(File › Export redacted diagnostics…):\n{app_data_dir() / 'logs' / 'app.log'}")
         except Exception:
             pass
 
