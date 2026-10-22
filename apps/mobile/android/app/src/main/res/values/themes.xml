@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Roadmap 6.0.0 / mobile 3.0.0: the Mission Map look. Midnight (dark) is the default; Daylight mirrors it. -->
+<resources>
+    <style name="Theme.AIWB.Midnight" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/midnight_panel</item>
+        <item name="android:colorPrimaryDark">@color/midnight_window</item>
+        <item name="android:colorAccent">@color/midnight_active</item>
+        <item name="android:windowBackground">@color/midnight_window</item>
+        <item name="android:colorBackground">@color/midnight_window</item>
+        <item name="android:statusBarColor">@color/midnight_window</item>
+        <item name="android:navigationBarColor">@color/midnight_panel</item>
+        <item name="android:textColorPrimary">@color/midnight_text</item>
+        <item name="android:textColorSecondary">@color/midnight_text_dim</item>
+        <item name="android:textColorHint">@color/midnight_text_faint</item>
+        <item name="android:textColorLink">@color/midnight_version</item>
+        <item name="android:textColorHighlight">@color/midnight_selection</item>
+    </style>
+
+    <style name="Theme.AIWB.Daylight" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorPrimary">@color/daylight_panel</item>
+        <item name="android:colorPrimaryDark">@color/daylight_window</item>
+        <item name="android:colorAccent">@color/daylight_active</item>
+        <item name="android:windowBackground">@color/daylight_window</item>
+        <item name="android:colorBackground">@color/daylight_window</item>
+        <item name="android:statusBarColor">@color/daylight_window</item>
+        <item name="android:navigationBarColor">@color/daylight_panel</item>
+        <item name="android:textColorPrimary">@color/daylight_text</item>
+        <item name="android:textColorSecondary">@color/daylight_text_dim</item>
+        <item name="android:textColorHint">@color/daylight_text_faint</item>
+        <item name="android:textColorLink">@color/daylight_version</item>
+        <item name="android:textColorHighlight">@color/daylight_selection</item>
+    </style>
+</resources>
