@@ -1860,6 +1860,16 @@ def profile_for_project_template(template: str) -> dict[str, str]:
     return profile
 
 
+def platform_for_project_template(template: str) -> str:
+    """One readable line for the wizard's Platform field, derived from the preset's profile (5.9.0)."""
+    if template == "Custom / undecided":
+        return ""
+    prof = profile_for_project_template(template)
+    parts = [prof.get(k, "") for k in ("target_platform", "languages", "gui_framework")]
+    skip = ("Other / undecided", "Let AI recommend", "Not applicable", "None / CLI")
+    return ", ".join(p for p in parts if p and not any(p.startswith(x) for x in skip))
+
+
 def create_project_folder(parent: Path, raw_name: str, description: str = "", template: str = "General engineering / simulation project", create_readme: bool = True, architecture_plan: dict[str, Any] | None = None) -> Path:
     """Create a new project folder and a project-local manifest; never reuse an existing directory."""
     name = validate_project_folder_name(raw_name)
@@ -5533,100 +5543,65 @@ class WorkbenchApp:
         if chosen:
             self.set_workspace(Path(chosen), focus_project=True)
 
-    def new_project(self, on_created: Callable[[Path], Any] | None = None) -> None:
-        win = tk.Toplevel(self.root)
-        win.title("Create a new project")
-        win.geometry("700x680")
-        win.minsize(640, 620)
-        win.transient(self.root)
-        win.grab_set()
-        outer = ttk.Frame(win, padding=20)
-        outer.pack(fill="both", expand=True)
-        ttk.Label(outer, text="Create a project", style="SectionTitle.TLabel").pack(anchor="w")
-        ttk.Label(outer, text="Choose where the project lives. Workbench creates a new folder and saves settings inside that folder; it never overwrites an existing directory.", wraplength=600, style="Hint.TLabel").pack(anchor="w", pady=(4, 14))
+    def new_project(self, on_created: Callable[[Path], Any] | None = None) -> Any:
+        """Toolbar › New Project: the one-window 3-step wizard (roadmap 5.9.0 — project · team · answer format).
 
-        name_var = tk.StringVar()
+        It is the only place the project's data is entered: the folder and manifest are created, the brief and the
+        user's own AI team are written to the V2 state (no template agents), and the guided Workbench opens on its
+        next step — the project-manager prompt — without asking any start question again (audit A1/A5/A8/A9).
+        The architecture plan editor moved to Projects › Tools (A2).
+        """
+        from aiwb.ui.project_wizard import ProjectWizard
         default_parent = Path.home() / "Documents"
         if not default_parent.is_dir():
             default_parent = Path.home()
-        parent_var = tk.StringVar(value=str(default_parent))
-        description_var = tk.StringVar()
-        template_var = tk.StringVar(value=PROJECT_FOLDER_TEMPLATES[0])
-        readme_var = tk.BooleanVar(value=True)
-        git_var = tk.BooleanVar(value=False)
-        architecture_plan_holder: dict[str, Any] = {"plan": None}
-        architecture_plan_status = tk.StringVar(value="No architecture plan attached")
 
-        ttk.Label(outer, text="Project name", font=("Segoe UI", 9, "bold")).pack(anchor="w")
-        name_entry = ttk.Entry(outer, textvariable=name_var)
-        name_entry.pack(fill="x", pady=(3, 3))
-        ttk.Label(outer, text="This becomes the new folder name. Use a concise name; Windows-invalid characters are rejected.", style="Hint.TLabel", wraplength=590).pack(anchor="w", pady=(0, 11))
+        def finish(d: dict[str, Any]) -> Path:
+            return self._create_from_wizard(d, on_created)
+        self.project_wizard = ProjectWizard(
+            self.root, mode="create", presets=PROJECT_FOLDER_TEMPLATES, initial={"parent": str(default_parent)},
+            preset_platform=lambda t: platform_for_project_template(t), on_finish=finish)
+        return self.project_wizard
 
-        ttk.Label(outer, text="Parent folder", font=("Segoe UI", 9, "bold")).pack(anchor="w")
-        parent_row = ttk.Frame(outer)
-        parent_row.pack(fill="x", pady=(3, 3))
-        ttk.Entry(parent_row, textvariable=parent_var).pack(side="left", fill="x", expand=True)
-        def browse_parent() -> None:
-            start = parent_var.get().strip()
-            chosen = filedialog.askdirectory(title="Choose where to create the project", initialdir=start if Path(start).is_dir() else str(Path.home()), parent=win)
-            if chosen:
-                parent_var.set(chosen)
-        ttk.Button(parent_row, text="Browse…", command=browse_parent).pack(side="left", padx=(7, 0))
-        ttk.Label(outer, text="The project folder will be created as: parent folder / project name.", style="Hint.TLabel").pack(anchor="w", pady=(0, 11))
+    def _create_from_wizard(self, d: dict[str, Any], on_created: Callable[[Path], Any] | None = None) -> Path:
+        """Create the folder, record brief + team, open the guided Workbench. Raises with a readable message."""
+        from aiwb.v2 import V2Project
+        from aiwb.v2 import team_setup
+        problems = team_setup.check_rows(d["team"])
+        if problems:
+            raise WorkbenchError("; ".join(problems))
+        created = create_project_folder(Path(d["parent"]).expanduser(), d["name"], d["goal"], d["preset"], d["readme"])
+        notes: list[str] = []
+        try:
+            project = V2Project(created, created.name)
+            team_setup.apply_wizard(project, {"goal": d["goal"], "name": d["name"], "platform": d["platform"],
+                                              "constraints": d["constraints"]}, d["team"], d["format"])
+        except Exception as exc:  # the folder exists; say what is missing instead of failing silently
+            notes.append(f"The team could not be saved ({exc}); set it on the Agents page.")
+        if d.get("git"):
+            notes.append(self._git_init_note(created))
+        self.set_workspace(created, focus_project=False)
+        self.refresh_project_list()
+        workers = len(d["team"]) - 1
+        self.set_status(f"Created {created.name} with {workers} AI{'s' if workers != 1 else ''} + project manager. "
+                        "Next: copy the project-manager prompt." + (" " + " ".join(n for n in notes if n) if notes else ""))
+        if on_created is not None:
+            on_created(created)
+        else:
+            self._start_guided_after_create(created)
+        return created
 
-        ttk.Label(outer, text="Project preset", font=("Segoe UI", 9, "bold")).pack(anchor="w")
-        preset = ttk.Combobox(outer, textvariable=template_var, values=PROJECT_FOLDER_TEMPLATES, state="readonly")
-        preset.pack(fill="x", pady=(3, 3))
-        ttk.Label(outer, text="Presets fill initial technical-profile values only; you can review and change every option later.", style="Hint.TLabel", wraplength=590).pack(anchor="w", pady=(0, 11))
-
-        ttk.Label(outer, text="Purpose / description (optional)", font=("Segoe UI", 9, "bold")).pack(anchor="w")
-        ttk.Entry(outer, textvariable=description_var).pack(fill="x", pady=(3, 3))
-        ttk.Label(outer, text="A short description helps you distinguish this project in the dashboard and gives the AI useful context.", style="Hint.TLabel", wraplength=630).pack(anchor="w", pady=(0, 7))
-        architecture_row = ttk.Frame(outer)
-        architecture_row.pack(fill="x", pady=(0, 8))
-        ttk.Button(architecture_row, text="Architecture plan…", command=lambda: self.open_architecture_plan_editor(
-            initial_plan=architecture_plan_holder["plan"],
-            on_save=lambda plan: (architecture_plan_holder.__setitem__("plan", plan), architecture_plan_status.set(f"Plan ready · {len(plan.get('modules', []))} module(s) · {len(plan.get('proposed_files', []))} proposed file(s)")),
-        )).pack(side="left")
-        ttk.Label(architecture_row, textvariable=architecture_plan_status, style="Hint.TLabel", wraplength=440).pack(side="left", padx=(9, 0))
-        ttk.Checkbutton(outer, text="Create a starter README.md", variable=readme_var).pack(anchor="w", pady=2)
-        ttk.Checkbutton(outer, text="Initialize a local Git repository (requires Git for Windows)", variable=git_var).pack(anchor="w", pady=2)
-
-        buttons = ttk.Frame(outer)
-        buttons.pack(fill="x", side="bottom", pady=(16, 0))
-        ttk.Button(buttons, text="Cancel", command=win.destroy).pack(side="right")
-
-        def create() -> None:
-            try:
-                parent_path = Path(parent_var.get().strip()).expanduser()
-                created = create_project_folder(parent_path, name_var.get(), description_var.get(), template_var.get(), readme_var.get(), architecture_plan_holder["plan"])
-                git_note = ""
-                if git_var.get():
-                    git_exe = find_git_executable()
-                    if not git_exe:
-                        git_note = "\nGit was not found, so the project was created without repository initialization."
-                    else:
-                        try:
-                            result = git_run(Path.cwd(), ["init", str(created)], timeout=30)
-                            if result.returncode == 0:
-                                git_note = "\nLocal Git repository initialized."
-                            else:
-                                git_note = "\nProject was created, but Git init failed: " + redact((result.stderr.strip() or result.stdout.strip() or "unknown error"))
-                        except (WorkbenchError, OSError, subprocess.SubprocessError) as exc:
-                            git_note = f"\nProject was created, but Git init failed: {redact(str(exc))}"
-                win.destroy()
-                self.set_workspace(created, focus_project=on_created is None)
-                self.refresh_project_list()
-                self.set_status(f"Created project: {created}")
-                if on_created is not None:
-                    on_created(created)
-                    return
-                messagebox.showinfo("Project created", f"Project folder created successfully:\n{created}\n\nSettings: {created / PROJECT_MANIFEST_RELATIVE}{git_note}\n\nReview the Project Profile, then describe your first task.", parent=self.root)
-            except Exception as exc:
-                messagebox.showerror("Could not create project", str(exc), parent=win)
-                name_entry.focus_set()
-        ttk.Button(buttons, text="Create project", style="Primary.TButton", command=create).pack(side="right", padx=(0, 7))
-        name_entry.focus_set()
+    def _git_init_note(self, created: Path) -> str:
+        git_exe = find_git_executable()
+        if not git_exe:
+            return "Git was not found, so no repository was initialized."
+        try:
+            result = git_run(Path.cwd(), ["init", str(created)], timeout=30)
+        except (WorkbenchError, OSError, subprocess.SubprocessError) as exc:
+            return f"Git init failed: {redact(str(exc))}"
+        if result.returncode == 0:
+            return "Local Git repository initialized."
+        return "Git init failed: " + redact(result.stderr.strip() or result.stdout.strip() or "unknown error")
 
     def open_architecture_plan_editor(
         self, *, root_path: Path | None = None, initial_plan: dict[str, Any] | None = None,
