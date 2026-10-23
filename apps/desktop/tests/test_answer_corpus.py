@@ -72,10 +72,11 @@ class CorpusShapeTests(unittest.TestCase):
             for name in made:
                 if name.endswith(".zip"):   # same entries and contents (zip headers may differ by zlib version)
                     import zipfile
-                    a, b = zipfile.ZipFile(Path(tmp) / name), zipfile.ZipFile(ac.ANSWERS / name)
-                    self.assertEqual(sorted(a.namelist()), sorted(b.namelist()), name)
-                    for n in a.namelist():
-                        self.assertEqual(a.read(n), b.read(n), f"{name}:{n}")
+                    # closed before the temp folder goes away (Windows cannot delete an open file)
+                    with zipfile.ZipFile(Path(tmp) / name) as a, zipfile.ZipFile(ac.ANSWERS / name) as b:
+                        self.assertEqual(sorted(a.namelist()), sorted(b.namelist()), name)
+                        for n in a.namelist():
+                            self.assertEqual(a.read(n), b.read(n), f"{name}:{n}")
                     continue
                 self.assertEqual((Path(tmp) / name).read_bytes(), (ac.ANSWERS / name).read_bytes(),
                                  f"{name} differs from build_corpus.py — rebuild the corpus")
