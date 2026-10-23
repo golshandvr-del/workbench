@@ -397,13 +397,20 @@ def extract(text: str) -> Extracted:
     ex.attempt_id = am.group(1) if am else ""
     files, open_last = _aiwb_files(raw)
     cand = raw
-    if not files:
+
+    def broken(fs: list[dict[str, str]], cut: bool) -> int:
+        """How badly a parse went: blocks without a usable path, plus one for an unclosed last block."""
+        return sum(1 for f in fs if not safe_path(f["path"])) + (1 if cut else 0)
+
+    if not files or broken(files, open_last):
+        # damaged markers (smart quotes in path="…", NBSP / zero-width characters, escapes) may parse *partly*:
+        # empty paths, one block swallowing the rest — the repaired text wins when it reads better
         try:
             from .normalize import normalize
             n = normalize(raw)
             if n.changed:
                 f2, o2 = _aiwb_files(n.text)
-                if f2:
+                if f2 and (not files or (broken(f2, o2), -len(f2)) < (broken(files, open_last), -len(files))):
                     files, open_last, cand = f2, o2, n.text
                     ex.fixes.append("the AIWB markers were damaged by the chat app (" +
                                     ", ".join(x.split(":")[0] for x in n.fixes) + ") — repaired")
