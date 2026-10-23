@@ -12,11 +12,19 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
-from tests import answer_corpus as ac
+HERE = Path(__file__).resolve().parent
+IN_REPO = (HERE / "answer_corpus.py").is_file() and (HERE / "fixtures" / "answers" / "corpus.json").is_file()
+if IN_REPO:
+    sys.path.insert(0, str(HERE.parent / "src"))
+    _spec = importlib.util.spec_from_file_location("answer_corpus", HERE / "answer_corpus.py")
+    ac = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(ac)
+_SKIP = "the answer corpus lives in the repository (tests/fixtures/answers), not in an installed copy"
 
 
 def _builder():
@@ -36,6 +44,7 @@ def outcome(r: dict) -> str:
     return "nothing"
 
 
+@unittest.skipUnless(IN_REPO, _SKIP)
 class CorpusShapeTests(unittest.TestCase):
     def test_size_and_spread(self):
         cases = ac.cases()
@@ -78,6 +87,7 @@ class CorpusShapeTests(unittest.TestCase):
             self.assertIn(b"\r\n", ac.answer_bytes(c), c["file"])
 
 
+@unittest.skipUnless(IN_REPO, _SKIP)
 class CorpusReplayTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
