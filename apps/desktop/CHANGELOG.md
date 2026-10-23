@@ -1,3 +1,44 @@
+## [5.10.0] - 2026-10-23
+
+### Core-path repair, step 3: whatever the model returns, it works (Roadmap 5.10.0)
+
+- **The project manager's charter is read leniently** (audit A12). Workbench now accepts what chat models really
+  return: JSON without the AIWB markers (in a ```` ```json ```` block or bare), escaped, bold or HTML-entity markers, a
+  missing end marker when the JSON is complete, `//` and `#` comments, trailing commas, Python `None`/`True`,
+  `schema_version: 1`, a revision written as text, role synonyms (developer/engineer/coder → implementer,
+  qa/tester → reviewer, manager → project manager), short ids (`core_dev` → `agent-core-dev`) and AI names as
+  owners, short versions (`v0.1` → `0.1.0`), single strings where lists belong, dictionaries instead of lists,
+  tasks inside milestones, `{"charter": {...}}` wrappers and key synonyms (`id`, `assignee`, `depends_on`,
+  `description`). Every repair is listed in the message and kept with the proposal — nothing is fixed silently.
+- **Only real ambiguity is refused**: a dependency on a task that does not exist, an owner outside your team. The
+  message names the exact problem and a fix prompt is ready to copy. Missing coordination, overlapping file
+  ownership and missing sync points are warnings now.
+- **Shorter charter for wizard teams**: the team comes from the New Project wizard, so the charter prompt no longer
+  asks for the team or the start prompts (Workbench writes them) and asks for the first two milestones in detail.
+- **A cut-off charter** goes to the *continue* step with a prompt that asks for the complete charter again, shorter.
+- **Files in any format** (A13): AIWB file blocks, Markdown code blocks labelled `**path**`, `### path`,
+  `` `path` ``, `File: path`, ```` ```python title="path" ```` or a first-line comment, Strict JSON
+  (`files[]`, `{path: content}`, `filename`/`code` keys) and **ZIP** archives. Damaged copies (smart quotes, NBSP,
+  zero-width characters, CRLF, escaped markers) are repaired. A ZIP is read in memory with the safe limits of 1.x
+  (12 MB, 100 files, 512 KB per file, text only, no unsafe paths).
+- **Answers without a manifest** are linked to the task that waits for them; a missing manifest is only a warning
+  when the answer delivers files. A cut-off answer without a manifest is not linked — the continue prompt is offered.
+- **The task prompt asks for the format you chose** in the wizard (AIWB blocks, Strict JSON or GPT ZIP); all three
+  can be chosen now, each with a one-line note.
+- **One paste box everywhere** (Workbench and Mission Map) with a **live diagnosis** while you paste — *Charter ✓ ·
+  4 AIs · 4 tasks · 2 auto-fixes*, *3 files (Markdown code blocks)*, *Cut off ✗* or the exact problem — and a
+  **Load ZIP…** button. The diagnosis only reads; nothing is imported until you press *Use this answer*.
+
+### Tests
+
+- **Answer corpus** (`apps/desktop/tests/fixtures/answers/`, `test_answer_corpus.py`): 54 answers in the shapes
+  of GPT, Claude, Gemini, DeepSeek and Copilot, including chat copy damage, rendered Markdown, ZIPs and cut-off
+  answers, replayed into a fresh project. 49/49 usable answers are accepted; the 5 others come back with a precise
+  fix or continue prompt. The answers are reconstructed shapes (`build_corpus.py`); answers from real chats that
+  fail are added there.
+- `test_answer_files.py`, `test_answer_preview.py`, more cases in `test_v2_charter.py`; `gui_paste_box_smoke.py`
+  (the real paste box, live diagnosis, *Load ZIP…*, a Markdown answer to files on disk).
+
 ## [5.9.0] - 2026-10-22
 
 ### Core-path repair, step 2: you decide the AI team (Roadmap 5.9.0)
