@@ -18,7 +18,6 @@ import alone. The non-operational parts (architecture, coordination, start promp
 """
 from __future__ import annotations
 
-import json
 import re
 from typing import Any
 
@@ -79,6 +78,30 @@ Rules:
 - Prefer a small team; propose more parallel AIs only with the benefit, the risk and the coordination cost."""
 
 
+# Charter v2 (roadmap 5.10.0): the team comes from the New Project wizard, so the model returns only what it alone can
+# decide — architecture, file ownership, roadmap and tasks on the user's agent_ids. Workbench adds the team and writes
+# every start prompt itself (shorter answer → fewer cut-off answers and fewer JSON mistakes).
+CHARTER_FORMAT_V2 = """Return a short explanation first, then exactly ONE block (valid JSON, no comments):
+<<<AIWB_PROJECT_CHARTER>>>
+{"schema_version": "1.0", "base_state_revision": <the state_revision above>,
+ "project": {"name": "…", "goal": "…", "summary": "two or three sentences"},
+ "architecture": {"summary": "…", "modules": [
+   {"id": "core", "purpose": "…", "paths": ["src/core/**"], "depends_on": [], "owner_agent_id": "<one agent_id>"}]},
+ "coordination": {"file_ownership": [{"agent_id": "<agent_id>", "paths": ["src/core/**"]}],
+                  "sync_points": [{"after_milestone": "m1", "description": "…"}]},
+ "roadmap": {"milestones": [{"ref": "m1", "title": "…", "version": "0.1.0", "criteria": ["…"]}]},
+ "tasks": [{"ref": "t1", "title": "…", "objective": "…", "owner_agent_id": "<agent_id>", "milestone_ref": "m1",
+            "depends_on_refs": [], "scope": {"include": ["src/core/**"]}, "acceptance_criteria": ["…"]}],
+ "risks": ["…"], "questions_for_user": ["…"]}
+<<<AIWB_END_PROJECT_CHARTER>>>
+Rules:
+- Use ONLY the agent_ids of the team above; every task has exactly one owner from that list.
+- Do NOT write team or start prompts — Workbench builds them from your plan.
+- One AI per path; a task's scope stays inside its owner's paths. Refs: t1, t2 … and m1, m2 …
+- Versions grow along the roadmap (0.1.0, 0.2.0 …).
+- If the project is big, plan only the first two milestones in detail (at most 15 tasks); later ones may have no tasks
+  yet. Keep the whole answer short."""
+
 PROFILE_LABELS = (("target_platform", "Target platform"), ("languages", "Language(s)"),
                   ("gui_framework", "GUI / application framework"), ("runtime_toolchain", "Runtime / build toolchain"),
                   ("target_ui_language", "Language of the app's own UI"), ("architecture", "Architecture preference"),
@@ -127,8 +150,15 @@ def charter_prompt(project: dict[str, Any], state: dict[str, Any]) -> str:
     lines.append(f"- Maximum chats the user will follow at the same time: {r['max_parallel_chats']}")
     from .team_setup import team_prompt_lines
     chosen = team_prompt_lines(state)  # 5.9.0: the team from the New Project wizard is binding
-    if chosen:
+    if chosen:  # 5.10.0: Charter v2 — shorter; Workbench writes the team and the start prompts
         lines += [""] + chosen
+        lines += ["", "## Your task — answer ALL of these",
+                  "1. Architecture: the modules of the whole project, their purpose, the paths each owns, who owns it.",
+                  "2. Coordination: which AI owns which paths, and when one AI must wait for another.",
+                  "3. Roadmap: milestones in order, each with a version number and acceptance criteria.",
+                  "4. Tasks: every AI's tasks with owner, milestone, dependencies, scope and acceptance criteria.",
+                  "5. Risks and the questions only the user can answer.", "", CHARTER_FORMAT_V2]
+        return "\n".join(lines)
     else:
         lines += ["", "## Existing agents (you may reuse them by agent_id)"]
         for a in r["agents"]:
@@ -158,57 +188,92 @@ def find_charter(text: str) -> str | None:
     return f.group(1) if f else body
 
 
+_OTHER_BLOCKS = ("AIWB_MANAGER_PROPOSAL", "AIWB_HANDOFF", "AIWB_FILE", "AIWB_CONTEXT_REQUEST")
+_CHARTER_KEYS = ("tasks", "roadmap", "milestones", "architecture", "team", "start_prompts", "coordination")
+
+
+def _marker_free_charter(text: str) -> bool:
+    """5.10.0 (A12): a JSON object that looks like a charter (tasks + roadmap/architecture/team) without our markers."""
+    s = text or ""
+    if any(m in s for m in _OTHER_BLOCKS):
+        return False
+    hits = [k for k in _CHARTER_KEYS if re.search(r"[\"\u201c\u201d]" + k + r"[\"\u201c\u201d]\s*:", s)]
+    return "tasks" in hits and len(hits) >= 3
+
+
 def has_charter(text: str) -> bool:
-    if CHARTER_RE.search(text or ""):
+    if CHARTER_RE.search(text or "") or "AIWB_PROJECT_CHARTER" in (text or "").replace("\\_", "_"):
         return True
     try:
         from ..intake.normalize import normalize
-        return bool(CHARTER_RE.search(normalize(text or "").text))
+        if CHARTER_RE.search(normalize(text or "").text):
+            return True
     except Exception:  # noqa: BLE001 - detection must never fail
-        return False
+        pass
+    return _marker_free_charter(text)
 
 
 def _load(text: str) -> tuple[dict[str, Any] | None, list[str], list[str]]:
-    """(data, errors, fixes). Raw text first; the normalized copy only as a fallback (3.2.0 rule)."""
+    """(data, errors, fixes). Our block first (raw, then normalized); 5.10.0: then an unmarked JSON object in a
+    ```json fence or in the prose, an opening marker without the end marker, and lenient JSON (comments, commas…)."""
+    from ..intake import lenient
     fixes: list[str] = []
-    candidates = [text or ""]
+    raw = text or ""
+    candidates = [(raw, [])]
     try:
-        from ..intake.normalize import normalize, normalize_json_text
-        n = normalize(text or "")
+        from ..intake.normalize import normalize
+        n = normalize(raw)
         if n.changed:
-            candidates.append(n.text)
+            candidates.append((n.text, list(n.fixes)))
     except Exception:  # noqa: BLE001
-        normalize_json_text = None  # type: ignore[assignment]
-        n = None
+        pass
     last_error = ""
-    for i, cand in enumerate(candidates):
+    bodies: list[tuple[str, list[str]]] = []
+    for cand, cf in candidates:
         body = find_charter(cand)
-        if body is None:
+        if body is not None:
+            bodies.append((body, cf))
+    if not bodies:
+        for cand, cf in candidates:
+            k = cand.find("AIWB_PROJECT_CHARTER")
+            if k >= 0 and "AIWB_END_PROJECT_CHARTER" not in cand:  # opened, never closed: is the JSON complete?
+                f = lenient.find_object(cand, start=k)
+                if f.text:
+                    bodies.append((f.text, cf + ["end marker <<<AIWB_END_PROJECT_CHARTER>>> was missing"]))
+                    break
+                return None, ["the charter block is not closed: <<<AIWB_END_PROJECT_CHARTER>>> is missing "
+                              "(the answer was probably cut off)"], fixes
+    if not bodies and _marker_free_charter(raw):
+        for cand, cf in candidates:
+            for fb in lenient.fenced_json_blocks(cand):
+                if _marker_free_charter(fb):
+                    bodies.append((fb, cf + ["the charter JSON had no AIWB markers (read from a ```json block)"]))
+            if bodies:
+                break
+            f = lenient.find_object(cand, keys=("tasks",))
+            if f.text:
+                bodies.append((f.text, cf + ["the charter JSON had no AIWB markers (read from the answer text)"]))
+                break
+            if f.truncated:
+                return None, ["the charter JSON was opened but never closed (the answer was probably cut off)"], fixes
+    for body, cf in bodies:
+        b = body.strip()
+        fm = re.match(r"(?s)^(`{3,}|~{3,})[^\n]*\n(.*?)\n?\1\s*$", b)
+        if fm:
+            b = fm.group(2)
+        if not b.lstrip().startswith("{"):
+            f = lenient.find_object(b)
+            if f.text:
+                b = f.text
+        data, lf, err = lenient.loads(b)
+        if data is None:
+            last_error = f"the charter block is {err}"
             continue
-        for attempt in (body, None):
-            if attempt is None:
-                if normalize_json_text is None:
-                    break
-                r = normalize_json_text(body)
-                if not r.changed:
-                    break
-                attempt = r.text
-                fixes += r.fixes
-            try:
-                data = json.loads(attempt)
-            except json.JSONDecodeError as exc:
-                last_error = f"the charter block is not valid JSON: {exc.msg} (line {exc.lineno}, column {exc.colno})"
-                continue
-            if i and n is not None:
-                fixes = list(n.fixes) + fixes
-            if not isinstance(data, dict):
-                return None, ["the charter block must be one JSON object"], fixes
-            return data, [], fixes
+        if not isinstance(data, dict):
+            return None, ["the charter block must be one JSON object"], cf + lf
+        return data, [], cf + lf
     if last_error:
         return None, [last_error], fixes
-    if OPEN_MARK in (text or "") or "AIWB_PROJECT_CHARTER" in (text or ""):
-        return None, ["the charter block is not closed: <<<AIWB_END_PROJECT_CHARTER>>> is missing "
-                      "(the answer was probably cut off)"], fixes
     return None, ["no AIWB_PROJECT_CHARTER block found"], fixes
 
 
@@ -383,9 +448,9 @@ def validate_charter(data: dict[str, Any], state: dict[str, Any] | None = None) 
             for y in range(x + 1, len(owners)):
                 for pa in ownership[owners[x]]:
                     for pb in ownership[owners[y]]:
-                        if _paths_overlap(pa, pb):
-                            errors.append(f"coordination.file_ownership: {owners[x]} ({pa}) and {owners[y]} ({pb}) own the "
-                                          "same path — give it to one AI or make it a shared contract")
+                        if _paths_overlap(pa, pb):  # 5.10.0: a warning with the fix, not a rejection (A12)
+                            warnings.append(f"coordination.file_ownership: {owners[x]} ({pa}) and {owners[y]} ({pb}) own "
+                                            "the same path — give it to one AI or make it a shared contract")
         for i, sc in enumerate(_list(co, "shared_contracts", "coordination", errors, required=False)):
             p = f"coordination.shared_contracts[{i}]"
             if not isinstance(sc, dict):
@@ -399,7 +464,9 @@ def validate_charter(data: dict[str, Any], state: dict[str, Any] | None = None) 
                     errors.append(f"{p}.consumers: {c} is not in team.agents")
         if not _list(co, "shared_contracts", "coordination", [], required=False) and len(workers) > 1:
             warnings.append("coordination.shared_contracts: several AIs work in parallel but no shared contract is defined")
-        sync = _list(co, "sync_points", "coordination", errors, required=len(workers) > 1)
+        sync = _list(co, "sync_points", "coordination", errors, required=False)
+        if not sync and len(workers) > 1:  # 5.10.0: missing coordination detail is a warning (A12)
+            warnings.append("coordination.sync_points: several AIs work in parallel but no sync point is defined")
         _str(co, "conflict_resolution", "coordination", errors)
     else:
         sync = []
@@ -547,6 +614,12 @@ def parse_charter(text: str, state: dict[str, Any] | None = None) -> dict[str, A
     data, errors, fixes = _load(text)
     if data is None:
         return {"ok": False, "data": None, "errors": errors, "warnings": [], "fixes": fixes}
+    from .charter_repair import repair  # 5.10.0: what models really return → the canonical shape (A12)
+    data, repaired = repair(data, state)
+    fixes = list(fixes) + repaired
+    if not isinstance(data, dict):
+        return {"ok": False, "data": None, "errors": ["the charter block must be one JSON object"], "warnings": [],
+                "fixes": fixes}
     v = validate_charter(data, state)
     return {"ok": not v["errors"], "data": data, "errors": v["errors"], "warnings": v["warnings"], "fixes": fixes}
 

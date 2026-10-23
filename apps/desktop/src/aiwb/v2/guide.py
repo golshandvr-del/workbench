@@ -203,9 +203,11 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
 
     cont = g.get("continue")
     if cont:
+        charter_cut = cont.get("for") == "charter"
         out.append(_step("continue", "prompt", "The last answer was cut off — ask to continue",
                          "The pasted answer ended before it finished. Copy this prompt into the same chat; "
-                         "it asks for the rest only. Then paste the new answer.",
+                         + ("it asks for the complete charter again, shorter." if charter_cut else
+                            "it asks for the rest only.") + " Then paste the new answer.",
                          [_a("copy", "Copy continue prompt"), _a("paste", "Paste the rest", "text"),
                           _a("dismiss", "Ignore the cut-off answer")],
                          agent=cont.get("agent_id") or USER, prompt=cont.get("prompt", ""), rank=0))
@@ -704,6 +706,11 @@ class Guide:
         att = st["attempts"].get(h["attempt_id"]) or {}
         res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=task_paths(t),
                        expected_paths=list(att.get("expected_paths") or []))
+        if h.get("staged_files"):
+            # 5.10.0 (A13): Markdown / JSON / ZIP answers rarely carry a manifest; the files are what matters
+            for p in res["problems"]:
+                if p["code"] == "no_manifest":
+                    p["severity"] = "warning"
         with self.p.store.transaction("diagnose answer") as s:
             s["handoffs"][handoff_id]["diagnosis"] = res["problems"]
         return res["problems"]
@@ -713,10 +720,20 @@ class Guide:
         if not text.strip():
             raise ModelError("the answer is empty")
         rep = truncation_report(text)
-        r = self.ctl.route_answer(text)
+        hint = step["ref"] if str(step.get("key", "")).startswith("handoff:") else ""
+        r = self.ctl.route_answer(text, handoff_hint=hint)
+        if r.text:   # 5.10.0: files from Markdown / JSON / ZIP were rewritten as AIWB blocks for staging and checks
+            text = r.text
+            if r.kind == "truncated" and not rep.truncated:
+                rep = truncation_report(text)
         out: dict[str, Any] = {"message": r.message, "kind": r.kind}
         if r.kind == "charter_rejected":
             out["prompt"] = r.record.get("fix_prompt", "")
+            if r.record.get("cut_off"):   # 5.10.0: like a cut-off file answer — the continue step, with this prompt
+                self._set_guide(**{"continue": {"prompt": out["prompt"], "agent_id": step["agent_id"],
+                                                "for": step["key"], "at": now_utc()}})
+                out["kind"] = "truncated"
+                return out
         if r.kind in ("proposal", "handoff", "charter_rejected"):
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):

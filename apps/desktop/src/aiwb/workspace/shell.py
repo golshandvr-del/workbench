@@ -337,22 +337,12 @@ class WorkspaceWindow:
         """Multi-line paste box for a whole model answer."""
         if hasattr(self, "answer_text") and self.answer_text.winfo_exists() and self.answer_text.get("1.0", "end-1c").strip():
             return self.answer_text.get("1.0", "end-1c")
-        top = tk.Toplevel(self.win)
-        top.title(title)
-        top.transient(self.win)
-        box = tk.Text(top, width=90, height=22, wrap="word")
-        box.pack(fill="both", expand=True, padx=8, pady=8)
-        out = {"text": ""}
-
-        def ok() -> None:
-            out["text"] = box.get("1.0", "end-1c")
-            top.destroy()
-        ttk.Button(top, text="Use this answer", style="WS.Primary.TButton", command=ok).pack(pady=(0, 8))
-        ui_layout.place_dialog(top, 820, 520, self.win)
-        box.focus_set()
-        top.grab_set()
-        top.wait_window()
-        return out["text"]
+        from ..ui.paste_box import ask_answer   # 5.10.0: live diagnosis + Load ZIP…
+        try:
+            state = self.wc.ctl.state()
+        except Exception:  # noqa: BLE001 - the diagnosis works without a state (no revision checks)
+            state = None
+        return ask_answer(self.win, title, state=state, primary_style="WS.Primary.TButton")
 
     def _start_form(self, key: str, action: str, label: str) -> Any:
         """"Start the project…" / "Change the project details…": the New Project wizard without the folder fields.

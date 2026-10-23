@@ -1,0 +1,9 @@
+{
+ "attempt_id": "att-20261022-120000-0a1b2c3d",
+ "files": {
+  "src/todo/__init__.py": "\"\"\"Todo core API.\"\"\"\nfrom .model import Todo\nfrom .store import TodoStore\n\n__all__ = [\"Todo\", \"TodoStore\"]\n",
+  "src/todo/model.py": "from __future__ import annotations\n\nfrom dataclasses import dataclass, field\nimport uuid\n\n\n@dataclass\nclass Todo:\n    title: str\n    done: bool = False\n    id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])\n",
+  "src/todo/store.py": "from __future__ import annotations\n\nimport json\nimport os\nfrom dataclasses import asdict\nfrom pathlib import Path\n\nfrom .model import Todo\n\n\nclass TodoStore:\n    \"\"\"Todos in one JSON file, saved atomically.\"\"\"\n\n    def __init__(self, path: Path) -> None:\n        self.path = Path(path)\n        self.items: list[Todo] = []\n        if self.path.exists():\n            self.items = [Todo(**x) for x in json.loads(self.path.read_text(encoding=\"utf-8\"))]\n\n    def add(self, title: str) -> Todo:\n        t = Todo(title)\n        self.items.append(t)\n        self.save()\n        return t\n\n    def complete(self, todo_id: str) -> None:\n        next(t for t in self.items if t.id == todo_id).done = True\n        self.save()\n\n    def remove(self, todo_id: str) -> None:\n        self.items = [t for t in self.items if t.id != todo_id]\n        self.save()\n\n    def save(self) -> None:\n        tmp = self.path.with_suffix(\".tmp\")\n        tmp.write_text(json.dumps([asdict(t) for t in self.items], indent=2), encoding=\"utf-8\")\n        os.replace(tmp, self.path)\n"
+ },
+ "summary": "core done"
+}

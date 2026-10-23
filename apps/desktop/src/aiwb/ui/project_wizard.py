@@ -3,9 +3,9 @@
 1. **Project** — name · parent folder (create mode) · goal · preset → platform · technical details (optional,
    collapsed: constraints, README, Git).
 2. **Team** — "how many AIs in parallel?" and one row per AI: name · role · model label · note (:class:`TeamTable`).
-3. **Answers** — the answer format the AIs are asked for. AIWB file blocks are what the guided loop reads today;
-   Strict JSON and GPT ZIP are shown but disabled until their readers arrive (5.10.0), so nothing is promised that
-   the app cannot do yet.
+3. **Answers** — the answer format the AIs are asked for: AIWB file blocks (recommended), Strict JSON or GPT ZIP
+   (5.10.0). Whatever is chosen, Workbench reads all of them — and Markdown code blocks with file names — so a model
+   that answers differently still works; the choice decides what the task prompts ask for.
 
 ``mode="start"`` is the same window without the folder fields; it replaces the five chained "Start the project"
 questions for projects added from an existing folder and for "Change the project details…".
@@ -25,7 +25,7 @@ from . import layout as ui_layout
 from .team_table import TeamTable
 
 STEPS = ("Project", "Team", "Answers")
-FORMAT_NOTE = {"json": "reader arrives in 5.10.0", "zip": "reader arrives in 5.10.0"}
+FORMAT_NOTE = {"json": "one JSON object with a files list", "zip": "a downloadable ZIP; load it with Load ZIP…"}
 
 
 class ProjectWizard:
@@ -143,13 +143,15 @@ class ProjectWizard:
         self.format_buttons: dict[str, ttk.Radiobutton] = {}
         for key, label in team_setup.ANSWER_FORMATS:
             ok = key in team_setup.SUPPORTED_FORMATS
-            text = label if ok else f"{label} — {FORMAT_NOTE.get(key, 'not available yet')}"
+            note = FORMAT_NOTE.get(key, "") if ok else "not available yet"
+            text = f"{label} — {note}" if note else label
             rb = ttk.Radiobutton(f, text=text, value=key, variable=self.vars["format"],
                                  state="normal" if ok else "disabled")
             rb.pack(anchor="w", pady=3)
             self.format_buttons[key] = rb
         ttk.Label(f, text="AIWB file blocks are plain text that survive copy and paste from ChatGPT, Claude, Gemini and "
-                          "others.", style="Hint.TLabel", wraplength=720).pack(anchor="w", pady=(10, 0))
+                          "others. Whatever you choose, Workbench also reads the other formats and Markdown code "
+                          "blocks with file names.", style="Hint.TLabel", wraplength=720).pack(anchor="w", pady=(10, 0))
         return f
 
     # -- behaviour
@@ -206,7 +208,7 @@ class ProjectWizard:
             except Exception as exc:  # noqa: BLE001 — shown to the user, never a traceback
                 out.append(str(exc))
         elif step == 2 and self.vars["format"].get() not in team_setup.SUPPORTED_FORMATS:
-            out.append("Choose AIWB file blocks; the other formats arrive in 5.10.0.")
+            out.append("Choose one of the answer formats.")
         return out
 
     def data(self) -> dict[str, Any]:

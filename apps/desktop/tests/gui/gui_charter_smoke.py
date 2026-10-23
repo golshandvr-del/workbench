@@ -50,13 +50,14 @@ def main() -> None:
             good = json.loads(FIXTURE.read_text(encoding="utf-8"))
             good["base_state_revision"] = ctl.state()["state_revision"]
 
+            # 5.10.0: a missing section is repaired; only a truly ambiguous answer (unknown dependency) is refused
             bad = copy.deepcopy(good)
-            del bad["coordination"]
+            bad["tasks"][0]["depends_on_refs"] = ["t9"]
             rev = ctl.state()["state_revision"]
             r = w.do_import(wrap(json.dumps(bad)))
-            assert r.kind == "charter_rejected", r
-            assert "coordination: section missing" in w.status_var.get(), w.status_var.get()
-            assert "coordination: section missing" in w.last_prompt
+            assert r.kind == "charter_rejected", r.message
+            assert "unknown task 't9'" in w.status_var.get(), w.status_var.get()
+            assert "unknown task 't9'" in w.last_prompt
             assert ctl.state()["state_revision"] == rev and not ctl.state()["proposals"], "a rejected charter changes nothing"
 
             # ChatGPT-style damage: smart quotes around keys, escaped markers, trailing comma

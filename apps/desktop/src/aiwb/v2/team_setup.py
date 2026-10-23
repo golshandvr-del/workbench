@@ -47,7 +47,7 @@ ANSWER_FORMATS: tuple[tuple[str, str], ...] = (
     ("json", "Strict JSON"),
     ("zip", "GPT ZIP"),
 )
-SUPPORTED_FORMATS = ("aiwb",)   # what the guided loop reads today; JSON and ZIP readers come with 5.10.0
+SUPPORTED_FORMATS = ("aiwb", "json", "zip")   # 5.10.0: the guided loop reads all three (aiwb.intake.answer_files)
 
 _RESEARCHER = {
     "purpose": "Research one approved question and report findings, sources and open points.",

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.9.0",
+  "version": "5.10.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -278,8 +278,8 @@
       "source": "apps/desktop/tests/test_ui_balance.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.9.0.md",
-      "source": "docs/release/v5.9.0/WINDOWS_RELEASE_CHECKLIST_v5.9.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.10.0.md",
+      "source": "docs/release/v5.10.0/WINDOWS_RELEASE_CHECKLIST_v5.10.0.md"
     },
     {
       "path": "install.ps1",
@@ -774,8 +774,40 @@
       "source": "apps/desktop/src/aiwb/ui/project_wizard.py"
     },
     {
+      "path": "aiwb/intake/lenient.py",
+      "source": "apps/desktop/src/aiwb/intake/lenient.py"
+    },
+    {
+      "path": "aiwb/intake/answer_files.py",
+      "source": "apps/desktop/src/aiwb/intake/answer_files.py"
+    },
+    {
+      "path": "aiwb/intake/preview.py",
+      "source": "apps/desktop/src/aiwb/intake/preview.py"
+    },
+    {
+      "path": "aiwb/v2/charter_repair.py",
+      "source": "apps/desktop/src/aiwb/v2/charter_repair.py"
+    },
+    {
+      "path": "aiwb/ui/paste_box.py",
+      "source": "apps/desktop/src/aiwb/ui/paste_box.py"
+    },
+    {
       "path": "test_team_setup.py",
       "source": "apps/desktop/tests/test_team_setup.py"
+    },
+    {
+      "path": "test_answer_files.py",
+      "source": "apps/desktop/tests/test_answer_files.py"
+    },
+    {
+      "path": "test_answer_preview.py",
+      "source": "apps/desktop/tests/test_answer_preview.py"
+    },
+    {
+      "path": "test_answer_corpus.py",
+      "source": "apps/desktop/tests/test_answer_corpus.py"
     }
   ],
   "zip_timestamp": [

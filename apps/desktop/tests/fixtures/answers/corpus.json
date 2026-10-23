@@ -1,0 +1,493 @@
+{
+ "schema": "aiwb-answer-corpus.v1",
+ "scenario": "tests/answer_corpus.py",
+ "built_by": "tests/fixtures/answers/build_corpus.py",
+ "cases": [
+  {
+   "id": "C01",
+   "file": "C01_canonical.txt",
+   "kind": "charter",
+   "style": "Any chat: exactly as the prompt asks",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Any chat",
+   "note": ""
+  },
+  {
+   "id": "C02",
+   "file": "C02_markers_around_json_fence.txt",
+   "kind": "charter",
+   "style": "ChatGPT: markers with a ```json fence inside",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT",
+   "note": ""
+  },
+  {
+   "id": "C03",
+   "file": "C03_json_fence_no_markers.txt",
+   "kind": "charter",
+   "style": "ChatGPT: markers dropped, only a ```json block",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT",
+   "note": ""
+  },
+  {
+   "id": "C04",
+   "file": "C04_raw_json_only.txt",
+   "kind": "charter",
+   "style": "API-style: bare JSON, nothing else",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of API-style",
+   "note": ""
+  },
+  {
+   "id": "C05",
+   "file": "C05_escaped_markers.txt",
+   "kind": "charter",
+   "style": "ChatGPT web copy: Markdown escapes of the markers",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT web copy",
+   "note": ""
+  },
+  {
+   "id": "C06",
+   "file": "C06_smart_quotes.txt",
+   "kind": "charter",
+   "style": "Rendered-page copy: smart quotes around keys",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Rendered-page copy",
+   "note": ""
+  },
+  {
+   "id": "C07",
+   "file": "C07_comments_trailing_commas.txt",
+   "kind": "charter",
+   "style": "DeepSeek/Gemini: // comments and trailing commas",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek/Gemini",
+   "note": ""
+  },
+  {
+   "id": "C08",
+   "file": "C08_numeric_schema_string_revision.txt",
+   "kind": "charter",
+   "style": "GPT: schema_version 1, revision as text",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "C09",
+   "file": "C09_team_with_role_synonyms_short_ids.txt",
+   "kind": "charter",
+   "style": "GPT: writes the team anyway, roles developer/tester, ids core_dev",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "C10",
+   "file": "C10_short_versions.txt",
+   "kind": "charter",
+   "style": "Claude/GPT: versions v0.1 and v0.2",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Claude/GPT",
+   "note": ""
+  },
+  {
+   "id": "C11",
+   "file": "C11_owner_names_not_ids.txt",
+   "kind": "charter",
+   "style": "Gemini: owners written as the AI names",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Gemini",
+   "note": ""
+  },
+  {
+   "id": "C12",
+   "file": "C12_strings_instead_of_lists.txt",
+   "kind": "charter",
+   "style": "Copilot: single strings where lists are expected",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Copilot",
+   "note": ""
+  },
+  {
+   "id": "C13",
+   "file": "C13_tasks_as_dictionary.txt",
+   "kind": "charter",
+   "style": "DeepSeek: tasks keyed by ref",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek",
+   "note": ""
+  },
+  {
+   "id": "C14",
+   "file": "C14_tasks_inside_milestones.txt",
+   "kind": "charter",
+   "style": "Gemini: tasks nested in their milestone",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Gemini",
+   "note": ""
+  },
+  {
+   "id": "C15",
+   "file": "C15_no_coordination.txt",
+   "kind": "charter",
+   "style": "Short answer: coordination left out",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Short answer",
+   "note": ""
+  },
+  {
+   "id": "C16",
+   "file": "C16_overlap_no_sync_points.txt",
+   "kind": "charter",
+   "style": "GPT: src/** for one AI overlaps another, no sync_points",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "C17",
+   "file": "C17_start_prompts_dictionary.txt",
+   "kind": "charter",
+   "style": "Older v1 habit: start_prompts as a dictionary",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Older v1 habit",
+   "note": ""
+  },
+  {
+   "id": "C18",
+   "file": "C18_wrapped_object.txt",
+   "kind": "charter",
+   "style": "Copilot: {\"charter\": {...}} wrapper",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Copilot",
+   "note": ""
+  },
+  {
+   "id": "C19",
+   "file": "C19_key_synonyms.txt",
+   "kind": "charter",
+   "style": "Claude: id/assignee/depends_on/description keys",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Claude",
+   "note": ""
+  },
+  {
+   "id": "C20",
+   "file": "C20_gemini_crlf_nbsp_bold.txt",
+   "kind": "charter",
+   "style": "Gemini web copy: bold title, CRLF, NBSP",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Gemini web copy",
+   "note": ""
+  },
+  {
+   "id": "C21",
+   "file": "C21_deepseek_thinking_with_braces.txt",
+   "kind": "charter",
+   "style": "DeepSeek: reasoning text with braces before the block",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek",
+   "note": ""
+  },
+  {
+   "id": "C22",
+   "file": "C22_copilot_bold_markers.txt",
+   "kind": "charter",
+   "style": "Copilot: markers in bold, footnotes",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Copilot",
+   "note": ""
+  },
+  {
+   "id": "C23",
+   "file": "C23_python_literals.txt",
+   "kind": "charter",
+   "style": "GPT (Python habit): None/True literals",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT (Python habit)",
+   "note": ""
+  },
+  {
+   "id": "C24",
+   "file": "C24_milestones_dict_priority_p1.txt",
+   "kind": "charter",
+   "style": "DeepSeek: milestones keyed by ref, priority P1",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek",
+   "note": ""
+  },
+  {
+   "id": "C25",
+   "file": "C25_claude_prose_and_bash_block.txt",
+   "kind": "charter",
+   "style": "Claude: notes, the block, then a bash example",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Claude",
+   "note": ""
+  },
+  {
+   "id": "C26",
+   "file": "C26_cut_off.txt",
+   "kind": "charter",
+   "style": "Any chat: answer stopped by the length limit",
+   "expect": "continue",
+   "source": "reconstructed — typical answer shape of Any chat",
+   "note": ""
+  },
+  {
+   "id": "C27",
+   "file": "C27_unknown_dependency.txt",
+   "kind": "charter",
+   "style": "Any chat: a dependency on a task that does not exist",
+   "expect": "fix_prompt",
+   "source": "reconstructed — typical answer shape of Any chat",
+   "note": ""
+  },
+  {
+   "id": "C28",
+   "file": "C28_owner_outside_team.txt",
+   "kind": "charter",
+   "style": "GPT: invents an AI the user did not define",
+   "expect": "fix_prompt",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "C29",
+   "file": "C29_persian_text.txt",
+   "kind": "charter",
+   "style": "Any chat answering a Persian user: Persian inside strings",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Any chat answering a Persian user",
+   "note": ""
+  },
+  {
+   "id": "C30",
+   "file": "C30_html_entities.txt",
+   "kind": "charter",
+   "style": "Copy from an HTML export: &lt;&lt;&lt; markers",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Copy from an HTML export",
+   "note": ""
+  },
+  {
+   "id": "F01",
+   "file": "F01_canonical_aiwb.txt",
+   "kind": "files",
+   "style": "Any chat: AIWB blocks + manifest as asked",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Any chat",
+   "note": ""
+  },
+  {
+   "id": "F02",
+   "file": "F02_aiwb_three_backticks.txt",
+   "kind": "files",
+   "style": "GPT: three-backtick fences inside the blocks",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "F03",
+   "file": "F03_escaped_markers.txt",
+   "kind": "files",
+   "style": "ChatGPT web copy: escaped markers everywhere",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT web copy",
+   "note": ""
+  },
+  {
+   "id": "F04",
+   "file": "F04_outer_text_fence.txt",
+   "kind": "files",
+   "style": "Gemini: the whole answer inside one ```text fence",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Gemini",
+   "note": ""
+  },
+  {
+   "id": "F05",
+   "file": "F05_markdown_bold_paths.txt",
+   "kind": "files",
+   "style": "ChatGPT: **path** + code block, no manifest",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT",
+   "note": ""
+  },
+  {
+   "id": "F06",
+   "file": "F06_markdown_headings.txt",
+   "kind": "files",
+   "style": "Claude: ### path headings",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Claude",
+   "note": ""
+  },
+  {
+   "id": "F07",
+   "file": "F07_markdown_backtick_paths.txt",
+   "kind": "files",
+   "style": "Copilot: `path`: + block",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Copilot",
+   "note": ""
+  },
+  {
+   "id": "F08",
+   "file": "F08_markdown_file_label.txt",
+   "kind": "files",
+   "style": "DeepSeek: File: path",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek",
+   "note": ""
+  },
+  {
+   "id": "F09",
+   "file": "F09_markdown_path_comment.txt",
+   "kind": "files",
+   "style": "GPT: path as the first comment line",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "F10",
+   "file": "F10_strict_json.txt",
+   "kind": "files",
+   "style": "Strict JSON as the prompt asks",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Strict JSON as the prompt asks",
+   "note": ""
+  },
+  {
+   "id": "F11",
+   "file": "F11_strict_json_fenced_with_prose.txt",
+   "kind": "files",
+   "style": "GPT: prose + ```json block",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "F12",
+   "file": "F12_json_files_dictionary.txt",
+   "kind": "files",
+   "style": "Gemini: files as {path: content}",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Gemini",
+   "note": ""
+  },
+  {
+   "id": "F13",
+   "file": "F13_json_filename_code_keys.txt",
+   "kind": "files",
+   "style": "DeepSeek: filename/code keys",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek",
+   "note": ""
+  },
+  {
+   "id": "F14",
+   "file": "F14_gpt_zip_top_folder.zip",
+   "kind": "files",
+   "style": "ChatGPT ZIP: one top folder + AIWB_HANDOFF.json",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT ZIP",
+   "note": ""
+  },
+  {
+   "id": "F15",
+   "file": "F15_zip_flat_with_noise.zip",
+   "kind": "files",
+   "style": "ZIP made on a Mac: flat, __MACOSX and .DS_Store",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ZIP made on a Mac",
+   "note": ""
+  },
+  {
+   "id": "F16",
+   "file": "F16_crlf_nbsp_zero_width.txt",
+   "kind": "files",
+   "style": "Windows clipboard: CRLF, NBSP and zero-width characters",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Windows clipboard",
+   "note": ""
+  },
+  {
+   "id": "F17",
+   "file": "F17_smart_quoted_attributes.txt",
+   "kind": "files",
+   "style": "Rendered copy: smart quotes in path=\"…\"",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Rendered copy",
+   "note": ""
+  },
+  {
+   "id": "F18",
+   "file": "F18_gemini_heading_code_paths.txt",
+   "kind": "files",
+   "style": "Gemini: #### `path` headings",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Gemini",
+   "note": ""
+  },
+  {
+   "id": "F19",
+   "file": "F19_claude_prose_between_blocks.txt",
+   "kind": "files",
+   "style": "Claude: explanation between the AIWB blocks",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Claude",
+   "note": ""
+  },
+  {
+   "id": "F20",
+   "file": "F20_cut_off_aiwb.txt",
+   "kind": "files",
+   "style": "Any chat: stopped in the middle of the last file",
+   "expect": "continue",
+   "source": "reconstructed — typical answer shape of Any chat",
+   "note": ""
+  },
+  {
+   "id": "F21",
+   "file": "F21_file_outside_scope.txt",
+   "kind": "files",
+   "style": "GPT: also writes a file of another AI",
+   "expect": "fix_prompt",
+   "source": "reconstructed — typical answer shape of GPT",
+   "note": ""
+  },
+  {
+   "id": "F22",
+   "file": "F22_info_string_title.txt",
+   "kind": "files",
+   "style": "DeepSeek/Docs style: ```python title=\"path\"",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of DeepSeek/Docs style",
+   "note": ""
+  },
+  {
+   "id": "F23",
+   "file": "F23_bold_file_label_code_path.txt",
+   "kind": "files",
+   "style": "Copilot: **File: `path`**",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Copilot",
+   "note": ""
+  },
+  {
+   "id": "F24",
+   "file": "F24_bare_path_line.txt",
+   "kind": "files",
+   "style": "Plain copy of a rendered answer: the path alone on a line",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Plain copy of a rendered answer",
+   "note": ""
+  }
+ ]
+}
