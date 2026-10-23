@@ -7,12 +7,16 @@ presses **Use this answer**.
 Path: charter WITHOUT markers in a ```json fence and with model-style damage → the box says "Charter ✓ … auto-fix"
 before anything is imported → accept → task 1 answered as a GPT ZIP (Load ZIP…) → accept → file on disk → task 2
 answered as Markdown code blocks (no manifest) → accept → file on disk; a cut-off answer shows "Cut off ✗".
+
+``AIWB_SCREENSHOT_DIR=dir`` writes a screenshot of each paste box state (needs ImageMagick ``import``).
 """
 from __future__ import annotations
 
 import io
 import json
 import os
+import shutil
+import subprocess
 import tempfile
 import time
 import tkinter as tk
@@ -81,6 +85,14 @@ class Paster:
                 w["top"].destroy()
             except tk.TclError:
                 pass
+
+    def shot(self, name: str) -> None:
+        out = os.environ.get("AIWB_SCREENSHOT_DIR")
+        if not out or not shutil.which("import"):
+            return
+        Path(out).mkdir(parents=True, exist_ok=True)
+        self.pump(250)
+        subprocess.run(["import", "-window", "root", str(Path(out) / f"paste_{name}.png")], check=False, timeout=30)
 
     def status_of(self, w: dict[str, Any]) -> str:
         """The live diagnosis line (the label just above the hint label)."""
@@ -159,8 +171,10 @@ def main() -> None:
                 o.wait_line(w, "Paste the whole answer")
                 type_into(w["text"], charter_text[: len(charter_text) // 2])
                 o.wait_line(w, "✗")                        # half a charter: not accepted yet
+                o.shot("01_charter_cut_off")
                 type_into(w["text"], charter_text)
                 line = o.wait_line(w, "Charter ✓")
+                o.shot("02_charter_ok_auto_fixes")
                 assert "4 AIs · 3 tasks · 2 milestones" in line and "auto-fix" in line, line
                 assert not ctl.state()["proposals"], "the live diagnosis imports nothing"
                 w["buttons"]["Use this answer"].invoke()
@@ -195,6 +209,7 @@ def main() -> None:
                 line = o.wait_line(w, "ZIP ✓")
                 assert "1 file from chatgpt_answer.zip" in line, line
                 assert 'path="src/core/model.py"' in w["text"].get("1.0", "end"), "the ZIP's files are shown in the box"
+                o.shot("03_zip_loaded")
                 w["buttons"]["Use this answer"].invoke()
             o.jobs.append(zip_job)
             click(ws, "Paste the answer")
@@ -238,6 +253,7 @@ def main() -> None:
                 type_into(w["text"], md)
                 line = o.wait_line(w, "Files ✓")
                 assert "1 file · Markdown code blocks" in line, line
+                o.shot("04_markdown_files")
                 w["buttons"]["Use this answer"].invoke()
             o.jobs.append(md_job)
             click(ws, "Paste the answer")
@@ -247,6 +263,7 @@ def main() -> None:
             o.pump(500)
             f2 = project / base / "app.py"
             assert f2.is_file() and "todo" in f2.read_text(encoding="utf-8"), f"Markdown file on disk: {f2}"
+            o.shot("05_files_on_disk")
             assert not o.errors, "UI callback errors:\n" + "\n".join(o.errors)
             assert not [x for x in boxes if x[0] == "showerror"], boxes
         finally:
