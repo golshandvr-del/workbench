@@ -1,0 +1,97 @@
+Here is the complete delivery:
+
+`````text
+AIWB_ATTEMPT_ID: att-20261022-120000-0a1b2c3d
+
+<<<AIWB_FILE path="src/todo/__init__.py" action="write">>>
+````
+"""Todo core API."""
+from .model import Todo
+from .store import TodoStore
+
+__all__ = ["Todo", "TodoStore"]
+````
+<<<AIWB_END_FILE>>>
+
+<<<AIWB_FILE path="src/todo/model.py" action="write">>>
+````
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+import uuid
+
+
+@dataclass
+class Todo:
+    title: str
+    done: bool = False
+    id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])
+````
+<<<AIWB_END_FILE>>>
+
+<<<AIWB_FILE path="src/todo/store.py" action="write">>>
+````
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import asdict
+from pathlib import Path
+
+from .model import Todo
+
+
+class TodoStore:
+    """Todos in one JSON file, saved atomically."""
+
+    def __init__(self, path: Path) -> None:
+        self.path = Path(path)
+        self.items: list[Todo] = []
+        if self.path.exists():
+            self.items = [Todo(**x) for x in json.loads(self.path.read_text(encoding="utf-8"))]
+
+    def add(self, title: str) -> Todo:
+        t = Todo(title)
+        self.items.append(t)
+        self.save()
+        return t
+
+    def complete(self, todo_id: str) -> None:
+        next(t for t in self.items if t.id == todo_id).done = True
+        self.save()
+
+    def remove(self, todo_id: str) -> None:
+        self.items = [t for t in self.items if t.id != todo_id]
+        self.save()
+
+    def save(self) -> None:
+        tmp = self.path.with_suffix(".tmp")
+        tmp.write_text(json.dumps([asdict(t) for t in self.items], indent=2), encoding="utf-8")
+        os.replace(tmp, self.path)
+````
+<<<AIWB_END_FILE>>>
+<<<AIWB_HANDOFF>>>
+{
+ "schema_version": "1.0",
+ "handoff_id": "HO-0001",
+ "task_id": "TASK-0001",
+ "task_revision": 1,
+ "attempt_id": "att-20261022-120000-0a1b2c3d",
+ "outcome": "complete",
+ "summary": "Todo model and atomic JSON store.",
+ "completed_items": [
+  "Todo dataclass",
+  "TodoStore add/complete/remove/save"
+ ],
+ "unresolved_items": [],
+ "assumptions": [
+  "Ids are 8 hex characters"
+ ],
+ "decision_requests": [],
+ "validation_claims": [
+  "Round-trip works (not run)"
+ ],
+ "recommended_next_action": "QA writes the core tests."
+}
+<<<AIWB_END_HANDOFF>>>
+`````
