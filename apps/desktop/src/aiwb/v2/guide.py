@@ -203,9 +203,11 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
 
     cont = g.get("continue")
     if cont:
+        charter_cut = cont.get("for") == "charter"
         out.append(_step("continue", "prompt", "The last answer was cut off — ask to continue",
                          "The pasted answer ended before it finished. Copy this prompt into the same chat; "
-                         "it asks for the rest only. Then paste the new answer.",
+                         + ("it asks for the complete charter again, shorter." if charter_cut else
+                            "it asks for the rest only.") + " Then paste the new answer.",
                          [_a("copy", "Copy continue prompt"), _a("paste", "Paste the rest", "text"),
                           _a("dismiss", "Ignore the cut-off answer")],
                          agent=cont.get("agent_id") or USER, prompt=cont.get("prompt", ""), rank=0))
