@@ -1,0 +1,43 @@
+Below is the JSON you asked for.
+
+```json
+{
+  "attempt_id": "att-20261022-120000-0a1b2c3d",
+  "files": [
+    {
+      "path": "src/todo/__init__.py",
+      "content": "\"\"\"Todo core API.\"\"\"\nfrom .model import Todo\nfrom .store import TodoStore\n\n__all__ = [\"Todo\", \"TodoStore\"]\n"
+    },
+    {
+      "path": "src/todo/model.py",
+      "content": "from __future__ import annotations\n\nfrom dataclasses import dataclass, field\nimport uuid\n\n\n@dataclass\nclass Todo:\n    title: str\n    done: bool = False\n    id: str = field(default_factory=lambda: uuid.uuid4().hex[:8])\n"
+    },
+    {
+      "path": "src/todo/store.py",
+      "content": "from __future__ import annotations\n\nimport json\nimport os\nfrom dataclasses import asdict\nfrom pathlib import Path\n\nfrom .model import Todo\n\n\nclass TodoStore:\n    \"\"\"Todos in one JSON file, saved atomically.\"\"\"\n\n    def __init__(self, path: Path) -> None:\n        self.path = Path(path)\n        self.items: list[Todo] = []\n        if self.path.exists():\n            self.items = [Todo(**x) for x in json.loads(self.path.read_text(encoding=\"utf-8\"))]\n\n    def add(self, title: str) -> Todo:\n        t = Todo(title)\n        self.items.append(t)\n        self.save()\n        return t\n\n    def complete(self, todo_id: str) -> None:\n        next(t for t in self.items if t.id == todo_id).done = True\n        self.save()\n\n    def remove(self, todo_id: str) -> None:\n        self.items = [t for t in self.items if t.id != todo_id]\n        self.save()\n\n    def save(self) -> None:\n        tmp = self.path.with_suffix(\".tmp\")\n        tmp.write_text(json.dumps([asdict(t) for t in self.items], indent=2), encoding=\"utf-8\")\n        os.replace(tmp, self.path)\n"
+    }
+  ],
+  "handoff": {
+    "schema_version": "1.0",
+    "handoff_id": "HO-0001",
+    "task_id": "TASK-0001",
+    "task_revision": 1,
+    "attempt_id": "att-20261022-120000-0a1b2c3d",
+    "outcome": "complete",
+    "summary": "Todo model and atomic JSON store.",
+    "completed_items": [
+      "Todo dataclass",
+      "TodoStore add/complete/remove/save"
+    ],
+    "unresolved_items": [],
+    "assumptions": [
+      "Ids are 8 hex characters"
+    ],
+    "decision_requests": [],
+    "validation_claims": [
+      "Round-trip works (not run)"
+    ],
+    "recommended_next_action": "QA writes the core tests."
+  }
+}
+```
