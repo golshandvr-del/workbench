@@ -52,8 +52,9 @@ plain text. On short windows the project cards (Projects) and the History timeli
    * **Team** — *how many AIs work in parallel* besides the project manager, then one row per AI: a **name you
      choose** (any language), its role (Developer, Reviewer / tester, Architect, Researcher), the model or account
      it runs on (just a label) and a note. Every AI gets its own lane on the Mission Map under that name.
-   * **Answers** — how the AIs return files. *AIWB file blocks* are what the app reads today; Strict JSON and
-     GPT ZIP arrive in 5.10.0.
+   * **Answers** — how the AIs return files: *AIWB file blocks* (recommended), *Strict JSON* or *GPT ZIP*. The task
+     prompts ask for that format; whatever an AI returns anyway (Markdown code blocks with the file name above them,
+     JSON, a ZIP) is read too (5.10.0).
    *Create project* makes the folder and the team — nothing is asked again afterwards. Change the team any time:
    **Agents › Team › Edit team…** (an AI that already has work is switched off, never deleted). Projects made
    before 5.9.0 keep their AIs; *Edit team…* offers to remove template AIs that never got a task.
@@ -61,9 +62,15 @@ plain text. On short windows the project cards (Projects) and the History timeli
    window without the folder fields.
 3. Next step: **Project Charter**. Click *Copy prompt*, paste it into your project-manager chat, click
    *I sent it*. The prompt tells the project manager that your team is binding.
-4. Copy the whole answer from the chat and click *Paste answer*. The app cleans what chat copies break
-   (smart quotes, invisible spaces, escaped markers, extra code fences). If the answer was cut off, you get
-   a ready *continue from where you stopped* prompt.
+4. Copy the whole answer from the chat and click *Paste answer*. While you paste, the box shows a **live
+   diagnosis** — *Charter ✓ · 4 AIs · 9 tasks · 2 auto-fixes*, *3 files (Markdown code blocks)*, *Cut off ✗* or the
+   exact problem; nothing is imported before *Use this answer*. A downloaded archive goes in with **Load ZIP…**.
+   The app cleans what chat copies break (smart quotes, invisible spaces, escaped markers, extra code fences) and
+   reads the charter leniently: JSON without markers, comments, role names such as *developer* or *tester*,
+   versions such as *v0.1* and similar slips are fixed — every fix is listed. Only a really ambiguous answer (a
+   task that depends on a task that does not exist, an AI outside your team) is refused, with a ready **fix
+   prompt** for the same chat. If the answer was cut off, you get a ready *continue* prompt (for a charter: send
+   the complete charter again, shorter).
 5. **Review** the charter: architecture, how many AIs work in parallel, who owns which files, the roadmap
    with milestones and versions, and the start prompt of each AI. Accept the parts you want.
 6. From now on the Next step is always one of:
