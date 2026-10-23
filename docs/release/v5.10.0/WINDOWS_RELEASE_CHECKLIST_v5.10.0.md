@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.10.0 (core-path repair: the user decides the AI team)
+# Windows Release Checklist — AI Workbench 5.10.0 (core-path repair: whatever the model returns, it works)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -17,24 +17,26 @@
 `tools/e2e_github_sandbox.py` — run 2026-10-18, all PASS (see `E2E_REPORT_v5.5.0.md (unchanged GitHub code paths)`):
 preflight · sensitive file blocked · commit · idempotent commit · push · idempotent push · exact run of the pushed SHA (not the seed push) · build passed · artifact SHA-256 matched GitHub's digest · artifact content = pushed SHA · build-metadata contract · stale plan refused after a concurrent push · manual dispatch confirmed with run ID · no token in records/events/`.git/config` · branch cleanup. Paths contain spaces and Unicode.
 
-## 5.10.0 specific (core-path repair, step 2: the user decides the team)
+## 5.10.0 specific (core-path repair, step 3: robust intake)
 
-- [x] `test_team_setup.py` — agent ids from the user's names (`agent-<slug>`, Persian names, duplicates), the wizard
-      writes brief + team with **no template agent**, sizes 1 / 3 / 5 / 12, bad input rejected before writing, the
-      charter prompt binds the user's team, Edit team (rename / add / remove; an AI with work is disabled, not
-      deleted; nothing changed = nothing written), older projects untouched + unused templates offered, every AI
-      of the user's team keeps its Mission Map lane
-- [x] `gui_wizard_smoke.py` — New Project wizard with **real widgets** for 1, 3, 5 and 12 AIs, Persian and English
-      names: no "Architecture plan…" in creation, lanes named in the user's order on the real canvas, the next step
-      is the charter prompt (no question repeated) and the prompt names every AI
-- [x] `gui_team_editor_smoke.py` — *Add existing folder* → *Start the project…* is the same window (no chained
-      question dialogs); *Agents › Team › Edit team…* rename / add / remove with the lanes following; an older
-      project opens untouched and *Remove unused template AIs* removes only AIs without work
-- [x] `gui_owner_path_smoke.py` — the owner's path now goes through the 3-step wizard (3 named AIs) to a file on disk
-- [x] `gui_v114_smoke.py` — the architecture plan round-trip from *Tools › Architecture plan…*
-- [x] App Map regenerated (`docs/UI_MAP.md`, `ui_map.png`); all 5.1.0 – 5.8.0 gates stay green
-- [ ] NOT RUN: the wizard on real Windows 10/11 at 100–200 % DPI, with Persian names typed through a Persian
-      keyboard layout, and a real project-manager answer pasted from the chat window
+- [x] `test_answer_corpus.py` — **the gate**: 54 stored chat answers in `apps/desktop/tests/fixtures/answers/`
+      (30 charters, 24 file answers; GPT, Claude, Gemini, DeepSeek and Copilot shapes, chat copy damage, rendered
+      Markdown, CRLF/NBSP/zero-width, ZIPs, cut-off answers) replayed into a fresh project: 49/49 usable answers
+      accepted (≥ 95 % required), the other 5 refused with a precise fix prompt or a continue prompt; the corpus is
+      rebuilt byte-for-byte by `build_corpus.py`
+- [x] `test_v2_charter.py` — lenient charter: unmarked / fenced / unclosed blocks, numeric schema, text revision,
+      role and id synonyms, short versions, strings for lists, dictionaries for lists, comments, missing
+      coordination and overlapping ownership are warnings; only ambiguous answers are refused, every fix is listed
+- [x] `test_answer_files.py` — files from AIWB blocks, Markdown (`**path**`, `### path`, `` `path` ``, `File:`,
+      `title="…"`, first-line comment), Strict JSON and ZIP; ZIP limits (size, count, unsafe paths, binaries); the
+      guided loop from each format to files on disk
+- [x] `test_answer_preview.py` — the live diagnosis of the paste box is read-only and never raises
+- [x] `gui_paste_box_smoke.py` — the **real** paste box: live diagnosis while typing, *Load ZIP…*, a Markdown answer
+      to files on disk
+- [x] `gui_wizard_smoke.py` — all three answer formats can be chosen and are kept
+- [x] All 5.1.0 – 5.9.0 gates stay green
+- [ ] NOT RUN: answers pasted by the owner from real ChatGPT / Claude / Gemini / DeepSeek / Copilot windows on real
+      Windows 10/11 (the corpus answers are reconstructed shapes; owner answers that fail are added to the corpus)
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
