@@ -17,6 +17,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import tkinter as tk
@@ -268,8 +269,11 @@ def main() -> None:
             assert not [x for x in boxes if x[0] == "showerror"], boxes
         finally:
             root.destroy()
-    print("Paste box (5.10.0): live diagnosis (" + " | ".join(o.lines[:4]) + ") · Load ZIP… · Markdown without manifest "
-          "→ files on disk: PASS")
+    msg = ("Paste box (5.10.0): live diagnosis (" + " | ".join(o.lines[:4]) + ") · Load ZIP… · Markdown without manifest "
+           "→ files on disk: PASS")
+    # a Windows console (cp1252) cannot print ✓/✗: replace what it cannot encode instead of failing a passed smoke
+    enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+    print(msg.encode(enc, "replace").decode(enc, "replace"))
 
 
 if __name__ == "__main__":
