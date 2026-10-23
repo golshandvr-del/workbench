@@ -464,6 +464,12 @@ class ProjectsController:
             if has_charter(text):
                 out = self.import_charter(text, response_id=rid)
                 if out["proposal"] is None:
+                    if any("cut off" in e for e in out["errors"]):
+                        # 5.10.0: a charter cannot be continued mid-JSON — the prompt asks for it again, shorter
+                        out["cut_off"] = True
+                        return RouteResult("charter_rejected", rid, "The Project Charter was cut off before its end "
+                                           "and was not imported. A prompt that asks for the complete charter again, "
+                                           "shorter, is ready to copy.", "", out)
                     return RouteResult("charter_rejected", rid, "The Project Charter is incomplete and was not imported: "
                                        + "; ".join(out["errors"][:3]) + (" …" if len(out["errors"]) > 3 else "")
                                        + " A fix prompt is ready to copy.", "", out)
