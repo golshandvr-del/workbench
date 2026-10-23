@@ -727,6 +727,11 @@ class Guide:
         out: dict[str, Any] = {"message": r.message, "kind": r.kind}
         if r.kind == "charter_rejected":
             out["prompt"] = r.record.get("fix_prompt", "")
+            if r.record.get("cut_off"):   # 5.10.0: like a cut-off file answer — the continue step, with this prompt
+                self._set_guide(**{"continue": {"prompt": out["prompt"], "agent_id": step["agent_id"],
+                                                "for": step["key"], "at": now_utc()}})
+                out["kind"] = "truncated"
+                return out
         if r.kind in ("proposal", "handoff", "charter_rejected"):
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):
