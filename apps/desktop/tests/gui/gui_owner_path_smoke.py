@@ -20,6 +20,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import tkinter as tk
@@ -249,9 +250,12 @@ def main() -> None:
             assert len(o.clicks) <= MAX_CLICKS, f"{len(o.clicks)} clicks (max {MAX_CLICKS}): {o.clicks}"
         finally:
             root.destroy()
-    print(f"Owner path smoke passed (only Home): New Project > wizard (project, 3 named AIs) -> Home card -> charter "
-          f"prompt -> inline paste -> accept -> prompt copied -> inline paste -> accept -> file on disk in "
-          f"{len(o.clicks)} clicks + {o.pastes} pastes (max {MAX_CLICKS}): {' / '.join(o.clicks)}")
+    msg = (f"Owner path smoke passed (only Home): New Project > wizard (project, 3 named AIs) -> Home card -> charter "
+           f"prompt -> inline paste -> accept -> prompt copied -> inline paste -> accept -> file on disk in "
+           f"{len(o.clicks)} clicks + {o.pastes} pastes (max {MAX_CLICKS}): {' / '.join(o.clicks)}")
+    # a Windows console (cp1252) cannot print ▾/…: replace what it cannot encode instead of failing a passed smoke
+    enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+    print(msg.encode(enc, "replace").decode(enc, "replace"))
 
 
 if __name__ == "__main__":
