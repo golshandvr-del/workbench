@@ -14,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from aiwb.intake.answer_files import extract  # noqa: E402
 from aiwb.intake.normalize import normalize, strip_copy_damage  # noqa: E402
+from aiwb.intake.preview import preview  # noqa: E402
+from aiwb.v2.handoff import ANSWER_RULE_MARK, WHOLE_ANSWER_RULE, with_answer_rule  # noqa: E402
 
 OWNER = Path(__file__).resolve().parents[3] / "docs" / "audit" / "owner-5.11" / "HO-0006_gpt_answer_context_request.txt"
 
@@ -71,6 +73,30 @@ class CopyDamageTests(unittest.TestCase):
 
     def test_few_lines_are_not_guessed(self):
         self.assertEqual(strip_copy_damage("one\\\ntwo"), "one\\\ntwo")
+
+
+
+class WholeAnswerRuleTests(unittest.TestCase):
+    """B1, layer 1: every prompt asks for the whole answer inside one five-backtick code block."""
+
+    def test_rule_is_added_once(self):
+        p = with_answer_rule("Do the task.")
+        self.assertIn(ANSWER_RULE_MARK, p)
+        self.assertIn("five backticks", p)
+        self.assertEqual(with_answer_rule(p), p)
+        self.assertEqual(with_answer_rule(""), "")
+
+    def test_answer_in_one_five_backtick_block_is_read(self):
+        body = ('AIWB_ATTEMPT_ID: att-1\n\n<<<AIWB_FILE path="src/a.py" action="write">>>\n````\nprint(1)\n````\n'
+                "<<<AIWB_END_FILE>>>")
+        wrapped = "`````text\n" + body + "\n`````"
+        ex = extract(wrapped)
+        self.assertEqual([f["path"] for f in ex.files], ["src/a.py"])
+        self.assertEqual(ex.attempt_id, "att-1")
+        self.assertEqual(preview(wrapped).kind, "files")
+
+    def test_rule_mentions_the_copy_button(self):
+        self.assertIn("Copy button", " ".join(WHOLE_ANSWER_RULE))
 
 
 if __name__ == "__main__":
