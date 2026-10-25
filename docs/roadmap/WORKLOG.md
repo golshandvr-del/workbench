@@ -21,7 +21,49 @@ Baseline before 5.11.0 (main `5066fe3`, tag `desktop-v5.10.0`): 765 unit tests O
 PR #67 merged (main `50967f0`), tag `desktop-v5.11.0` pushed (release-desktop.yml builds the Release). CI run 1 failed
 only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smokes pass with PYTHONIOENCODING=cp1252.
 
-## 5.12.0 — Quick mode, one AI like 1.x (branch `feat/v5.12.0-quick-mode`)
+## 5.12.0 — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
+
+Owner tested 5.11.0 on real Windows + GPT (2026-10-25). Audit B1–B8 in ROADMAP §1b, evidence `docs/audit/owner-5.11/`.
+The old Quick-mode plan (below, branch `feat/v5.12.0-quick-mode`, only a WORKLOG commit) moved to **5.14.0**.
+Order now: 5.12 real answers → 5.13 one-screen redesign → 5.14 Quick → 5.15 gate → mobile.
+
+Root causes (verified in code):
+- B1: rendered-chat copy on Windows ends every line outside code fences with `\` (Markdown hard break) and escapes
+  `_`; `intake/normalize.py` has no rule for it.
+- B2: `intake/preview.py` says "Context request ✓" on the marker alone; `context_request.parse_request` needs
+  `type` + `files` → GPT wrote `required_files`, no `type` (the task prompt never shows the format: only
+  `handoff.py:335` "answer ONLY with an AIWB_CONTEXT_REQUEST"; `CAPABILITY_LINE` is only in the 1.x prompt).
+  Even when parsed, `controller.route_answer` only notes an event and points to "Files & Context" (gone in 5.11);
+  guide.steps has no step for it → card never changes.
+
+Design:
+1. `normalize.strip_copy_damage(text)` (new, in normalize()): outside ``` fences, if ≥60 % of non-empty lines end
+   with `\` (or ` /`-free `/`?) → drop that one char; unescape `\_ \* \[ \] \# \-` outside fences; fix list
+   reported (`copy_damage:N`). Applied before every parser (charter, files, context, handoff).
+2. `WHOLE_ANSWER_RULE` (handoff.py) = "Write your WHOLE answer inside ONE code block fenced with five backticks
+   (`````) and copy it with that block's Copy button" — added to task, charter, fix, continue, context prompts.
+3. context_request: forgiving parse (`type` optional with marker; synonyms required_files/requested_files/
+   files_needed/paths/context_files/file_requests; string item → full_file; folder path `x/` → files under it
+   (cap MAX_ITEMS); key `file`/`filename` → path) + `fixes` list. Preview uses the real parser.
+   Task prompt §7 gets the short exact format.
+4. Guide: context request stored on the handoff (`context_request` {files, questions, fixes, at}); new step
+   `context:<hid>` (agent = that AI): "<Name> asked for N file(s)" → actions copy_context (pack_inline, ZIP when
+   big), sent, paste. Cleared on the next answer for that handoff. Controller message points to the card.
+5. Tests: test_copy_damage.py, test_context_forgiving.py, test_context_step.py; corpus + owner answer (clean +
+   backslash-damaged); smoke gui_context_smoke.py pasting via the real clipboard.
+6. Docs/version 5.12.0, CHANGELOG, README, USER_GUIDE, install.ps1 + release_manifest, ROADMAP ✅, PR→CI→tag.
+
+Progress (tick = committed and pushed):
+
+- [x] 0 ROADMAP §1b + 5.12–5.15 table (b89cac5, 17482e0); evidence docs/audit/owner-5.11/ (c6948b5…e07ed42)
+- [ ] 1 strip_copy_damage + test
+- [ ] 2 WHOLE_ANSWER_RULE in prompts + test
+- [ ] 3 forgiving context parser + preview = parser + test
+- [ ] 4 guide context step + controller + card + test
+- [ ] 5 corpus + smoke (clipboard), full run green
+- [ ] 6 docs, version, PR → CI → merge → tag → release
+
+## 5.14.0 (planned, was 5.12.0) — Quick mode
 
 Roadmap: New Project ▾ → "Quick — one AI chat": describe the work → prompt in the chosen format → paste text or ZIP →
 preview/diff → transactional apply with Restore; same intake engine as 5.10.0; later "convert to a multi-AI project"
