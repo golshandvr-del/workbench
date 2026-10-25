@@ -21,7 +21,16 @@ Baseline before 5.11.0 (main `5066fe3`, tag `desktop-v5.10.0`): 765 unit tests O
 PR #67 merged (main `50967f0`), tag `desktop-v5.11.0` pushed (release-desktop.yml builds the Release). CI run 1 failed
 only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smokes pass with PYTHONIOENCODING=cp1252.
 
-## 5.12.0 — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
+## 5.12.0 — DONE
+
+PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` pushed (release-desktop.yml builds the Release). CI green on
+first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
+
+## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
+
+Plan: see below (written after reading the code).
+
+## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
 Owner tested 5.11.0 on real Windows + GPT (2026-10-25). Audit B1–B8 in ROADMAP §1b, evidence `docs/audit/owner-5.11/`.
 The old Quick-mode plan (below, branch `feat/v5.12.0-quick-mode`, only a WORKLOG commit) moved to **5.14.0**.
@@ -61,7 +70,7 @@ Progress (tick = committed and pushed):
 - [x] 3 forgiving context parser (48856a3, folders 7010d3a, damaged copy 61e1f74), preview = parser (e4781e6), prompt format (9a48fe2), tests 6b73668 35c849e, JSON comma+comment 546f8f7; unit 795 OK
 - [x] 4 v2/context_step.py (9153a38), controller links request→handoff (9467def), guide step + copy_context/context_sent + clear on answer (ad512e0, 664d24b), card+shell copy (a78c4df, 9548633), test_context_step f93ec7a; unit 801 OK
 - [x] 5 corpus F25 C31 X01-X04 (3432f2f builder, a1c392b replay kind context, 9a91f09…fc0f067 files, 4f9f3dd shape) 60 cases OK; gui_context_smoke.py 13fcb7a PASS; charter smoke expected the raw prompt (Copy now adds the answer rule) → 4941281; full GUI 47/47
-- [~] 6 version bump (3e66b2c…9b033fc via tools/bump_desktop_release.py in /tmp copy, one file per checkpoint), checklist cc68083, CHANGELOG 2b86858, README 9724c98, USER_GUIDE 4fb08bc, gate "✓ preview ⇒ card moves" (0d0d05a, d6a9935), ROADMAP e74f362; unit 802 OK, GUI 47/47 → next: PR → CI → merge → tag desktop-v5.12.0
+- [x] 6 version bump (3e66b2c…9b033fc via tools/bump_desktop_release.py in /tmp copy, one file per checkpoint), checklist cc68083, CHANGELOG 2b86858, README 9724c98, USER_GUIDE 4fb08bc, gate "✓ preview ⇒ card moves" (0d0d05a, d6a9935), ROADMAP e74f362; unit 802 OK, GUI 47/47 → next: PR → CI → merge → tag desktop-v5.12.0
 
 ## 5.14.0 (planned, was 5.12.0) — Quick mode
 
