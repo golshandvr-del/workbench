@@ -68,6 +68,18 @@ def with_answer_rule(prompt: str) -> str:
     return prompt.rstrip() + "\n\n" + "\n".join(WHOLE_ANSWER_RULE)
 
 
+# 5.12.0 (owner audit B2): the task prompt shows the exact shape of a context request (before, it only named it and
+# the chat had to guess — GPT wrote "required_files" and no "type"). Workbench also reads the usual guesses.
+CONTEXT_REQUEST_RULES = [
+    "- If you need a file that is not here, answer ONLY with this block (nothing else) and wait for the files:",
+    "<<<AIWB_CONTEXT_REQUEST>>>",
+    '{"schema_version": "1.0", "type": "AIWB_CONTEXT_REQUEST", "attempt_id": "<the AIWB_ATTEMPT_ID above>", '
+    '"reason": "why you need them", "files": [{"path": "relative/path.ext", "mode": "full_file"}, '
+    '{"path": "a/folder/"}], "questions": ["anything you must ask the user"]}',
+    "<<<AIWB_END_CONTEXT_REQUEST>>>",
+]
+
+
 def format_rules(state: dict[str, Any], agent_id: str = "") -> list[str]:
     """The delivery rules for the answer format the user chose (per AI, else for the project; default AIWB)."""
     agent = (state.get("agents") or {}).get(agent_id) or {}
@@ -353,7 +365,7 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
     else:
         lines += _section("6. Previous handoff", ["- This is the first handoff for this task."])
     lines += _section("7. Relevant files", [f"- {p}" for p in t.get("context_refs", [])]
-                      + ["- If you need a file that is not here, answer ONLY with an AIWB_CONTEXT_REQUEST."])
+                      + CONTEXT_REQUEST_RULES)
     lines += _section("8. Conflicts / do not assume", (t.get("flags") or [])
                       + ["- Do not claim that you ran tests or builds; Workbench records real evidence separately."])
     if h.get("note"):
