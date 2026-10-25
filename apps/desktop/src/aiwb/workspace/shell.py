@@ -943,28 +943,6 @@ class WorkspaceWindow:
             self.show("timeline")
         return out
 
-    def _fill_timeline(self, page: int) -> dict[str, Any]:
-        page = max(page, 0)
-        fam = self.tl_family.get()
-        res = self.wc.timeline_page(page, families=[fam] if fam else [], text=self.tl_text.get())
-        if res["pages"] and page >= res["pages"]:
-            return self._fill_timeline(res["pages"] - 1)
-        self.tl_page = page
-        self.tl_tree.delete(*self.tl_tree.get_children())
-        for rec in res["items"]:
-            refs = rec.get("refs", {})
-            ref = next(iter(refs.values()), "") if refs else ""
-            self.tl_tree.insert("", "end", iid=rec["event_id"], values=(self.wc.event_text(rec), ref if isinstance(ref, str) else "", rec["source"]))
-        self.tl_page_var.set(f"{page + 1}/{max(res['pages'], 1)} · {res['total']}")
-        return res
-
-    def select_timeline_event(self, event_id: str) -> None:
-        """Canvas click → Inspector (and the same row in the event list when it is on this page)."""
-        self.wc.select("event", event_id)
-        if hasattr(self, "tl_tree") and self.tl_tree.winfo_exists() and self.tl_tree.exists(event_id):
-            self.tl_tree.see(event_id)
-        self._render_inspector()
-
     def _select_from(self, tree: ttk.Treeview, kind: str) -> None:
         sel = tree.selection()
         if sel:
