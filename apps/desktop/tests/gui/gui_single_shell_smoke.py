@@ -99,7 +99,7 @@ def main() -> None:
             # 5.x toolbar + status bar
             assert [b.text for b in app.shell.toolbar.buttons.values()] == ["New Project", "Open", "Save", "Run"]
             facts = app.shell.refresh_status()
-            assert facts["text"].endswith("running") or "Milestone" in facts["text"], facts
+            assert "running" not in facts["text"] and facts["text"], facts  # 5.13.0 (B4): only what is true
             app.shell.nav["projects"].invoke()
             root.update()
             assert app.shell.current == "workbench"
