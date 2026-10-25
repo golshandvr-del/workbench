@@ -6411,8 +6411,9 @@ class WorkbenchApp:
         ttk.Label(tab, text="History", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             tab,
-            text="Everything that happened in this project: events on the timeline, then every prompt and response. "
-                 "Right-click a step to rename, move or delete it. Kept locally in .workbench, never uploaded.",
+            text="Everything that happened in this project, in one list: prompts, answers, events, milestones and "
+                 "versions — choose what to show. Right-click a step to rename, move or delete it. Kept locally in "
+                 ".workbench, never uploaded.",
             style="Hint.TLabel", wraplength=1160, justify="left",
         ).pack(anchor="w", pady=(2, 8))
         self._make_history_timeline(tab)
