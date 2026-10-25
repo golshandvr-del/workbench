@@ -22,13 +22,16 @@ TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
     ("run", "Run", "run", ()),
 )
 
+CLASSIC = "Classic tools (1.x)"  # Settings' section holding the 1.x pages until Quick replaces them (5.14.0)
+
 # Rail destinations: (key, label, icon, sections). 5.13.0 (owner audit B3/B4): four — one project, one screen.
 # Projects left the rail: the open project is switched in the toolbar (PROJECT_MENU); its settings are Settings › Project.
 RAIL: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
     ("home", "Home", "home", ("Next step", "Mission Map", "Task details")),  # 5.11.0: the cockpit card
     ("agents", "Agents", "agents", ("Team", "Selected AI", "Balance", "Dispatch desk")),
     ("history", "History", "history", ("Timeline", "One list", "Selected step", "Tools")),
-    ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application", "Project", "Tools")),
+    ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application", "Project",
+                                          CLASSIC)),
 )
 
 # The phone keeps its own five destinations (roadmap 6.0.0; mobile is paused — 5.13.0 changes the desktop only).
@@ -80,7 +83,7 @@ def tree() -> dict[str, Any]:
     return {
         "Toolbar": {**{label: {c[1]: {} for c in kids} for _id, label, _i, kids in TOOLBAR},
                     "Project switcher": {"Recent projects": {}, **{label: {} for _id, label in PROJECT_MENU}}},
-        "Rail": {label: ({s: ({t[1]: {} for t in tools_of(k)} if s == "Tools" else {}) for s in sections})
+        "Rail": {label: ({s: ({t[1]: {} for t in tools_of(k)} if s in ("Tools", CLASSIC) else {}) for s in sections})
                  for k, label, _i, sections in RAIL},
         "Task menu": {label: {} for _id, label, _i, _a in TASK_MENU},
         "Status bar": {s: {} for s in STATUS_BAR},
