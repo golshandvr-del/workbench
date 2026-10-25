@@ -16,7 +16,51 @@ sudo apt-get install -y xvfb python3-tk imagemagick xdotool; pip install jsonsch
 
 Baseline before 5.11.0 (main `5066fe3`, tag `desktop-v5.10.0`): 765 unit tests OK (5 skipped), 46/46 GUI smoke.
 
-## 5.11.0 — Home = cockpit (branch `feat/v5.11.0-home-cockpit`)
+## 5.11.0 — DONE
+
+PR #67 merged (main `50967f0`), tag `desktop-v5.11.0` pushed (release-desktop.yml builds the Release). CI run 1 failed
+only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smokes pass with PYTHONIOENCODING=cp1252.
+
+## 5.12.0 — Quick mode, one AI like 1.x (branch `feat/v5.12.0-quick-mode`)
+
+Roadmap: New Project ▾ → "Quick — one AI chat": describe the work → prompt in the chosen format → paste text or ZIP →
+preview/diff → transactional apply with Restore; same intake engine as 5.10.0; later "convert to a multi-AI project"
+without losing files. Gate: full Quick smoke with the three formats; test Quick → Guided conversion.
+
+Design (decided 2026-10-25, after reading the code):
+
+1. New pure module `aiwb/quick.py` (no Tk): `QUICK_FORMATS` (aiwb/json/zip), `build_prompt(task, files, fmt, name,
+   goal, contents)` (short 1.x-style prompt: task, project file list, selected file contents, the delivery rules of
+   the format = `v2.handoff.FILE_RULES/JSON_RULES/ZIP_RULES` without the handoff manifest), `read_answer(text|zip)` →
+   `aiwb.intake.answer_files.extract/zip_files` (all formats, fixes listed), `plan(root, files)` → per file
+   new/changed/same + unified diff (no write), `apply(root, files, summary)` → `AI_Workbench.apply_changes_transactionally`
+   is in the app module, so quick.py gets an `apply_fn` callback (the app passes its transactional apply → Restore
+   Manager sees it). Quick state in `.workbench/quick.json` (mode, task history, format, rounds).
+2. New `aiwb/ui/quick_window.py` — one page/window, 3 steps on one screen: (1) Describe the work + format radio +
+   "Copy prompt" (2) PastePanel (live diagnosis, Load ZIP…) "Preview files" (3) file list with new/changed + diff
+   view + "Apply" (+ "Restore last apply"). ≤ 8 controls in view.
+3. Toolbar New Project ▾ gets "Quick — one AI chat…" (structure5 + UI_TREE): asks name + parent + goal (small form),
+   creates the folder (`create_project_folder`), marks it quick, opens the Quick page. Home for a quick project:
+   the card shows the Quick step (no Mission Map lanes needed) — decide in step 4.
+4. "Convert to a multi-AI project…": opens the wizard in start mode (team + format), applies `team_setup.apply_start`;
+   files on disk untouched; quick.json marked converted; Home then shows the guided card.
+5. Tests: `test_quick.py` (prompt per format, read answers of the 3 formats + markdown + zip, plan/diff, apply +
+   restore via apply_fn stub, conversion keeps files); smoke `gui_quick_smoke.py` (real widgets, 3 formats, Restore,
+   convert → Guided card).
+6. Docs: UI_TREE/structure5, UI_MAP regen, screenshots `docs/audit/screens/v5.12-quick/`, CHANGELOG, README, USER_GUIDE,
+   install.ps1 + release_manifest (quick.py, ui/quick_window.py, test_quick.py), version 5.12.0, ROADMAP.
+
+Progress (tick = committed and pushed):
+
+- [ ] 1 aiwb/quick.py + test_quick.py
+- [ ] 2 ui/quick_window.py
+- [ ] 3 toolbar entry + create flow
+- [ ] 4 Home for quick projects
+- [ ] 5 convert to multi-AI
+- [ ] 6 smoke gui_quick_smoke.py, full run green
+- [ ] 7 docs, version, PR → CI → merge → tag → release
+
+## 5.11.0 (archive) — Home = cockpit (branch `feat/v5.11.0-home-cockpit`)
 
 Design (decided 2026-10-25):
 
