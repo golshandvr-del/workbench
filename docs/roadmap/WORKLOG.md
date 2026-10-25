@@ -45,8 +45,8 @@ Design (decided 2026-10-25):
 
 Progress (tick = committed and pushed):
 
-- [ ] 1 PastePanel
-- [ ] 2 next_card.py + test_next_card.py
+- [x] 1 PastePanel (ceee371)
+- [x] 2 next_card.py + test_next_card.py (3196e07…0aae0cb)
 - [ ] 3/4 Home card, Task details More, lane click
 - [ ] 5 Workbench 3 sections
 - [ ] 6 Create → Home
