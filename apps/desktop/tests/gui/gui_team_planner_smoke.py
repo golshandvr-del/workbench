@@ -80,17 +80,17 @@ def main() -> None:
             # request changes: prompt only
             p = w.review_request_changes()
             assert "ACC-0077" in p and ctl.state()["state_revision"] == rev
-            w.show("team")
+            w.show("plan")  # 5.11.0: the review is in Plan & Tasks
             root.update()
             # FA review renders RTL
             w.lang_var.set("fa")
             w._set_lang()
-            w.show("team")
+            w.show("plan")  # 5.11.0: the review is in Plan & Tasks
             root.update()
             assert w.review_tree.heading("op")["text"] == "عملیات"
             w.lang_var.set("en")
             w._set_lang()
-            w.show("team")
+            w.show("plan")  # 5.11.0: the review is in Plan & Tasks
             root.update()
             out = w.review_accept()
             assert out and out["status"] == "accepted", out  # all valid items accepted; the invalid one is rejected
