@@ -6433,8 +6433,14 @@ class WorkbenchApp:
         # 5.11.0: the list filters as you type (short pause) — no Search button (History shows at most 8 controls)
         self.history_filter_entry.bind("<KeyRelease>", self._history_filter_typed, add="+")
         ttk.Button(filter_row, text="Clear", command=self._clear_history_filter).pack(side="left", padx=(4, 0))
-        self.history_saved_only_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(filter_row, text="Saved only", variable=self.history_saved_only_var, command=self._refresh_history_view).pack(side="left", padx=(6, 0))
+        # 5.13.0 (B3): one History — the Workbench's Timeline events live here too, with one "Show" filter
+        from aiwb.ui import history_feed
+        ttk.Label(filter_row, text="Show").pack(side="left", padx=(10, 4))
+        self.history_kind_var = tk.StringVar(value=history_feed.LABELS["all"])
+        kind_box = ttk.Combobox(filter_row, textvariable=self.history_kind_var, state="readonly", width=10,
+                                values=[label for _key, label in history_feed.KINDS])
+        kind_box.pack(side="left")
+        kind_box.bind("<<ComboboxSelected>>", lambda _event: self._refresh_history_view(), add="+")
         tree_frame = ttk.Frame(left)
         tree_frame.pack(fill="both", expand=True)
         self.history_tree = ttk.Treeview(tree_frame, columns=("status", "stage", "feature", "version"), show="tree headings", selectmode="browse")
@@ -6495,6 +6501,42 @@ class WorkbenchApp:
                                  ("Create repair prompt from this step", self._repair_from_selected_history))),),
         ).pack(side="left")
 
+    def history_kind(self) -> str:
+        """The History "Show" filter as a key (all, prompts, answers, saved, events, versions)."""
+        from aiwb.ui import history_feed
+        var = getattr(self, "history_kind_var", None)
+        return history_feed.KEY_OF_LABEL.get(str(var.get() if var is not None else ""), "all")
+
+    def set_history_kind(self, kind: str) -> None:
+        from aiwb.ui import history_feed
+        self.history_kind_var.set(history_feed.LABELS[kind])
+        self._refresh_history_view()
+
+    def _insert_history_events(self, kind: str, text: str = "") -> int:
+        """The project's events (what the Workbench Timeline listed) as one group of the History tree (5.13.0)."""
+        from aiwb.ui import history_feed
+        if kind not in history_feed.SHOWS_EVENTS:
+            return 0
+        try:
+            ctl = self._mission_ctl()
+            if ctl is None:
+                return 0
+            recs = ctl.project.store.ledger.query(families=history_feed.event_families(kind), text=text)["items"]
+            names = {aid: str((a or {}).get("name") or aid) for aid, a in (ctl.state().get("agents") or {}).items()}
+        except Exception:  # noqa: BLE001 - a project without a V2 ledger simply has no events here
+            return 0
+        rows = history_feed.event_rows(recs, kind, names)
+        self.history_events = {r["id"]: r for r in rows}
+        if not rows:
+            return 0
+        group = "Versions and milestones" if kind == "versions" else "Project events"
+        self.history_tree.insert("", "end", iid="events", text=f"{group} · {len(rows)}", values=("", "", "", ""),
+                                 open=True)
+        for r in rows:
+            self.history_tree.insert("events", "end", iid="event-" + r["id"], text=f"{r['when']} · {r['title']}"[:220],
+                                     values=(r["detail"][:80], "event", r["family"], ""))
+        return len(rows)
+
     def _history_filter_typed(self, event: Any = None) -> None:
         """Debounced live filter of the history list (5.11.0)."""
         if event is not None and getattr(event, "keysym", "") == "Return":
@@ -6545,12 +6587,12 @@ class WorkbenchApp:
             return
         filter_var = getattr(self, "history_filter_var", None)
         filter_query = str(filter_var.get() if filter_var is not None else "").strip().casefold()
-        saved_only = bool(getattr(self, "history_saved_only_var", None) and self.history_saved_only_var.get())
+        kind = self.history_kind()
         if filter_query:
             searchable_fields = ("task_id", "task_summary", "label", "title", "feature", "project_version", "stage", "status", "output_format", "version_record_id")
             all_entries = [entry for entry in all_entries if any(filter_query in str(entry.get(field, "")).casefold() for field in searchable_fields)]
-        if saved_only:
-            all_entries = [entry for entry in all_entries if bool(entry.get("project_history_saved", False))]
+        from aiwb.ui import history_feed
+        all_entries = history_feed.filter_steps(all_entries, kind)
         by_id = {str(item.get("id", "")): item for item in all_entries if item.get("id")}
         task_groups: dict[str, str] = {}
         for entry in all_entries:
@@ -6605,6 +6647,7 @@ class WorkbenchApp:
                 task_id = str(entry.get("task_id") or "unassigned")
                 insert_entry(entry, task_groups.get(task_id, ""), set())
 
+        self._insert_history_events(kind, filter_query)
         selected_iid = "entry-" + selected_target if selected_target and "entry-" + selected_target in self.history_tree.get_children("") else None
         # Entry nodes are normally nested; query existence via Treeview.exists.
         if selected_target and self.history_tree.exists("entry-" + selected_target):
