@@ -58,7 +58,7 @@ Progress (tick = committed and pushed):
 - [x] 0 ROADMAP §1b + 5.12–5.15 table (b89cac5, 17482e0); evidence docs/audit/owner-5.11/ (c6948b5…e07ed42)
 - [x] 1 strip_copy_damage + test (14fe114, 72d3791 never inside fences; test 7d86a7d; unit 782 OK)
 - [x] 2 WHOLE_ANSWER_RULE (aeacabb handoff.build_prompt, 291f1ee Guide.perform wraps every prompt, 556bc6c shell do_copy/start prompt; test 413ca5e)
-- [ ] 3 forgiving context parser + preview = parser + test
+- [x] 3 forgiving context parser (48856a3, folders 7010d3a, damaged copy 61e1f74), preview = parser (e4781e6), prompt format (9a48fe2), tests 6b73668 35c849e, JSON comma+comment 546f8f7; unit 795 OK
 - [ ] 4 guide context step + controller + card + test
 - [ ] 5 corpus + smoke (clipboard), full run green
 - [ ] 6 docs, version, PR → CI → merge → tag → release
