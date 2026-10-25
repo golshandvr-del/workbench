@@ -18,21 +18,33 @@ from ..v2.timeline import lanes, planned_items, progress
 from ..v2.workflow import stage_label, task_stage
 from ..v2.resources import binding_readiness, current_binding
 
-SECTIONS = ("overview", "timeline", "tasks", "team", "files", "versions", "settings")
+# 5.11.0 (audit A7): three sections instead of seven. The 2.3.0–5.10.0 keys stay valid as aliases, so old ui.json
+# files, attention links and callers keep working.
+SECTIONS = ("plan", "timeline", "project")
+SECTION_ALIASES = {"overview": "plan", "tasks": "plan", "team": "project", "files": "project", "versions": "project",
+                   "settings": "project"}
 SECTION_LABELS = {
-    "overview": ("Overview", "نمای کلی"), "timeline": ("Timeline", "تاریخچه"), "tasks": ("Tasks", "وظایف"),
-    "team": ("Team", "تیم AI"), "files": ("Files & Context", "فایل‌ها و زمینه"),
-    "versions": ("Versions & Builds", "نسخه‌ها و ساخت‌ها"), "settings": ("Settings", "تنظیمات"),
+    "plan": ("Plan & Tasks", "برنامه و وظایف"), "timeline": ("Timeline", "تاریخچه"),
+    "project": ("Project settings", "تنظیمات پروژه"),
 }
-SHORT_LABELS = {"overview": ("Home", "خانه"), "timeline": ("Time", "زمان"), "tasks": ("Tasks", "وظایف"),
-                "team": ("Team", "تیم"), "files": ("Files", "فایل"), "versions": ("Ver.", "نسخه"),
-                "settings": ("Set.", "تنظیم")}
+SHORT_LABELS = {"plan": ("Plan", "برنامه"), "timeline": ("Time", "زمان"), "project": ("Project", "پروژه")}
+
+
+def canonical_section(key: str) -> str:
+    """The 5.11.0 section of ``key`` (an old 2.3.0 key or a current one); unknown keys raise."""
+    key = SECTION_ALIASES.get(key, key)
+    if key not in SECTIONS:
+        raise ModelError(f"unknown section {key!r}")
+    return key
+
+
 # Existing tools reachable from the workspace (no second implementation, spec §18 stage 3)
 TOOLS = {
     "files": ("response", "inbox", "context_request"),
     "versions": ("build_center", "sync_build"),
     "settings": ("export_bundle", "import_bundle", "companion", "classic"),
 }
+TOOLS["project"] = TOOLS["files"] + TOOLS["versions"] + TOOLS["settings"]  # 5.11.0: one Tools menu
 TOOL_LABELS = {
     "response": ("Classic prompt & response…", "پرامپت و پاسخ کلاسیک…"),
     "inbox": ("Response Inbox…", "صندوق پاسخ‌ها…"),
@@ -61,7 +73,10 @@ class WorkspaceController:
             if ctl.mode != prefs.mode:
                 ctl.set_mode(prefs.mode)
         ui = ctl._load_ui()
-        self.section = ui.get("ws_section") if ui.get("ws_section") in SECTIONS else "overview"
+        try:
+            self.section = canonical_section(str(ui.get("ws_section") or "plan"))
+        except ModelError:
+            self.section = "plan"
         self.inspector_open = ui.get("ws_inspector", True) is not False
         self.sidebar_open = ui.get("ws_sidebar", True) is not False
         self._theme = ui.get("ws_theme") if ui.get("ws_theme") in ("light", "dark") else "light"
@@ -91,8 +106,7 @@ class WorkspaceController:
         return self.tr((SHORT_LABELS if compact else SECTION_LABELS)[key])
 
     def set_section(self, key: str) -> None:
-        if key not in SECTIONS:
-            raise ModelError(f"unknown section {key!r}")
+        key = canonical_section(key)
         self.section = key
         self.ctl._save_ui(ws_section=key)
 
