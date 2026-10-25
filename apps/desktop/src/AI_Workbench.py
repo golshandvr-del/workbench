@@ -6362,7 +6362,8 @@ class WorkbenchApp:
         self.history_filter_entry = ttk.Entry(filter_row, textvariable=self.history_filter_var, width=22)
         self.history_filter_entry.pack(side="left")
         self.history_filter_entry.bind("<Return>", lambda _event: self._refresh_history_view())
-        ttk.Button(filter_row, text="Search", command=self._refresh_history_view).pack(side="left", padx=(4, 0))
+        # 5.11.0: the list filters as you type (short pause) — no Search button (History shows at most 8 controls)
+        self.history_filter_entry.bind("<KeyRelease>", self._history_filter_typed, add="+")
         ttk.Button(filter_row, text="Clear", command=self._clear_history_filter).pack(side="left", padx=(4, 0))
         self.history_saved_only_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(filter_row, text="Saved only", variable=self.history_saved_only_var, command=self._refresh_history_view).pack(side="left", padx=(6, 0))
@@ -6419,11 +6420,28 @@ class WorkbenchApp:
         action_row.pack(fill="x", pady=(6, 0))
         ui_actions.ActionBar(
             action_row,
-            primary=(("Copy prompt", lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))),
-                     ("Copy model output", lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c")))),
-            more=(("This step", (("Edit prompt as new revision…", self._edit_history_prompt_revision),
+            primary=(("Copy prompt", lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))),),
+            more=(("This step", (("Copy model output",
+                                  lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c"))),
+                                 ("Edit prompt as new revision…", self._edit_history_prompt_revision),
                                  ("Create repair prompt from this step", self._repair_from_selected_history))),),
         ).pack(side="left")
+
+    def _history_filter_typed(self, event: Any = None) -> None:
+        """Debounced live filter of the history list (5.11.0)."""
+        if event is not None and getattr(event, "keysym", "") == "Return":
+            return
+        pending = getattr(self, "_history_filter_after", None)
+        if pending is not None:
+            try:
+                self.root.after_cancel(pending)
+            except tk.TclError:
+                pass
+        self._history_filter_after = self.root.after(350, self._history_filter_run)
+
+    def _history_filter_run(self) -> None:
+        self._history_filter_after = None
+        self._refresh_history_view()
 
     def _make_history_text_page(self, title: str) -> tk.Text:
         frame = ttk.Frame(self.history_detail_tabs)
