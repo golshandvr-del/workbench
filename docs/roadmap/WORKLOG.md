@@ -55,5 +55,5 @@ Progress (tick = committed and pushed):
 - [x] 6 Create → Home (2f51d00)
 - [x] 7 audit 8 visible (4f19485 Settings, a428564/c3a6f48/5579a8b Agents, c49a4cc History live filter, 3a3cf86 Run&Report, 0e3ee71 rule=8; audit [] ) — live audit at max 8 (before step 5): Projects 9, Projects › Tools › Run & Report 9,
   Agents 10, History 10, Settings 9 (Home 6). After step 5: Projects 8 ✓; left: Run & Report 9, Agents 10, History 10, Settings 9. Script: /tmp/stats.py = tools/ui_map.live_tree + ui_map.audit(rules)
-- [ ] 8 smokes updated, all green — done: guide, team_editor, wizard, charter, team_planner, single_shell, workspace, workflow_timeline, dashboard, test_workspace, paste_box (bb0d7ec, inline panel on Home); left: owner_path (rewrite from Home + click count), v5_map (regen UI_MAP), then full run
+- [ ] 8 smokes updated, all green — done: guide, team_editor, wizard, charter, team_planner, single_shell, workspace, workflow_timeline, dashboard, test_workspace, paste_box (bb0d7ec, inline panel on Home); owner_path (6b43156: only Home, no popups, 11 clicks + 2 pastes ≤ 12); left: v5_map (regen UI_MAP), then full run
 - [ ] 9 docs, version, PR → CI → merge → tag → release
