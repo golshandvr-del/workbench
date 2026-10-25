@@ -5166,7 +5166,8 @@ class WorkbenchApp:
         self.mission_summary_var = tk.StringVar(value="")
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
-                                     motion=self.shell.motion, on_menu=self.mission_menu)
+                                     motion=self.shell.motion, on_menu=self.mission_menu,
+                                     on_lane=self.mission_lane)
         self.mission.pack(fill="x")
         self._make_mission_view_row(body)
         from aiwb.ui import structure5
@@ -5179,14 +5180,18 @@ class WorkbenchApp:
         detail.pack(fill="x", pady=(8, 12))
         ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(side="left", fill="x", expand=True)
-        self.mission_open_btn = ttk.Button(detail, text="Open task in Workbench", command=self.mission_open_task)
-        self.mission_open_btn.pack(side="right")
+        # 5.11.0: one button + More, so Home shows at most 8 controls at once (the cockpit card has the rest)
+        self.mission_detail_bar = ui_actions.ActionBar(
+            detail, primary=(("Open task in Workbench", self.mission_open_task),),
+            more=(("", (("Jump to active task", self.mission_jump_active),
+                        ("Copy task summary", self.mission_copy_task),
+                        ("Copy map summary", self.mission_copy_summary))),), style="Card.TFrame")
+        self.mission_detail_bar.pack(side="right")
+        self.mission_open_btn = self.mission_detail_bar.buttons["Open task in Workbench"]
         self.mission_open_btn.state(["disabled"])
-        self.mission_copy_btn = ttk.Button(detail, text="Copy task summary", command=self.mission_copy_task)  # 5.6.0
-        self.mission_copy_btn.pack(side="right", padx=(0, 6))
-        self.mission_copy_btn.state(["disabled"])
-        self.mission_jump_btn = ttk.Button(detail, text="Jump to active task", command=self.mission_jump_active)
-        self.mission_jump_btn.pack(side="right", padx=(0, 6))  # 5.6.0
+        self.mission_copy_btn = self.mission_detail_bar.actions["Copy task summary"]
+        self.mission_copy_btn.configure(state="disabled")
+        self.mission_jump_btn = self.mission_detail_bar.actions["Jump to active task"]
         self._mission_rev: tuple[str, int] | None = None
         self._make_home_next_card(body)
         self.shell.status_listeners.append(self.refresh_mission)
@@ -5205,7 +5210,6 @@ class WorkbenchApp:
                         command=self.mission_apply_view).pack(side="left")
         ttk.Checkbutton(row, text="Only AIs with open work", variable=self.mission_open_only_var,
                         command=self.mission_apply_view).pack(side="left", padx=(12, 0))
-        ttk.Button(row, text="Copy map summary", command=self.mission_copy_summary).pack(side="right")
 
     def mission_apply_view(self) -> dict[str, Any]:
         """Home › Map view options → redraw the Mission Map (nothing is written)."""
@@ -5257,7 +5261,7 @@ class WorkbenchApp:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
             self.mission_open_btn.state(["disabled"])
-            self.mission_copy_btn.state(["disabled"])
+            self.mission_copy_btn.configure(state="disabled")
         return model
 
     def mission_jump_active(self) -> str:
@@ -5302,7 +5306,7 @@ class WorkbenchApp:
                                     f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
                                     f"[{nd['status']}]")
         self.mission_open_btn.state(["!disabled"])
-        self.mission_copy_btn.state(["!disabled"])
+        self.mission_copy_btn.configure(state="normal")
 
     # -- Mission Map › right-click menu (roadmap 5.4.0)
     def _mission_ctl(self) -> Any:
