@@ -70,7 +70,7 @@ class RealProjectTests(unittest.TestCase):
         self.g = Guide(self.c)
         p = self.c.project
         p.agents.create(normalize_agent({"agent_id": "agent-dev", "name": "Coder", "role": "implementer"}))
-        self.tids = [p.tasks.create({"title": f"Part {i}", "owner_agent_id": "agent-dev",
+        self.tids = [p.tasks.create({"title": f"Part {i}", "objective": "o", "owner_agent_id": "agent-dev",
                                      "allowed_paths": [f"src/p{i}/**"]})["task_id"] for i in (1, 2)]
 
     def tearDown(self):
