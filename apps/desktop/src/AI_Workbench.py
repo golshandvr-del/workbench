@@ -4699,12 +4699,14 @@ class WorkbenchApp:
         self.new_project(on_created=self._start_guided_after_create)
 
     def _start_guided_after_create(self, created: Path) -> None:
-        """After New Project › Create: open the guided Workbench on its next step, not the old Profile.
+        """After New Project › Create: Home — the Mission Map with the user's named AIs and the cockpit card on the
+        project-manager prompt (5.11.0; 5.8.0–5.10.0 opened the Workbench). Never the old Profile (A3).
 
         5.9.0: the wizard already recorded goal and team, so the next step is the project-manager prompt; the status
         line set by the wizard is kept, and the Mission Map is redrawn now (named lanes) instead of on the next tick.
         """
-        self.shell.show("workbench")
+        self._ensure_home_workbench()
+        self.shell.show("home")
         try:
             self.shell.refresh_status()
         except Exception:  # noqa: BLE001 — a redraw problem must not hide the created project
