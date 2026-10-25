@@ -47,6 +47,27 @@ ZIP_RULES = [
 ]
 
 
+# 5.12.0 (owner audit B1): text a chat app *renders* is damaged when it is selected and copied on Windows (every line
+# ends with "\\", "_" becomes "\\_"); the Copy button of a code block copies it verbatim. So every prompt Workbench
+# hands to a chat asks for the whole answer in ONE code block with a five-backtick fence (longer than the four-backtick
+# file fences inside it, so those stay intact). Workbench still repairs a damaged copy (intake.normalize).
+ANSWER_RULE_MARK = "## How to send your answer back"
+WHOLE_ANSWER_RULE = [
+    ANSWER_RULE_MARK,
+    "- Put your WHOLE answer — the AIWB_ATTEMPT_ID line, every marker, every file and the manifest — inside ONE code "
+    "block that starts with a line of five backticks (`````text) and ends with a line of five backticks (`````).",
+    "- Write nothing before or after that block. The user copies it with the block's Copy button; text outside a code "
+    "block is damaged when it is copied.",
+]
+
+
+def with_answer_rule(prompt: str) -> str:
+    """``prompt`` + :data:`WHOLE_ANSWER_RULE`, once (idempotent; empty prompts stay empty)."""
+    if not prompt or not prompt.strip() or ANSWER_RULE_MARK in prompt:
+        return prompt
+    return prompt.rstrip() + "\n\n" + "\n".join(WHOLE_ANSWER_RULE)
+
+
 def format_rules(state: dict[str, Any], agent_id: str = "") -> list[str]:
     """The delivery rules for the answer format the user chose (per AI, else for the project; default AIWB)."""
     agent = (state.get("agents") or {}).get(agent_id) or {}
@@ -350,7 +371,7 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
                     "recommended_next_action": "…"}, ensure_ascii=False, indent=1),
         "<<<AIWB_END_HANDOFF>>>",
         "- Keep separate: done, proposed, not run, needs decision."])
-    return "\n".join(lines)
+    return with_answer_rule("\n".join(lines))
 
 
 def sha256_text(text: str) -> str:
