@@ -17,7 +17,7 @@ from ..ui import layout as ui_layout
 from . import theme
 from .controller import SECTIONS, WorkspaceController
 
-SCROLL_VIEWS = {"overview", "settings", "versions"}
+SCROLL_VIEWS = {"plan", "project"}  # 5.11.0: three sections; old keys are aliases (controller.SECTION_ALIASES)
 
 
 class WorkspaceWindow:
@@ -29,9 +29,10 @@ class WorkspaceWindow:
     """
 
     def __init__(self, parent: tk.Misc, wc: WorkspaceController, *, clipboard: Callable[[str], None],
-                 geometry: str = "", host: tk.Misc | None = None) -> None:
+                 geometry: str = "", host: tk.Misc | None = None, on_home: Callable[[], Any] | None = None) -> None:
         self.wc = wc
         self.clipboard = clipboard
+        self.on_home = on_home  # 5.11.0: the next step is done on Home's card; the strip only points there
         self.last_prompt = ""
         self.last_handoff_id = ""
         self.embedded = host is not None
@@ -142,11 +143,10 @@ class WorkspaceWindow:
         # Phase bar (roadmap 4.0.0): where the project is in the owner's flowchart.
         self.flow_var = tk.StringVar()
         ttk.Label(self.next_frame, textvariable=self.flow_var, style="WS.Muted.TLabel").grid(row=2, column=0, sticky="w")
-        self.next_btn = ttk.Button(self.next_frame, text="", style="WS.Primary.TButton", command=self.do_next)
+        # 5.11.0 (A7): one home per command — the step's buttons and the paste box live on Home's Next-step card
+        self.next_btn = ttk.Button(self.next_frame, text="Open on Home", style="WS.Primary.TButton", command=self.go_home)
+        self.next_btn._aiwb_link = "home"  # type: ignore[attr-defined]  # App Map: a link, not a second command
         self.next_btn.grid(row=0, column=1, rowspan=2, sticky="e", padx=(8, 0))
-        self.next_menu = tk.Menu(self.next_frame, tearoff=False)
-        self.next_more = ttk.Menubutton(self.next_frame, text="More", menu=self.next_menu)
-        self.next_more.grid(row=0, column=2, rowspan=2, sticky="e", padx=(6, 0))
         self.guide_step: dict[str, Any] = {}
         # Body: sidebar | center | inspector
         self.body = ttk.Frame(w, style="WS.TFrame")
@@ -258,16 +258,6 @@ class WorkspaceWindow:
         self.next_var.set(("← " if self.wc.rtl else "→ ") + "Next step: " + st["title"] + who)
         self.next_explain_var.set(st["explain"] + (f"  ({len(steps) - 1} more open)" if len(steps) > 1 else ""))
         self.flow_var.set(self.wc.flow_text())
-        primary = next(a for a in st["actions"] if a["primary"])
-        self.next_btn.configure(text=primary["label"] + ("…" if primary["needs"] and not primary["label"].endswith("…") else ""))
-        self.next_menu.delete(0, "end")
-        for a in st["actions"]:
-            if not a["primary"]:
-                self.next_menu.add_command(label=a["label"], command=lambda k=st["key"], i=a["id"]: self.guide_action(k, i))
-        if len(st["actions"]) > 1:
-            self.next_more.grid()
-        else:
-            self.next_more.grid_remove()
         self.next_label.configure(anchor="e" if self.wc.rtl else "w", justify="right" if self.wc.rtl else "left")
         self._render_inspector()
 
@@ -319,8 +309,15 @@ class WorkspaceWindow:
             self.status_var.set(str(exc))
             return None
 
+    def go_home(self) -> Any:
+        """The strip's button (5.11.0): show Home, whose Next-step card does the step."""
+        if self.on_home is None:
+            self.status_var.set("Do this step on Home: the Next-step card has its buttons and the paste box.")
+            return None
+        return self.on_home()
+
     def do_next(self) -> Any:
-        """Run the primary action of the guide's first step (3.5.0)."""
+        """Run the primary action of the guide's first step (3.5.0; no button since 5.11.0 — Home's card has it)."""
         st = self.guide_step or self.wc.guide_steps()[0]
         primary = next(a for a in st["actions"] if a["primary"])
         return self.guide_action(st["key"], primary["id"])
@@ -427,11 +424,15 @@ class WorkspaceWindow:
             b._aiwb_link = key  # type: ignore[attr-defined]  # App Map: opens a tool whose home is elsewhere
             b.pack(side="right" if self.wc.rtl else "left", padx=2)
 
-    def _view_overview(self, f: ttk.Frame) -> None:
+    def _view_plan(self, f: ttk.Frame) -> None:
+        """Plan & Tasks (5.11.0): progress · needs your attention · the plan to review · tasks with their prompt and
+        answer · the queue of each AI · recent activity. (5.10.0: Overview + Tasks + the review part of Team.)"""
         ov = self.wc.overview()
-        self._heading(f, self.wc.section_label("overview"))
+        self._heading(f, self.wc.section_label("plan"))
         anchor = "e" if self.wc.rtl else "w"
-        goal = ov["goal"] or self.wc.tr(("No goal yet. Use “Plan project” to start.", "هنوز هدفی ثبت نشده. با «برنامه‌ریزی پروژه» شروع کنید."))
+        side = "right" if self.wc.rtl else "left"
+        goal = ov["goal"] or self.wc.tr(("No goal yet. Start the project on Home (Next step).",
+                                         "هنوز هدفی ثبت نشده. پروژه را از Home (قدم بعد) شروع کنید."))
         ttk.Label(f, text=goal, style="WS.TLabel", wraplength=700, anchor=anchor).grid(row=1, column=0, sticky="ew")
         self.progress_var = tk.StringVar(value=self.wc.progress_text(ov["progress"]))
         ttk.Label(f, textvariable=self.progress_var, style="WS.TLabel", anchor=anchor).grid(row=2, column=0, sticky="ew", pady=4)
@@ -460,36 +461,36 @@ class WorkspaceWindow:
             self.att_tree.bind("<Double-1>", lambda _e: self.open_attention_selected())
             ab = ttk.Frame(att, style="WS.TFrame")
             ab.pack(fill="x", pady=(4, 0))
-            side = "right" if self.wc.rtl else "left"
             ttk.Button(ab, text=self.wc.tr(("Open", "باز کردن")), command=self.open_attention_selected).pack(side=side)
-            ttk.Button(ab, text=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen).pack(side=side, padx=4)
-            ttk.Button(ab, text=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
-                       command=lambda: (self.wc.clear_seen(), self.show("overview"))).pack(side=side)
+            am = tk.Menu(ab, tearoff=False)
+            am.add_command(label=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen)
+            am.add_command(label=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
+                           command=lambda: (self.wc.clear_seen(), self.show("plan")))
+            ttk.Menubutton(ab, text="More", menu=am).pack(side=side, padx=4)
+        self._proposal_review(f, 6)
+        tb = ttk.LabelFrame(f, text=self.wc.tr(("Tasks", "وظایف")), padding=6)
+        tb.grid(row=7, column=0, sticky="nsew", pady=6)
+        self._tasks_box(tb)
         qf = ttk.LabelFrame(f, text="Queue of each AI (double-click a step to do it)", padding=6)
-        qf.grid(row=6, column=0, sticky="ew", pady=(0, 6))
+        qf.grid(row=8, column=0, sticky="ew", pady=(0, 6))
         self.queue_tree = ttk.Treeview(qf, columns=("step",), show="tree headings", style="WS.Treeview", height=6)
         self.queue_tree.heading("#0", text="Who")
         self.queue_tree.heading("step", text="Step")
         self.queue_tree.column("#0", width=200, stretch=False)
         self.queue_tree.column("step", width=540, stretch=True)
         self.queues = self.wc.guide_queues()
+        names = {aid: (a.get("name") or aid) for aid, a in (self.wc.ctl.state().get("agents") or {}).items()}
         for agent, steps in sorted(self.queues.items(), key=lambda kv: (kv[0] != "you", kv[0])):
-            node = self.queue_tree.insert("", "end", iid="q:" + agent, text="You" if agent == "you" else agent,
+            node = self.queue_tree.insert("", "end", iid="q:" + agent, text="You" if agent == "you" else names.get(agent, agent),
                                           values=(f"{len(steps)} open",), open=True)
             for st in steps:
                 self.queue_tree.insert(node, "end", iid=st["key"], text="", values=(st["title"],))
         self.queue_tree.pack(fill="x")
         self.queue_tree.bind("<Double-1>", lambda _e: self.do_queue_selected())
         act = ttk.LabelFrame(f, text=self.wc.tr(("Recent activity", "فعالیت اخیر")), padding=6)
-        act.grid(row=7, column=0, sticky="ew")
+        act.grid(row=9, column=0, sticky="ew")
         for rec in ov["recent"]:
             ttk.Label(act, text=self.wc.event_text(rec), style="TLabel").pack(anchor=anchor)
-        b = ttk.Frame(f, style="WS.TFrame")
-        b.grid(row=8, column=0, sticky="ew", pady=6)
-        ttk.Button(b, text=self.wc.tr(("Design the whole project…", "طراحی کل پروژه…")), style="WS.Primary.TButton",
-                   command=self.dialog_charter).pack(side="right" if self.wc.rtl else "left")
-        ttk.Button(b, text=self.wc.tr(("Plan project…", "برنامه‌ریزی پروژه…")), command=self.do_plan).pack(
-            side="right" if self.wc.rtl else "left", padx=6)
 
     def do_queue_selected(self, key: str = "") -> Any:
         """Primary action of the step selected in the per-AI queue."""
@@ -558,14 +559,14 @@ class WorkspaceWindow:
         if keys is None:
             keys = list(self.att_tree.selection()) if hasattr(self, "att_tree") else []
         out = self.wc.mark_seen([k for k in keys if not k.startswith("more:")])
-        self.show("overview")
+        self.show("plan")
         return out
 
-    def _view_tasks(self, f: ttk.Frame) -> None:
-        self._heading(f, self.wc.section_label("tasks"))
-        f.rowconfigure(1, weight=1)
+    def _tasks_box(self, f: ttk.Frame) -> None:
+        """The task list with the prompt to copy and the answer to check (Plan & Tasks › Tasks)."""
+        f.columnconfigure(0, weight=1)
         cols = ("status", "stage", "owner")
-        self.task_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=10)
+        self.task_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=8)
         self.task_tree.heading("stage", text=self.wc.tr(("Workflow", "گردش کار")))
         self.task_tree.column("stage", width=240, stretch=True)
         self.task_tree.heading("#0", text=self.wc.tr(("Task", "Task")))
@@ -576,8 +577,8 @@ class WorkspaceWindow:
         self.task_tree.column("owner", width=150, stretch=False)
         sb = ttk.Scrollbar(f, orient="vertical", command=self.task_tree.yview)
         self.task_tree.configure(yscrollcommand=sb.set)
-        self.task_tree.grid(row=1, column=0, sticky="nsew")
-        sb.grid(row=1, column=1, sticky="ns")
+        self.task_tree.grid(row=0, column=0, sticky="nsew")
+        sb.grid(row=0, column=1, sticky="ns")
         for r in self.wc.task_rows():
             self.task_tree.insert("", "end", iid=r["task_id"], text=f"{r['task_id']} {r['title']}",
                                   values=(f"{r['symbol']} {r['status_text']}", r.get("stage_text", ""), r["owner"]))
@@ -586,7 +587,7 @@ class WorkspaceWindow:
             self.task_tree.selection_set(ref)
         self.task_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.task_tree, "task"))
         pf = ttk.Frame(f, style="WS.TFrame")
-        pf.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(6, 0))
+        pf.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(6, 0))
         pf.columnconfigure(0, weight=1)
         pf.columnconfigure(1, weight=1)
         ttk.Label(pf, text=self.wc.tr(("Prompt to copy (Workbench never sends it)", "پرامپت برای کپی (Workbench آن را ارسال نمی‌کند)"))).grid(row=0, column=0, sticky="w")
@@ -603,9 +604,27 @@ class WorkspaceWindow:
         ttk.Button(bb, text=self.wc.tr(("Check & import answer", "بررسی و ثبت پاسخ")), style="WS.Primary.TButton",
                    command=self.do_import).pack(side=side, padx=4)
 
-    def _view_team(self, f: ttk.Frame) -> None:
-        self._heading(f, self.wc.section_label("team"))
-        f.rowconfigure(1, weight=1)
+    def _view_project(self, f: ttk.Frame) -> None:
+        """Project settings (5.11.0): project details · the AI team and its manager · account profiles · charter start
+        prompts · project tools. (5.10.0: Team + Files & Context + Versions & Builds + Settings.)"""
+        self._heading(f, self.wc.section_label("project"))
+        anchor = "e" if self.wc.rtl else "w"
+        side = "right" if self.wc.rtl else "left"
+        st = self.wc.ctl.state()
+        settings = st.get("settings") or {}
+        brief = settings.get("brief") or {}
+        det = ttk.LabelFrame(f, text=self.wc.tr(("Project details", "مشخصات پروژه")), padding=6)
+        det.grid(row=1, column=0, sticky="ew", pady=(0, 6))
+        facts = [("Goal", settings.get("goal", "")), ("Name", brief.get("name", "") or self.wc.ctl.root.name),
+                 ("Platform", brief.get("platform", "")), ("Constraints", brief.get("constraints", "")),
+                 ("Answer format", settings.get("answer_format", "") or "aiwb"), ("Folder", str(self.wc.ctl.root))]
+        self.details_var = tk.StringVar(value="\n".join(f"{k}: {v or '—'}" for k, v in facts))
+        ttk.Label(det, textvariable=self.details_var, wraplength=760, justify="left", anchor=anchor).pack(fill="x")
+        ttk.Label(det, text="Change them on Home (Next step › More › Change the project details…) until the plan is "
+                            "accepted. The AIs themselves: Agents › Edit team…", style="WS.Muted.TLabel",
+                  wraplength=760, anchor=anchor).pack(fill="x", pady=(4, 0))
+        team = ttk.LabelFrame(f, text=self.wc.tr(("AI team", "تیم AI")), padding=6)
+        team.grid(row=2, column=0, sticky="nsew", pady=6)
         dash = self.wc.dashboard()
         c = dash["counts"]
         self.team_status_var = tk.StringVar(value=self.wc.tr(("Verified ", "تأییدشده ")) + str(c["verified"]) + " · "
@@ -613,45 +632,86 @@ class WorkspaceWindow:
                                             + self.wc.tr(("waiting for your paste ", "منتظر Paste شما ")) + str(c["waiting_answer"]) + " · "
                                             + self.wc.tr(("blocked ", "مسدود ")) + str(c["blocked"]) + " · "
                                             + self.wc.tr(("needs action ", "نیازمند اقدام ")) + str(c["needs_action"]))
-        bar = ttk.Frame(f, style="WS.TFrame")
-        bar.grid(row=0, column=0, sticky="e" if not self.wc.rtl else "w")
-        ttk.Label(bar, textvariable=self.team_status_var, style="WS.Muted.TLabel").pack(side="left", padx=4)
+        bar = ttk.Frame(team, style="WS.TFrame")
+        bar.pack(fill="x")
+        ttk.Label(bar, textvariable=self.team_status_var, style="WS.Muted.TLabel").pack(side=side, padx=4)
         self.team_filter = tk.StringVar()
-        ttk.Entry(bar, textvariable=self.team_filter, width=14).pack(side="left")
+        fe = ttk.Entry(bar, textvariable=self.team_filter, width=14)
+        fe.pack(side=side)
+        fe.bind("<KeyRelease>", lambda _e: self.fill_team())  # filters as you type (5.11.0: no Filter button)
         self.team_attention_only = tk.BooleanVar(value=dash["density"] == "compact")
         ttk.Checkbutton(bar, text=self.wc.tr(("needs action only", "فقط نیازمند اقدام")), variable=self.team_attention_only,
-                        command=self.fill_team).pack(side="left", padx=4)
-        ttk.Button(bar, text=self.wc.tr(("Filter", "فیلتر")), command=self.fill_team).pack(side="left")
+                        command=self.fill_team).pack(side=side, padx=4)
         cols = ("role", "account", "chat", "tasks", "stage", "attention", "ready")
-        self.team_tree = ttk.Treeview(f, columns=cols, show="tree headings", style="WS.Treeview", height=8)
+        self.team_tree = ttk.Treeview(team, columns=cols, show="tree headings", style="WS.Treeview", height=6)
         heads = {"#0": ("Agent", "Agent"), "role": ("Role", "نقش"), "account": ("Account profile", "پروفایل اکانت"),
                  "chat": ("Chat", "چت"), "tasks": ("Open tasks", "Taskهای باز"), "stage": ("Current step", "گام فعلی"),
                  "attention": ("Needs you", "نیاز به شما"), "ready": ("Ready?", "آماده؟")}
-        for c, pair in heads.items():
-            self.team_tree.heading(c, text=self.wc.tr(pair))
+        for col, pair in heads.items():
+            self.team_tree.heading(col, text=self.wc.tr(pair))
         self.team_tree.column("#0", width=180)
-        for c, wdt in (("role", 110), ("account", 130), ("chat", 110), ("tasks", 70), ("stage", 200), ("attention", 80),
-                       ("ready", 100)):
-            self.team_tree.column(c, width=wdt, stretch=c in ("account", "chat"))
-        self.team_tree.grid(row=1, column=0, sticky="nsew")
+        for col, wdt in (("role", 110), ("account", 130), ("chat", 110), ("tasks", 70), ("stage", 200), ("attention", 80),
+                         ("ready", 100)):
+            self.team_tree.column(col, width=wdt, stretch=col in ("account", "chat"))
+        self.team_tree.pack(fill="both", expand=True, pady=4)
         self.fill_team()
         self.team_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.team_tree, "agent"))
+        pm = ttk.Frame(team, style="WS.TFrame")
+        pm.pack(fill="x")
+        ts = self.wc.team_settings()
+        ttk.Label(pm, text=self.wc.tr(("Project manager:", "مدیر پروژه:"))).pack(side=side)
+        self.pm_var = tk.StringVar(value=ts["pm_agent_id"])
+        pm_box = ttk.Combobox(pm, textvariable=self.pm_var, values=[a for a, _ in self.wc.pm_choices()], width=24,
+                              state="readonly")
+        pm_box.pack(side=side, padx=4)
+        pm_box.bind("<<ComboboxSelected>>", lambda _e: self.save_team_settings())  # saved at once (no Save button)
+        ttk.Label(pm, text=f"Parallel chats: {ts['max_parallel_chats']} (Agents › Parallel chats…)",
+                  style="WS.Muted.TLabel").pack(side=side, padx=(12, 0))
         acc = ttk.LabelFrame(f, text=self.wc.tr(("Your account profiles (labels only — no passwords or keys)",
                                                    "پروفایل‌های اکانت شما (فقط برچسب — بدون رمز یا کلید)")), padding=6)
-        acc.grid(row=2, column=0, sticky="ew", pady=6)
+        acc.grid(row=3, column=0, sticky="ew", pady=6)
         self.acc_list = tk.Listbox(acc, height=4)
         self.acc_list.pack(fill="x")
         for a in self.wc.account_rows():
             state = "" if a.get("enabled", True) else " (off)"
             self.acc_list.insert("end", f"{a['account_profile_id']} · {a['display_name']} · {a['provider']} · "
                                         f"{a['plan']} (self-declared) · {a['bindings']} chat(s){state}")
-        side = "right" if self.wc.rtl else "left"
-        ttk.Button(acc, text=self.wc.tr(("Add account profile…", "افزودن پروفایل اکانت…")), command=self.dialog_add_account).pack(
-            side=side, pady=4)
-        ttk.Button(acc, text=self.wc.tr(("Enable / disable selected", "فعال / غیرفعال کردن انتخاب‌شده")),
-                   command=self.toggle_selected_account).pack(side=side, pady=4, padx=4)
-        self._team_planner(f, 3)
-        self._proposal_review(f, 4)
+        ab = ttk.Frame(acc, style="WS.TFrame")
+        ab.pack(fill="x", pady=(4, 0))
+        ttk.Button(ab, text=self.wc.tr(("Add account profile…", "افزودن پروفایل اکانت…")), command=self.dialog_add_account).pack(side=side)
+        am = tk.Menu(ab, tearoff=False)
+        am.add_command(label=self.wc.tr(("Enable / disable selected", "فعال / غیرفعال کردن انتخاب‌شده")),
+                       command=self.toggle_selected_account)
+        ttk.Menubutton(ab, text="More", menu=am).pack(side=side, padx=4)
+        ch = self.wc.ctl.charter()
+        if ch:
+            cb = ttk.LabelFrame(f, text="Charter start prompts", padding=6)
+            cb.grid(row=4, column=0, sticky="ew", pady=6)
+            agents = sorted(ch.get("start_prompts") or {})
+            self.charter_agent_var = tk.StringVar(value=agents[0] if agents else "")
+            ttk.Combobox(cb, textvariable=self.charter_agent_var, values=agents, width=24, state="readonly").pack(side=side)
+            ttk.Button(cb, text="Copy start prompt", command=self.copy_start_prompt).pack(side=side, padx=4)
+        items = self.wc.tool_items("project")
+        if items:
+            tf = ttk.LabelFrame(f, text=self.wc.tr(("Files, builds and the phone", "فایل‌ها، Build و موبایل")), padding=6)
+            tf.grid(row=5, column=0, sticky="ew", pady=6)
+            ttk.Label(tf, text=self.wc.tr(("Answers, repairs, context requests, builds and the phone use the existing "
+                                          "tools. Prepared context is NOT sent until you paste it into the chat yourself; "
+                                          "builds and releases are recorded only when they really happened.",
+                                          "پاسخ‌ها، اصلاح، درخواست زمینه، Build و موبایل از ابزارهای موجود استفاده "
+                                          "می‌کنند. زمینهٔ آماده‌شده تا وقتی خودتان Paste نکنید ارسال نشده است.")),
+                      style="WS.Muted.TLabel", wraplength=760, anchor=anchor).pack(fill="x")
+            tm = tk.Menu(tf, tearoff=False)
+            for key, label in items:
+                tm.add_command(label=label, command=lambda k=key: self._guard(lambda: self.wc.open_tool(k)))
+            self.tools_menu = tm
+            mb = ttk.Menubutton(tf, text=self.wc.tr(("Project tools", "ابزارهای پروژه")), menu=tm)
+            mb._aiwb_link = "tools"  # type: ignore[attr-defined]  # App Map: links to tools whose home is elsewhere
+            mb.pack(side=side, pady=(4, 0))
+        ttk.Label(f, text=self.wc.tr(("Ctrl+B sidebar · Ctrl+I inspector · Alt+1…3 sections. View, language and theme "
+                                     "never change project data.",
+                                     "Ctrl+B نوار کناری · Ctrl+I بازرس · Alt+1…3 بخش‌ها. نما، زبان و تم دادهٔ پروژه را تغییر نمی‌دهند.")),
+                  style="WS.Muted.TLabel", wraplength=700).grid(row=6, column=0, sticky="w", pady=(6, 0))
 
     def fill_team(self) -> list[str]:
         """Team rows (registry + dashboard columns); 7–10 agents start with 'needs action only' (spec §10.4)."""
@@ -671,37 +731,13 @@ class WorkspaceWindow:
             shown.append(r["agent_id"])
         return shown
 
-    # -- team planner (2.4.0)
-    def _team_planner(self, f: ttk.Frame, row: int) -> None:
-        side = "right" if self.wc.rtl else "left"
-        box = ttk.LabelFrame(f, text=self.wc.tr(("Team planning", "برنامه‌ریزی تیم")), padding=6)
-        box.grid(row=row, column=0, sticky="ew", pady=4)
-        ts = self.wc.team_settings()
-        ttk.Label(box, text=self.wc.tr(("Chats you will follow at the same time:", "تعداد چتی که هم‌زمان پیگیری می‌کنید:"))).pack(side=side)
-        self.parallel_var = tk.StringVar(value=str(ts["max_parallel_chats"]))
-        ttk.Spinbox(box, from_=1, to=12, width=4, textvariable=self.parallel_var,
-                    command=self.save_team_settings).pack(side=side, padx=4)
-        ttk.Label(box, text=self.wc.tr(("Project manager:", "مدیر پروژه:"))).pack(side=side, padx=(8, 0))
-        self.pm_var = tk.StringVar(value=ts["pm_agent_id"])
-        ttk.Combobox(box, textvariable=self.pm_var, values=[a for a, _ in self.wc.pm_choices()], width=24,
-                     state="readonly").pack(side=side, padx=4)
-        ttk.Button(box, text=self.wc.tr(("Save team settings", "ذخیرهٔ تنظیمات تیم")),
-                   command=self.save_team_settings).pack(side=side)
-        ttk.Button(box, text=self.wc.tr(("Plan team & tasks…", "برنامه‌ریزی تیم و Taskها…")), style="WS.Primary.TButton",
-                   command=self.dialog_plan_team).pack(side=side, padx=8)
-        ch = self.wc.ctl.charter()
-        if ch:
-            cb = ttk.Frame(box, style="WS.TFrame")
-            cb.pack(side=side, padx=(12, 0))
-            ttk.Label(cb, text="Charter start prompt:").pack(side=side)
-            agents = sorted(ch.get("start_prompts") or {})
-            self.charter_agent_var = tk.StringVar(value=agents[0] if agents else "")
-            ttk.Combobox(cb, textvariable=self.charter_agent_var, values=agents, width=24, state="readonly").pack(side=side)
-            ttk.Button(cb, text="Copy start prompt", command=self.copy_start_prompt).pack(side=side, padx=4)
-
+    # -- team planner (2.4.0). 5.11.0: no buttons any more (the wizard and the charter plan the team; parallel chats
+    # live in Agents › Parallel chats…, the manager in Project settings); the methods stay for scripts and tests.
     def save_team_settings(self, **override: Any) -> Any:
-        changes = {"max_parallel_chats": override.get("max_parallel_chats", self.parallel_var.get()),
-                   "pm_agent_id": override.get("pm_agent_id", self.pm_var.get())}
+        ts = self.wc.team_settings()
+        pm = self.pm_var.get() if hasattr(self, "pm_var") else ts["pm_agent_id"]
+        changes = {"max_parallel_chats": override.get("max_parallel_chats", ts["max_parallel_chats"]),
+                   "pm_agent_id": override.get("pm_agent_id", pm)}
         out = self._guard(lambda: self.wc.set_team_settings(**changes))
         if out:
             self.status_var.set(self.wc.tr(("Team settings saved.", "تنظیمات تیم ذخیره شد.")))
@@ -751,7 +787,7 @@ class WorkspaceWindow:
             return None
         acc = self.wc.account_rows()[sel[0]]
         out = self._guard(lambda: self.wc.set_account_enabled(acc["account_profile_id"], not acc.get("enabled", True)))
-        self.show("team")
+        self.show("project")
         return out
 
     # -- proposal review (2.4.0, spec §7.5)
@@ -788,9 +824,11 @@ class WorkspaceWindow:
         side = "right" if self.wc.rtl else "left"
         ttk.Button(bb, text=self.wc.tr(("Accept selected", "پذیرش موارد انتخاب‌شده")), style="WS.Primary.TButton",
                    command=lambda: self.review_accept()).pack(side=side)
-        ttk.Button(bb, text=self.wc.tr(("Reject all", "رد همه")), command=lambda: self.review_reject()).pack(side=side, padx=4)
-        ttk.Button(bb, text=self.wc.tr(("Request changes (prompt)", "درخواست اصلاح (پرامپت)")),
-                   command=lambda: self.review_request_changes()).pack(side=side)
+        rm = tk.Menu(bb, tearoff=False)  # 5.11.0: one button + More (Plan & Tasks shows at most 8 controls)
+        rm.add_command(label=self.wc.tr(("Reject all", "رد همه")), command=lambda: self.review_reject())
+        rm.add_command(label=self.wc.tr(("Request changes (prompt)", "درخواست اصلاح (پرامپت)")),
+                       command=lambda: self.review_request_changes())
+        ttk.Menubutton(bb, text="More", menu=rm).pack(side=side, padx=4)
 
     def _review_selection(self) -> list[int]:
         return sorted(int(i) for i in self.review_tree.selection()) if hasattr(self, "review_tree") else []
@@ -819,7 +857,7 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.accept_proposal(pid, idx, confirm_stale=bool(confirm_stale)))
         if out:
             self.status_var.set(f"{pid}: {out['status']} · " + ", ".join(out["result"].get("created", {}).values()))
-            self.show("team")
+            self.show("plan")
         return out
 
     def review_reject(self) -> Any:
@@ -828,7 +866,7 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.reject_proposal(self.review_pid))
         if out:
             self.status_var.set(f"{out['proposal_id']}: {out['status']}")
-            self.show("team")
+            self.show("plan")
         return out
 
     def review_request_changes(self, note: str = "") -> str:
@@ -901,9 +939,11 @@ class WorkspaceWindow:
         bb.pack(fill="x", pady=(4, 0))
         ttk.Button(bb, text=self.wc.tr(("New milestone…", "Milestone جدید…")), command=self.dialog_milestone).pack(side=side)
         ttk.Button(bb, text=self.wc.tr(("Accept milestone", "پذیرش Milestone")), command=self.accept_selected_milestone).pack(side=side, padx=4)
-        ttk.Button(bb, text=self.wc.tr(("Propose version…", "پیشنهاد نسخه…")), command=self.dialog_version).pack(side=side)
-        ttk.Button(bb, text=self.wc.tr(("Record commit / tag / release…", "ثبت Commit / Tag / انتشار…")),
-                   command=self.dialog_advance_version).pack(side=side, padx=4)
+        vm = tk.Menu(bb, tearoff=False)  # 5.11.0: versions in More (the Timeline shows at most 5 controls)
+        vm.add_command(label=self.wc.tr(("Propose version…", "پیشنهاد نسخه…")), command=self.dialog_version)
+        vm.add_command(label=self.wc.tr(("Record commit / tag / release…", "ثبت Commit / Tag / انتشار…")),
+                       command=self.dialog_advance_version)
+        ttk.Menubutton(bb, text="More", menu=vm).pack(side=side)
 
     def show_lanes(self) -> dict[str, list[dict[str, Any]]]:
         """Replace the list with one parent row per lane (agent); children are that lane's events (oldest first)."""
@@ -1005,28 +1045,6 @@ class WorkspaceWindow:
         self.tl_page_var.set(f"{page + 1}/{max(res['pages'], 1)} · {res['total']}")
         return res
 
-    def _view_files(self, f: ttk.Frame) -> None:
-        self._heading(f, self.wc.section_label("files"))
-        ttk.Label(f, text=self.wc.tr(("Answers, repairs and context requests use the existing tools. Prepared context "
-                                     "is NOT sent until you paste it into the chat yourself.",
-                                     "پاسخ‌ها، اصلاح و درخواست زمینه از ابزارهای موجود استفاده می‌کنند. زمینهٔ آماده‌شده تا "
-                                     "وقتی خودتان آن را در چت Paste نکنید ارسال نشده است.")), wraplength=700).grid(row=1, column=0, sticky="w")
-        self._tools(f, "files", 2)
-
-    def _view_versions(self, f: ttk.Frame) -> None:
-        self._heading(f, self.wc.section_label("versions"))
-        ttk.Label(f, text=self.wc.tr(("Builds and releases are recorded only when they really happened.",
-                                     "Build و Release فقط وقتی واقعاً انجام شده باشند ثبت می‌شوند.")), wraplength=700).grid(row=1, column=0, sticky="w")
-        self._tools(f, "versions", 2)
-
-    def _view_settings(self, f: ttk.Frame) -> None:
-        self._heading(f, self.wc.section_label("settings"))
-        ttk.Label(f, text=self.wc.tr(("Ctrl+B sidebar · Ctrl+I inspector · Alt+1…7 sections. View, language and theme "
-                                     "never change project data.",
-                                     "Ctrl+B نوار کناری · Ctrl+I بازرس · Alt+1…7 بخش‌ها. نما، زبان و تم دادهٔ پروژه را تغییر نمی‌دهند.")),
-                  wraplength=700).grid(row=1, column=0, sticky="w")
-        self._tools(f, "settings", 2)
-
     def select_timeline_event(self, event_id: str) -> None:
         """Canvas click → Inspector (and the same row in the event list when it is on this page)."""
         self.wc.select("event", event_id)
@@ -1099,8 +1117,8 @@ class WorkspaceWindow:
             self.last_prompt, self.last_handoff_id = r.record.get("fix_prompt", ""), ""
             self.show("tasks")
             return r
-        # proposals are reviewed in the Team view; context requests go to Files & Context (existing tool)
-        self.show({"proposal": "team", "context_request": "files"}.get(r.kind, self.wc.section))
+        # proposals are reviewed in Plan & Tasks; context requests go to Project settings (its tools)
+        self.show({"proposal": "plan", "context_request": "project"}.get(r.kind, self.wc.section))
         return r
 
     def dialog_add_account(self, data: dict[str, Any] | None = None) -> Any:
@@ -1116,7 +1134,7 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.add_account(data))
         if out:
             self.status_var.set(f"{out['account_profile_id']} · {out['display_name']}")
-            self.show("team")
+            self.show("project")
         return out
 
     def dialog_bind_chat(self, agent_id: str, account_id: str | None = None, chat_name: str | None = None) -> Any:
@@ -1133,7 +1151,7 @@ class WorkspaceWindow:
                                                parent=self.win) or ""
         out = self._guard(lambda: self.wc.bind_chat(agent_id, account_id.strip(), chat_name))
         if out:
-            self.show("team")
+            self.show("project")
         return out
 
     def close(self) -> None:
