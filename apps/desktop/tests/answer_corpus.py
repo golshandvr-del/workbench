@@ -10,7 +10,7 @@ Scenario (deterministic, so stored answers replay exactly):
   placeholder attempt id ``ATTEMPT`` below; replay puts the real one in its place (every model repeats the id the prompt
   gave it).
 
-``corpus.json`` lists every case: ``id``, ``file``, ``kind`` (charter | files), ``style`` (which chat app / habit it
+``corpus.json`` lists every case: ``id``, ``file``, ``kind`` (charter | files | context — 5.12.0), ``style`` (which chat app / habit it
 imitates), ``source`` and ``expect`` — ``accept`` (charter → proposal; files → linked, staged, no error in the smart
 check) or ``fix_prompt`` / ``continue`` (refused, with a prompt the user can send back).
 """
@@ -105,6 +105,16 @@ def replay(case: dict[str, Any]) -> dict[str, Any]:
         else:
             text = raw.decode("utf-8").replace(ATTEMPT, att)
         out = sc.g.perform(step["key"], "paste", text=text)
+        if case["kind"] == "context":
+            # 5.12.0 (owner audit B2): a context request is usable when the card turns into the files step and the
+            # files can be copied for the chat
+            now = next((s for s in sc.g.steps() if s["key"] == step["key"]), {})
+            ok = out["kind"] == "context_request" and now.get("actions", [{}])[0].get("id") == "copy_context"
+            prompt = ""
+            if ok:
+                prompt = sc.g.perform(step["key"], "copy_context")["prompt"]
+                ok = prompt.startswith(f"AIWB_ATTEMPT_ID: {att}")
+            return {"ok": ok, "kind": out["kind"], "message": out["message"], "prompt": prompt, "errors": []}
         errors = [p for p in out.get("problems", []) if p["severity"] == "error"]
         ok = out["kind"] == "handoff" and bool(out.get("staged")) and not errors
         return {"ok": ok, "kind": out["kind"], "message": out["message"], "prompt": out.get("prompt", ""),
