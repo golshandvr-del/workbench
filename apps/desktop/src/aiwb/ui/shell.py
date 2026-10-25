@@ -55,13 +55,15 @@ def fit_to_screen(root: tk.Tk, want: tuple[int, int] = (1280, 820), minimum: tup
 
 
 # Page -> rail destination of the 5.x shell (roadmap 5.1.0/5.5.0, docs/UI_TREE.md): an expert page lives under the
-# Tools section of its home destination (structure5.TOOL_HOME).
-RAIL_OF: dict[str, str] = {"home": "home", "workbench": "projects", "agents": "agents", "prompt": "agents",
-                           "response": "agents", "profile": "projects", "run": "projects", "git": "history",
+# Tools section of its home destination (structure5.TOOL_HOME). 5.13.0: four destinations; the Workbench page is the
+# engine behind Home (its guide, its dialogs) and belongs to Home; the 1.x pages belong to Settings.
+RAIL_OF: dict[str, str] = {"home": "home", "workbench": "home", "agents": "agents", "prompt": "settings",
+                           "response": "settings", "profile": "settings", "run": "settings", "git": "history",
                            "history": "history", "settings": "settings"}
 # Rail destination -> page shown when it is clicked
-RAIL_PAGE: dict[str, str] = {"home": "home", "projects": "workbench", "agents": "agents", "history": "history",
-                             "settings": "settings"}
+RAIL_PAGE: dict[str, str] = {"home": "home", "agents": "agents", "history": "history", "settings": "settings"}
+# Old destination keys (settings, scripts, links of 5.0–5.12) -> the destination that holds them now
+RAIL_ALIASES: dict[str, str] = {"projects": "home"}
 STATUS_POLL_MS = 2500
 
 
@@ -141,6 +143,7 @@ class AppShell:
         return ""
 
     def select_rail(self, dest: str) -> None:
+        dest = RAIL_ALIASES.get(dest, dest)
         self.show(RAIL_PAGE.get(dest, dest))
 
     def show(self, key: str) -> None:
