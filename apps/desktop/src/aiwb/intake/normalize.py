@@ -297,8 +297,17 @@ def _scan_json(body: str, fixes: list[str]) -> str:
             comment_fix += 1; continue
         if c == ",":
             k = i + 1
-            while k < n and body[k] in " \t\n":
-                k += 1
+            while k < n:  # whitespace and comments may sit between a trailing comma and the bracket
+                if body[k] in " \t\r\n":
+                    k += 1
+                elif body.startswith("//", k):
+                    j = body.find("\n", k)
+                    k = n if j < 0 else j
+                elif body.startswith("/*", k):
+                    j = body.find("*/", k + 2)
+                    k = n if j < 0 else j + 2
+                else:
+                    break
             if k < n and body[k] in "}]":
                 comma_fix += 1; i += 1; continue
         if c.isalpha():
