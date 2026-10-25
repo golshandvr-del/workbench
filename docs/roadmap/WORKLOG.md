@@ -61,7 +61,7 @@ Progress (tick = committed and pushed):
 - [x] 3 forgiving context parser (48856a3, folders 7010d3a, damaged copy 61e1f74), preview = parser (e4781e6), prompt format (9a48fe2), tests 6b73668 35c849e, JSON comma+comment 546f8f7; unit 795 OK
 - [x] 4 v2/context_step.py (9153a38), controller links request→handoff (9467def), guide step + copy_context/context_sent + clear on answer (ad512e0, 664d24b), card+shell copy (a78c4df, 9548633), test_context_step f93ec7a; unit 801 OK
 - [x] 5 corpus F25 C31 X01-X04 (3432f2f builder, a1c392b replay kind context, 9a91f09…fc0f067 files, 4f9f3dd shape) 60 cases OK; gui_context_smoke.py 13fcb7a PASS; charter smoke expected the raw prompt (Copy now adds the answer rule) → 4941281; full GUI 47/47
-- [ ] 6 docs, version, PR → CI → merge → tag → release
+- [~] 6 version bump (3e66b2c…9b033fc via tools/bump_desktop_release.py in /tmp copy, one file per checkpoint), checklist cc68083, CHANGELOG 2b86858, README 9724c98, USER_GUIDE 4fb08bc, gate "✓ preview ⇒ card moves" (0d0d05a, d6a9935), ROADMAP e74f362; unit 802 OK, GUI 47/47 → next: PR → CI → merge → tag desktop-v5.12.0
 
 ## 5.14.0 (planned, was 5.12.0) — Quick mode
 
