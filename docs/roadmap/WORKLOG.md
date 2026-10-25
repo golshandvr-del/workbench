@@ -56,7 +56,7 @@ Plan (each step = many small checkpoints; tests green at the end of each step):
 
 Progress (tick = committed and pushed):
 
-- [ ] 1 user words + test_user_words.py + truthful status bar
+- [x] 1 user words: dispatch text 2a7fe49, guide `_in_user_words` at the source 52ea503, `tests/test_user_words.py` d3d6c0c (add to bump: --test test_user_words.py), status bar `status5.chats/summary` 3f353df (+ tests c8bcce2, 462768a, fb911d3, shell 61cfd12), Workbench phase line 4af65d3; unit 804 OK
 - [ ] 2 milestones/versions on the Mission Map, Workbench Timeline tab removed
 - [ ] 3 History unified with filter
 - [ ] 4 rail of four + project switcher + Settings › Project
