@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.12.0 (core-path repair: one clear work page — Home is the cockpit)
+# Windows Release Checklist — AI Workbench 5.12.0 (real chat answers work — owner audit B1, B2, B8)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -17,27 +17,22 @@
 `tools/e2e_github_sandbox.py` — run 2026-10-18, all PASS (see `E2E_REPORT_v5.5.0.md (unchanged GitHub code paths)`):
 preflight · sensitive file blocked · commit · idempotent commit · push · idempotent push · exact run of the pushed SHA (not the seed push) · build passed · artifact SHA-256 matched GitHub's digest · artifact content = pushed SHA · build-metadata contract · stale plan refused after a concurrent push · manual dispatch confirmed with run ID · no token in records/events/`.git/config` · branch cleanup. Paths contain spaces and Unicode.
 
-## 5.12.0 specific (core-path repair, step 4: Home = cockpit, audit A7)
+## 5.12.0 specific (real chat answers — owner audit of 5.11.0, ROADMAP §1b B1, B2, B8)
 
-- [x] `gui_owner_path_smoke.py` — **the gate**: New Project → first file on disk driven **only from Home** with real
-      widgets (toolbar menu, wizard, the Next-step card's button / More menu and its **inline** paste panel); no modal
-      dialog may open on the way; **11 clicks + 2 pastes** (≤ 12 required): New Project ▾ · Guided project · Next ·
-      Next · Create project · Copy the charter prompt · Use this answer · Accept all valid changes · Prepare the prompt
-      (also copies it) · Use this answer · Accept the delivery
-- [x] `gui_v5_map_smoke.py` / `test_ui_balance.py` — App Map audit with the new rule **at most 8 controls visible at
-      once per page** (was 10): Home 6, Projects 8, Run & Report 8, Agents 8, History 8, Settings 7; no command with two
-      homes (the Workbench's next-step strip is a *link* to Home; the card's own buttons are *dynamic* controls)
-- [x] `test_next_card.py` — the card model: AI names instead of ids, primary + More, the paste action as the inline
-      panel, focus on one AI's queue (Mission Map click), "Back to the next step"
-- [x] `test_workspace.py` — the Project Workbench has 3 sections (Plan & Tasks · Timeline · Project settings); the old
-      section keys (`overview`, `tasks`, `team`, `files`, `versions`, `settings`) still open the section that holds
-      them, also from an old `ui.json`
-- [x] `gui_paste_box_smoke.py` — live diagnosis, *Load ZIP…* and Markdown answers to files, now in Home's inline panel
-- [x] `gui_guide_smoke.py`, `gui_wizard_smoke.py`, `gui_team_editor_smoke.py`, `gui_charter_smoke.py`,
-      `gui_team_planner_smoke.py` — driven from Home's card; removed duplicates (*Design the whole project…*,
-      *Plan project…*, *Plan team & tasks…*, the Workbench's parallel-chats box) stay gone
-- [x] After *Create project* the app shows **Home** (not the Workbench, not the 1.x Profile)
-- [x] All 5.1.0 – 5.10.0 gates stay green
+- [x] `gui_context_smoke.py` — **the gate**: the owner's real GPT answer (a context request with `required_files`, no
+      `type`, a folder) put on the **real clipboard as a Windows rendered copy** (every line ends with `\`, `_`
+      escaped) and pasted with `<<Paste>>` into Home's inline panel → the card turns into "<AI> asked for 4 files" →
+      *Copy the files for the chat* → *I sent them* → the delivery is pasted and accepted
+- [x] `test_copy_damage.py` — `strip_copy_damage` removes the line-end `\` and Markdown escapes, never inside a code
+      block; the owner's answer round-trips (B1)
+- [x] `test_context_forgiving.py` — a context request is read with synonyms (`required_files`, `paths`, …), plain
+      paths, folders, a missing `type`; the paste preview uses the real parser (no "✓" that then does nothing) (B2)
+- [x] `test_context_step.py` — request → files step → copy (text, or ZIP when big) → sent → answer; secrets never
+      leave; the step is cleared by the answer (B2)
+- [x] Every prompt ends with the *whole answer in one five-backtick code block* rule (B1)
+- [x] Answer corpus: 60 cases incl. the owner's real answer (clean + Windows copy) and Windows-copied files and
+      charter; the corpus must hold owner answers (B8)
+- [x] All 5.1.0 – 5.11.0 gates stay green (unit + 47 GUI smokes)
 - [ ] NOT RUN: the owner's path on real Windows 10/11 with answers from real ChatGPT / Claude / Gemini windows
 
 ## Manual checks on a real user machine — NOT RUN until ticked
