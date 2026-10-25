@@ -255,7 +255,8 @@ class WorkspaceWindow:
         self.pub_var.set(bar["publish"])
         steps = self.wc.guide_steps()
         st = self.guide_step = steps[0]
-        who = "" if st["agent_id"] == "you" else f"  [{st['agent_id']}]"
+        aname = str(((self.wc.ctl.state().get("agents") or {}).get(st["agent_id"]) or {}).get("name") or st["agent_id"])
+        who = "" if st["agent_id"] == "you" or aname in st["title"] else f"  [{aname}]"  # 5.13.0 (B4): the name
         self.next_var.set(("← " if self.wc.rtl else "→ ") + "Next step: " + st["title"] + who)
         self.next_explain_var.set(st["explain"] + (f"  ({len(steps) - 1} more open)" if len(steps) > 1 else ""))
         self.flow_var.set(self.wc.flow_text())
