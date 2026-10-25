@@ -459,7 +459,15 @@ class Guide:
         self.ctl._dirty("validation waived")
         return out
 
-    def perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:  # noqa: C901
+    def perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:
+        """Do one action of a step. 5.12.0 (B1): every prompt handed back asks for the whole answer in one code block."""
+        out = self._perform(key, action, **inp)
+        if isinstance(out, dict) and isinstance(out.get("prompt"), str):
+            from .handoff import with_answer_rule
+            out["prompt"] = with_answer_rule(out["prompt"])
+        return out
+
+    def _perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:  # noqa: C901
         step = self.find(key)
         if action not in [a["id"] for a in step["actions"]]:
             raise ModelError(f"{action!r} is not possible for this step")
