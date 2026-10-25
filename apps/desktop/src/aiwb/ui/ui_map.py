@@ -36,7 +36,7 @@ COMMAND_KINDS = ("button", "item", "option")
 RULES = {
     "page_min_commands": 3,       # a page with fewer own commands is "almost empty"
     "section_max_controls": 7,    # Miller: a section shows at most 7 direct controls
-    "page_max_visible": 10,       # a page shows at most 10 buttons/menus/options at once (3.3.0 rule)
+    "page_max_visible": 8,        # a page shows at most 8 buttons/menus/options at once (3.3.0: 10; 5.11.0 gate: 8)
     "menu_max_items": 12,         # a More menu holds at most 12 commands
     "weight_ratio_max": 4.0,      # heaviest rail destination ≤ 4 × the lightest (commands incl. their tools)
 }
