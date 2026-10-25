@@ -61,3 +61,7 @@ Progress (tick = committed and pushed):
   aiwb/__init__.py, github/api_client.py · release_manifest.json (+ ui/next_card.py, test_next_card.py, checklist) ·
   install.ps1 (same) · docs/release/v5.11.0/WINDOWS_RELEASE_CHECKLIST_v5.11.0.md · CHANGELOG · README(s) · USER_GUIDE ·
   ROADMAP (5.11.0 ✅, 5.12.0 active)
+  - done: structure5/UI_TREE (7f91f41, a60281b), version (9aaf907, 37038e6, 7ad39c9), checklist ddc2315, manifest
+    f14aa4c, install.ps1 d02de57, CHANGELOG c021ea8, README 7890a85, USER_GUIDE 6e50725/fb6321a, copy message ca4482d,
+    screenshots 2d95e71…69536a8, ROADMAP 3ecc846. **PR #67 opened** → wait for CI (Linux + Windows) → merge → tag
+    `desktop-v5.11.0` (release-desktop.yml builds the Release on the tag)
