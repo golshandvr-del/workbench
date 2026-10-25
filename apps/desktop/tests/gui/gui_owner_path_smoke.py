@@ -1,14 +1,16 @@
-"""Roadmap 5.8.0 gate (audit A15): the owner's path with REAL widgets, from New Project to a file on disk.
+"""Roadmap 5.8.0 gate (audit A15), driven only from Home since 5.11.0 (A7): the owner's path with REAL widgets, from
+New Project to a file on disk, with a click count.
 
 Every earlier smoke handed inputs straight to ``guide_action(..., inputs)``, so no dialog was ever opened and the
-5.7.0 paste box crashed for the owner while 40 smokes were green. This one only clicks: the toolbar menu, the
-create-project window, the Workbench's primary button and its More menu. Modal dialogs (the start-form questions and
-the multi-line paste box) are answered by a poller that types into the real Entry/Text widget and presses the real
-OK / "Use this answer" button — the same thing a person does.
+5.7.0 paste box crashed for the owner while 40 smokes were green. This one only clicks real widgets: the toolbar menu,
+the New Project wizard, and Home's Next-step card (its primary button, its More menu and its **inline** paste panel).
+Typing and pasting go into the real Entry/Text widgets. Any modal dialog that opens on the way is a failure (5.11.0:
+no popup paste box), and so is a click count above the 5.11.0 gate.
 
-Path: New Project ▾ › Guided project → Create → Workbench (not the old Profile, A3) → Start the project (5 questions)
-→ Copy the charter prompt → More › Paste the charter (A11) → Accept → Prepare/Copy the task prompt → I sent it →
-Paste the answer → Accept the files → the file exists on disk. The status bar never says "No project open" (A6).
+Path: New Project ▾ › Guided project → wizard (Next, Next, Create) → **Home** (not the Workbench, 5.11.0) → Copy the
+charter prompt → paste the charter in the card → Use this answer → Accept → Prepare (also copies the prompt) → paste
+the answer in the card → Use this answer → Accept the files → the file exists on disk. The status bar never says
+"No project open" (A6). Gate: ≤ 12 clicks + the pastes.
 
 ``AIWB_SCREENSHOT_DIR=dir`` writes one screenshot per step (needs ImageMagick ``import``).
 """
@@ -23,11 +25,12 @@ import time
 import tkinter as tk
 import traceback
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import AI_Workbench as wb
 from gui_smoke_helpers import wait_for_project_ready
 
+MAX_CLICKS = 12          # roadmap 5.11.0 gate: New Project → first file on disk in ≤ 12 clicks (+ the pastes)
 REPO = Path(__file__).resolve().parents[4]
 CHARTER = REPO / "packages/contracts/fixtures/valid/project-charter.v1.todo.json"
 F4 = "````"
@@ -40,14 +43,15 @@ def walk(w: tk.Misc):
 
 
 class Owner:
-    """Drives the app like a person: clicks, and answers each modal dialog that appears."""
+    """Drives the app like a person: counts every click, and records any modal dialog (there must be none)."""
 
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.answers: list[str | Callable[[], str]] = []
-        self.answered: list[str] = []
-        self._seen: set[str] = set()
+        self.clicks: list[str] = []
+        self.pastes = 0
+        self.dialogs: list[str] = []
         self.errors: list[str] = []
+        self._seen: set[str] = set()
         root.report_callback_exception = lambda *a: self.errors.append("".join(traceback.format_exception(*a)))
         root.after(60, self._poll)
 
@@ -63,28 +67,30 @@ class Owner:
     def _poll(self) -> None:
         try:
             for t in self.tops():
-                if str(t) in self._seen or not t.winfo_ismapped() or not self.answers:
+                if str(t) in self._seen or not t.winfo_ismapped() or t.title() == "Create a new project":
                     continue
-                kids = list(walk(t))
-                ok = [c for c in kids if c.winfo_class() in ("Button", "TButton")
-                      and str(c.cget("text")) in ("OK", "Use this answer")]
-                if not ok:
-                    continue
-                val = self.answers.pop(0)
-                val = val() if callable(val) else val
-                text = [c for c in kids if c.winfo_class() == "Text"]
-                entry = [c for c in kids if c.winfo_class() in ("Entry", "TEntry")]
-                if text:
-                    text[0].insert("1.0", val)
-                elif entry:
-                    entry[0].delete(0, "end")
-                    entry[0].insert(0, val)
                 self._seen.add(str(t))
-                self.answered.append(t.title())
-                ok[0].invoke()
+                self.dialogs.append(t.title())
+                t.destroy()
         except tk.TclError:
             pass
         self.root.after(60, self._poll)
+
+    def click(self, widget: Any, what: str = "") -> None:
+        self.clicks.append(what or str(widget.cget("text")))
+        widget.invoke()
+
+    def click_menu(self, menu: tk.Menu, label: str) -> None:
+        self.clicks.append(f"More › {label}")
+        menu.invoke(menu_labels(menu).index(label))
+
+    def paste(self, text_widget: tk.Text, value: str) -> None:
+        """What Ctrl+V does in the card's paste panel (a paste, not a click)."""
+        self.pastes += 1
+        text_widget.delete("1.0", "end")
+        text_widget.insert("1.0", value)
+        text_widget.edit_modified(True)
+        text_widget.event_generate("<<Modified>>")
 
     def shot(self, name: str) -> None:
         out = os.environ.get("AIWB_SCREENSHOT_DIR")
@@ -100,14 +106,31 @@ def menu_labels(menu: tk.Menu) -> list[str]:
     return [] if end is None else [menu.entrycget(i, "label") for i in range(end + 1)]
 
 
-def click_more(ws: Any, label: str) -> None:
-    """Press the action ``label`` of the current step: the primary button if it is that action, else More › label."""
-    if ws.next_btn.cget("text").rstrip("…") == label.rstrip("…"):
-        ws.next_btn.invoke()
+def do_step(o: Owner, card: Any, label: str) -> None:
+    """Press the action ``label`` of Home's card: its primary button if it is that action, else More › label."""
+    if card.next_btn.winfo_manager() and card.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
+        o.click(card.next_btn)
         return
-    labels = menu_labels(ws.next_menu)
-    assert label in labels, f"neither the button ({ws.next_btn.cget('text')!r}) nor More has {label!r}: {labels}"
-    ws.next_menu.invoke(labels.index(label))
+    labels = menu_labels(card.next_menu)
+    hit = next((x for x in labels if x.rstrip("…").startswith(label.rstrip("…"))), None)
+    assert hit, (f"neither the card's button ({card.next_btn.cget('text')!r}) nor More has {label!r}: {labels} "
+                 f"— card: {card.title_var.get()!r}")
+    o.click_menu(card.next_menu, hit)
+
+
+def use_answer(o: Owner, card: Any, text: str, needle: str) -> str:
+    """Paste ``text`` into the card's inline paste panel, wait for the live diagnosis, press Use this answer."""
+    panel = card.paste
+    assert panel.winfo_manager(), f"no paste panel on Home: {card.title_var.get()!r} {card.labels()}"
+    o.paste(panel.box, text)
+    end, line = time.monotonic() + 4, ""
+    while time.monotonic() < end and needle not in line:
+        o.pump(50)
+        line = panel.status_var.get()
+    assert needle in line, f"live diagnosis never showed {needle!r}: {line!r}"
+    o.click(panel.ok_btn)
+    o.pump(500)
+    return line
 
 
 def main() -> None:
@@ -126,16 +149,17 @@ def main() -> None:
             app = wb.WorkbenchApp(root)
             o.pump(600)
             # 1) Toolbar › New Project ▾ › Guided project (recommended)
-            app.shell.toolbar.menus["new"].invoke(0)
+            o.clicks.append("New Project ▾")
+            o.click_menu(app.shell.toolbar.menus["new"], menu_labels(app.shell.toolbar.menus["new"])[0])
             o.pump(400)
-            dlg = next(t for t in o.tops() if t.title() == "Create a new project")
+            assert any(t.title() == "Create a new project" for t in o.tops()), [t.title() for t in o.tops()]
             o.shot("01_create_window")
             # 5.9.0: the one-window wizard — Project · Team · Answers, typed into its real widgets
             wiz = app.project_wizard
             entries = [c for c in walk(wiz.pages[0]) if c.winfo_class() == "TEntry"]
             entries[0].insert(0, "Snake Game")
             wiz.goal_text.insert("1.0", "A small snake game for Windows")
-            wiz.next_btn.invoke()
+            o.click(wiz.next_btn)
             o.pump(200)
             assert wiz.step == 1, wiz.error_var.get()
             box = wiz.team.count_box
@@ -150,65 +174,56 @@ def main() -> None:
             for row, name in zip(rows[1:], ("Core dev", "Desktop dev", "Mobile dev")):
                 row["name"].set(name)
             o.shot("01b_team")
-            wiz.next_btn.invoke()
+            o.click(wiz.next_btn)
             o.pump(200)
             assert wiz.next_btn.cget("text") == "Create project", wiz.next_btn.cget("text")
-            wiz.next_btn.invoke()
+            o.click(wiz.next_btn)
             assert app.workspace is not None, "Create made no project: " + wiz.error_var.get()
             wait_for_project_ready(app, root, app.workspace)
             o.pump(1200)
-            # A3: the guided start, not the 1.x Profile page and not a 'Project created' box
-            assert app.shell.current == "workbench", f"after Create the app shows {app.shell.current!r}, not the Workbench"
+            # 5.11.0 (A7): Home is the cockpit — not the Workbench, not the 1.x Profile page (A3)
+            assert app.shell.current == "home", f"after Create the app shows {app.shell.current!r}, not Home"
             assert not [b for b in boxes if b[0] == "showinfo"], f"no 1.x 'Project created' box: {boxes}"
             # A6: an open project
             app.shell.refresh_status()
             facts = app.shell.statusbar.facts_var.get()
             assert "No project open" not in facts, f"status bar with an open project: {facts!r}"
             ws = app.workspace_window
-            assert ws is not None
-            o.shot("02_workbench_start")
-            # A8: no start questions after the wizard — the team is the user's, the next step is the charter prompt
-            assert not o.answered, f"questions asked again after the wizard: {o.answered}"
+            assert ws is not None, "the embedded Workbench exists in the background"
+            card = app.home_card
+            card.refresh()
+            o.shot("02_home_start")
+            # A8: the team is the user's, the next step is the charter prompt
             st = ws.wc.ctl.state()
             assert sorted(a for a, v in st["agents"].items() if v.get("enabled", True)) == [
                 "agent-core-dev", "agent-desktop-dev", "agent-mobile-dev", "agent-project-manager"], sorted(st["agents"])
             assert st["settings"]["team"]["max_parallel_chats"] == 3
-            # 3) Copy the charter prompt (clipboard)
-            assert ws.next_btn.cget("text") == "Copy the charter prompt", ws.next_btn.cget("text")
-            ws.next_btn.invoke()
+            # 3) Copy the charter prompt (clipboard) — on Home's card
+            assert card.next_btn.cget("text") == "Copy the charter prompt", card.labels()
+            o.click(card.next_btn)
             o.pump(300)
             assert "Project Charter" in root.clipboard_get()
             o.shot("03_charter_copied")
-
-            # 4) More › Paste the charter — the dialog that crashed in 5.7.0 (A11)
-            def charter() -> str:
-                data = json.loads(CHARTER.read_text(encoding="utf-8"))
-                data["base_state_revision"] = ws.wc.ctl.state()["state_revision"]
-                return "<<<AIWB_PROJECT_CHARTER>>>\n" + json.dumps(data) + "\n<<<AIWB_END_PROJECT_CHARTER>>>"
-            o.answers.append(charter)
-            click_more(ws, "Paste the charter")
-            o.pump(600)
-            assert o.answered[-1] == "Paste the charter", o.answered
-            assert "Imported as PROP-" in ws.status_var.get(), ws.status_var.get()   # 5.10.0: "Charter ✓ · …"
+            # 4) paste the charter in the card's own panel (no popup — the 5.7.0 crash lived there, A11)
+            data = json.loads(CHARTER.read_text(encoding="utf-8"))
+            data["base_state_revision"] = ws.wc.ctl.state()["state_revision"]
+            charter = "<<<AIWB_PROJECT_CHARTER>>>\n" + json.dumps(data) + "\n<<<AIWB_END_PROJECT_CHARTER>>>"
+            use_answer(o, card, charter, "Charter ✓")
+            assert "Imported as PROP-" in card.message_var.get(), card.message_var.get()
             o.shot("04_charter_pasted")
             # 5) Accept the plan
-            assert ws.next_btn.cget("text").startswith("Accept"), ws.next_btn.cget("text")
-            ws.next_btn.invoke()
+            do_step(o, card, "Accept")
             o.pump(500)
             st = ws.wc.ctl.state()
             assert "agent-core-dev" in st["agents"] and st["tasks"], "charter accepted: agents and tasks exist"
-            # 6) Prepare → Copy prompt → I sent it
-            ws.next_btn.invoke()
-            o.pump(300)
-            assert ws.next_btn.cget("text") == "Copy prompt", ws.next_btn.cget("text")
-            ws.next_btn.invoke()
+            # 6) Prepare — 5.11.0: also copies the prompt (one click less)
+            do_step(o, card, "Prepare")
             o.pump(300)
             prompt = root.clipboard_get()
             assert prompt.startswith("AIWB_ATTEMPT_ID:"), prompt[:80]
-            click_more(ws, "I sent it")
-            o.pump(300)
-            o.shot("05_task_prompt_sent")
-            # 7) Paste the answer… (real paste box) → Accept the files
+            assert "copied" in card.message_var.get(), card.message_var.get()
+            o.shot("05_task_prompt_copied")
+            # 7) paste the answer in the card → Use this answer → Accept the files
             h = next(h for h in ws.wc.ctl.state()["handoffs"].values() if h["status"] in ("prepared", "prompt_exported"))
             man = {"schema_version": "1.0", "handoff_id": h["handoff_id"], "task_id": h["task_id"],
                    "task_revision": h["task_revision"], "attempt_id": h["attempt_id"], "outcome": "complete",
@@ -217,31 +232,26 @@ def main() -> None:
             answer = (f"AIWB_ATTEMPT_ID: {h['attempt_id']}\n"
                       f'<<<AIWB_FILE path="src/core/snake.py" action="write">>>\n{F4}\nSPEED = 5\n{F4}\n'
                       "<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n" + json.dumps(man) + "\n<<<AIWB_END_HANDOFF>>>\n")
-            o.answers.append(answer)
-            assert ws.next_btn.cget("text").startswith("Paste the answer"), ws.next_btn.cget("text")
-            ws.next_btn.invoke()
-            o.pump(600)
-            assert o.answered[-1].startswith("Paste the answer"), o.answered
+            use_answer(o, card, answer, "✓")
             o.shot("06_answer_pasted")
-            labels = [ws.next_btn.cget("text")] + menu_labels(ws.next_menu)
+            labels = card.labels()
             assert any(lbl.startswith("Accept") for lbl in labels), f"no Accept after the answer: {labels}"
-            if ws.next_btn.cget("text").startswith("Accept"):
-                ws.next_btn.invoke()
-            else:
-                click_more(ws, next(lbl for lbl in labels if lbl.startswith("Accept")))
+            do_step(o, card, next(lbl for lbl in labels if lbl.startswith("Accept")))
             o.pump(600)
             target = Path(app.workspace) / "src" / "core" / "snake.py"
             assert target.is_file() and "SPEED = 5" in target.read_text(encoding="utf-8"), "the file is on disk"
             o.shot("07_file_written")
-            # A6 again on Home, and no callback crashed anywhere on the way
-            app.shell.show("home")
-            o.pump(500)
+            # the whole path stayed on Home, with no popup, no crash, and within the click budget
+            assert app.shell.current == "home", f"the path left Home for {app.shell.current!r}"
+            assert not o.dialogs, f"modal dialogs opened on the way: {o.dialogs}"
             assert not o.errors, "UI callback errors:\n" + "\n".join(o.errors)
             assert not [b for b in boxes if b[0] == "showerror"], f"error boxes: {boxes}"
+            assert len(o.clicks) <= MAX_CLICKS, f"{len(o.clicks)} clicks (max {MAX_CLICKS}): {o.clicks}"
         finally:
             root.destroy()
-    print("Owner path smoke passed: New Project > wizard (project, 3 named AIs, answers) -> Workbench -> charter prompt -> "
-          "real paste box -> accept -> task prompt -> real paste box -> accept -> file on disk")
+    print(f"Owner path smoke passed (only Home): New Project > wizard (project, 3 named AIs) -> Home card -> charter "
+          f"prompt -> inline paste -> accept -> prompt copied -> inline paste -> accept -> file on disk in "
+          f"{len(o.clicks)} clicks + {o.pastes} pastes (max {MAX_CLICKS}): {' / '.join(o.clicks)}")
 
 
 if __name__ == "__main__":
