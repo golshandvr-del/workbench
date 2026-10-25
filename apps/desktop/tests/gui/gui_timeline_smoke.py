@@ -105,6 +105,23 @@ def main() -> None:
             assert got and got["kind"] == "event", got
             assert w.wc.selection == ("event", got["id"]), w.wc.selection
             assert c.selected == got["id"]
+            # 5.13.0 (B3): one History — the events are in the same list, with one Show filter
+            ctl = w.wc.ctl
+            ctl.project.timeline.propose_version({"label": "0.9.0"})
+            app.shell.show("history")
+            root.update()
+            app.set_history_kind("all")
+            assert app.history_tree.exists("events"), app.history_tree.get_children()
+            app.set_history_kind("versions")
+            kids = app.history_tree.get_children("events")
+            assert kids and all("Version" in app.history_tree.item(k, "text") or "Milestone" in
+                                app.history_tree.item(k, "text") for k in kids), kids
+            app.history_tree.selection_set(kids[0])
+            root.update()
+            assert "Version proposed" in app.history_output_view.get("1.0", "end"), "event facts in the details"
+            app.set_history_kind("prompts")
+            assert not app.history_tree.exists("events")
+            app.set_history_kind("all")
         finally:
             root.destroy()
     print("PASS: visual timeline GUI smoke - 2000 events < 300ms, importance circles, version lines, dark, click -> Inspector")
