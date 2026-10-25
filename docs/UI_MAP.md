@@ -20,7 +20,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Agents | 7 | 0 | 8 | 8 | 2 |
 | Agents › Tools › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Agents › Tools › AI Response | 0 | 0 | 15 | 4 | 0 |
-| History | 7 | 6 | 11 | 8 | 0 |
+| History | 7 | 6 | 10 | 7 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 5 | 0 |
 | Settings | 4 | 0 | 11 | 7 | 0 |
 
@@ -192,7 +192,6 @@ Audit:
       - Report error… [item]
     - Filter [section]
       - Clear [button]
-      - Saved only [option]
     - Selected step [section]
       - More [menu]
         - Copy model output [item]
