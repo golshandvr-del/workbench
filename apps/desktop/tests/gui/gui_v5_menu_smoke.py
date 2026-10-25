@@ -140,9 +140,29 @@ def main() -> None:
             # other tasks unaffected
             assert [r["enabled"] for r in app.mission_menu_rows(first[0])] == [True, False, False, False]
             assert not any(r["enabled"] for r in app.mission_menu_rows(first[2]))
+            # 5.13.0 (B3): right-click on a version column's label → the column menu; NEW MILESTONE groups its tasks
+            app.mission_popup.close()
+            idx = next(i for i, col in enumerate(c.model["columns"]) if col["label"].endswith("0.2.0"))
+            lab = next(it for it in c.find_withtag(f"col:{idx}") if "column_label" in c.gettags(it))
+            bx = c.bbox(lab)
+            lx, ly = int((bx[0] + bx[2]) / 2 - c.canvasx(0)), int((bx[1] + bx[3]) / 2 - c.canvasy(0))
+            assert c.column_at(lx, ly) == idx, (c.column_at(lx, ly), idx)
+            c.event_generate("<Button-3>", x=lx, y=ly, rootx=c.winfo_rootx() + lx, rooty=c.winfo_rooty() + ly)
+            settle(root, 10)
+            menu = app.mission_popup
+            assert not menu.closed and [r["id"] for r in menu.rows] == ["record_release", "new_milestone",
+                                                                         "propose_version"], menu.rows
+            assert [r["enabled"] for r in menu.rows] == [False, True, True], menu.rows
+            menu.close()
+            app.mission_input_hook = lambda need, prompt: "Beta"
+            n_ms = len(ctl.project.timeline.milestones())
+            out = app.mission_column_pick(next(r for r in app.mission_column_rows(idx) if r["id"] == "new_milestone"))
+            assert out and out["title"] == "Beta" and len(out["task_ids"]) == 5, out
+            assert len(ctl.project.timeline.milestones()) == n_ms + 1
+            app.mission_input_hook = None
             print("v5.4.0 menu smoke passed: right-click floating menu (4 rows = UI tree) · enabled = Guide · "
                   "keyboard Up/Down/Enter/Esc · Shift+F10 · COPY prepares+copies · SEND records · GET enabled · "
-                  "Midnight/Daylight · no AI Assistant")
+                  "Midnight/Daylight · no AI Assistant · column menu (5.13.0)")
         finally:
             root.destroy()
 
