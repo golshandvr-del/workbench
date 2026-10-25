@@ -31,6 +31,12 @@ from typing import Any, Callable
 SCHEMA_VERSION = "1.0"
 BLOCK_RE = re.compile(r"(?s)<<<AIWB_CONTEXT_REQUEST>>>\s*(.*?)\s*<<<AIWB_END_CONTEXT_REQUEST>>>")
 MODES = ("full_file", "range", "symbol")
+FOLDER_MODE = "folder"         # 5.12.0: "src/pkg/" → every file under it (expanded by resolve, capped)
+MAX_FOLDER_FILES = 20
+# 5.12.0 (owner audit B2): what real chats write instead of ``files``
+FILE_LIST_KEYS = ("files", "required_files", "requested_files", "files_needed", "needed_files", "context_files",
+                  "file_requests", "requests", "paths", "file_paths", "files_requested")
+PATH_KEYS = ("path", "file", "filename", "file_path", "name")
 MAX_ITEMS = 30
 MAX_RANGE_LINES = 500
 MAX_FILE_BYTES = 1_000_000
@@ -63,6 +69,8 @@ class ContextRequest:
     items: list[RequestedItem]
     questions: list[str]
     base_hashes: dict[str, str] = field(default_factory=dict)  # path -> sha256 the model saw (optional)
+    fixes: list[str] = field(default_factory=list)              # 5.12.0: what the forgiving reader corrected
+    handoff_id: str = ""
 
 
 @dataclass
@@ -89,11 +97,20 @@ def _int(v: Any, name: str) -> int:
 
 
 def find_request(text: str) -> str | None:
+    """The JSON body of a context request, or ``None``. Copy damage (5.12.0) is repaired first."""
     m = BLOCK_RE.search(text or "")
     if m:
         return m.group(1)
-    s = (text or "").strip()
-    fence = re.match(r"(?s)^`{3,}\s*json\s*\n(.*?)\n`{3,}\s*$", s)
+    from .intake.normalize import normalize
+    t = normalize(text or "").text
+    m = BLOCK_RE.search(t)
+    if m:
+        return m.group(1)
+    m = re.search(r"(?s)<<<AIWB_CONTEXT_REQUEST>>>\s*(\{.*\})", t)   # end marker lost (cut off / copy)
+    if m:
+        return m.group(1)
+    s = t.strip()
+    fence = re.match(r"(?s)^`{3,}\s*(?:json)?\s*\n(.*?)\n`{3,}\s*$", s)
     if fence:
         s = fence.group(1).strip()
     if s.startswith("{") and '"AIWB_CONTEXT_REQUEST"' in s:
@@ -101,49 +118,136 @@ def find_request(text: str) -> str | None:
     return None
 
 
+def _loads(body: str, fixes: list[str]) -> Any:
+    body = body.strip()
+    fence = re.match(r"(?s)^`{3,}\s*(?:json)?\s*\n(.*?)\n`{3,}$", body)
+    if fence:
+        body = fence.group(1)
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError as first:
+        from .intake.normalize import normalize_json_text
+        n = normalize_json_text(body)
+        try:
+            data = json.loads(n.text)
+        except json.JSONDecodeError:
+            raise ContextRequestError(f"The context request JSON is invalid: {first.msg} (line {first.lineno}).") from None
+        fixes.append("JSON repaired (" + ", ".join(n.fixes[:4]) + ")")
+        return data
+
+
+def _item(raw: Any, i: int, fixes: list[str]) -> RequestedItem:
+    """One requested file. Forgiving (5.12.0): a bare string, ``file``/``filename`` for ``path``, a folder path."""
+    if isinstance(raw, str):
+        raw = {"path": raw}
+        fixes.append(f"files[{i}] was a plain path → full file")
+    if not isinstance(raw, dict):
+        raise ContextRequestError(f"files[{i}] must be a path or an object with a path.")
+    key = next((k for k in PATH_KEYS if isinstance(raw.get(k), str) and raw[k].strip()), "")
+    if not key:
+        raise ContextRequestError(f"files[{i}] needs a path.")
+    if key != "path":
+        fixes.append(f"files[{i}].{key} read as path")
+    path = raw[key].strip().strip("`'\"").replace("\\", "/")
+    while path.startswith("./"):
+        path = path[2:]
+    mode = str(raw.get("mode") or "").strip().lower().replace("-", "_").replace(" ", "_")
+    mode = {"full": "full_file", "file": "full_file", "whole": "full_file", "whole_file": "full_file",
+            "complete": "full_file", "lines": "range", "line_range": "range", "ranges": "range",
+            "function": "symbol", "class": "symbol", "directory": FOLDER_MODE, "dir": FOLDER_MODE,
+            "listing": FOLDER_MODE}.get(mode, mode)
+    if path.endswith("/") or mode == FOLDER_MODE:
+        if mode and mode != FOLDER_MODE:
+            fixes.append(f"files[{i}] {path} is a folder → every file in it")
+        else:
+            fixes.append(f"files[{i}] {path} is a folder → every file in it (max {MAX_FOLDER_FILES})")
+        return RequestedItem(path.rstrip("/") + "/", FOLDER_MODE, [], "", bool(raw.get("required", True)),
+                             str(raw.get("reason", ""))[:500])
+    if not mode:
+        mode = "range" if raw.get("ranges") or raw.get("start_line") else ("symbol" if raw.get("symbol") else "full_file")
+    if mode not in MODES:
+        fixes.append(f"files[{i}].mode {raw.get('mode')!r} unknown → full file")
+        mode = "full_file"
+    ranges: list[tuple[int, int]] = []
+    if mode == "range":
+        raw_ranges = raw.get("ranges")
+        if not raw_ranges and raw.get("start_line"):
+            raw_ranges = [{"start_line": raw.get("start_line"), "end_line": raw.get("end_line", raw.get("start_line"))}]
+        if not isinstance(raw_ranges, list) or not raw_ranges:
+            fixes.append(f"files[{i}] asked for a range without lines → full file")
+            mode = "full_file"
+        else:
+            for r in raw_ranges[:10]:
+                if isinstance(r, (list, tuple)) and len(r) == 2:
+                    r = {"start_line": r[0], "end_line": r[1]}
+                if not isinstance(r, dict):
+                    raise ContextRequestError(f"files[{i}].ranges entries must be objects.")
+                a, b = r.get("start_line", r.get("start")), r.get("end_line", r.get("end"))
+                if isinstance(a, str) and a.isdigit():
+                    a = int(a)
+                if isinstance(b, str) and b.isdigit():
+                    b = int(b)
+                ranges.append((_int(a, "start_line"), _int(b, "end_line")))
+    symbol = str(raw.get("symbol", "")).strip() if mode == "symbol" else ""
+    if mode == "symbol" and not re.fullmatch(r"[A-Za-z_][\w.]{0,120}", symbol):
+        fixes.append(f"files[{i}] asked for a symbol without a valid name → full file")
+        mode, symbol = "full_file", ""
+    return RequestedItem(path, mode, ranges, symbol, bool(raw.get("required", True)), str(raw.get("reason", ""))[:500])
+
+
 def parse_request(text: str) -> ContextRequest:
+    """Read a context request. Forgiving like the 5.10.0 charter reader (5.12.0, owner audit B2): ``type`` may be
+    missing when the markers are there, the file list may be called ``required_files`` & co., items may be plain
+    paths or folders. Every correction is listed in ``fixes``; only a request that asks for nothing is refused."""
     body = find_request(text)
     if body is None:
         raise ContextRequestError("No AIWB_CONTEXT_REQUEST block found.")
-    try:
-        data = json.loads(body)
-    except json.JSONDecodeError as exc:
-        raise ContextRequestError(f"The context request JSON is invalid: {exc.msg} (line {exc.lineno}).") from None
-    if not isinstance(data, dict) or data.get("type") != "AIWB_CONTEXT_REQUEST":
-        raise ContextRequestError('The request must be an object with "type": "AIWB_CONTEXT_REQUEST".')
-    version = str(data.get("schema_version", ""))
-    if not version.startswith("1."):
+    fixes: list[str] = []
+    data = _loads(body, fixes)
+    if isinstance(data, list):
+        data = {"files": data}
+        fixes.append("a bare list was read as files")
+    if not isinstance(data, dict):
+        raise ContextRequestError("The context request must be a JSON object.")
+    if data.get("type") != "AIWB_CONTEXT_REQUEST":
+        if data.get("type") not in (None, ""):
+            fixes.append(f"type {data.get('type')!r} → AIWB_CONTEXT_REQUEST")
+        else:
+            fixes.append('"type" was missing (the markers say what it is)')
+    version = str(data.get("schema_version", "1.0") or "1.0")
+    if not version.startswith("1"):
         raise ContextRequestError(f"Unsupported context request schema_version {version!r}; expected 1.x.")
-    files = data.get("files", [])
-    if not isinstance(files, list) or len(files) > MAX_ITEMS:
-        raise ContextRequestError(f"files must be a list of at most {MAX_ITEMS} items.")
-    items: list[RequestedItem] = []
-    for i, f in enumerate(files):
-        if not isinstance(f, dict) or not isinstance(f.get("path"), str) or not f["path"].strip():
-            raise ContextRequestError(f"files[{i}] needs a path.")
-        mode = f.get("mode", "full_file")
-        if mode not in MODES:
-            raise ContextRequestError(f"files[{i}].mode must be one of {', '.join(MODES)}.")
-        ranges: list[tuple[int, int]] = []
-        if mode == "range":
-            raw_ranges = f.get("ranges")
-            if not isinstance(raw_ranges, list) or not raw_ranges:
-                raise ContextRequestError(f"files[{i}] uses mode=range but has no ranges.")
-            for r in raw_ranges[:10]:
-                if not isinstance(r, dict):
-                    raise ContextRequestError(f"files[{i}].ranges entries must be objects.")
-                ranges.append((_int(r.get("start_line"), "start_line"), _int(r.get("end_line"), "end_line")))
-        symbol = str(f.get("symbol", "")).strip() if mode == "symbol" else ""
-        if mode == "symbol" and not re.fullmatch(r"[A-Za-z_][\w.]{0,120}", symbol):
-            raise ContextRequestError(f"files[{i}] uses mode=symbol but the symbol name is missing or invalid.")
-        items.append(RequestedItem(f["path"].strip().replace("\\", "/"), mode, ranges, symbol,
-                                   bool(f.get("required", True)), str(f.get("reason", ""))[:500]))
-    questions = [str(q)[:500] for q in data.get("questions", []) if isinstance(q, (str, int, float))][:20]
+    if version in ("1", "1.0.0"):
+        fixes.append(f"schema_version {data.get('schema_version')!r} → \"1.0\"")
+    key = next((k for k in FILE_LIST_KEYS if k in data and data[k] not in (None, "")), "files")
+    files = data.get(key, [])
+    if key != "files":
+        fixes.append(f'"{key}" read as "files"')
+    if isinstance(files, (str, dict)):
+        files = [files]
+        fixes.append(f'"{key}" was a single item → list')
+    if not isinstance(files, list):
+        raise ContextRequestError(f'"{key}" must be a list of paths.')
+    if len(files) > MAX_ITEMS:
+        fixes.append(f"{len(files)} files asked → the first {MAX_ITEMS}")
+        files = files[:MAX_ITEMS]
+    items = [_item(f, i, fixes) for i, f in enumerate(files)]
+    raw_q = data.get("questions", [])
+    if isinstance(raw_q, str):
+        raw_q = [raw_q]
+    questions = [str(q)[:500] for q in raw_q if isinstance(q, (str, int, float)) and str(q).strip()][:20]
     if not items and not questions:
         raise ContextRequestError("The context request asks for nothing (no files and no questions).")
     hashes = {str(k): str(v).lower() for k, v in (data.get("base_hashes") or {}).items()} if isinstance(data.get("base_hashes"), dict) else {}
-    return ContextRequest(version, str(data.get("attempt_id", ""))[:80], str(data.get("task_id", ""))[:120],
-                          str(data.get("reason", ""))[:1000], items, questions, hashes)
+    attempt = str(data.get("attempt_id", "") or "")
+    if not attempt:
+        m = re.search(r"(?m)^\s*AIWB_ATTEMPT_ID:\s*(att-[\w-]+)", text or "")
+        if m:
+            attempt = m.group(1)
+            fixes.append("attempt_id taken from the AIWB_ATTEMPT_ID line")
+    return ContextRequest("1.0" if version in ("1", "1.0.0") else version, attempt[:80],
+                          str(data.get("task_id", ""))[:120], str(data.get("reason", "") or data.get("requested_action", ""))[:1000],
+                          items, questions, hashes, fixes, str(data.get("handoff_id", ""))[:40])
 
 
 def free_text_hints(text: str) -> list[str]:
