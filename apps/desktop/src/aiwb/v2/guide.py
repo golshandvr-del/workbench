@@ -313,9 +313,9 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
     from .waves import dispatch
     desk = dispatch(st)
     if len(desk["next"]) > 1:
-        names = ", ".join(f"{x} → {desk['owners'][x]}" for x in desk["next"])
-        out.append(_step("dispatch", "prompt", f"Prepare the prompts for {len(desk['next'])} parallel tasks",
-                         f"Parallel paths of this wave: {names}. {desk['slots']} of {desk['limit']} chat(s) are free"
+        names = ", ".join(f"{(tasks.get(x) or {}).get('title') or x} ({desk['owners'][x]})" for x in desk["next"])
+        out.append(_step("dispatch", "prompt", f"Prepare the prompts for {len(desk['next'])} tasks that can run side by side",
+                         f"These can start now: {names}. {desk['slots']} of {desk['limit']} chats are free"
                          + (f"; {len(desk['queued'])} more task(s) wait for a free chat." if desk["queued"] else ".")
                          + " Each AI gets its own self-contained prompt.",
                          [_a("prepare_all", "Prepare all prompts")], rank=39, task_ids=list(desk["next"])))
