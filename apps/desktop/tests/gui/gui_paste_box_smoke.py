@@ -25,7 +25,7 @@ import tkinter as tk
 import traceback
 import zipfile
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import AI_Workbench as wb
 from gui_smoke_helpers import wait_for_project_ready
@@ -126,8 +126,10 @@ def main() -> None:
             ws = app.workspace_window
             ctl = ws.wc.ctl
             ws.guide_action("design", "design", {"goal": "Offline todo app for desktop and mobile"})
+            app.shell.show("home")                       # 5.11.0: every step below is done on Home's card
             o.pump(200)
-            click(ws, "Copy the charter prompt")
+            card = app.home_card
+            click(card, "Copy the charter prompt")
             o.pump(200)
 
             # 1) charter with model damage: no markers, ```json fence, schema_version 1, no coordination section
@@ -148,23 +150,20 @@ def main() -> None:
                 assert "4 AIs · 3 tasks · 2 milestones" in line and "auto-fix" in line, line
                 assert not ctl.state()["proposals"], "the live diagnosis imports nothing"
                 w["buttons"]["Use this answer"].invoke()
-            o.jobs.append(charter_job)
-            click(ws, "Paste the charter")
+            card.refresh()
+            charter_job(o.panel(card))
             o.pump(500)
             assert not o.errors, "\n".join(o.errors)
-            assert "Imported as PROP-" in ws.status_var.get(), ws.status_var.get()
-            click(ws, "Accept")
+            assert "Imported as PROP-" in card.message_var.get(), card.message_var.get()
+            click(card, "Accept")
             o.pump(400)
             st = ctl.state()
             assert len(st["tasks"]) == 3, st["tasks"].keys()
 
             # 2) task 1 answered as a ZIP (Load ZIP… with the real button; the file dialog is answered)
-            click(ws, "Prepare")
+            click(card, "Prepare")                       # 5.11.0: prepares and copies the prompt in one click
             o.pump(200)
-            click(ws, "Copy prompt")
-            o.pump(200)
-            click(ws, "I sent it")
-            o.pump(200)
+            assert "copied" in card.message_var.get(), card.message_var.get()
             b = io.BytesIO()
             with zipfile.ZipFile(b, "w") as z:
                 z.writestr("todo/src/core/model.py", "TODOS: list[str] = []\n")
@@ -181,12 +180,13 @@ def main() -> None:
                 assert 'path="src/core/model.py"' in w["text"].get("1.0", "end"), "the ZIP's files are shown in the box"
                 o.shot("03_zip_loaded")
                 w["buttons"]["Use this answer"].invoke()
-            o.jobs.append(zip_job)
-            click(ws, "Paste the answer")
+            card.refresh()
+            zip_job(o.panel(card))
             o.pump(500)
             assert not o.errors, "\n".join(o.errors)
-            assert "1 file(s) read" in ws.status_var.get() or "linked" in ws.status_var.get(), ws.status_var.get()
-            click(ws, "Accept")
+            msg = card.message_var.get()
+            assert "1 file(s) read" in msg or "linked" in msg, msg
+            click(card, "Accept")
             o.pump(500)
             f1 = project / "src/core/model.py"
             assert f1.is_file() and "TODOS" in f1.read_text(encoding="utf-8"), "ZIP file on disk"
@@ -211,10 +211,6 @@ def main() -> None:
             h = next(h for h in ctl.state()["handoffs"].values() if h["status"] in ("prepared", "prompt_exported"))
             task = ctl.state()["tasks"][h["task_id"]]
             base = task["scope"]["include"][0].rstrip("*").rstrip("/")
-            click(ws, "Copy prompt")
-            o.pump(200)
-            click(ws, "I sent it")
-            o.pump(200)
             md = f"Done! Here are the files.\n\n**{base}/app.py**\n```python\nprint('todo')\n```\n"
 
             def md_job(w: dict[str, Any]) -> None:
@@ -225,11 +221,11 @@ def main() -> None:
                 assert "1 file · Markdown code blocks" in line, line
                 o.shot("04_markdown_files")
                 w["buttons"]["Use this answer"].invoke()
-            o.jobs.append(md_job)
-            click(ws, "Paste the answer")
+            card.refresh()
+            md_job(o.panel(card))
             o.pump(500)
             assert not o.errors, "\n".join(o.errors)
-            click(ws, "Accept")
+            click(card, "Accept")
             o.pump(500)
             f2 = project / base / "app.py"
             assert f2.is_file() and "todo" in f2.read_text(encoding="utf-8"), f"Markdown file on disk: {f2}"
@@ -238,7 +234,7 @@ def main() -> None:
             assert not [x for x in boxes if x[0] == "showerror"], boxes
         finally:
             root.destroy()
-    msg = ("Paste box (5.10.0): live diagnosis (" + " | ".join(o.lines[:4]) + ") · Load ZIP… · Markdown without manifest "
+    msg = ("Paste panel on Home (5.10.0/5.11.0): live diagnosis (" + " | ".join(o.lines[:4]) + ") · Load ZIP… · Markdown without manifest "
            "→ files on disk: PASS")
     # a Windows console (cp1252) cannot print ✓/✗: replace what it cannot encode instead of failing a passed smoke
     enc = getattr(sys.stdout, "encoding", None) or "utf-8"
