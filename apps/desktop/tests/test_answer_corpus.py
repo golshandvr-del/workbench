@@ -122,6 +122,16 @@ class CorpusReplayTests(unittest.TestCase):
                 if c["expect"] == "continue":
                     self.assertRegex(r["prompt"] or r["message"], r"(?i)cut off|continue|again")
 
+    def test_preview_check_means_the_card_moves(self):
+        """5.12.0 gate (owner audit B2/B8): whenever the paste box says ✓, pasting changes Home's Next-step card —
+        never again "Context request ✓" followed by nothing; and every accepted answer was previewed with ✓."""
+        for c, r in self.results.values():
+            with self.subTest(c["id"]):
+                if r["preview_ok"]:
+                    self.assertTrue(r["card_changed"], f"{c['file']}: ✓ in the preview but the card did not change")
+                if r["ok"]:
+                    self.assertTrue(r["preview_ok"], f"{c['file']}: accepted, but the preview did not say ✓")
+
     def test_charters_keep_the_plan(self):
         for cid, (c, r) in self.results.items():
             if c["kind"] == "charter" and r["ok"]:
