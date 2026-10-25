@@ -871,19 +871,6 @@ class WorkspaceWindow:
             self.show("tasks")
         return prompt
 
-    def show_lanes(self) -> dict[str, list[dict[str, Any]]]:
-        """Replace the list with one parent row per lane (agent); children are that lane's events (oldest first)."""
-        lanes = self.wc.timeline_lanes()
-        self.tl_tree.delete(*self.tl_tree.get_children())
-        for lane, recs in sorted(lanes.items()):
-            self.tl_tree.insert("", "end", iid=f"lane:{lane}", values=(f"▸ {lane} · {len(recs)}", "", ""), open=False)
-            for rec in recs[-50:]:
-                self.tl_tree.insert(f"lane:{lane}", "end", iid=rec["event_id"],
-                                    values=(self.wc.event_text(rec), "", rec["source"]))
-        self.tl_tree.configure(show="tree headings")
-        self.tl_page_var.set(self.wc.tr(("lanes", "Laneها")) + f" · {len(lanes)}")
-        return lanes
-
     def _ask(self, title: str, prompt: str, initial: str = "") -> str:
         v = simpledialog.askstring(title, prompt, initialvalue=initial, parent=self.win)
         return (v or "").strip()
