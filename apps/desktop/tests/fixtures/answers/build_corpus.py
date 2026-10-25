@@ -137,11 +137,37 @@ def rename_owners(d: dict, table: dict) -> dict:
     return d
 
 
+def windows_copy(text: str) -> str:
+    """5.12.0 (owner audit B1): selecting a *rendered* chat answer on Windows and pressing Ctrl+C. Every line outside a
+    code block ends with ``\\`` (a Markdown hard break) and ``_`` outside code is escaped; code blocks stay verbatim."""
+    out, fence = [], ""
+    for line in text.split("\n"):
+        m = re.match(r"^\s*(`{3,}|~{3,})", line)
+        if fence:
+            out.append(line)
+            if m and m.group(1) == fence:
+                fence = ""
+            continue
+        if m:
+            fence = m.group(1)
+            out.append(line)
+            continue
+        out.append(line.replace("_", "\\_") + "\\" if line.strip() else line)
+    return "\n".join(out)
+
+
+def owner_context_answer() -> str:
+    """The owner's real GPT answer (5.11.0 test), with the corpus attempt id in place of the real one."""
+    src = Path(__file__).resolve().parents[5] / "docs" / "audit" / "owner-5.11" / "HO-0006_gpt_answer_context_request.txt"
+    return src.read_text(encoding="utf-8").replace("\r", "").replace("att-20261023-192855-0ba9959e", ATT)
+
+
 def build(out_dir: Path) -> list[dict]:
     out_dir.mkdir(parents=True, exist_ok=True)
     cases: list[dict] = []
 
-    def add(cid: str, name: str, kind: str, style: str, expect: str, content, ext: str = "txt", note: str = "") -> None:
+    def add(cid: str, name: str, kind: str, style: str, expect: str, content, ext: str = "txt", note: str = "",
+            source: str = "") -> None:
         fn = f"{cid}_{name}.{ext}"
         if isinstance(content, bytes):
             (out_dir / fn).write_bytes(content)
@@ -149,7 +175,8 @@ def build(out_dir: Path) -> list[dict]:
             with open(out_dir / fn, "w", encoding="utf-8", newline="") as f:
                 f.write(content)
         cases.append({"id": cid, "file": fn, "kind": kind, "style": style, "expect": expect,
-                      "source": "reconstructed — typical answer shape of " + style.split(":")[0], "note": note})
+                      "source": source or "reconstructed — typical answer shape of " + style.split(":")[0],
+                      "note": note})
 
     # ------------------------------------------------------------------ charters
     add("C01", "canonical", "charter", "Any chat: exactly as the prompt asks", "accept", INTRO + block(charter()) + "\n")
@@ -367,6 +394,24 @@ def build(out_dir: Path) -> list[dict]:
     add("F23", "bold_file_label_code_path", "files", "Copilot: **File: `path`**", "accept", md)
     add("F24", "bare_path_line", "files", "Plain copy of a rendered answer: the path alone on a line", "accept",
         HEAD + "".join(f"{p}\n```python\n{c}```\n\n" for p, c in FILES.items()) + "Done.\n")
+
+    # ------------------------------------------------------------------ 5.12.0: real chat answers (owner audit B1/B2)
+    add("F25", "windows_rendered_copy", "files", "ChatGPT on Windows: rendered answer copied (line-end \\, escaped _)",
+        "accept", windows_copy(HEAD + aiwb() + man_block() + "\n"))
+    add("C31", "windows_rendered_copy", "charter", "ChatGPT on Windows: rendered charter copied (line-end \\)",
+        "accept", windows_copy(INTRO + block(charter()) + "\n"))
+    owner = owner_context_answer()
+    add("X01", "owner_gpt_context_request", "context", "GPT (owner, 5.11.0 test): context request with required_files, "
+        "no type, a folder", "accept", owner, source="owner — docs/audit/owner-5.11/HO-0006_gpt_answer_context_request.txt")
+    add("X02", "owner_gpt_context_request_windows_copy", "context", "GPT (owner) copied as rendered text on Windows: "
+        "line-end \\", "accept", windows_copy(owner), source="owner — X01 as the Windows chat copy delivers it")
+    req = {"schema_version": "1.0", "type": "AIWB_CONTEXT_REQUEST", "attempt_id": ATT, "reason": "I need the store",
+           "files": [{"path": "src/todo/store.py", "mode": "full_file"}], "questions": []}
+    add("X03", "canonical_context_request", "context", "Any chat: context request exactly as the prompt asks", "accept",
+        HEAD + "<<<AIWB_CONTEXT_REQUEST>>>\n" + json.dumps(req, indent=1) + "\n<<<AIWB_END_CONTEXT_REQUEST>>>\n")
+    add("X04", "context_request_whole_answer_fence", "context", "GPT following the 5.12 rule: whole answer in one "
+        "five-backtick block", "accept", "`````text\n" + HEAD + "<<<AIWB_CONTEXT_REQUEST>>>\n" + json.dumps(req)
+        + "\n<<<AIWB_END_CONTEXT_REQUEST>>>\n`````\n")
 
     with open(out_dir / "corpus.json", "w", encoding="utf-8", newline="\n") as f:
         json.dump({"schema": "aiwb-answer-corpus.v1", "scenario": "tests/answer_corpus.py",
