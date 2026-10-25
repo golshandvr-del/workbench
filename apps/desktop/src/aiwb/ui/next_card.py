@@ -123,6 +123,9 @@ class NextStepCard(ttk.Frame):
         self.next_more = ttk.Menubutton(bar, text="More", menu=self.next_menu)
         self.next_more.pack(side="left", padx=(6, 0))
         self._bar = bar
+        # the App Map shows these two by role: their labels are the current step's actions (ui_map._aiwb_dynamic)
+        self.next_btn._aiwb_dynamic = "Next action"  # type: ignore[attr-defined]
+        self.next_more._aiwb_dynamic = "More"  # type: ignore[attr-defined]
         from .paste_box import PastePanel
         self.paste = PastePanel(self, state=self._state, on_use=self.use_answer, height=6, wraplength=wraplength,
                                 style="Card.TFrame")
