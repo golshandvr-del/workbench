@@ -6961,6 +6961,13 @@ class WorkbenchApp:
 
     def _on_history_selection(self, _event: Any) -> None:
         selection = self.history_tree.selection() if hasattr(self, "history_tree") else ()
+        if selection and selection[0].startswith("event-"):
+            self._clear_history_details()  # 5.13.0: an event is read-only — its facts in the details pane
+            r = getattr(self, "history_events", {}).get(selection[0][6:], {})
+            self.history_title_var.set(r.get("title", ""))
+            self._set_text(self.history_output_view, "\n".join(x for x in (r.get("when", ""), r.get("title", ""),
+                                                                           r.get("detail", "")) if x))
+            return
         if not selection or not selection[0].startswith("entry-"):
             self._clear_history_details()
             return
