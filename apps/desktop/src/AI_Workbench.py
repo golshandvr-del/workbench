@@ -5169,7 +5169,7 @@ class WorkbenchApp:
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu,
-                                     on_lane=self.mission_lane)
+                                     on_lane=self.mission_lane, on_column_menu=self.mission_column_menu)
         self.mission.pack(fill="x")
         self._make_mission_view_row(body)
         from aiwb.ui import structure5
@@ -5344,6 +5344,73 @@ class WorkbenchApp:
         self.mission_popup = FloatingMenu(self.mission, self.shell.assets, rows, motion=self.shell.motion,
                                           title=task_id, on_pick=lambda row: self.mission_menu_pick(task_id, row))
         return self.mission_popup.popup(x_root, y_root)
+
+    # -- Mission Map › right-click on a milestone / version column (roadmap 5.13.0, owner audit B3)
+    def mission_column_rows(self, index: int) -> list[dict[str, Any]]:
+        """The column menu rows (ACCEPT MILESTONE · RECORD RELEASE · NEW MILESTONE · PROPOSE VERSION)."""
+        from aiwb.ui import column_menu
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        steps = Guide(ctl).steps() if ctl is not None else []
+        return column_menu.items(steps, self.mission.model, index)
+
+    def mission_column_menu(self, index: int, x_root: int, y_root: int) -> Any:
+        from aiwb.ui.menu5 import FloatingMenu
+        old = getattr(self, "mission_popup", None)
+        if old is not None:
+            old.close()
+        try:
+            rows = self.mission_column_rows(index)
+        except Exception as exc:  # noqa: BLE001 - a broken store is reported, never hidden
+            messagebox.showerror("Mission Map", redact(str(exc)))
+            return None
+        label = self.mission.model["columns"][index]["label"]
+        self.mission_popup = FloatingMenu(self.mission, self.shell.assets, rows, motion=self.shell.motion,
+                                          title=label, on_pick=lambda row: self.mission_column_pick(row))
+        return self.mission_popup.popup(x_root, y_root)
+
+    def mission_column_pick(self, row: dict[str, Any]) -> dict[str, Any] | None:
+        """Run a column menu row: Guide steps through the Guide, new milestone / version through the timeline."""
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        if ctl is None or not row.get("enabled"):
+            return None
+        asks = {"title": ("New milestone", "Milestone title:"), "label": ("Propose version", "Version (e.g. 1.2.0):"),
+                "commit_sha": ("Record the release", "Commit SHA of the release:"),
+                "tag": ("Record the release", "Tag (optional, default v<version>):"),
+                "run_id": ("Record the release", "Build/CI run id or link:")}
+        inputs: dict[str, str] = {}
+        for need in row.get("needs", []):
+            title, prompt = asks.get(need, (row["label"], need))
+            hook = getattr(self, "mission_input_hook", None)
+            v = hook(need, prompt) if hook is not None else simpledialog.askstring(title, prompt, parent=self.root)
+            if v is None or (not v.strip() and need not in ("tag",)):
+                self.set_status("Cancelled — nothing changed.")
+                return None
+            inputs[need] = v.strip()
+        tl = ctl.project.timeline
+        try:
+            if row["id"] == "new_milestone":
+                m = tl.create_milestone({"title": inputs["title"], "task_ids": row.get("task_ids", [])})
+                out = {"message": f"Milestone {m['title']} created with {len(m['task_ids'])} task(s).", **m}
+            elif row["id"] == "propose_version":
+                v = tl.propose_version({"label": inputs["label"], "milestone_ids": row.get("milestone_ids", [])})
+                out = {"message": f"Version {v['label']} proposed (not released).", **v}
+            else:
+                out = Guide(ctl).perform(row["step"], row["action"], **inputs)
+        except Exception as exc:  # noqa: BLE001 - the model refuses impossible changes with a clear message
+            messagebox.showerror("Mission Map", redact(str(exc)))
+            return None
+        self.set_status(out.get("message", "Done."))
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                ws.refresh()
+            except Exception:  # noqa: BLE001 - the Workbench redraws on its next visit
+                pass
+        self.refresh_mission(self.status_state(), force=True)
+        self.shell.refresh_status()
+        return out
 
     def _mission_input(self, need: str, label: str) -> str | None:
         """Ask for one input of a Guide action (tests replace ``mission_input_hook``)."""
