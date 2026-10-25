@@ -229,6 +229,7 @@ class WorkspaceWindow:
     # -- navigation
     def show(self, key: str) -> None:
         self.wc.set_section(key)
+        key = self.wc.section  # 5.11.0: an old key (overview, tasks, team, …) opens the section that now holds it
         for k, b in self.nav.items():
             b.configure(style="WS.NavActive.TButton" if k == key else "WS.Nav.TButton")
         for v in self.views.values():
