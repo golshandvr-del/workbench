@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 5.7.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.11.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -28,20 +28,21 @@ Each rail page has one job:
 
 | Page | What it is for |
 |---|---|
-| **Home** | The active project only: the **Mission Map** (one lane per AI, one circle per task in its version's column), **Map view**, task details and the **Next step** |
-| **Projects** | **Your projects** as cards (click = select, double-click = open, *Find* filters; *More ▾* → Open selected · Reveal folder · Remove from list), then the Workbench of the open project: Overview, Timeline, Tasks, Team, Files & Context, Versions & Builds |
+| **Home** | The cockpit of the active project: the **Mission Map** (one lane per AI, one circle per task in its version's column), **Map view**, task details and the **Next step** card — where you do every step (5.11.0) |
+| **Projects** | **Your projects** as cards (click = select, double-click = open, *Find* filters; *More ▾* → Open selected · Reveal folder · Remove from list), then the Workbench of the open project in three sections: **Plan & Tasks** · **Timeline** · **Project settings** |
 | **Agents** | One card per AI (state, current task, load, record), the selected AI's queue, *Copy briefing*, *Memory note…*, Balance alerts and suggested moves |
 | **History** | **Timeline** of everything that happened, then every prompt and AI answer of the project |
 | **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Mobile Companion, Restore Manager, App Map |
 
 *Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Projects › Project Profile and
-Run & Report, Agents › Prompt and AI Response, History › Git / GitHub. Every page shows at most four main buttons;
-the rest are under **More ▾**.
+Run & Report, Agents › Prompt and AI Response, History › Git / GitHub. Every page shows at most eight controls at once
+and at most four main buttons per bar; the rest are under **More ▾**.
 
 **Mission Map tips (Home):** right-click a task circle for COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS
 DONE (only the ones possible now are enabled). *Map view* → **Hide finished tasks** and **Only AIs with open work**
-make a big project readable; the lane numbers never change. **Copy map summary** copies every lane and its tasks as
-plain text. On short windows the project cards (Projects) and the History timeline fold away.
+make a big project readable; the lane numbers never change. **Click an AI's number or name** and the Next-step card
+shows that AI's own prompt or answer step (*More › Back to the next step* returns). *Task details › More* has Jump to
+active task, Copy task summary and **Copy map summary** (every lane and its tasks as plain text). On short windows the project cards (Projects) and the History timeline fold away.
 
 ## 3. Your first project (the guided loop)
 
@@ -55,14 +56,18 @@ plain text. On short windows the project cards (Projects) and the History timeli
    * **Answers** — how the AIs return files: *AIWB file blocks* (recommended), *Strict JSON* or *GPT ZIP*. The task
      prompts ask for that format; whatever an AI returns anyway (Markdown code blocks with the file name above them,
      JSON, a ZIP) is read too (5.10.0).
-   *Create project* makes the folder and the team — nothing is asked again afterwards. Change the team any time:
+   *Create project* makes the folder and the team and opens **Home**, already on the first step — nothing is asked
+   again afterwards. Change the team any time:
    **Agents › Team › Edit team…** (an AI that already has work is switched off, never deleted). Projects made
    before 5.9.0 keep their AIs; *Edit team…* offers to remove template AIs that never got a task.
-2. For a folder added with *Add existing folder…* the Workbench's first step **Start the project…** opens the same
+2. For a folder added with *Add existing folder…* the Next step's first action **Start the project…** opens the same
    window without the folder fields.
-3. Next step: **Project Charter**. Click *Copy prompt*, paste it into your project-manager chat, click
-   *I sent it*. The prompt tells the project manager that your team is binding.
-4. Copy the whole answer from the chat and click *Paste answer*. While you paste, the box shows a **live
+3. Everything below happens on **Home › Next step**: the card names the step and the AI, has the step's main button
+   and a *More ▾* menu, and — when the step takes an answer — a **paste box right on the page**. First step:
+   **Project Charter**. Click *Copy the charter prompt* and paste it into your project-manager chat. The prompt tells
+   the project manager that your team is binding.
+4. Copy the whole answer from the chat, paste it into the card's box and click *Use this answer*. While you paste,
+   the box shows a **live
    diagnosis** — *Charter ✓ · 4 AIs · 9 tasks · 2 auto-fixes*, *3 files (Markdown code blocks)*, *Cut off ✗* or the
    exact problem; nothing is imported before *Use this answer*. A downloaded archive goes in with **Load ZIP…**.
    The app cleans what chat copies break (smart quotes, invisible spaces, escaped markers, extra code fences) and
@@ -74,7 +79,8 @@ plain text. On short windows the project cards (Projects) and the History timeli
 5. **Review** the charter: architecture, how many AIs work in parallel, who owns which files, the roadmap
    with milestones and versions, and the start prompt of each AI. Accept the parts you want.
 6. From now on the Next step is always one of:
-   * **a prompt** for a specific AI (each AI has its own queue — several can work at the same time);
+   * **a prompt** for a specific AI (each AI has its own queue — several can work at the same time); *Prepare the
+     prompt* also copies it, so you go straight to the AI's chat;
    * **paste the answer** of that AI (files + a handoff note);
    * **a decision** for you (approve, request changes, pick an option);
    * **a small form** (record a test run, a commit, a release).
@@ -107,7 +113,7 @@ working in parallel (`test_algorithm_e2e.py`, `AlgorithmE2ETest`).
 
 ## 4. Timeline
 
-Workbench → **Timeline**: one lane per AI plus "project". Circle size = importance (minor → critical).
+Projects › Workbench → **Timeline**: one lane per AI plus "project". Circle size = importance (minor → critical).
 Dashed vertical line = proposed version, solid = released. Mouse wheel or `+`/`-` to zoom, drag to pan,
 click an event to see its details.
 
@@ -119,8 +125,8 @@ Main screen → **Standalone mode**. Create a project, then use the same loop: t
 automatically) and the Timeline (pinch to zoom, drag, tap).
 
 ### Moving a project between PC and phone
-* Desktop: **Project Workbench → Settings → Export project for the phone…** → a `.aiwb-bundle.json` file
-  (*Import project from the phone…* is next to it).
+* Desktop: **Project Workbench → Project settings → Project tools ▾ → Export project for the phone…** → a
+  `.aiwb-bundle.json` file (*Import project from the phone…* is in the same menu).
 * Phone: **Import project bundle** and pick the file (or the other way round with *Export*).
 * Bundles are **never merged**. The app tells you whether the incoming copy is *new*, *the same*, *newer*,
   *older* or *diverged*. New and newer are applied directly; older/diverged need an explicit *Replace*.
