@@ -23,7 +23,7 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 
 ## 5.12.0 — DONE
 
-PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` pushed (release-desktop.yml builds the Release). CI green on
+PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
