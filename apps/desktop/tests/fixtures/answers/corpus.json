@@ -488,6 +488,60 @@
    "expect": "accept",
    "source": "reconstructed — typical answer shape of Plain copy of a rendered answer",
    "note": ""
+  },
+  {
+   "id": "F25",
+   "file": "F25_windows_rendered_copy.txt",
+   "kind": "files",
+   "style": "ChatGPT on Windows: rendered answer copied (line-end \\, escaped _)",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT on Windows",
+   "note": ""
+  },
+  {
+   "id": "C31",
+   "file": "C31_windows_rendered_copy.txt",
+   "kind": "charter",
+   "style": "ChatGPT on Windows: rendered charter copied (line-end \\)",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of ChatGPT on Windows",
+   "note": ""
+  },
+  {
+   "id": "X01",
+   "file": "X01_owner_gpt_context_request.txt",
+   "kind": "context",
+   "style": "GPT (owner, 5.11.0 test): context request with required_files, no type, a folder",
+   "expect": "accept",
+   "source": "owner — docs/audit/owner-5.11/HO-0006_gpt_answer_context_request.txt",
+   "note": ""
+  },
+  {
+   "id": "X02",
+   "file": "X02_owner_gpt_context_request_windows_copy.txt",
+   "kind": "context",
+   "style": "GPT (owner) copied as rendered text on Windows: line-end \\",
+   "expect": "accept",
+   "source": "owner — X01 as the Windows chat copy delivers it",
+   "note": ""
+  },
+  {
+   "id": "X03",
+   "file": "X03_canonical_context_request.txt",
+   "kind": "context",
+   "style": "Any chat: context request exactly as the prompt asks",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of Any chat",
+   "note": ""
+  },
+  {
+   "id": "X04",
+   "file": "X04_context_request_whole_answer_fence.txt",
+   "kind": "context",
+   "style": "GPT following the 5.12 rule: whole answer in one five-backtick block",
+   "expect": "accept",
+   "source": "reconstructed — typical answer shape of GPT following the 5.12 rule",
+   "note": ""
   }
  ]
 }
