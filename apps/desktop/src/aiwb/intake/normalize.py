@@ -8,6 +8,8 @@ break strict parsers even though the *content* is fine:
 * Markdown escapes of our own markers (``\\<\\<\\<AIWB\\_FILE ...\\>\\>\\>``);
 * HTML entities (``&lt;&lt;&lt;AIWB_FILE``) when copied from rendered HTML;
 * one outer Markdown fence around the whole answer;
+* 5.12.0 (owner audit B1): a *rendered* answer selected and copied on Windows (not with the code block's Copy
+  button) ends every line outside code fences with ``\\`` (a Markdown hard line break) and escapes ``_ * [ ]``;
 * JSON with ``//`` / ``/* */`` comments, trailing commas or Python literals.
 
 ``normalize`` is *conservative*: it only touches structural lines (AIWB headers / end
@@ -62,6 +64,104 @@ def _strip_invisible(s: str, fixes: list[str]) -> str:
         out = out.replace("\r\n", "\n").replace("\r", "\n")
         fixes.append("line_endings")
     return out
+
+
+_FENCE_LOOSE = re.compile(r"^\s*(`{3,}|~{3,})([^\r\n`]*?)\\?\s*$")
+_MD_ESCAPE = re.compile(r"(?<!\\)\\([_*\[\]#`>|~-])")
+COPY_DAMAGE_RATIO = 0.6
+COPY_DAMAGE_MIN_LINES = 3
+
+
+def _regions(lines: list[str]) -> list[bool]:
+    """``True`` for lines inside a code fence (fence lines included). A fence closes on the same fence string."""
+    inside, opener, out = False, "", []
+    for line in lines:
+        m = _FENCE_LOOSE.match(line)
+        if m and not inside:
+            inside, opener = True, m.group(1)
+            out.append(True)
+        elif m and inside and m.group(1) == opener and not m.group(2).strip():
+            inside = False
+            out.append(True)
+        else:
+            out.append(inside)
+    return out
+
+
+def _damaged_ending(lines: list[str], idx: list[int]) -> str:
+    """The character (``\\`` or ``/``) that ends most of the given lines, if it is copy damage; else ``""``."""
+    body = [i for i in idx if lines[i].strip()]
+    if len(body) < COPY_DAMAGE_MIN_LINES:
+        return ""
+    for ch in ("\\", "/"):
+        hits = sum(1 for i in body if lines[i].rstrip().endswith(ch) and not lines[i].rstrip().endswith(ch * 3))
+        if hits >= COPY_DAMAGE_MIN_LINES and hits / len(body) >= COPY_DAMAGE_RATIO:
+            return ch
+    return ""
+
+
+def strip_copy_damage(text: str, fixes: list[str] | None = None) -> str:
+    """Undo what selecting a rendered chat answer and copying it does (5.12.0, owner audit B1).
+
+    * When most non-empty lines **outside** code fences end with ``\\`` (or ``/``) — lines such as ``{`` and
+      ``}`` never legitimately do — exactly that one character is removed from every line that has it. A fenced
+      block is repaired the same way only when it is damaged as much as the text around it.
+    * Markdown escapes (``\\_ \\* \\[ \\] \\# \\` \\>``) outside fences and outside AIWB file bodies are
+      removed: they are never part of JSON, of our markers or of prose.
+
+    Conservative: text that is not damaged comes back unchanged (``fixes`` untouched).
+    """
+    fixes = [] if fixes is None else fixes
+    s = str(text or "")
+    if "\\" not in s and "/" not in s:
+        return s
+    lines = s.split("\n")
+    fenced = _regions(lines)
+    outside = [i for i, f in enumerate(lines) if not fenced[i]]
+    ch = _damaged_ending(lines, outside)
+    n_end = 0
+    if ch:
+        targets = set(outside)
+        # fenced blocks: repair a block only when it is itself damaged like the text around it
+        i = 0
+        while i < len(lines):
+            if fenced[i]:
+                j = i
+                while j + 1 < len(lines) and fenced[j + 1] and not (j > i and _FENCE_LOOSE.match(lines[j])):
+                    j += 1
+                inner = list(range(i + 1, j))
+                if _damaged_ending(lines, inner) == ch:
+                    targets.update(inner)
+                targets.update({i, j})  # the fence lines themselves may carry the damage
+                i = j + 1
+            else:
+                i += 1
+        for i in sorted(targets):
+            r = lines[i].rstrip()
+            if r.endswith(ch):
+                lines[i] = r[:-1].rstrip() if r[:-1].strip() else ""
+                n_end += 1
+        fenced = _regions(lines)
+    n_esc = 0
+    in_file = False
+    for i, line in enumerate(lines):
+        probe = line.strip()
+        if re.match(r"^<<<AIWB_FILE\b", probe.replace("\\", "")):
+            in_file = True
+        if fenced[i] or (in_file and not probe.replace("\\", "").startswith("<<<AIWB")):
+            pass
+        elif "\\" in line:
+            new, k = _MD_ESCAPE.subn(r"\1", line)
+            if k:
+                lines[i], n_esc = new, n_esc + k
+        if re.match(r"^<<<AIWB_END_FILE>>>", lines[i].strip()):
+            in_file = False
+    if n_end:
+        name = "backslashes" if ch == "\\" else "slashes"
+        fixes.append(f"copy_damage:{n_end} line-end {name} removed (answer was copied as rendered text)")
+    if n_esc:
+        fixes.append(f"markdown_escapes:{n_esc} removed")
+    return "\n".join(lines) if (n_end or n_esc) else s
 
 
 def _fix_marker_line(line: str) -> str:
@@ -139,6 +239,7 @@ def normalize(text: str | bytes) -> NormalizeResult:
     s = text.decode("utf-8", errors="replace") if isinstance(text, (bytes, bytearray)) else str(text or "")
     fixes: list[str] = []
     s = _strip_invisible(s, fixes)
+    s = strip_copy_damage(s, fixes)
     s = _fix_structural_lines(s, fixes)
     s = _unwrap_outer_fence(s, fixes)
     if _looks_jsonish(s):
