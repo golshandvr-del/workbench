@@ -85,7 +85,10 @@ def main() -> None:
             # Home: next step card
             app.shell.show("home")
             root.update()
-            assert "Paste agent-core-dev's answer" in app.home_next_var.get(), app.home_next_var.get()
+            # 5.11.0: the cockpit card names the AI (not its id) and shows the paste panel on the page
+            name = ctl.state()["agents"]["agent-core-dev"].get("name") or "agent-core-dev"
+            assert f"Paste {name}'s answer" in app.home_next_var.get(), app.home_next_var.get()
+            assert app.home_card.paste.winfo_manager(), "the paste panel is on Home"
         finally:
             root.destroy()
     print("PASS: guided loop GUI smoke - next-step strip, More menu, per-AI queue, Home card")
