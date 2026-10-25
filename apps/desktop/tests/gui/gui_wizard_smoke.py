@@ -93,11 +93,14 @@ def run_one(wb, root, app, tmp: Path, workers: int, names: list[str]) -> None:
     from aiwb.ui import mission_model
     lanes = [ln["name"] for ln in mission_model.build(st)["lanes"]]
     assert lanes == expected, f"lanes {lanes} != {expected}"
-    # no repeated question: the guided Workbench is on the project-manager prompt, not on "Start the project"
-    assert ws.next_btn.cget("text") == "Copy the charter prompt", ws.next_btn.cget("text")
+    # no repeated question: Home's card (5.11.0: Create shows Home) is on the project-manager prompt
+    assert app.shell.current == "home", app.shell.current
+    card = app.home_card
+    card.refresh()
+    assert card.next_btn.cget("text") == "Copy the charter prompt", card.next_btn.cget("text")
     assert st["settings"]["goal"].startswith("A test project")
     assert st["settings"]["answer_format"] == fmt, st["settings"].get("answer_format")
-    ws.next_btn.invoke()
+    card.next_btn.invoke()
     pump(root)
     prompt = root.clipboard_get()
     assert "Team chosen by the user (binding)" in prompt
