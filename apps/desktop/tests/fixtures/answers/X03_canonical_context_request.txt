@@ -1,0 +1,17 @@
+AIWB_ATTEMPT_ID: att-20261022-120000-0a1b2c3d
+
+<<<AIWB_CONTEXT_REQUEST>>>
+{
+ "schema_version": "1.0",
+ "type": "AIWB_CONTEXT_REQUEST",
+ "attempt_id": "att-20261022-120000-0a1b2c3d",
+ "reason": "I need the store",
+ "files": [
+  {
+   "path": "src/todo/store.py",
+   "mode": "full_file"
+  }
+ ],
+ "questions": []
+}
+<<<AIWB_END_CONTEXT_REQUEST>>>
