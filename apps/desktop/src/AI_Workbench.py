@@ -9868,10 +9868,10 @@ class WorkbenchApp:
         self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
         self.set_status("Projects (multi-agent): " + ctl.next_action_text())
 
-    def open_project_workbench(self) -> None:
+    def open_project_workbench(self, show: bool = True) -> None:
         """Project Workbench shell (roadmap 2.3.0, ADR-007): one workspace over the same ProjectsController;
         existing tools (classic prompt/response, Inbox, Context Request, Build Center, Companion) are linked,
-        never re-implemented."""
+        never re-implemented. ``show=False`` (5.11.0) builds it for Home's card without leaving the page."""
         from aiwb.workspace.controller import WorkspaceController
         from aiwb.workspace.shell import WorkspaceWindow
         root = self.require_workspace()
@@ -9903,9 +9903,11 @@ class WorkbenchApp:
         self.workspace_window = WorkspaceWindow(self.root, WorkspaceController(ctl, tools=tools, prefs=self.prefs),
                                                 clipboard=self._copy_text_to_clipboard, host=self.workbench_tab)
         self.workspace_window._project_root = str(root)
-        if self.shell.current != "workbench":
+        if show and self.shell.current != "workbench":
             self.shell.show("workbench")
-        self.set_status("Project Workbench: " + ctl.next_action_text())
+        if show:
+            self.set_status("Project Workbench: " + ctl.next_action_text())
+        self.refresh_home_next_step()
 
     # -- project bundle (roadmap 3.8.0): the same project on the phone (AI Workbench Mobile 1.0.0)
     def export_project_bundle(self, ctl: Any, path: str | None = None) -> str:
