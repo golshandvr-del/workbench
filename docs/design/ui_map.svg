@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1922" height="3398" viewBox="0 0 1922 3398" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11">
-<rect width="1922" height="3398" fill="#10151c"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1922" height="3376" viewBox="0 0 1922 3376" font-family="Segoe UI, Inter, Arial, sans-serif" font-size="11">
+<rect width="1922" height="3376" fill="#10151c"/>
 <path d="M618.0,27.0 C632.0,27.0 632.0,16.0 646.0,16.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M618.0,27.0 C632.0,27.0 632.0,38.0 646.0,38.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M408.0,65.5 C422.0,65.5 422.0,27.0 436.0,27.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M408.0,65.5 C422.0,65.5 422.0,60.0 436.0,60.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M408.0,65.5 C422.0,65.5 422.0,82.0 436.0,82.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M408.0,65.5 C422.0,65.5 422.0,104.0 436.0,104.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M198.0,1701.8 C212.0,1701.8 212.0,65.5 226.0,65.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M198.0,1690.8 C212.0,1690.8 212.0,65.5 226.0,65.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,159.0 C1052.0,159.0 1052.0,126.0 1066.0,126.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,159.0 C1052.0,159.0 1052.0,148.0 1066.0,148.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,159.0 C1052.0,159.0 1052.0,170.0 1066.0,170.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
@@ -24,7 +24,7 @@
 <path d="M618.0,252.5 C632.0,252.5 632.0,280.0 646.0,280.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,346.0 C842.0,346.0 842.0,346.0 856.0,346.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M618.0,252.5 C632.0,252.5 632.0,346.0 646.0,346.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,1721.0 C422.0,1721.0 422.0,252.5 436.0,252.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,1710.0 C422.0,1710.0 422.0,252.5 436.0,252.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,390.0 C842.0,390.0 842.0,368.0 856.0,368.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,412.0 C1052.0,412.0 1052.0,390.0 1066.0,390.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,412.0 C1052.0,412.0 1052.0,412.0 1066.0,412.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
@@ -82,7 +82,7 @@
 <path d="M1038.0,1094.0 C1052.0,1094.0 1052.0,1204.0 1066.0,1204.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,1006.0 C842.0,1006.0 842.0,1094.0 856.0,1094.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M618.0,698.0 C632.0,698.0 632.0,1006.0 646.0,1006.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,1721.0 C422.0,1721.0 422.0,698.0 436.0,698.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,1710.0 C422.0,1710.0 422.0,698.0 436.0,698.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,1226.0 C1052.0,1226.0 1052.0,1226.0 1066.0,1226.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,1319.5 C842.0,1319.5 842.0,1226.0 856.0,1226.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M1038.0,1259.0 C1052.0,1259.0 1052.0,1248.0 1066.0,1248.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
@@ -143,87 +143,86 @@
 <path d="M1038.0,1979.5 C1052.0,1979.5 1052.0,2073.0 1066.0,2073.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,1789.8 C842.0,1789.8 842.0,1979.5 856.0,1979.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M618.0,1554.6 C632.0,1554.6 632.0,1789.8 646.0,1789.8" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,1721.0 C422.0,1721.0 422.0,1554.6 436.0,1554.6" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2216.0 646.0,2216.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2238.0 646.0,2238.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,1710.0 C422.0,1710.0 422.0,1554.6 436.0,1554.6" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2216.0 646.0,2216.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2238.0 646.0,2238.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,2271.0 C842.0,2271.0 842.0,2260.0 856.0,2260.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
 <path d="M828.0,2271.0 C842.0,2271.0 842.0,2282.0 856.0,2282.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2271.0 646.0,2271.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2315.0 C842.0,2315.0 842.0,2304.0 856.0,2304.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2315.0 C842.0,2315.0 842.0,2326.0 856.0,2326.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2315.0 646.0,2315.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2370.0 C1052.0,2370.0 1052.0,2348.0 1066.0,2348.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2370.0 C1052.0,2370.0 1052.0,2370.0 1066.0,2370.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2370.0 C1052.0,2370.0 1052.0,2392.0 1066.0,2392.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2392.0 C842.0,2392.0 842.0,2370.0 856.0,2370.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2392.0 C842.0,2392.0 842.0,2414.0 856.0,2414.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2392.0 646.0,2392.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2447.0 C842.0,2447.0 842.0,2436.0 856.0,2436.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2458.0 C1052.0,2458.0 1052.0,2458.0 1066.0,2458.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2447.0 C842.0,2447.0 842.0,2458.0 856.0,2458.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2447.0 646.0,2447.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2480.0 646.0,2480.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2502.0 646.0,2502.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2524.0 646.0,2524.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,2606.5 C1262.0,2606.5 1262.0,2546.0 1276.0,2546.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,2606.5 C1262.0,2606.5 1262.0,2568.0 1276.0,2568.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,2606.5 C1262.0,2606.5 1262.0,2590.0 1276.0,2590.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,2606.5 C1262.0,2606.5 1262.0,2612.0 1276.0,2612.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2667.0 C1472.0,2667.0 1472.0,2634.0 1486.0,2634.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2667.0 C1472.0,2667.0 1472.0,2656.0 1486.0,2656.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2667.0 C1472.0,2667.0 1472.0,2678.0 1486.0,2678.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2667.0 C1472.0,2667.0 1472.0,2700.0 1486.0,2700.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,2606.5 C1262.0,2606.5 1262.0,2667.0 1276.0,2667.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2810.0 C1052.0,2810.0 1052.0,2606.5 1066.0,2606.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2722.0 1696.0,2722.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2744.0 1696.0,2744.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2766.0 1696.0,2766.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2788.0 1696.0,2788.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2810.0 1696.0,2810.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2832.0 1696.0,2832.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2788.0 C1682.0,2788.0 1682.0,2854.0 1696.0,2854.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2865.0 C1472.0,2865.0 1472.0,2788.0 1486.0,2788.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2865.0 C1472.0,2865.0 1472.0,2876.0 1486.0,2876.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2865.0 C1472.0,2865.0 1472.0,2898.0 1486.0,2898.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2865.0 C1472.0,2865.0 1472.0,2920.0 1486.0,2920.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,2865.0 C1472.0,2865.0 1472.0,2942.0 1486.0,2942.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,2865.0 C1262.0,2865.0 1262.0,2865.0 1276.0,2865.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2810.0 C1052.0,2810.0 1052.0,2865.0 1066.0,2865.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2975.0 C1682.0,2975.0 1682.0,2964.0 1696.0,2964.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1668.0,2975.0 C1682.0,2975.0 1682.0,2986.0 1696.0,2986.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,3013.5 C1472.0,3013.5 1472.0,2975.0 1486.0,2975.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,3013.5 C1472.0,3013.5 1472.0,3008.0 1486.0,3008.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,3013.5 C1472.0,3013.5 1472.0,3030.0 1486.0,3030.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1458.0,3013.5 C1472.0,3013.5 1472.0,3052.0 1486.0,3052.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1248.0,3013.5 C1262.0,3013.5 1262.0,3013.5 1276.0,3013.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,2810.0 C1052.0,2810.0 1052.0,3013.5 1066.0,3013.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,2810.0 C842.0,2810.0 842.0,2810.0 856.0,2810.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,2513.0 C632.0,2513.0 632.0,2810.0 646.0,2810.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,1721.0 C422.0,1721.0 422.0,2513.0 436.0,2513.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3085.0 C842.0,3085.0 842.0,3074.0 856.0,3074.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3085.0 C842.0,3085.0 842.0,3096.0 856.0,3096.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,3189.5 C632.0,3189.5 632.0,3085.0 646.0,3085.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3129.0 C842.0,3129.0 842.0,3118.0 856.0,3118.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3129.0 C842.0,3129.0 842.0,3140.0 856.0,3140.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,3189.5 C632.0,3189.5 632.0,3129.0 646.0,3129.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3195.0 C842.0,3195.0 842.0,3162.0 856.0,3162.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,3228.0 C1052.0,3228.0 1052.0,3184.0 1066.0,3184.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,3228.0 C1052.0,3228.0 1052.0,3206.0 1066.0,3206.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,3228.0 C1052.0,3228.0 1052.0,3228.0 1066.0,3228.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,3228.0 C1052.0,3228.0 1052.0,3250.0 1066.0,3250.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M1038.0,3228.0 C1052.0,3228.0 1052.0,3272.0 1066.0,3272.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3195.0 C842.0,3195.0 842.0,3228.0 856.0,3228.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,3189.5 C632.0,3189.5 632.0,3195.0 646.0,3195.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M828.0,3294.0 C842.0,3294.0 842.0,3294.0 856.0,3294.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M618.0,3189.5 C632.0,3189.5 632.0,3294.0 646.0,3294.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,1721.0 C422.0,1721.0 422.0,3189.5 436.0,3189.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M198.0,1701.8 C212.0,1701.8 212.0,1721.0 226.0,1721.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,3338.0 C422.0,3338.0 422.0,3316.0 436.0,3316.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,3338.0 C422.0,3338.0 422.0,3338.0 436.0,3338.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M408.0,3338.0 C422.0,3338.0 422.0,3360.0 436.0,3360.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<path d="M198.0,1701.8 C212.0,1701.8 212.0,3338.0 226.0,3338.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
-<rect x="16" y="1692.8" width="182" height="18" rx="9" fill="#1b2130" stroke="#f5c542" stroke-width="1.4" stroke-opacity="1"/>
-<text x="26" y="1705.8" fill="#f5c542" font-weight="600">AI Workbench</text>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2271.0 646.0,2271.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,2304.0 C842.0,2304.0 842.0,2304.0 856.0,2304.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2304.0 646.0,2304.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2348.0 C1052.0,2348.0 1052.0,2326.0 1066.0,2326.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2348.0 C1052.0,2348.0 1052.0,2348.0 1066.0,2348.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2348.0 C1052.0,2348.0 1052.0,2370.0 1066.0,2370.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,2370.0 C842.0,2370.0 842.0,2348.0 856.0,2348.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,2370.0 C842.0,2370.0 842.0,2392.0 856.0,2392.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2370.0 646.0,2370.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,2425.0 C842.0,2425.0 842.0,2414.0 856.0,2414.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2436.0 C1052.0,2436.0 1052.0,2436.0 1066.0,2436.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,2425.0 C842.0,2425.0 842.0,2436.0 856.0,2436.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2425.0 646.0,2425.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2458.0 646.0,2458.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2480.0 646.0,2480.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2502.0 646.0,2502.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2584.5 C1262.0,2584.5 1262.0,2524.0 1276.0,2524.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2584.5 C1262.0,2584.5 1262.0,2546.0 1276.0,2546.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2584.5 C1262.0,2584.5 1262.0,2568.0 1276.0,2568.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2584.5 C1262.0,2584.5 1262.0,2590.0 1276.0,2590.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2645.0 C1472.0,2645.0 1472.0,2612.0 1486.0,2612.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2645.0 C1472.0,2645.0 1472.0,2634.0 1486.0,2634.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2645.0 C1472.0,2645.0 1472.0,2656.0 1486.0,2656.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2645.0 C1472.0,2645.0 1472.0,2678.0 1486.0,2678.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2584.5 C1262.0,2584.5 1262.0,2645.0 1276.0,2645.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2788.0 C1052.0,2788.0 1052.0,2584.5 1066.0,2584.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2700.0 1696.0,2700.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2722.0 1696.0,2722.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2744.0 1696.0,2744.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2766.0 1696.0,2766.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2788.0 1696.0,2788.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2810.0 1696.0,2810.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2766.0 C1682.0,2766.0 1682.0,2832.0 1696.0,2832.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2843.0 C1472.0,2843.0 1472.0,2766.0 1486.0,2766.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2843.0 C1472.0,2843.0 1472.0,2854.0 1486.0,2854.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2843.0 C1472.0,2843.0 1472.0,2876.0 1486.0,2876.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2843.0 C1472.0,2843.0 1472.0,2898.0 1486.0,2898.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2843.0 C1472.0,2843.0 1472.0,2920.0 1486.0,2920.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2843.0 C1262.0,2843.0 1262.0,2843.0 1276.0,2843.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2788.0 C1052.0,2788.0 1052.0,2843.0 1066.0,2843.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2953.0 C1682.0,2953.0 1682.0,2942.0 1696.0,2942.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1668.0,2953.0 C1682.0,2953.0 1682.0,2964.0 1696.0,2964.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2991.5 C1472.0,2991.5 1472.0,2953.0 1486.0,2953.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2991.5 C1472.0,2991.5 1472.0,2986.0 1486.0,2986.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2991.5 C1472.0,2991.5 1472.0,3008.0 1486.0,3008.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1458.0,2991.5 C1472.0,2991.5 1472.0,3030.0 1486.0,3030.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1248.0,2991.5 C1262.0,2991.5 1262.0,2991.5 1276.0,2991.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,2788.0 C1052.0,2788.0 1052.0,2991.5 1066.0,2991.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,2788.0 C842.0,2788.0 842.0,2788.0 856.0,2788.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,2502.0 C632.0,2502.0 632.0,2788.0 646.0,2788.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,1710.0 C422.0,1710.0 422.0,2502.0 436.0,2502.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3063.0 C842.0,3063.0 842.0,3052.0 856.0,3052.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3063.0 C842.0,3063.0 842.0,3074.0 856.0,3074.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,3167.5 C632.0,3167.5 632.0,3063.0 646.0,3063.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3107.0 C842.0,3107.0 842.0,3096.0 856.0,3096.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3107.0 C842.0,3107.0 842.0,3118.0 856.0,3118.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,3167.5 C632.0,3167.5 632.0,3107.0 646.0,3107.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3173.0 C842.0,3173.0 842.0,3140.0 856.0,3140.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,3206.0 C1052.0,3206.0 1052.0,3162.0 1066.0,3162.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,3206.0 C1052.0,3206.0 1052.0,3184.0 1066.0,3184.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,3206.0 C1052.0,3206.0 1052.0,3206.0 1066.0,3206.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,3206.0 C1052.0,3206.0 1052.0,3228.0 1066.0,3228.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M1038.0,3206.0 C1052.0,3206.0 1052.0,3250.0 1066.0,3250.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3173.0 C842.0,3173.0 842.0,3206.0 856.0,3206.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,3167.5 C632.0,3167.5 632.0,3173.0 646.0,3173.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M828.0,3272.0 C842.0,3272.0 842.0,3272.0 856.0,3272.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M618.0,3167.5 C632.0,3167.5 632.0,3272.0 646.0,3272.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,1710.0 C422.0,1710.0 422.0,3167.5 436.0,3167.5" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M198.0,1690.8 C212.0,1690.8 212.0,1710.0 226.0,1710.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,3316.0 C422.0,3316.0 422.0,3294.0 436.0,3294.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,3316.0 C422.0,3316.0 422.0,3316.0 436.0,3316.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M408.0,3316.0 C422.0,3316.0 422.0,3338.0 436.0,3338.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<path d="M198.0,1690.8 C212.0,1690.8 212.0,3316.0 226.0,3316.0" fill="none" stroke="#5f687b" stroke-opacity="0.7" stroke-width="1.1"/>
+<rect x="16" y="1681.8" width="182" height="18" rx="9" fill="#1b2130" stroke="#f5c542" stroke-width="1.4" stroke-opacity="1"/>
+<text x="26" y="1694.8" fill="#f5c542" font-weight="600">AI Workbench</text>
 <rect x="226" y="56.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#9aa3b5" stroke-width="1.4" stroke-opacity="1"/>
 <text x="236" y="69.5" fill="#9aa3b5" font-weight="600">Toolbar</text>
 <rect x="436" y="18.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
@@ -238,8 +237,8 @@
 <text x="446" y="86.0" fill="#e6eaf2">Save</text>
 <rect x="436" y="95.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
 <text x="446" y="108.0" fill="#e6eaf2">Run</text>
-<rect x="226" y="1712.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#9aa3b5" stroke-width="1.4" stroke-opacity="1"/>
-<text x="236" y="1725.0" fill="#9aa3b5" font-weight="600">Rail</text>
+<rect x="226" y="1701.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#9aa3b5" stroke-width="1.4" stroke-opacity="1"/>
+<text x="236" y="1714.0" fill="#9aa3b5" font-weight="600">Rail</text>
 <rect x="436" y="243.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
 <text x="446" y="256.5" fill="#2f7bff" font-weight="600">Home</text>
 <rect x="646" y="150.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
@@ -514,8 +513,8 @@
 <text x="1286" y="2176.0" fill="#e6eaf2">Refresh workflow</text>
 <rect x="1276" y="2185.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
 <text x="1286" y="2198.0" fill="#e6eaf2">Projects (multi-agent)…</text>
-<rect x="436" y="2504.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="446" y="2517.0" fill="#2f7bff" font-weight="600">History</text>
+<rect x="436" y="2493.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="446" y="2506.0" fill="#2f7bff" font-weight="600">History</text>
 <rect x="646" y="2207.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
 <text x="656" y="2220.0" fill="#22c55e" font-weight="600">Timeline</text>
 <rect x="646" y="2229.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
@@ -526,146 +525,144 @@
 <text x="866" y="2264.0" fill="#e6eaf2">Refresh</text>
 <rect x="856" y="2273.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
 <text x="866" y="2286.0" fill="#e6eaf2">Report error…</text>
-<rect x="646" y="2306.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2319.0" fill="#22c55e" font-weight="600">Filter</text>
+<rect x="646" y="2295.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="2308.0" fill="#22c55e" font-weight="600">Filter</text>
 <rect x="856" y="2295.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
 <text x="866" y="2308.0" fill="#e6eaf2">Clear</text>
-<rect x="856" y="2317.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="2330.0" fill="#e6eaf2">Saved only</text>
-<rect x="646" y="2383.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2396.0" fill="#22c55e" font-weight="600">Selected step</text>
-<rect x="856" y="2361.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="2374.0" fill="#e6eaf2">More</text>
+<rect x="646" y="2361.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="2374.0" fill="#22c55e" font-weight="600">Selected step</text>
+<rect x="856" y="2339.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="2352.0" fill="#e6eaf2">More</text>
+<rect x="1066" y="2317.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1076" y="2330.0" fill="#e6eaf2">Copy model output</text>
 <rect x="1066" y="2339.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="2352.0" fill="#e6eaf2">Copy model output</text>
+<text x="1076" y="2352.0" fill="#e6eaf2">Edit prompt as new revision…</text>
 <rect x="1066" y="2361.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="2374.0" fill="#e6eaf2">Edit prompt as new revision…</text>
-<rect x="1066" y="2383.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="2396.0" fill="#e6eaf2">Create repair prompt from t…</text>
+<text x="1076" y="2374.0" fill="#e6eaf2">Create repair prompt from t…</text>
+<rect x="856" y="2383.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="2396.0" fill="#e6eaf2">Copy prompt</text>
+<rect x="646" y="2416.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="2429.0" fill="#22c55e" font-weight="600">Editable entry metadata</text>
 <rect x="856" y="2405.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="2418.0" fill="#e6eaf2">Copy prompt</text>
-<rect x="646" y="2438.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2451.0" fill="#22c55e" font-weight="600">Editable entry metadata</text>
+<text x="866" y="2418.0" fill="#e6eaf2">Save metadata / notes</text>
 <rect x="856" y="2427.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="2440.0" fill="#e6eaf2">Save metadata / notes</text>
-<rect x="856" y="2449.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="2462.0" fill="#e6eaf2">More</text>
-<rect x="1066" y="2449.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="2462.0" fill="#e6eaf2">Delete selected entry…</text>
+<text x="866" y="2440.0" fill="#e6eaf2">More</text>
+<rect x="1066" y="2427.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1076" y="2440.0" fill="#e6eaf2">Delete selected entry…</text>
+<rect x="646" y="2449.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="2462.0" fill="#5aa9ff" font-weight="600">Generated prompt</text>
 <rect x="646" y="2471.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2484.0" fill="#5aa9ff" font-weight="600">Generated prompt</text>
+<text x="656" y="2484.0" fill="#5aa9ff" font-weight="600">Model output</text>
 <rect x="646" y="2493.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2506.0" fill="#5aa9ff" font-weight="600">Model output</text>
-<rect x="646" y="2515.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2528.0" fill="#5aa9ff" font-weight="600">Errors / context requests</text>
-<rect x="646" y="2801.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="2814.0" fill="#22c55e" font-weight="600">Tools</text>
-<rect x="856" y="2801.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="866" y="2814.0" fill="#2f7bff" font-weight="600">Git / GitHub</text>
-<rect x="1066" y="2597.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="1076" y="2610.5" fill="#5aa9ff" font-weight="600">Local Git</text>
+<text x="656" y="2506.0" fill="#5aa9ff" font-weight="600">Errors / context requests</text>
+<rect x="646" y="2779.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="2792.0" fill="#22c55e" font-weight="600">Tools</text>
+<rect x="856" y="2779.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="866" y="2792.0" fill="#2f7bff" font-weight="600">Git / GitHub</text>
+<rect x="1066" y="2575.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="1076" y="2588.5" fill="#5aa9ff" font-weight="600">Local Git</text>
+<rect x="1276" y="2515.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1286" y="2528.0" fill="#e6eaf2">Refresh Git status / projec…</text>
 <rect x="1276" y="2537.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1286" y="2550.0" fill="#e6eaf2">Refresh Git status / projec…</text>
+<text x="1286" y="2550.0" fill="#e6eaf2">Commit changes…</text>
 <rect x="1276" y="2559.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1286" y="2572.0" fill="#e6eaf2">Commit changes…</text>
+<text x="1286" y="2572.0" fill="#e6eaf2">Push to GitHub…</text>
 <rect x="1276" y="2581.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1286" y="2594.0" fill="#e6eaf2">Push to GitHub…</text>
-<rect x="1276" y="2603.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1286" y="2616.0" fill="#e6eaf2">Review &amp; Sync…</text>
-<rect x="1276" y="2658.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1286" y="2671.0" fill="#e6eaf2">More</text>
+<text x="1286" y="2594.0" fill="#e6eaf2">Review &amp; Sync…</text>
+<rect x="1276" y="2636.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1286" y="2649.0" fill="#e6eaf2">More</text>
+<rect x="1486" y="2603.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1496" y="2616.0" fill="#e6eaf2">Create work branch</text>
 <rect x="1486" y="2625.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2638.0" fill="#e6eaf2">Create work branch</text>
+<text x="1496" y="2638.0" fill="#e6eaf2">Check Git</text>
 <rect x="1486" y="2647.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2660.0" fill="#e6eaf2">Check Git</text>
+<text x="1496" y="2660.0" fill="#e6eaf2">Install Git</text>
 <rect x="1486" y="2669.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2682.0" fill="#e6eaf2">Install Git</text>
-<rect x="1486" y="2691.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2704.0" fill="#e6eaf2">Update Git</text>
-<rect x="1066" y="2856.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="1076" y="2869.0" fill="#5aa9ff" font-weight="600">GitHub repositories</text>
-<rect x="1276" y="2856.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="1286" y="2869.0" fill="#22c55e" font-weight="600">GitHub Repository Browser ·…</text>
-<rect x="1486" y="2779.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2792.0" fill="#e6eaf2">More</text>
+<text x="1496" y="2682.0" fill="#e6eaf2">Update Git</text>
+<rect x="1066" y="2834.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="1076" y="2847.0" fill="#5aa9ff" font-weight="600">GitHub repositories</text>
+<rect x="1276" y="2834.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="1286" y="2847.0" fill="#22c55e" font-weight="600">GitHub Repository Browser ·…</text>
+<rect x="1486" y="2757.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1496" y="2770.0" fill="#e6eaf2">More</text>
+<rect x="1696" y="2691.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1706" y="2704.0" fill="#e6eaf2">Open on GitHub</text>
 <rect x="1696" y="2713.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2726.0" fill="#e6eaf2">Open on GitHub</text>
+<text x="1706" y="2726.0" fill="#e6eaf2">Initialize &amp; Link Local…</text>
 <rect x="1696" y="2735.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2748.0" fill="#e6eaf2">Initialize &amp; Link Local…</text>
+<text x="1706" y="2748.0" fill="#e6eaf2">Initial Push Review…</text>
 <rect x="1696" y="2757.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2770.0" fill="#e6eaf2">Initial Push Review…</text>
+<text x="1706" y="2770.0" fill="#e6eaf2">Binding Settings…</text>
 <rect x="1696" y="2779.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2792.0" fill="#e6eaf2">Binding Settings…</text>
+<text x="1706" y="2792.0" fill="#e6eaf2">Refresh Binding Metadata</text>
 <rect x="1696" y="2801.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2814.0" fill="#e6eaf2">Refresh Binding Metadata</text>
+<text x="1706" y="2814.0" fill="#e6eaf2">Unlink Project</text>
 <rect x="1696" y="2823.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2836.0" fill="#e6eaf2">Unlink Project</text>
-<rect x="1696" y="2845.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2858.0" fill="#e6eaf2">Build Center…</text>
+<text x="1706" y="2836.0" fill="#e6eaf2">Build Center…</text>
+<rect x="1486" y="2845.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1496" y="2858.0" fill="#e6eaf2">Sync &amp; Build…</text>
 <rect x="1486" y="2867.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2880.0" fill="#e6eaf2">Sync &amp; Build…</text>
+<text x="1496" y="2880.0" fill="#e6eaf2">Clone Selected…</text>
 <rect x="1486" y="2889.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2902.0" fill="#e6eaf2">Clone Selected…</text>
+<text x="1496" y="2902.0" fill="#e6eaf2">Link to Active Project…</text>
 <rect x="1486" y="2911.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2924.0" fill="#e6eaf2">Link to Active Project…</text>
-<rect x="1486" y="2933.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2946.0" fill="#e6eaf2">Refresh Repositories</text>
-<rect x="1066" y="3004.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="1076" y="3017.5" fill="#5aa9ff" font-weight="600">GitHub accounts</text>
-<rect x="1276" y="3004.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="1286" y="3017.5" fill="#22c55e" font-weight="600">GitHub Accounts · REST API</text>
-<rect x="1486" y="2966.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="2979.0" fill="#e6eaf2">More</text>
+<text x="1496" y="2924.0" fill="#e6eaf2">Refresh Repositories</text>
+<rect x="1066" y="2982.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#5aa9ff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="1076" y="2995.5" fill="#5aa9ff" font-weight="600">GitHub accounts</text>
+<rect x="1276" y="2982.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="1286" y="2995.5" fill="#22c55e" font-weight="600">GitHub Accounts · REST API</text>
+<rect x="1486" y="2944.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1496" y="2957.0" fill="#e6eaf2">More</text>
+<rect x="1696" y="2933.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1706" y="2946.0" fill="#e6eaf2">Replace Credential…</text>
 <rect x="1696" y="2955.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2968.0" fill="#e6eaf2">Replace Credential…</text>
-<rect x="1696" y="2977.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1706" y="2990.0" fill="#e6eaf2">Disconnect</text>
+<text x="1706" y="2968.0" fill="#e6eaf2">Disconnect</text>
+<rect x="1486" y="2977.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1496" y="2990.0" fill="#e6eaf2">Refresh Accounts</text>
 <rect x="1486" y="2999.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="3012.0" fill="#e6eaf2">Refresh Accounts</text>
+<text x="1496" y="3012.0" fill="#e6eaf2">Test Connection</text>
 <rect x="1486" y="3021.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="3034.0" fill="#e6eaf2">Test Connection</text>
-<rect x="1486" y="3043.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1496" y="3056.0" fill="#e6eaf2">Add PAT…</text>
-<rect x="436" y="3180.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
-<text x="446" y="3193.5" fill="#2f7bff" font-weight="600">Settings</text>
-<rect x="646" y="3076.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="3089.0" fill="#22c55e" font-weight="600">Appearance</text>
+<text x="1496" y="3034.0" fill="#e6eaf2">Add PAT…</text>
+<rect x="436" y="3158.5" width="182" height="18" rx="9" fill="#1b2130" stroke="#2f7bff" stroke-width="1.4" stroke-opacity="1"/>
+<text x="446" y="3171.5" fill="#2f7bff" font-weight="600">Settings</text>
+<rect x="646" y="3054.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="3067.0" fill="#22c55e" font-weight="600">Appearance</text>
+<rect x="856" y="3043.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="3056.0" fill="#e6eaf2">Light</text>
 <rect x="856" y="3065.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3078.0" fill="#e6eaf2">Light</text>
+<text x="866" y="3078.0" fill="#e6eaf2">Dark</text>
+<rect x="646" y="3098.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="3111.0" fill="#22c55e" font-weight="600">Experience</text>
 <rect x="856" y="3087.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3100.0" fill="#e6eaf2">Dark</text>
-<rect x="646" y="3120.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="3133.0" fill="#22c55e" font-weight="600">Experience</text>
+<text x="866" y="3100.0" fill="#e6eaf2">Simple</text>
 <rect x="856" y="3109.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3122.0" fill="#e6eaf2">Simple</text>
-<rect x="856" y="3131.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3144.0" fill="#e6eaf2">Advanced</text>
-<rect x="646" y="3186.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="3199.0" fill="#22c55e" font-weight="600">Application</text>
-<rect x="856" y="3153.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3166.0" fill="#e6eaf2">App Map…</text>
-<rect x="856" y="3219.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3232.0" fill="#e6eaf2">More</text>
+<text x="866" y="3122.0" fill="#e6eaf2">Advanced</text>
+<rect x="646" y="3164.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="3177.0" fill="#22c55e" font-weight="600">Application</text>
+<rect x="856" y="3131.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="3144.0" fill="#e6eaf2">App Map…</text>
+<rect x="856" y="3197.0" width="182" height="18" rx="9" fill="#10151c" stroke="#e6eaf2" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="3210.0" fill="#e6eaf2">More</text>
+<rect x="1066" y="3153.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="1076" y="3166.0" fill="#e6eaf2">Mobile Companion…</text>
 <rect x="1066" y="3175.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="3188.0" fill="#e6eaf2">Mobile Companion…</text>
+<text x="1076" y="3188.0" fill="#e6eaf2">Restore Manager…</text>
 <rect x="1066" y="3197.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="3210.0" fill="#e6eaf2">Restore Manager…</text>
+<text x="1076" y="3210.0" fill="#e6eaf2">Validation Profiles…</text>
 <rect x="1066" y="3219.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="3232.0" fill="#e6eaf2">Validation Profiles…</text>
+<text x="1076" y="3232.0" fill="#e6eaf2">Export redacted diagnostics…</text>
 <rect x="1066" y="3241.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="3254.0" fill="#e6eaf2">Export redacted diagnostics…</text>
-<rect x="1066" y="3263.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="1076" y="3276.0" fill="#e6eaf2">Open application data folder</text>
-<rect x="646" y="3285.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
-<text x="656" y="3298.0" fill="#22c55e" font-weight="600">Motion</text>
-<rect x="856" y="3285.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="866" y="3298.0" fill="#e6eaf2">Reduce motion</text>
-<rect x="226" y="3329.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#9aa3b5" stroke-width="1.4" stroke-opacity="1"/>
-<text x="236" y="3342.0" fill="#9aa3b5" font-weight="600">Status bar</text>
+<text x="1076" y="3254.0" fill="#e6eaf2">Open application data folder</text>
+<rect x="646" y="3263.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#22c55e" stroke-width="1.4" stroke-opacity="1"/>
+<text x="656" y="3276.0" fill="#22c55e" font-weight="600">Motion</text>
+<rect x="856" y="3263.0" width="182" height="18" rx="9" fill="#10151c" stroke="#9aa3b5" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="866" y="3276.0" fill="#e6eaf2">Reduce motion</text>
+<rect x="226" y="3307.0" width="182" height="18" rx="9" fill="#1b2130" stroke="#9aa3b5" stroke-width="1.4" stroke-opacity="1"/>
+<text x="236" y="3320.0" fill="#9aa3b5" font-weight="600">Status bar</text>
+<rect x="436" y="3285.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
+<text x="446" y="3298.0" fill="#e6eaf2">Agents running</text>
 <rect x="436" y="3307.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="446" y="3320.0" fill="#e6eaf2">Agents running</text>
+<text x="446" y="3320.0" fill="#e6eaf2">Milestone</text>
 <rect x="436" y="3329.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="446" y="3342.0" fill="#e6eaf2">Milestone</text>
-<rect x="436" y="3351.0" width="182" height="18" rx="9" fill="#10151c" stroke="#5f687b" stroke-width="0.8" stroke-opacity="0.55"/>
-<text x="446" y="3364.0" fill="#e6eaf2">Autosaved</text>
+<text x="446" y="3342.0" fill="#e6eaf2">Autosaved</text>
 </svg>
