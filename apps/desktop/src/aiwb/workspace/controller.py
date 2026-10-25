@@ -529,16 +529,17 @@ class WorkspaceController:
         return self.guide().flow()
 
     def flow_text(self) -> str:
+        """5.13.0 (owner audit B4): where the project is, in the user's words — no flowchart node, no "wave"."""
         f = self.flow_position()
-        kind = {"app": "app", "user": "you", "github": "GitHub"}[f["kind"]]
-        text = f"Flow {f['node']} · {f['title']} ({kind})" + (f" · cycle {f['cycle']}" if f["cycle"] > 1 else "")
+        who = {"app": "Workbench", "user": "you", "github": "GitHub"}[f["kind"]]
+        text = f"Now: {f['title']} ({who})" + (f" · round {f['cycle']}" if f["cycle"] > 1 else "")
         from aiwb.v2.waves import dispatch, waves
         st = self.ctl.state()
         w, d = waves(st), dispatch(st)
         if st.get("tasks"):
-            text += f" · chats {len(d['active'])}/{d['limit']} · waves left {len(w['waves'])}"
+            text += f" · {len(d['active'])} of {d['limit']} chats busy"
             if w["cycle"]:
-                text += f" · dependency cycle: {', '.join(w['cycle'][:4])}"
+                text += f" · tasks wait for each other: {', '.join(w['cycle'][:4])}"
         return text
 
     def guide_queues(self) -> dict[str, list[dict[str, Any]]]:
