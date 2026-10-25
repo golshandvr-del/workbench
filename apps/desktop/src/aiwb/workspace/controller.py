@@ -20,14 +20,15 @@ from ..v2.resources import binding_readiness, current_binding
 
 # 5.11.0 (audit A7): three sections instead of seven. The 2.3.0–5.10.0 keys stay valid as aliases, so old ui.json
 # files, attention links and callers keep working.
-SECTIONS = ("plan", "timeline", "project")
-SECTION_ALIASES = {"overview": "plan", "tasks": "plan", "team": "project", "files": "project", "versions": "project",
-                   "settings": "project"}
+# 5.13.0 (owner audit B3): the Timeline section is gone — milestones and versions are on the Mission Map's columns
+# (Home = now and next) and past events are in History (the past). "timeline" stays a valid alias.
+SECTIONS = ("plan", "project")
+SECTION_ALIASES = {"overview": "plan", "tasks": "plan", "timeline": "plan", "team": "project", "files": "project",
+                   "versions": "project", "settings": "project"}
 SECTION_LABELS = {
-    "plan": ("Plan & Tasks", "برنامه و وظایف"), "timeline": ("Timeline", "تاریخچه"),
-    "project": ("Project settings", "تنظیمات پروژه"),
+    "plan": ("Plan & Tasks", "برنامه و وظایف"), "project": ("Project settings", "تنظیمات پروژه"),
 }
-SHORT_LABELS = {"plan": ("Plan", "برنامه"), "timeline": ("Time", "زمان"), "project": ("Project", "پروژه")}
+SHORT_LABELS = {"plan": ("Plan", "برنامه"), "project": ("Project", "پروژه")}
 
 
 def canonical_section(key: str) -> str:
