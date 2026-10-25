@@ -1,3 +1,36 @@
+## [5.11.0] - 2026-10-25
+
+### Core-path repair, step 4: one clear work page — Home is the cockpit (Roadmap 5.11.0)
+
+- **Home › Next step does the step itself** (audit A7). The card names the step and the AI by its **name** (not its
+  id), shows the step's primary button and a **More** menu, and — whenever the step takes an answer — the **paste
+  panel inside the page**: live diagnosis, *Load ZIP…*, *Use this answer*. No popup window, no trip to the
+  Workbench. *Prepare the prompt* also copies it, and every prompt an action returns (fix, continue, change request)
+  is copied and said so.
+- **Click an AI on the Mission Map** (its number or name) and the card shows that AI's own prompt/answer step;
+  *More › Back to the next step* returns to the project's next step.
+- **After *Create project* the app shows Home**, already on *Copy the charter prompt*. From New Project to the first
+  file on disk: **11 clicks + 2 pastes**.
+- **The Project Workbench has 3 sections instead of 7**: *Plan & Tasks* (progress, needs your attention, the plan to
+  review, tasks with their prompt and answer, each AI's queue, recent activity) · *Timeline* · *Project settings*
+  (project details, the AI team, account profiles, one *Project tools* menu of links). Old links and saved views
+  (`overview`, `tasks`, `team`, `files`, `versions`, `settings`) open the section that holds them now. Its next-step
+  strip only says what is next and links to Home.
+- **Duplicates removed**: *Design the whole project…*, *Plan project…*, *Plan team & tasks…* and the Workbench's
+  parallel-chats box / *Save team settings* (the one home is *Agents › Parallel chats…*); History's *Search* button
+  (the list filters as you type) and the team *Filter* button (same).
+- **Calmer pages — at most 8 controls in view at once** (was 10): Home 6, Projects 8, Run & Report 8, Agents 8,
+  History 8, Settings 7. Less-used commands moved into *More*: Task details (Jump to active task, Copy task / map
+  summary), Agents (Memory note…, Parallel chats…, Open task queue, Copy team summary), Run & Report (Run selected /
+  retry…), Timeline (Propose version…, Record commit / tag / release…), Settings › Application (Mobile Companion…,
+  Restore Manager…).
+
+### Tests
+
+- `gui_owner_path_smoke.py` is driven **only from Home** with real widgets, fails on any modal dialog and counts the
+  clicks (gate: ≤ 12 + the pastes). The App Map rule `page_max_visible` is 8. `test_next_card.py` (the card model);
+  `test_workspace.py` (3 sections, old keys as aliases); every Workbench smoke moved to Home's card.
+
 ## [5.10.0] - 2026-10-23
 
 ### Core-path repair, step 3: whatever the model returns, it works (Roadmap 5.10.0)
