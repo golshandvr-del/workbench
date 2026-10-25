@@ -1,0 +1,179 @@
+Here is the plan for Todo CLI: a core package for the model and JSON storage, a thin argparse CLI, and a QA test suite.\
+
+<<<AIWB\_PROJECT\_CHARTER>>>\
+{\
+ "schema\_version": "1.0",\
+ "base\_state\_revision": 2,\
+ "project": {\
+  "name": "Todo CLI",\
+  "goal": "A command-line todo app in Python with JSON storage",\
+  "summary": "A small standard-library Python CLI. A core package keeps todos in a JSON file; a thin CLI layer parses commands; QA writes the tests."\
+ },\
+ "architecture": {\
+  "summary": "Core package (model + JSON store) used by an argparse CLI; tests beside them.",\
+  "modules": [\
+   {\
+    "id": "core",\
+    "purpose": "Todo model and JSON storage",\
+    "paths": [\
+     "src/todo/**"\
+    ],\
+    "depends\_on": [],\
+    "owner\_agent\_id": "agent-core-dev"\
+   },\
+   {\
+    "id": "cli",\
+    "purpose": "argparse commands add/list/done/remove",\
+    "paths": [\
+     "src/cli/**"\
+    ],\
+    "depends\_on": [\
+     "core"\
+    ],\
+    "owner\_agent\_id": "agent-cli-dev"\
+   },\
+   {\
+    "id": "tests",\
+    "purpose": "unittest suite",\
+    "paths": [\
+     "tests/**"\
+    ],\
+    "depends\_on": [\
+     "core",\
+     "cli"\
+    ],\
+    "owner\_agent\_id": "agent-qa"\
+   }\
+  ]\
+ },\
+ "coordination": {\
+  "file\_ownership": [\
+   {\
+    "agent\_id": "agent-core-dev",\
+    "paths": [\
+     "src/todo/**"\
+    ]\
+   },\
+   {\
+    "agent\_id": "agent-cli-dev",\
+    "paths": [\
+     "src/cli/**"\
+    ]\
+   },\
+   {\
+    "agent\_id": "agent-qa",\
+    "paths": [\
+     "tests/**"\
+    ]\
+   }\
+  ],\
+  "sync\_points": [\
+   {\
+    "after\_milestone": "m1",\
+    "description": "The core API in src/todo/\_\_init\_\_.py is frozen before the CLI starts."\
+   }\
+  ]\
+ },\
+ "roadmap": {\
+  "milestones": [\
+   {\
+    "ref": "m1",\
+    "title": "Core storage",\
+    "version": "0.1.0",\
+    "criteria": [\
+     "Todos can be added, listed, completed and removed through the core API",\
+     "Data survives a restart"\
+    ]\
+   },\
+   {\
+    "ref": "m2",\
+    "title": "Usable CLI",\
+    "version": "0.2.0",\
+    "criteria": [\
+     "todo add/list/done/remove work from a terminal",\
+     "All tests pass"\
+    ]\
+   }\
+  ]\
+ },\
+ "tasks": [\
+  {\
+   "ref": "t1",\
+   "title": "Core model and JSON store",\
+   "objective": "Todo dataclass, TodoStore with add/list/complete/remove, atomic JSON save",\
+   "owner\_agent\_id": "agent-core-dev",\
+   "milestone\_ref": "m1",\
+   "depends\_on\_refs": [],\
+   "scope": {\
+    "include": [\
+     "src/todo/**"\
+    ]\
+   },\
+   "acceptance\_criteria": [\
+    "TodoStore round-trips through JSON",\
+    "No third-party packages"\
+   ]\
+  },\
+  {\
+   "ref": "t2",\
+   "title": "Core tests",\
+   "objective": "unittest coverage of the core API",\
+   "owner\_agent\_id": "agent-qa",\
+   "milestone\_ref": "m1",\
+   "depends\_on\_refs": [\
+    "t1"\
+   ],\
+   "scope": {\
+    "include": [\
+     "tests/**"\
+    ]\
+   },\
+   "acceptance\_criteria": [\
+    "python -m unittest passes"\
+   ]\
+  },\
+  {\
+   "ref": "t3",\
+   "title": "CLI commands",\
+   "objective": "argparse entry point with add, list, done, remove",\
+   "owner\_agent\_id": "agent-cli-dev",\
+   "milestone\_ref": "m2",\
+   "depends\_on\_refs": [\
+    "t1"\
+   ],\
+   "scope": {\
+    "include": [\
+     "src/cli/**"\
+    ]\
+   },\
+   "acceptance\_criteria": [\
+    "python -m cli add 'x' then list shows it"\
+   ]\
+  },\
+  {\
+   "ref": "t4",\
+   "title": "CLI tests",\
+   "objective": "Tests that run the CLI in a temp folder",\
+   "owner\_agent\_id": "agent-qa",\
+   "milestone\_ref": "m2",\
+   "depends\_on\_refs": [\
+    "t3"\
+   ],\
+   "scope": {\
+    "include": [\
+     "tests/**"\
+    ]\
+   },\
+   "acceptance\_criteria": [\
+    "CLI tests pass on Windows"\
+   ]\
+  }\
+ ],\
+ "risks": [\
+  "Concurrent runs could overwrite the JSON file."\
+ ],\
+ "questions\_for\_user": [\
+  "Should completed todos be kept or deleted?"\
+ ]\
+}\
+<<<AIWB\_END\_PROJECT\_CHARTER>>>\
