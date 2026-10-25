@@ -48,8 +48,9 @@ def _label(a: dict[str, Any]) -> str:
     return lab + ("…" if a["needs"] and not lab.endswith("…") else "")
 
 
-def card_model(steps: list[dict[str, Any]], names: dict[str, str], focus: str = "") -> dict[str, Any]:
-    """What the card shows for the guide's ``steps`` (most urgent first); ``focus`` = one AI's queue only.
+def card_model(steps: list[dict[str, Any]], names: dict[str, str], focus: str = "", step_key: str = "") -> dict[str, Any]:
+    """What the card shows for the guide's ``steps`` (most urgent first); ``focus`` = one AI's queue only,
+    ``step_key`` = that very step when it is still open (Mission Map › GET AI RESPONSE on a task).
 
     Keys: ``key``, ``title``, ``explain``, ``who``, ``primary`` (action or None), ``more`` (actions), ``paste``
     (the action that takes the answer text, or None), ``focus``, ``empty``.
@@ -67,6 +68,8 @@ def card_model(steps: list[dict[str, Any]], names: dict[str, str], focus: str = 
                     "explain": f"No prompt or answer of {who} is waiting. The project's next step: "
                                f"{humanize(steps[0]['title'], names)}.", "who": who, "agent_id": focus}
         pick = mine[0]
+    if step_key:
+        pick = next((s for s in steps if s["key"] == step_key), pick)
     acts = list(pick["actions"])
     paste = next((a for a in acts if "text" in a["needs"]), None)
     buttons = [a for a in acts if a is not paste]
@@ -96,6 +99,7 @@ class NextStepCard(ttk.Frame):
         self._steps, self._state, self._perform = steps, state, perform
         self._clipboard, self._status = clipboard, status
         self.focus_agent = ""
+        self.focus_key = ""
         self.model: dict[str, Any] = card_model([], {})
         head = ttk.Frame(self, style="Card.TFrame")
         head.pack(fill="x")
@@ -137,7 +141,7 @@ class NextStepCard(ttk.Frame):
         except Exception:  # noqa: BLE001
             names = {}
         old_key = self.model.get("key")
-        self.model = m = card_model(steps, names, self.focus_agent)
+        self.model = m = card_model(steps, names, self.focus_agent, self.focus_key)
         who = f"  ·  {m['who']}" if m["who"] and not m["empty"] else ""
         self.title_var.set(m["title"] + who)
         self.explain_var.set(m["explain"])
@@ -165,9 +169,10 @@ class NextStepCard(ttk.Frame):
             self.paste.pack_forget()
         return m
 
-    def set_focus(self, agent_id: str) -> dict[str, Any]:
-        """Show one AI's queue (Mission Map click on its name) — ``""`` = the project's next step."""
-        self.focus_agent = agent_id
+    def set_focus(self, agent_id: str, step_key: str = "") -> dict[str, Any]:
+        """Show one AI's queue (Mission Map click on its name) — ``""`` = the project's next step; ``step_key`` picks
+        one open step of that queue (a task's own prompt/answer)."""
+        self.focus_agent, self.focus_key = agent_id, step_key
         self.message_var.set("")
         return self.refresh()
 
