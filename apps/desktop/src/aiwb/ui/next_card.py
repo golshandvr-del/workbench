@@ -145,19 +145,17 @@ class NextStepCard(ttk.Frame):
         who = f"  ·  {m['who']}" if m["who"] and not m["empty"] else ""
         self.title_var.set(m["title"] + who)
         self.explain_var.set(m["explain"])
+        self.next_btn.pack_forget()
+        self.next_more.pack_forget()
         if m["primary"] is not None:
             self.next_btn.configure(text=m["primary"]["text"])
-            self.next_btn.pack(side="left", before=self.next_more)
-        else:
-            self.next_btn.pack_forget()
+            self.next_btn.pack(side="left")
         self.next_menu.delete(0, "end")
         for a in m["more"]:
             self.next_menu.add_command(label=a["text"], command=lambda i=a["id"]: self.action(i))
         if self.focus_agent:
             self.next_menu.add_command(label=BACK_LABEL, command=lambda: self.set_focus(""))
-        if self.next_menu.index("end") is None:
-            self.next_more.pack_forget()
-        else:
+        if self.next_menu.index("end") is not None:
             self.next_more.pack(side="left", padx=(6 if m["primary"] is not None else 0, 0))
         if m["paste"] is not None:
             self.paste.ok_btn.configure(text="Use this answer")
