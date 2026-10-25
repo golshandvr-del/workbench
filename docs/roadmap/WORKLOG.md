@@ -59,7 +59,7 @@ Progress (tick = committed and pushed):
 - [x] 1 strip_copy_damage + test (14fe114, 72d3791 never inside fences; test 7d86a7d; unit 782 OK)
 - [x] 2 WHOLE_ANSWER_RULE (aeacabb handoff.build_prompt, 291f1ee Guide.perform wraps every prompt, 556bc6c shell do_copy/start prompt; test 413ca5e)
 - [x] 3 forgiving context parser (48856a3, folders 7010d3a, damaged copy 61e1f74), preview = parser (e4781e6), prompt format (9a48fe2), tests 6b73668 35c849e, JSON comma+comment 546f8f7; unit 795 OK
-- [ ] 4 guide context step + controller + card + test
+- [x] 4 v2/context_step.py (9153a38), controller links request→handoff (9467def), guide step + copy_context/context_sent + clear on answer (ad512e0, 664d24b), card+shell copy (a78c4df, 9548633), test_context_step f93ec7a; unit 801 OK
 - [ ] 5 corpus + smoke (clipboard), full run green
 - [ ] 6 docs, version, PR → CI → merge → tag → release
 
