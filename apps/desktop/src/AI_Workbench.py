@@ -4784,8 +4784,8 @@ class WorkbenchApp:
         ttk.Label(who, textvariable=self.agents_who_var, style="CardMuted.TLabel", wraplength=560,
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_who_bar = ui_actions.ActionBar(
-            who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),
-                          ("Memory note…", self.agents_edit_note)), style="Card.TFrame")
+            who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),),
+            more=(("", (("Memory note…", self.agents_edit_note),)),), style="Card.TFrame")  # 5.11.0: ≤ 8 per page
         self.agents_who_bar.pack(anchor="w", pady=(6, 0))
         bal = ttk.Frame(pair, style="Card.TFrame", padding=(14, 10))  # alerts + load balancing
         bal.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
@@ -4803,9 +4803,9 @@ class WorkbenchApp:
         ttk.Label(desk, textvariable=self.agents_dispatch_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_desk_bar = ui_actions.ActionBar(
-            desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),
-                           ("Parallel chats…", self.agents_set_parallel),
-                           ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
+            desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),),
+            more=(("", (("Parallel chats…", self.agents_set_parallel),
+                        ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
         self.agents_desk_bar.buttons["Open task queue"]._aiwb_link = "workbench"  # type: ignore[attr-defined]
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
