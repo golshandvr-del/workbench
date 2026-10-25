@@ -4622,7 +4622,7 @@ class WorkbenchApp:
         self.project_tab = self.shell.add_page("prompt", padding=8)
         self.response_tab = self.shell.add_page("response", padding=8)
         self.profile_tab = self.shell.add_page("profile", padding=10)
-        self.history_tab = self.shell.add_page("history", padding=8, on_show=self.refresh_history_timeline)
+        self.history_tab = self.shell.add_page("history", padding=8, on_show=self.show_history)
         self.run_tab = self.shell.add_page("run", padding=8)
         self.git_tab = self.shell.add_page("git", padding=8)
         self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
@@ -6365,6 +6365,11 @@ class WorkbenchApp:
             self.history_tl.pack_forget()
         else:
             self.history_tl.pack(fill="x", pady=(6, 0))
+
+    def show_history(self) -> None:
+        """History page shown: its timeline and its one list (5.13.0: events are part of the list, so refresh both)."""
+        self.refresh_history_timeline()
+        self._refresh_history_view()
 
     def refresh_history_timeline(self) -> dict[str, Any] | None:
         """Redraw History › Timeline from the open project (reading never writes)."""
