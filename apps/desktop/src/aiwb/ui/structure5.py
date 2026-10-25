@@ -22,17 +22,33 @@ TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
     ("run", "Run", "run", ()),
 )
 
-# Rail destinations: (key, label, icon, sections)
+# Rail destinations: (key, label, icon, sections). 5.13.0 (owner audit B3/B4): four — one project, one screen.
+# Projects left the rail: the open project is switched in the toolbar (PROJECT_MENU); its settings are Settings › Project.
 RAIL: tuple[tuple[str, str, str, tuple[str, ...]], ...] = (
-    ("home", "Home", "home", ("Next step", "Mission Map", "Task details", "Your projects")),  # 5.11.0: the cockpit card
-    ("projects", "Projects", "projects", ("Project cards", "Project Workbench", "Tools")),
-    ("agents", "Agents", "agents", ("Team", "Selected AI", "Balance", "Dispatch desk", "Tools")),
-    ("history", "History", "history", ("Timeline", "Prompts & responses", "Versions", "Tools")),
-    ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application")),
+    ("home", "Home", "home", ("Next step", "Mission Map", "Task details")),  # 5.11.0: the cockpit card
+    ("agents", "Agents", "agents", ("Team", "Selected AI", "Balance", "Dispatch desk")),
+    ("history", "History", "history", ("Timeline", "One list", "Selected step", "Tools")),
+    ("settings", "Settings", "settings", ("Appearance", "Experience", "Motion", "Application", "Project", "Tools")),
 )
 
-# The expert pages of 3.x/4.x (page key, label), each reached from the "Tools" section of the destination it belongs to
-# (5.5.0 App Map balance: talking to an AI → Agents; describing and running the project → Projects; Git → History).
+# The phone keeps its own five destinations (roadmap 6.0.0; mobile is paused — 5.13.0 changes the desktop only).
+MOBILE_BAR: tuple[tuple[str, str, str], ...] = (
+    ("home", "Home", "home"),
+    ("projects", "Projects", "projects"),
+    ("agents", "Agents", "agents"),
+    ("history", "History", "history"),
+    ("settings", "Settings", "settings"),
+)
+
+# Toolbar › project switcher ("<name> ▾", 5.13.0): the recent projects, then these fixed items.
+PROJECT_MENU: tuple[tuple[str, str], ...] = (
+    ("all_projects", "All projects…"),
+    ("reveal_project", "Reveal folder"),
+)
+
+# The expert pages of 3.x/4.x (page key, label), each reached from the "Tools" section of the destination it belongs to.
+# 5.13.0: the 1.x pages (Prompt, AI Response, Project Profile, Run & Report) are Settings › Project › Classic tools (1.x)
+# until Quick replaces them (5.14.0); Git stays with the past (History).
 TOOLS: tuple[tuple[str, str], ...] = (
     ("prompt", "Prompt"),
     ("response", "AI Response"),
@@ -40,7 +56,7 @@ TOOLS: tuple[tuple[str, str], ...] = (
     ("run", "Run & Report"),
     ("git", "Git / GitHub"),
 )
-TOOL_HOME: dict[str, str] = {"prompt": "agents", "response": "agents", "profile": "projects", "run": "projects",
+TOOL_HOME: dict[str, str] = {"prompt": "settings", "response": "settings", "profile": "settings", "run": "settings",
                              "git": "history"}
 
 
@@ -62,7 +78,8 @@ STATUS_BAR: tuple[str, ...] = ("Agents running", "Milestone", "Autosaved")
 def tree() -> dict[str, Any]:
     """The whole tree as nested ``{label: children}`` (used by the tests and by ``UI_TREE.md``)."""
     return {
-        "Toolbar": {label: {c[1]: {} for c in kids} for _id, label, _i, kids in TOOLBAR},
+        "Toolbar": {**{label: {c[1]: {} for c in kids} for _id, label, _i, kids in TOOLBAR},
+                    "Project switcher": {"Recent projects": {}, **{label: {} for _id, label in PROJECT_MENU}}},
         "Rail": {label: ({s: ({t[1]: {} for t in tools_of(k)} if s == "Tools" else {}) for s in sections})
                  for k, label, _i, sections in RAIL},
         "Task menu": {label: {} for _id, label, _i, _a in TASK_MENU},
