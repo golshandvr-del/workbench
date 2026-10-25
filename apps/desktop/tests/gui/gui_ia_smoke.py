@@ -30,7 +30,8 @@ REQUIRED = {
                  "Save response candidate…", "Compare candidates / choose files…", "Import architecture plan…",
                  "Save validated prompt + output to history", "Mark Verified… (manual review)",
                  "Report manual runtime / test error…", "Refresh workflow", "Projects (multi-agent)…"],
-    "history": ["Project versions…", "Refresh", "Report error…", "Search", "Clear", "Save metadata / notes",
+    "history": ["Project versions…", "Refresh", "Report error…", "Clear",  # 5.11.0: no Search (filters as you type)
+                "Save metadata / notes",
                 "Delete selected entry…", "Copy prompt", "Copy model output", "Edit prompt as new revision…",
                 "Create repair prompt from this step"],
     "run": ["Run command…", "Browse…", "Run / simulate selected file…", "Run selected / retry…", "Run all pending…",
