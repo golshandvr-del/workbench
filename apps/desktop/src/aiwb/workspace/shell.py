@@ -413,17 +413,6 @@ class WorkspaceWindow:
         ttk.Label(parent, text=text, style="WS.Title.TLabel", anchor="e" if self.wc.rtl else "w").grid(
             row=0, column=0, sticky="ew", pady=(0, 6))
 
-    def _tools(self, parent: ttk.Frame, section: str, row: int) -> None:
-        items = self.wc.tool_items(section)
-        if not items:
-            return
-        box = ttk.Frame(parent, style="WS.TFrame")
-        box.grid(row=row, column=0, sticky="ew", pady=4)
-        for key, label in items:
-            b = ttk.Button(box, text=label, command=lambda k=key: self._guard(lambda: self.wc.open_tool(k)))
-            b._aiwb_link = key  # type: ignore[attr-defined]  # App Map: opens a tool whose home is elsewhere
-            b.pack(side="right" if self.wc.rtl else "left", padx=2)
-
     def _view_plan(self, f: ttk.Frame) -> None:
         """Plan & Tasks (5.11.0): progress · needs your attention · the plan to review · tasks with their prompt and
         answer · the queue of each AI · recent activity. (5.10.0: Overview + Tasks + the review part of Team.)"""
