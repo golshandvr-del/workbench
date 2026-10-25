@@ -4771,7 +4771,7 @@ class WorkbenchApp:
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
             team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
-            more=(("", (("Copy team summary", self.agents_copy_team),)),), style="Card.TFrame")
+            style="Card.TFrame")  # 5.11.0: Copy team summary → Dispatch desk › More (Agents ≤ 8 controls)
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
         pair.pack(fill="x", pady=(0, 9))
@@ -4805,6 +4805,7 @@ class WorkbenchApp:
         self.agents_desk_bar = ui_actions.ActionBar(
             desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),),
             more=(("", (("Parallel chats…", self.agents_set_parallel),
+                        ("Copy team summary", self.agents_copy_team),
                         ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
