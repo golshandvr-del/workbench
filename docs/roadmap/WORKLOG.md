@@ -28,7 +28,41 @@ first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
-Plan: see below (written after reading the code).
+Facts (read in code 2026-10-25): rail = `structure5.RAIL` (5 dests) + `ui/shell.py` RAIL_OF/RAIL_PAGE/PAGES/NAV_ORDER;
+pages added in `AI_Workbench._make_ui` (home, workbench, agents, prompt, response, profile, history, run, git,
+settings); Projects page = `_make_projects_dashboard` (cards strip) + embedded Workbench (`workspace/shell.py`,
+3 sections from `workspace/controller.SECTIONS`); App Map `ui/ui_map.py` extract/audit (RULES, GENERIC,
+two_homes by label); tests tied to the rail: test_ui_map (also mobile section of UI_MAP.md = structure5.RAIL),
+test_shell5, test_ui_tree; guide steps have keys title/explain/actions[label] and show agent ids
+("Paste agent-core-dev's answer for TASK-0001 …"); status bar text = `ui/status5.summary` ("N agents running").
+
+Plan (each step = many small checkpoints; tests green at the end of each step):
+1. User words (B4): guide titles/explain/labels use the AI **name** (never `agent-…`), no `F\d+`, `wave`, `handoff`,
+   `HO-`; status bar says what is true ("Waiting for <AI>'s answer" / "<AI>: prompt ready" / "Nothing waiting").
+   New `tests/test_user_words.py` scans every guide step in the scripted runs of test_v2_guide + corpus scenario.
+2. Mission Map carries milestones/versions: column header right-click menu (New milestone… / Accept milestone /
+   Propose version… / Record release…) using the existing Workbench functions; Timeline tab of the Workbench removed.
+3. History = one list with filter (All · Prompts · Answers · Events · Versions); Workbench events go there.
+4. Rail = Home · Agents · History · Settings; Projects leaves the rail → project switcher in the toolbar (the project
+   name becomes a menu button "<name> ▾": recent projects, All projects…, Reveal folder, Remove from list). The
+   Workbench page stays only as the engine behind Home (not navigable); Project settings → Settings › Project;
+   classic pages → Settings › Project › Classic tools (1.x)… (one window). Mobile section of UI_MAP follows RAIL
+   (desktop-only change is allowed: mobile keeps its own list in a new `structure5.MOBILE_BAR`).
+5. `ui/commands.py`: every command id + its labels (synonyms like Copy prompt / Prepare prompt for this task /
+   COPY PROMPT); App Map audit: one home per command id, More ≤ 3 items, Home has no More; remove duplicates.
+6. Gate smoke `gui_owner_path_smoke` extended: New Project → Charter → task → context request → files → answer →
+   Accept → Milestone, only from Home, ≤ 14 clicks + pastes; screenshots `docs/audit/screens/v5.13-one-screen/`.
+7. Fix all smokes/tests, UI_TREE.md, regen UI_MAP, docs, version 5.13.0, PR → CI → tag → Release.
+
+Progress (tick = committed and pushed):
+
+- [ ] 1 user words + test_user_words.py + truthful status bar
+- [ ] 2 milestones/versions on the Mission Map, Workbench Timeline tab removed
+- [ ] 3 History unified with filter
+- [ ] 4 rail of four + project switcher + Settings › Project
+- [ ] 5 commands.py + audit by command id, More ≤ 3, no More on Home
+- [ ] 6 owner-path gate ≤ 14 clicks, screenshots
+- [ ] 7 tests/docs/version/PR/CI/tag/Release
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
