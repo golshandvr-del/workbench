@@ -23,7 +23,8 @@ from typing import Any, Callable
 USER = "you"
 BACK_LABEL = "Back to the next step"
 # actions whose result prompt is copied at once (the user's next move is to paste it into a chat)
-COPY_RESULT = ("paste", "request_changes", "troubleshoot", "repair", "review_prompt", "manager_prompt", "escalate")
+COPY_RESULT = ("paste", "request_changes", "troubleshoot", "repair", "review_prompt", "manager_prompt", "escalate",
+               "copy_context")  # 5.12.0: the files the AI asked for go to the clipboard at once
 
 
 def names_of(state: dict[str, Any] | None) -> dict[str, str]:
