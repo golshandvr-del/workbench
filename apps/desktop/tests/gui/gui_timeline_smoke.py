@@ -3,7 +3,7 @@
 * 2000 ledger events render in < 300 ms (median of 3 redraws).
 * Circle size follows importance; released version → solid line, proposed → dashed.
 * Dark theme palette is used; zoom/pan keep the canvas consistent.
-* In the Project Workbench the Timeline page shows the canvas and a click opens the event in the Inspector.
+* History › Timeline shows the canvas and a click opens the event in the Workbench Inspector (5.13.0).
 """
 from __future__ import annotations
 
@@ -92,9 +92,12 @@ def main() -> None:
             app.open_project_workbench()
             w = app.workspace_window
             w.wc.ctl.project.tasks.create({"title": "First task", "objective": "Do the first thing"})
-            w.show("timeline")
+            # 5.13.0 (B3): the Workbench has no Timeline section any more — the past lives in History
+            app.shell.show("history")
             root.update()
-            c = w.tl_canvas
+            app.refresh_history_timeline()
+            root.update()
+            c = app.history_tl
             assert c.model["events"], "timeline canvas has the project's events"
             cid = next(k for k, v in c.items.items() if v["kind"] == "event")
             x0, y0, x1, y1 = c.coords(cid)
