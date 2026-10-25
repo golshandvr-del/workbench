@@ -5479,41 +5479,105 @@ class WorkbenchApp:
         self.open_selected_project()
 
     def _make_home_next_card(self, body: tk.Misc) -> None:
-        """Home › Next step (3.5.0, 5.7.0): the active project's next guided step and a way to continue."""
-        self.home_next_var = tk.StringVar(value="Open or create a project to see its next step.")
-        nxt = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
-        nxt._aiwb_section = "Next step"  # type: ignore[attr-defined]
-        nxt._aiwb_noflow = True  # type: ignore[attr-defined]  # label + one button: a fixed row, never re-flowed
-        nxt.pack(fill="x", pady=(0, 9))
-        ttk.Label(nxt, text="Next step", style="CardAccent.TLabel").pack(side="left", padx=(0, 10))
-        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=760).pack(
-            side="left", fill="x", expand=True)
-        self.home_next_btn = ttk.Button(nxt, text="Continue in Workbench", style="Primary.TButton",
-                                        command=lambda: self.shell.show("workbench"))
-        self.home_next_btn.pack(side="right")
+        """Home › Next step — the cockpit (5.11.0, audit A7): the step's own buttons and the paste panel on the page.
+
+        The actions run through the embedded Workbench (``guide_action``, the code path of 3.5.0–5.10.0); the
+        Workbench is created in the background as soon as a project is open, so Home always knows the next step.
+        """
+        from aiwb.ui.next_card import NextStepCard
+        self.home_card = NextStepCard(body, steps=self._home_steps, state=self._home_state, perform=self.home_perform,
+                                      clipboard=self._copy_text_to_clipboard, status=self.set_status)
+        self.home_card._aiwb_section = "Next step"  # type: ignore[attr-defined]
+        self.home_card.pack(fill="x", pady=(0, 9))
+        self.home_next_var = self.home_card.title_var   # 3.5.0 name kept for the smokes
+        self.home_next_btn = self.home_card.next_btn
+        self._home_card_rev: Any = None
+        self.shell.status_listeners.append(self._home_card_on_status)
         ttk.Label(body, textvariable=self.manager_active_var, style="Hint.TLabel").pack(anchor="w")
+
+    def _home_ws(self) -> Any:
+        """The embedded Workbench of the open project, or None (then it is being created)."""
+        ws = getattr(self, "workspace_window", None)
+        if ws is None or self.workspace is None or getattr(ws, "_project_root", None) != str(self.workspace):
+            return None
+        return ws
+
+    def _home_steps(self) -> list[dict[str, Any]]:
+        ws = self._home_ws()
+        if ws is None:
+            if self.workspace is not None:
+                self.root.after_idle(self._ensure_home_workbench)
+            return []
+        return ws.wc.guide_steps()
+
+    def _home_state(self) -> dict[str, Any] | None:
+        ws = self._home_ws()
+        return ws.wc.ctl.state() if ws is not None else None
+
+    def _ensure_home_workbench(self) -> None:
+        """Create the embedded Workbench without leaving the current page (Home needs its guide)."""
+        if self.workspace is None or self._home_ws() is not None or getattr(self, "_home_ws_pending", False):
+            return
+        self._home_ws_pending = True
+        try:
+            self.open_project_workbench(show=False)
+        finally:
+            self._home_ws_pending = False
+        self.refresh_home_next_step()
+
+    def home_perform(self, key: str, action: str, inputs: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        """Run one Guide action for the Home card through the Workbench (its dialogs, its messages)."""
+        ws = self._home_ws()
+        if ws is None:
+            return {"error": "Open or create a project first."}
+        before = ws.status_var.get()
+        ws.status_var.set("")
+        try:
+            out = ws.guide_action(key, action, inputs)
+        except Exception as exc:  # noqa: BLE001 - shown on the card, never a traceback
+            out = {"error": redact(str(exc))}
+        if out is None:
+            msg = ws.status_var.get()
+            out = {"error": msg or "Cancelled — nothing changed."}
+        if not ws.status_var.get():
+            ws.status_var.set(before)
+        self.refresh_mission(self.status_state(), force=True)
+        try:
+            self.shell.refresh_status()
+        except Exception:  # noqa: BLE001
+            pass
+        return out
 
     def home_next_step(self) -> dict[str, Any] | None:
         """First guided step of the active project (read from its local V2 state; nothing is written)."""
-        ws = getattr(self, "workspace_window", None)
-        if ws is None or self.workspace is None or getattr(ws, "_project_root", None) != str(self.workspace):
+        ws = self._home_ws()
+        if ws is None:
             return None
         try:
             return ws.wc.guide_steps()[0]
         except Exception:  # noqa: BLE001 - a broken project state must not break Home
             return None
 
+    def _home_card_on_status(self, state: dict[str, Any] | None) -> None:
+        rev = None if state is None else (str(state.get("project_id", "")), int(state.get("state_revision", 0) or 0))
+        if rev != self._home_card_rev:
+            self._home_card_rev = rev
+            self.refresh_home_next_step()
+
     def refresh_home_next_step(self) -> None:
-        if not hasattr(self, "home_next_var"):
+        if not hasattr(self, "home_card"):
             return
-        st = self.home_next_step()
         if self.workspace is None:
-            self.home_next_var.set("Open or create a project to see its next step.")
-        elif st is None:
-            self.home_next_var.set(f"{Path(self.workspace).name}: open the Workbench to see the next step.")
-        else:
-            who = "" if st["agent_id"] == "you" else f" [{st['agent_id']}]"
-            self.home_next_var.set(f"{Path(self.workspace).name}: {st['title']}{who}")
+            self.home_card.focus_agent = self.home_card.focus_key = ""
+        self.home_card.refresh()
+
+    def mission_lane(self, agent_id: str) -> dict[str, Any] | None:
+        """Mission Map › click on an AI's name: the card shows that AI's own prompt/answer step."""
+        if not hasattr(self, "home_card"):
+            return None
+        m = self.home_card.set_focus(agent_id)
+        self.set_status(f"Showing {m['who'] or agent_id}'s next step — More › Back to the next step returns.")
+        return m
 
     def _project_selection_changed(self, _event: Any = None) -> None:
         path = self._selected_project_path()
