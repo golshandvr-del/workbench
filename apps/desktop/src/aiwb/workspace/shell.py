@@ -403,7 +403,7 @@ class WorkspaceWindow:
             return None
         if out.get("prompt"):
             self.last_prompt, self.last_handoff_id = out["prompt"], out.get("handoff_id", "")
-            if action == "copy":
+            if action in ("copy", "copy_context"):  # 5.12.0: the requested files go to the clipboard too
                 self.clipboard(out["prompt"])
         self.show(self.wc.section)
         self.status_var.set(out["message"])
