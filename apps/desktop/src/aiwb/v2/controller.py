@@ -529,11 +529,28 @@ class ProjectsController:
             if not cr["ok"]:
                 return RouteResult("rejected", rid, f"Context request could not be read: {cr['error']} Nothing changed.")
             aid = note_context_request(self.project.store, self.project.workflow, cr)
+            # 5.12.0 (owner audit B2): keep the request on its handoff → the Next-step card turns into
+            # "<AI> asked for N file(s)" with [Copy the files for the chat]. Before, this was a dead end.
+            from ..context_request import parse_request
+            from . import context_step
+            req = parse_request(text)
+            hid = self._match_handoff(text, attempt_id=req.attempt_id, hint=handoff_hint)
+            if not hid and aid:
+                hid = next((h["handoff_id"] for h in self.state()["handoffs"].values()
+                            if h.get("attempt_id") == aid and h["status"] in self.WAITING), "")
             self._dirty("context request")
-            return RouteResult("context_request", rid, "The model asks for more context: "
-                               + ", ".join(cr["files"][:6] or cr["questions"][:3])
-                               + ". Open Files & Context → Context request… to prepare it (it is not sent automatically).",
-                               aid, cr)
+            what = context_step.summary_line(context_step.to_record(req))
+            if not hid:
+                return RouteResult("context_request", rid, f"The model asks for: {what}. This project is not waiting "
+                                   "for an answer it belongs to (copy the task prompt from the card first); nothing "
+                                   "was prepared.", aid, cr)
+            context_step.record(self.project.store, hid, req)
+            cr["handoff_id"] = hid
+            n_fix = len(req.fixes)
+            return RouteResult("context_request", rid, f"The model asks for {what}. The next step shows them: "
+                               "Copy the files for the chat, paste them into the same chat, then paste its answer."
+                               + (f" {n_fix} auto-fix{'es' if n_fix != 1 else ''} in the request." if n_fix else ""),
+                               hid, cr)
         return RouteResult("inbox_only", rid, "No manager proposal or handoff block found. If it contains files, "
                            "use the normal Analyze / preview flow on the Response tab.")
 
