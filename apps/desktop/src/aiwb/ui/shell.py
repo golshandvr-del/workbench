@@ -217,23 +217,8 @@ class AppShell:
         return facts
 
     def _count_facts(self, facts: dict[str, Any]) -> None:
-        """Status bar: when the number of running agents changes, count up/down to it (5.3.0)."""
-        from .motion import value_text
-        from .tokens5 import MOTION
-        old = getattr(self, "_shown_running", None)
-        new = int(facts.get("running", 0))
-        self._shown_running = new
-        if old is None or old == new or "running" not in str(facts.get("text", "")):
-            self.statusbar.show_facts(facts)
-            return
-        tail = facts["text"].split(" ", 1)[1] if " " in facts["text"] else ""
-
-        def step(t: float) -> None:
-            n = value_text(old, new, t)
-            text = facts["text"] if t >= 1 else f"{n} {tail}"
-            self.statusbar.show_facts({**facts, "text": text})
-        self.motion.tween("status:count", 0.0, 1.0, MOTION["page_ms"] * 2, step, ease="linear",
-                          alive=self.statusbar.winfo_exists)
+        """Status bar: the facts sentence (5.13.0: a plain sentence with names — no counter to animate)."""
+        self.statusbar.show_facts(facts)
 
     def _poll_status(self) -> None:
         try:
