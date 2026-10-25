@@ -796,6 +796,10 @@ class Guide:
                                                 "for": step["key"], "at": now_utc()}})
                 out["kind"] = "truncated"
                 return out
+        if r.kind == "context_request":
+            self._set_guide(**{"continue": None})   # 5.12.0: the card now shows the files step for that handoff
+            out["handoff_id"] = r.reference_id if r.reference_id in self.ctl.state()["handoffs"] else ""
+            return out
         if r.kind in ("proposal", "handoff", "charter_rejected"):
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):
