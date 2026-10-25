@@ -18,7 +18,8 @@ Section detection (pure widget conventions, no per-page code):
   (``SectionTitle`` / ``CardTitle`` style) is a section named by that text;
 * a widget with ``_aiwb_section = "Name"`` is a section of that name (``""`` = a header, not a section) and may add
   ``_aiwb_menu = (title, labels)`` for a canvas right-click menu;
-* a button with ``_aiwb_link = page_key`` is a *link* to another page, not a command of its own;
+* a button with ``_aiwb_link = page_key`` is a *link* to another page, not a command of its own (on a menu button:
+  every item of its menu is such a link);
 * a button or menu button with ``_aiwb_dynamic = "Name"`` changes with the project state (Home's Next-step card,
   5.11.0): the map shows one control of that fixed name (a menu without items), never the current step's labels.
 """
@@ -178,7 +179,8 @@ def _visit(ch: Any, into: list[dict[str, Any]]) -> None:
             items = menu_items(ch.nametowidget(ch.cget("menu")))
         except Exception:  # noqa: BLE001
             pass
-        into.append(node(_text(ch), "menu", [node(x, "item") for x in items]))
+        kind = "link" if getattr(ch, "_aiwb_link", None) else "item"  # 5.11.0: a menu of links to tools elsewhere
+        into.append(node(_text(ch), "menu", [node(x, kind) for x in items]))
         return
     if cls in ("TCheckbutton", "TRadiobutton", "Checkbutton", "Radiobutton"):
         if _text(ch):
