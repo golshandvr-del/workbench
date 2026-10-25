@@ -43,7 +43,10 @@ def main() -> None:
             w.show("overview")
             root.update()
             labels = [str(b.cget("text")) for b in _all(w.top) if b.winfo_class() == "TButton"]
-            assert "Design the whole project…" in labels, labels
+            # 5.11.0 (A7): the duplicate "Design the whole project…" / "Plan project…" buttons are gone — the charter
+            # prompt comes from the Next step (Home's card); dialog_charter stays for scripts
+            assert "Design the whole project…" not in labels and "Plan project…" not in labels, labels
+            assert "Plan & Tasks" in labels and "Project settings" in labels, labels
             prompt = w.dialog_charter({"goal": "Offline todo app for desktop and mobile"})
             assert "AIWB_PROJECT_CHARTER" in prompt and "how many AI chats work in parallel" in prompt
             assert w.do_copy() == root.clipboard_get() == prompt
@@ -68,7 +71,7 @@ def main() -> None:
             assert r.kind == "proposal", r.message
             assert not ctl.state()["tasks"], "nothing is applied before review"
             root.update()
-            assert w.wc.section == "team" and w.review_pid == r.reference_id
+            assert w.wc.section == "plan" and w.review_pid == r.reference_id
             out = w.review_accept()
             assert out and out["status"] == "accepted", out
             st = ctl.state()
