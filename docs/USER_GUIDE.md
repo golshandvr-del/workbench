@@ -66,7 +66,8 @@ active task, Copy task summary and **Copy map summary** (every lane and its task
    and a *More ▾* menu, and — when the step takes an answer — a **paste box right on the page**. First step:
    **Project Charter**. Click *Copy the charter prompt* and paste it into your project-manager chat. The prompt tells
    the project manager that your team is binding.
-4. Copy the whole answer from the chat, paste it into the card's box and click *Use this answer*. While you paste,
+4. Copy the whole answer from the chat — every prompt asks the AI to put it in **one code block**; use that block's
+   **Copy** button — paste it into the card's box and click *Use this answer*. While you paste,
    the box shows a **live
    diagnosis** — *Charter ✓ · 4 AIs · 9 tasks · 2 auto-fixes*, *3 files (Markdown code blocks)*, *Cut off ✗* or the
    exact problem; nothing is imported before *Use this answer*. A downloaded archive goes in with **Load ZIP…**.
@@ -82,6 +83,9 @@ active task, Copy task summary and **Copy map summary** (every lane and its task
    * **a prompt** for a specific AI (each AI has its own queue — several can work at the same time); *Prepare the
      prompt* also copies it, so you go straight to the AI's chat;
    * **paste the answer** of that AI (files + a handoff note);
+   * **"<AI> asked for N files"** — the AI needs to see some project files before it can answer. Click *Copy the
+     files for the chat* (big sets also become a ZIP to attach; secrets are never included), paste them into the
+     **same** chat and send, click *I sent them*, then paste the AI's answer as usual;
    * **a decision** for you (approve, request changes, pick an option);
    * **a small form** (record a test run, a commit, a release).
 7. AI claims such as "tests pass" never count. A task is done only when *you* record the validation run.
@@ -148,6 +152,8 @@ Git / GitHub can commit the files the AIs delivered, bind a GitHub repository wi
 |---|---|
 | "Nothing recognised" after paste | Copy the *whole* answer, including the `<<<AIWB_…>>>` lines. Use *Load file* if the chat offers a download. |
 | Answer cut off | Use the *continue* prompt the app shows; then paste the continuation. |
+| Every line ends with `\` | That is a copy of the *rendered* chat text (Windows). Workbench repairs it, but the code block's **Copy** button gives a clean answer. |
+| "Context request" in the preview | The AI asks for files: use the card's *Copy the files for the chat*, send them in the same chat, then paste its answer. |
 | Bundle refused (damaged / other project) | Export it again; do not edit bundle files by hand. |
 | Bundle is *older* or *diverged* | Decide which copy is right; *Replace* keeps a backup of the other. |
 | Window too small | All pages scroll and toolbars wrap; minimum supported size is 1024×640. |
