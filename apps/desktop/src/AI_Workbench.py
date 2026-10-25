@@ -4807,7 +4807,6 @@ class WorkbenchApp:
             more=(("", (("Parallel chats…", self.agents_set_parallel),
                         ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
-        self.agents_desk_bar.buttons["Open task queue"]._aiwb_link = "workbench"  # type: ignore[attr-defined]
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
 
     TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
