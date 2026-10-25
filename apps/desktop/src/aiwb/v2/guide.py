@@ -476,7 +476,8 @@ class Guide:
                 c.mark_copied(ref)
             elif kind in ("manager_update", "charter"):
                 self._set_guide(manager_copied_at=now_utc())
-            return {"message": "Copied. Paste it into the chat, send it, then click 'I sent it'.", "prompt": step["prompt"]}
+            return {"message": "Copied. Paste it into the chat and send it; then paste the chat's whole answer here.",
+                    "prompt": step["prompt"]}  # 5.11.0: the answer box is on the same card; 'I sent it' is optional
         if action == "sent":
             if kind == "handoff":
                 c.confirm_sent(ref)
