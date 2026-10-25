@@ -43,8 +43,8 @@ def main() -> None:
             assert w.dialog_add_account({"display_name": "token: ghp_abcdefghijklmnopqrstu"}) is None
             assert "never stores model credentials" in w.status_var.get()
             w.show("team")
-            w.parallel_var.set("2")
-            assert w.save_team_settings()["max_parallel_chats"] == 2
+            # 5.11.0: parallel chats are set in Agents › Parallel chats…; the method stays for scripts
+            assert w.save_team_settings(max_parallel_chats=2)["max_parallel_chats"] == 2
             prompt = w.dialog_plan_team({"goal": "Todo web app", "platform": "Python"})
             assert "ACC-0004" in prompt and "at the same time: 2" in prompt
             assert "not sent yet" in w.status_var.get()
@@ -69,7 +69,7 @@ def main() -> None:
             r = w.do_import("x\n<<<AIWB_MANAGER_PROPOSAL>>>\n" + json.dumps(d) + "\n<<<AIWB_END_MANAGER_PROPOSAL>>>")
             assert r.kind == "proposal", r.message
             root.update()
-            assert w.wc.section == "team" and w.review_pid == r.reference_id
+            assert w.wc.section == "plan" and w.review_pid == r.reference_id
             kids = w.review_tree.get_children()
             assert len(kids) == 6
             assert "ACC-0077" in str(w.review_tree.item("2")["values"])
