@@ -4675,10 +4675,10 @@ class WorkbenchApp:
     def _settings_app_section(self, card: ttk.Frame) -> None:
         bar = ui_actions.ActionBar(
             card,
-            primary=(("Mobile Companion…", self.open_companion),
-                     ("Restore Manager…", self.open_restore_manager),
-                     ("App Map…", self.open_app_map)),
-            more=(("Tools", (("Validation Profiles…", self.manage_validation_profiles),)),
+            primary=(("App Map…", self.open_app_map),),  # 5.11.0: a page shows at most 8 controls; the rest in More
+            more=(("Tools", (("Mobile Companion…", self.open_companion),
+                             ("Restore Manager…", self.open_restore_manager),
+                             ("Validation Profiles…", self.manage_validation_profiles))),
                   ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
             style=ui_layout.row_style(card))
