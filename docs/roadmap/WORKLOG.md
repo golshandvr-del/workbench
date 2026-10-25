@@ -56,7 +56,7 @@ Design:
 Progress (tick = committed and pushed):
 
 - [x] 0 ROADMAP §1b + 5.12–5.15 table (b89cac5, 17482e0); evidence docs/audit/owner-5.11/ (c6948b5…e07ed42)
-- [ ] 1 strip_copy_damage + test
+- [x] 1 strip_copy_damage + test (14fe114, 72d3791 never inside fences; test 7d86a7d; unit 782 OK)
 - [ ] 2 WHOLE_ANSWER_RULE in prompts + test
 - [ ] 3 forgiving context parser + preview = parser + test
 - [ ] 4 guide context step + controller + card + test
