@@ -45,7 +45,7 @@ class CopyDamageTests(unittest.TestCase):
             self.assertEqual(fixes, [])
 
     def test_code_inside_fences_is_kept(self):
-        text = "Run this:\n```bash\ncmd a \\\n  --b \\\n  --c \\\n  d\n```\nThat is all."
+        text = "Install first.\nRun this:\n```bash\ncmd a \\\n  --b \\\n  --c \\\n  d\n```\nThat is all."
         self.assertEqual(strip_copy_damage(text), text)   # prose clean → nothing to do
         damaged = damage(text)
         self.assertEqual(strip_copy_damage(damaged), text)  # prose damaged, the shell continuations survive
