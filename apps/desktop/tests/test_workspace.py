@@ -168,7 +168,21 @@ class WorkspaceControllerTests(Base):
         self.wc.overview()
         self.assertEqual((self.ctl.project.store.revision, self.ctl.project.store.ledger.count()), (rev, n))
         again = WorkspaceController(ProjectsController(self.root))
-        self.assertEqual((again.section, again.inspector_open, again.sidebar_open, again.theme), ("settings", False, False, "dark"))
+        self.assertEqual((again.section, again.inspector_open, again.sidebar_open, again.theme), ("project", False, False, "dark"))
+
+    def test_old_section_keys_are_aliases(self):
+        """5.11.0: seven sections became three; the 2.3.0 keys (ui.json, attention links) still work."""
+        from aiwb.workspace.controller import canonical_section
+        self.assertEqual(SECTIONS, ("plan", "timeline", "project"))
+        for old, new in (("overview", "plan"), ("tasks", "plan"), ("team", "project"), ("files", "project"),
+                         ("versions", "project"), ("settings", "project"), ("timeline", "timeline")):
+            self.assertEqual(canonical_section(old), new)
+            self.wc.set_section(old)
+            self.assertEqual(self.wc.section, new)
+        with self.assertRaises(ModelError):
+            self.wc.set_section("nope")
+        self.ctl._save_ui(ws_section="nope")
+        self.assertEqual(WorkspaceController(ProjectsController(self.root)).section, "plan")
 
     def test_overview_progress_is_count_based_and_explained(self):
         p = self.ctl.project

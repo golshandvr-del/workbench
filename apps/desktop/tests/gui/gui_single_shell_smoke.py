@@ -73,7 +73,7 @@ def main() -> None:
             app.prefs.set_lang("fa")
             root.update()
             assert app.shell.nav["home"].text == "Home"  # 5.x rail labels: English-only product policy
-            assert w.nav["overview"].cget("text") == "نمای کلی", w.nav["overview"].cget("text")
+            assert w.nav["plan"].cget("text") == "برنامه و وظایف", w.nav["plan"].cget("text")  # 5.11.0: 3 sections
             assert app.shell.rail.pack_info()["side"] == "right"
             app.prefs.set_lang("en")
             root.update()

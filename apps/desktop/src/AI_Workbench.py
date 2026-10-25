@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.10.0"
+APP_VERSION = "5.11.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4675,10 +4675,10 @@ class WorkbenchApp:
     def _settings_app_section(self, card: ttk.Frame) -> None:
         bar = ui_actions.ActionBar(
             card,
-            primary=(("Mobile Companion…", self.open_companion),
-                     ("Restore Manager…", self.open_restore_manager),
-                     ("App Map…", self.open_app_map)),
-            more=(("Tools", (("Validation Profiles…", self.manage_validation_profiles),)),
+            primary=(("App Map…", self.open_app_map),),  # 5.11.0: a page shows at most 8 controls; the rest in More
+            more=(("Tools", (("Mobile Companion…", self.open_companion),
+                             ("Restore Manager…", self.open_restore_manager),
+                             ("Validation Profiles…", self.manage_validation_profiles))),
                   ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
             style=ui_layout.row_style(card))
@@ -4699,12 +4699,14 @@ class WorkbenchApp:
         self.new_project(on_created=self._start_guided_after_create)
 
     def _start_guided_after_create(self, created: Path) -> None:
-        """After New Project › Create: open the guided Workbench on its next step, not the old Profile.
+        """After New Project › Create: Home — the Mission Map with the user's named AIs and the cockpit card on the
+        project-manager prompt (5.11.0; 5.8.0–5.10.0 opened the Workbench). Never the old Profile (A3).
 
         5.9.0: the wizard already recorded goal and team, so the next step is the project-manager prompt; the status
         line set by the wizard is kept, and the Mission Map is redrawn now (named lanes) instead of on the next tick.
         """
-        self.shell.show("workbench")
+        self._ensure_home_workbench()
+        self.shell.show("home")
         try:
             self.shell.refresh_status()
         except Exception:  # noqa: BLE001 — a redraw problem must not hide the created project
@@ -4769,7 +4771,7 @@ class WorkbenchApp:
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
             team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
-            more=(("", (("Copy team summary", self.agents_copy_team),)),), style="Card.TFrame")
+            style="Card.TFrame")  # 5.11.0: Copy team summary → Dispatch desk › More (Agents ≤ 8 controls)
         self.agents_team_bar.pack(anchor="w", pady=(6, 0))
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
         pair.pack(fill="x", pady=(0, 9))
@@ -4782,8 +4784,8 @@ class WorkbenchApp:
         ttk.Label(who, textvariable=self.agents_who_var, style="CardMuted.TLabel", wraplength=560,
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_who_bar = ui_actions.ActionBar(
-            who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),
-                          ("Memory note…", self.agents_edit_note)), style="Card.TFrame")
+            who, primary=(("Copy briefing", self.agents_copy_briefing, "Primary.TButton"),),
+            more=(("", (("Memory note…", self.agents_edit_note),)),), style="Card.TFrame")  # 5.11.0: ≤ 8 per page
         self.agents_who_bar.pack(anchor="w", pady=(6, 0))
         bal = ttk.Frame(pair, style="Card.TFrame", padding=(14, 10))  # alerts + load balancing
         bal.grid(row=0, column=1, sticky="nsew", padx=(5, 0))
@@ -4801,11 +4803,11 @@ class WorkbenchApp:
         ttk.Label(desk, textvariable=self.agents_dispatch_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(anchor="w", pady=(4, 0))
         self.agents_desk_bar = ui_actions.ActionBar(
-            desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),
-                           ("Parallel chats…", self.agents_set_parallel),
-                           ("Open task queue", lambda: self.agents_workbench("tasks"))), style="Card.TFrame")
+            desk, primary=(("Prepare all prompts", self.agents_prepare_all, "Primary.TButton"),),
+            more=(("", (("Parallel chats…", self.agents_set_parallel),
+                        ("Copy team summary", self.agents_copy_team),
+                        ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
-        self.agents_desk_bar.buttons["Open task queue"]._aiwb_link = "workbench"  # type: ignore[attr-defined]
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
 
     TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
@@ -5166,7 +5168,8 @@ class WorkbenchApp:
         self.mission_summary_var = tk.StringVar(value="")
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
-                                     motion=self.shell.motion, on_menu=self.mission_menu)
+                                     motion=self.shell.motion, on_menu=self.mission_menu,
+                                     on_lane=self.mission_lane)
         self.mission.pack(fill="x")
         self._make_mission_view_row(body)
         from aiwb.ui import structure5
@@ -5179,14 +5182,18 @@ class WorkbenchApp:
         detail.pack(fill="x", pady=(8, 12))
         ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
                   justify="left").pack(side="left", fill="x", expand=True)
-        self.mission_open_btn = ttk.Button(detail, text="Open task in Workbench", command=self.mission_open_task)
-        self.mission_open_btn.pack(side="right")
+        # 5.11.0: one button + More, so Home shows at most 8 controls at once (the cockpit card has the rest)
+        self.mission_detail_bar = ui_actions.ActionBar(
+            detail, primary=(("Open task in Workbench", self.mission_open_task),),
+            more=(("", (("Jump to active task", self.mission_jump_active),
+                        ("Copy task summary", self.mission_copy_task),
+                        ("Copy map summary", self.mission_copy_summary))),), style="Card.TFrame")
+        self.mission_detail_bar.pack(side="right")
+        self.mission_open_btn = self.mission_detail_bar.buttons["Open task in Workbench"]
         self.mission_open_btn.state(["disabled"])
-        self.mission_copy_btn = ttk.Button(detail, text="Copy task summary", command=self.mission_copy_task)  # 5.6.0
-        self.mission_copy_btn.pack(side="right", padx=(0, 6))
-        self.mission_copy_btn.state(["disabled"])
-        self.mission_jump_btn = ttk.Button(detail, text="Jump to active task", command=self.mission_jump_active)
-        self.mission_jump_btn.pack(side="right", padx=(0, 6))  # 5.6.0
+        self.mission_copy_btn = self.mission_detail_bar.actions["Copy task summary"]
+        self.mission_copy_btn.configure(state="disabled")
+        self.mission_jump_btn = self.mission_detail_bar.actions["Jump to active task"]
         self._mission_rev: tuple[str, int] | None = None
         self._make_home_next_card(body)
         self.shell.status_listeners.append(self.refresh_mission)
@@ -5205,7 +5212,6 @@ class WorkbenchApp:
                         command=self.mission_apply_view).pack(side="left")
         ttk.Checkbutton(row, text="Only AIs with open work", variable=self.mission_open_only_var,
                         command=self.mission_apply_view).pack(side="left", padx=(12, 0))
-        ttk.Button(row, text="Copy map summary", command=self.mission_copy_summary).pack(side="right")
 
     def mission_apply_view(self) -> dict[str, Any]:
         """Home › Map view options → redraw the Mission Map (nothing is written)."""
@@ -5257,7 +5263,7 @@ class WorkbenchApp:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
             self.mission_open_btn.state(["disabled"])
-            self.mission_copy_btn.state(["disabled"])
+            self.mission_copy_btn.configure(state="disabled")
         return model
 
     def mission_jump_active(self) -> str:
@@ -5302,7 +5308,7 @@ class WorkbenchApp:
                                     f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
                                     f"[{nd['status']}]")
         self.mission_open_btn.state(["!disabled"])
-        self.mission_copy_btn.state(["!disabled"])
+        self.mission_copy_btn.configure(state="normal")
 
     # -- Mission Map › right-click menu (roadmap 5.4.0)
     def _mission_ctl(self) -> Any:
@@ -5363,6 +5369,15 @@ class WorkbenchApp:
         if ctl is None or not row.get("enabled"):
             return None
         inputs: dict[str, str] = {}
+        card = getattr(self, "home_card", None)
+        if row.get("needs") == ["text"] and card is not None and getattr(self, "mission_input_hook", None) is None:
+            # 5.11.0: GET AI RESPONSE opens this task's paste panel on Home's card (no popup window)
+            steps = card._steps()
+            st = next((x for x in steps if x["key"] == row["step"]), None)
+            card.set_focus(st["agent_id"] if st else "", row["step"])
+            card.paste.box.focus_set()
+            self.set_status(f"{task_id}: paste the whole answer into the Next-step card below the map.")
+            return {"message": "paste on Home", "step": row["step"]}
         for need in row.get("needs", []):
             v = self._mission_input(need, row["hint"])
             if v is None or (not v.strip() and need not in OPTIONAL_INPUTS):
@@ -5475,41 +5490,105 @@ class WorkbenchApp:
         self.open_selected_project()
 
     def _make_home_next_card(self, body: tk.Misc) -> None:
-        """Home › Next step (3.5.0, 5.7.0): the active project's next guided step and a way to continue."""
-        self.home_next_var = tk.StringVar(value="Open or create a project to see its next step.")
-        nxt = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
-        nxt._aiwb_section = "Next step"  # type: ignore[attr-defined]
-        nxt._aiwb_noflow = True  # type: ignore[attr-defined]  # label + one button: a fixed row, never re-flowed
-        nxt.pack(fill="x", pady=(0, 9))
-        ttk.Label(nxt, text="Next step", style="CardAccent.TLabel").pack(side="left", padx=(0, 10))
-        ttk.Label(nxt, textvariable=self.home_next_var, style="CardMuted.TLabel", wraplength=760).pack(
-            side="left", fill="x", expand=True)
-        self.home_next_btn = ttk.Button(nxt, text="Continue in Workbench", style="Primary.TButton",
-                                        command=lambda: self.shell.show("workbench"))
-        self.home_next_btn.pack(side="right")
+        """Home › Next step — the cockpit (5.11.0, audit A7): the step's own buttons and the paste panel on the page.
+
+        The actions run through the embedded Workbench (``guide_action``, the code path of 3.5.0–5.10.0); the
+        Workbench is created in the background as soon as a project is open, so Home always knows the next step.
+        """
+        from aiwb.ui.next_card import NextStepCard
+        self.home_card = NextStepCard(body, steps=self._home_steps, state=self._home_state, perform=self.home_perform,
+                                      clipboard=self._copy_text_to_clipboard, status=self.set_status)
+        self.home_card._aiwb_section = "Next step"  # type: ignore[attr-defined]
+        self.home_card.pack(fill="x", pady=(0, 9))
+        self.home_next_var = self.home_card.title_var   # 3.5.0 name kept for the smokes
+        self.home_next_btn = self.home_card.next_btn
+        self._home_card_rev: Any = None
+        self.shell.status_listeners.append(self._home_card_on_status)
         ttk.Label(body, textvariable=self.manager_active_var, style="Hint.TLabel").pack(anchor="w")
+
+    def _home_ws(self) -> Any:
+        """The embedded Workbench of the open project, or None (then it is being created)."""
+        ws = getattr(self, "workspace_window", None)
+        if ws is None or self.workspace is None or getattr(ws, "_project_root", None) != str(self.workspace):
+            return None
+        return ws
+
+    def _home_steps(self) -> list[dict[str, Any]]:
+        ws = self._home_ws()
+        if ws is None:
+            if self.workspace is not None:
+                self.root.after_idle(self._ensure_home_workbench)
+            return []
+        return ws.wc.guide_steps()
+
+    def _home_state(self) -> dict[str, Any] | None:
+        ws = self._home_ws()
+        return ws.wc.ctl.state() if ws is not None else None
+
+    def _ensure_home_workbench(self) -> None:
+        """Create the embedded Workbench without leaving the current page (Home needs its guide)."""
+        if self.workspace is None or self._home_ws() is not None or getattr(self, "_home_ws_pending", False):
+            return
+        self._home_ws_pending = True
+        try:
+            self.open_project_workbench(show=False)
+        finally:
+            self._home_ws_pending = False
+        self.refresh_home_next_step()
+
+    def home_perform(self, key: str, action: str, inputs: dict[str, Any] | None = None) -> dict[str, Any] | None:
+        """Run one Guide action for the Home card through the Workbench (its dialogs, its messages)."""
+        ws = self._home_ws()
+        if ws is None:
+            return {"error": "Open or create a project first."}
+        before = ws.status_var.get()
+        ws.status_var.set("")
+        try:
+            out = ws.guide_action(key, action, inputs)
+        except Exception as exc:  # noqa: BLE001 - shown on the card, never a traceback
+            out = {"error": redact(str(exc))}
+        if out is None:
+            msg = ws.status_var.get()
+            out = {"error": msg or "Cancelled — nothing changed."}
+        if not ws.status_var.get():
+            ws.status_var.set(before)
+        self.refresh_mission(self.status_state(), force=True)
+        try:
+            self.shell.refresh_status()
+        except Exception:  # noqa: BLE001
+            pass
+        return out
 
     def home_next_step(self) -> dict[str, Any] | None:
         """First guided step of the active project (read from its local V2 state; nothing is written)."""
-        ws = getattr(self, "workspace_window", None)
-        if ws is None or self.workspace is None or getattr(ws, "_project_root", None) != str(self.workspace):
+        ws = self._home_ws()
+        if ws is None:
             return None
         try:
             return ws.wc.guide_steps()[0]
         except Exception:  # noqa: BLE001 - a broken project state must not break Home
             return None
 
+    def _home_card_on_status(self, state: dict[str, Any] | None) -> None:
+        rev = None if state is None else (str(state.get("project_id", "")), int(state.get("state_revision", 0) or 0))
+        if rev != self._home_card_rev:
+            self._home_card_rev = rev
+            self.refresh_home_next_step()
+
     def refresh_home_next_step(self) -> None:
-        if not hasattr(self, "home_next_var"):
+        if not hasattr(self, "home_card"):
             return
-        st = self.home_next_step()
         if self.workspace is None:
-            self.home_next_var.set("Open or create a project to see its next step.")
-        elif st is None:
-            self.home_next_var.set(f"{Path(self.workspace).name}: open the Workbench to see the next step.")
-        else:
-            who = "" if st["agent_id"] == "you" else f" [{st['agent_id']}]"
-            self.home_next_var.set(f"{Path(self.workspace).name}: {st['title']}{who}")
+            self.home_card.focus_agent = self.home_card.focus_key = ""
+        self.home_card.refresh()
+
+    def mission_lane(self, agent_id: str) -> dict[str, Any] | None:
+        """Mission Map › click on an AI's name: the card shows that AI's own prompt/answer step."""
+        if not hasattr(self, "home_card"):
+            return None
+        m = self.home_card.set_focus(agent_id)
+        self.set_status(f"Showing {m['who'] or agent_id}'s next step — More › Back to the next step returns.")
+        return m
 
     def _project_selection_changed(self, _event: Any = None) -> None:
         path = self._selected_project_path()
@@ -6284,7 +6363,8 @@ class WorkbenchApp:
         self.history_filter_entry = ttk.Entry(filter_row, textvariable=self.history_filter_var, width=22)
         self.history_filter_entry.pack(side="left")
         self.history_filter_entry.bind("<Return>", lambda _event: self._refresh_history_view())
-        ttk.Button(filter_row, text="Search", command=self._refresh_history_view).pack(side="left", padx=(4, 0))
+        # 5.11.0: the list filters as you type (short pause) — no Search button (History shows at most 8 controls)
+        self.history_filter_entry.bind("<KeyRelease>", self._history_filter_typed, add="+")
         ttk.Button(filter_row, text="Clear", command=self._clear_history_filter).pack(side="left", padx=(4, 0))
         self.history_saved_only_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(filter_row, text="Saved only", variable=self.history_saved_only_var, command=self._refresh_history_view).pack(side="left", padx=(6, 0))
@@ -6341,11 +6421,28 @@ class WorkbenchApp:
         action_row.pack(fill="x", pady=(6, 0))
         ui_actions.ActionBar(
             action_row,
-            primary=(("Copy prompt", lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))),
-                     ("Copy model output", lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c")))),
-            more=(("This step", (("Edit prompt as new revision…", self._edit_history_prompt_revision),
+            primary=(("Copy prompt", lambda: self._copy_text_to_clipboard(self.history_prompt_view.get("1.0", "end-1c"))),),
+            more=(("This step", (("Copy model output",
+                                  lambda: self._copy_text_to_clipboard(self.history_output_view.get("1.0", "end-1c"))),
+                                 ("Edit prompt as new revision…", self._edit_history_prompt_revision),
                                  ("Create repair prompt from this step", self._repair_from_selected_history))),),
         ).pack(side="left")
+
+    def _history_filter_typed(self, event: Any = None) -> None:
+        """Debounced live filter of the history list (5.11.0)."""
+        if event is not None and getattr(event, "keysym", "") == "Return":
+            return
+        pending = getattr(self, "_history_filter_after", None)
+        if pending is not None:
+            try:
+                self.root.after_cancel(pending)
+            except tk.TclError:
+                pass
+        self._history_filter_after = self.root.after(350, self._history_filter_run)
+
+    def _history_filter_run(self) -> None:
+        self._history_filter_after = None
+        self._refresh_history_view()
 
     def _make_history_text_page(self, title: str) -> tk.Text:
         frame = ttk.Frame(self.history_detail_tabs)
@@ -7516,10 +7613,10 @@ class WorkbenchApp:
         queue_scroll.pack(side="right", fill="y")
         self.queue_actions = ui_actions.bar(
             queue_box,
-            primary=(("Run selected / retry…", lambda: self.run_queued_actions(all_pending=False)),
-                     ("Run all pending…", lambda: self.run_queued_actions(all_pending=True)),
+            primary=(("Run all pending…", lambda: self.run_queued_actions(all_pending=True)),
                      ("Build continuation handoff…", self.show_continuation_handoff, "Primary.TButton")),
-            more=(("Queue", (("Remove selected", self.remove_selected_actions),)),
+            more=(("Queue", (("Run selected / retry…", lambda: self.run_queued_actions(all_pending=False)),  # 5.11.0
+                             ("Remove selected", self.remove_selected_actions))),
                   ("After a failure", (("Repair prompt from latest failure…", self.show_latest_repair_prompt),))),
             pady=(5, 0))
 
@@ -9800,10 +9897,10 @@ class WorkbenchApp:
         self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
         self.set_status("Projects (multi-agent): " + ctl.next_action_text())
 
-    def open_project_workbench(self) -> None:
+    def open_project_workbench(self, show: bool = True) -> None:
         """Project Workbench shell (roadmap 2.3.0, ADR-007): one workspace over the same ProjectsController;
         existing tools (classic prompt/response, Inbox, Context Request, Build Center, Companion) are linked,
-        never re-implemented."""
+        never re-implemented. ``show=False`` (5.11.0) builds it for Home's card without leaving the page."""
         from aiwb.workspace.controller import WorkspaceController
         from aiwb.workspace.shell import WorkspaceWindow
         root = self.require_workspace()
@@ -9833,11 +9930,14 @@ class WorkbenchApp:
         if getattr(self, "workbench_empty", None) is not None:
             self.workbench_empty.pack_forget()
         self.workspace_window = WorkspaceWindow(self.root, WorkspaceController(ctl, tools=tools, prefs=self.prefs),
-                                                clipboard=self._copy_text_to_clipboard, host=self.workbench_tab)
+                                                clipboard=self._copy_text_to_clipboard, host=self.workbench_tab,
+                                                on_home=lambda: self.shell.show("home"))
         self.workspace_window._project_root = str(root)
-        if self.shell.current != "workbench":
+        if show and self.shell.current != "workbench":
             self.shell.show("workbench")
-        self.set_status("Project Workbench: " + ctl.next_action_text())
+        if show:
+            self.set_status("Project Workbench: " + ctl.next_action_text())
+        self.refresh_home_next_step()
 
     # -- project bundle (roadmap 3.8.0): the same project on the phone (AI Workbench Mobile 1.0.0)
     def export_project_bundle(self, ctl: Any, path: str | None = None) -> str:

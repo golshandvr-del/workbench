@@ -1,14 +1,15 @@
-"""Roadmap 5.10.0 gate: the real paste box — live diagnosis, Load ZIP…, and answers in other formats to files on disk.
+"""Roadmap 5.10.0 gate, driven from Home since 5.11.0: the real paste panel — live diagnosis, Load ZIP…, and answers in
+other formats to files on disk.
 
-Only real widgets: the Workbench's primary button / More menu open the paste box; a poller types into its Text widget
-(or clicks **Load ZIP…** with the file dialog answered), waits for the live diagnosis line to change, reads it, and
-presses **Use this answer**.
+Only real widgets: Home's Next-step card (primary button / More menu) does each step; its **inline** paste panel
+(no popup since 5.11.0) gets the text typed into its Text widget (or **Load ZIP…** clicked with the file dialog
+answered); the smoke waits for the live diagnosis line to change, reads it, and presses **Use this answer**.
 
-Path: charter WITHOUT markers in a ```json fence and with model-style damage → the box says "Charter ✓ … auto-fix"
+Path: charter WITHOUT markers in a ```json fence and with model-style damage → the panel says "Charter ✓ … auto-fix"
 before anything is imported → accept → task 1 answered as a GPT ZIP (Load ZIP…) → accept → file on disk → task 2
 answered as Markdown code blocks (no manifest) → accept → file on disk; a cut-off answer shows "Cut off ✗".
 
-``AIWB_SCREENSHOT_DIR=dir`` writes a screenshot of each paste box state (needs ImageMagick ``import``).
+``AIWB_SCREENSHOT_DIR=dir`` writes a screenshot of each paste panel state (needs ImageMagick ``import``).
 """
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ import tkinter as tk
 import traceback
 import zipfile
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import AI_Workbench as wb
 from gui_smoke_helpers import wait_for_project_ready
@@ -33,23 +34,14 @@ REPO = Path(__file__).resolve().parents[4]
 CHARTER = REPO / "packages/contracts/fixtures/valid/project-charter.v1.todo.json"
 
 
-def walk(w: tk.Misc):
-    for c in w.winfo_children():
-        yield c
-        yield from walk(c)
-
-
 class Paster:
-    """Answers each paste box that opens with one scripted ``action(box_widgets) -> None``."""
+    """Drives Home's inline paste panel: ``job(w)`` gets the panel's widgets (``text``, ``buttons``)."""
 
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.jobs: list[Callable[[dict[str, Any]], None]] = []
         self.lines: list[str] = []
         self.errors: list[str] = []
-        self._seen: set[str] = set()
         root.report_callback_exception = lambda *a: self.errors.append("".join(traceback.format_exception(*a)))
-        root.after(60, self._poll)
 
     def pump(self, ms: int = 300) -> None:
         end = time.monotonic() + ms / 1000
@@ -57,35 +49,11 @@ class Paster:
             self.root.update()
             time.sleep(0.01)
 
-    def _poll(self) -> None:
-        try:
-            for t in [w for w in walk(self.root) if isinstance(w, tk.Toplevel)]:
-                if str(t) in self._seen or not t.winfo_ismapped() or not self.jobs:
-                    continue
-                kids = list(walk(t))
-                btn = {str(c.cget("text")): c for c in kids if c.winfo_class() == "TButton"}
-                if "Use this answer" not in btn or "Load ZIP…" not in btn:
-                    continue
-                self._seen.add(str(t))
-                labels = [c for c in kids if c.winfo_class() == "TLabel"]
-                w = {"top": t, "text": next(c for c in kids if c.winfo_class() == "Text"), "buttons": btn,
-                     "status": lambda: str(labels[-1].cget("text")) if labels else "",
-                     "labels": labels}
-                job = self.jobs.pop(0)
-                self.root.after(10, lambda w=w, job=job: self._run(w, job))
-        except tk.TclError:
-            pass
-        self.root.after(60, self._poll)
-
-    def _run(self, w: dict[str, Any], job: Callable[[dict[str, Any]], None]) -> None:
-        try:
-            job(w)
-        except Exception:  # noqa: BLE001 - reported by the smoke
-            self.errors.append(traceback.format_exc())
-            try:
-                w["top"].destroy()
-            except tk.TclError:
-                pass
+    def panel(self, card: Any) -> dict[str, Any]:
+        p = card.paste
+        assert p.winfo_manager(), f"the paste panel is not on Home: {card.title_var.get()!r} {card.labels()}"
+        return {"panel": p, "text": p.box, "buttons": {"Use this answer": p.ok_btn, "Load ZIP…": p.zip_btn,
+                                                        "Clear": p.clear_btn}}
 
     def shot(self, name: str) -> None:
         out = os.environ.get("AIWB_SCREENSHOT_DIR")
@@ -96,9 +64,8 @@ class Paster:
         subprocess.run(["import", "-window", "root", str(Path(out) / f"paste_{name}.png")], check=False, timeout=30)
 
     def status_of(self, w: dict[str, Any]) -> str:
-        """The live diagnosis line (the label just above the hint label)."""
-        texts = [str(lbl.cget("text")) for lbl in w["labels"]]
-        return next((x for x in texts if "✓" in x or "✗" in x or x.startswith(("Paste", "Nothing"))), "")
+        """The live diagnosis line."""
+        return str(w["panel"].status_var.get())
 
     def wait_line(self, w: dict[str, Any], needle: str, timeout: float = 4.0) -> str:
         end = time.monotonic() + timeout
@@ -118,14 +85,16 @@ def menu_labels(menu: tk.Menu) -> list[str]:
     return [] if end is None else [menu.entrycget(i, "label") for i in range(end + 1)]
 
 
-def click(ws: Any, label: str) -> None:
-    if ws.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
-        ws.next_btn.invoke()
+def click(card: Any, label: str) -> None:
+    """Press ``label`` on Home's Next-step card: its primary button, or the item of its More menu."""
+    card.refresh()
+    if card.next_btn.winfo_manager() and card.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
+        card.next_btn.invoke()
         return
-    labels = menu_labels(ws.next_menu)
+    labels = menu_labels(card.next_menu)
     hit = next((x for x in labels if x.rstrip("…").startswith(label.rstrip("…"))), None)
-    assert hit, f"neither {ws.next_btn.cget('text')!r} nor More has {label!r}: {labels}"
-    ws.next_menu.invoke(labels.index(hit))
+    assert hit, f"neither {card.next_btn.cget('text')!r} nor More has {label!r}: {labels} ({card.title_var.get()!r})"
+    card.next_menu.invoke(labels.index(hit))
 
 
 def type_into(text: tk.Text, value: str) -> None:
@@ -157,8 +126,10 @@ def main() -> None:
             ws = app.workspace_window
             ctl = ws.wc.ctl
             ws.guide_action("design", "design", {"goal": "Offline todo app for desktop and mobile"})
+            app.shell.show("home")                       # 5.11.0: every step below is done on Home's card
             o.pump(200)
-            click(ws, "Copy the charter prompt")
+            card = app.home_card
+            click(card, "Copy the charter prompt")
             o.pump(200)
 
             # 1) charter with model damage: no markers, ```json fence, schema_version 1, no coordination section
@@ -179,23 +150,20 @@ def main() -> None:
                 assert "4 AIs · 3 tasks · 2 milestones" in line and "auto-fix" in line, line
                 assert not ctl.state()["proposals"], "the live diagnosis imports nothing"
                 w["buttons"]["Use this answer"].invoke()
-            o.jobs.append(charter_job)
-            click(ws, "Paste the charter")
+            card.refresh()
+            charter_job(o.panel(card))
             o.pump(500)
             assert not o.errors, "\n".join(o.errors)
-            assert "Imported as PROP-" in ws.status_var.get(), ws.status_var.get()
-            click(ws, "Accept")
+            assert "Imported as PROP-" in card.message_var.get(), card.message_var.get()
+            click(card, "Accept")
             o.pump(400)
             st = ctl.state()
             assert len(st["tasks"]) == 3, st["tasks"].keys()
 
             # 2) task 1 answered as a ZIP (Load ZIP… with the real button; the file dialog is answered)
-            click(ws, "Prepare")
+            click(card, "Prepare")                       # 5.11.0: prepares and copies the prompt in one click
             o.pump(200)
-            click(ws, "Copy prompt")
-            o.pump(200)
-            click(ws, "I sent it")
-            o.pump(200)
+            assert "copied" in card.message_var.get(), card.message_var.get()
             b = io.BytesIO()
             with zipfile.ZipFile(b, "w") as z:
                 z.writestr("todo/src/core/model.py", "TODOS: list[str] = []\n")
@@ -212,12 +180,13 @@ def main() -> None:
                 assert 'path="src/core/model.py"' in w["text"].get("1.0", "end"), "the ZIP's files are shown in the box"
                 o.shot("03_zip_loaded")
                 w["buttons"]["Use this answer"].invoke()
-            o.jobs.append(zip_job)
-            click(ws, "Paste the answer")
+            card.refresh()
+            zip_job(o.panel(card))
             o.pump(500)
             assert not o.errors, "\n".join(o.errors)
-            assert "1 file(s) read" in ws.status_var.get() or "linked" in ws.status_var.get(), ws.status_var.get()
-            click(ws, "Accept")
+            msg = card.message_var.get()
+            assert "1 file(s) read" in msg or "linked" in msg, msg
+            click(card, "Accept")
             o.pump(500)
             f1 = project / "src/core/model.py"
             assert f1.is_file() and "TODOS" in f1.read_text(encoding="utf-8"), "ZIP file on disk"
@@ -242,10 +211,6 @@ def main() -> None:
             h = next(h for h in ctl.state()["handoffs"].values() if h["status"] in ("prepared", "prompt_exported"))
             task = ctl.state()["tasks"][h["task_id"]]
             base = task["scope"]["include"][0].rstrip("*").rstrip("/")
-            click(ws, "Copy prompt")
-            o.pump(200)
-            click(ws, "I sent it")
-            o.pump(200)
             md = f"Done! Here are the files.\n\n**{base}/app.py**\n```python\nprint('todo')\n```\n"
 
             def md_job(w: dict[str, Any]) -> None:
@@ -256,11 +221,11 @@ def main() -> None:
                 assert "1 file · Markdown code blocks" in line, line
                 o.shot("04_markdown_files")
                 w["buttons"]["Use this answer"].invoke()
-            o.jobs.append(md_job)
-            click(ws, "Paste the answer")
+            card.refresh()
+            md_job(o.panel(card))
             o.pump(500)
             assert not o.errors, "\n".join(o.errors)
-            click(ws, "Accept")
+            click(card, "Accept")
             o.pump(500)
             f2 = project / base / "app.py"
             assert f2.is_file() and "todo" in f2.read_text(encoding="utf-8"), f"Markdown file on disk: {f2}"
@@ -269,7 +234,7 @@ def main() -> None:
             assert not [x for x in boxes if x[0] == "showerror"], boxes
         finally:
             root.destroy()
-    msg = ("Paste box (5.10.0): live diagnosis (" + " | ".join(o.lines[:4]) + ") · Load ZIP… · Markdown without manifest "
+    msg = ("Paste panel on Home (5.10.0/5.11.0): live diagnosis (" + " | ".join(o.lines[:4]) + ") · Load ZIP… · Markdown without manifest "
            "→ files on disk: PASS")
     # a Windows console (cp1252) cannot print ✓/✗: replace what it cannot encode instead of failing a passed smoke
     enc = getattr(sys.stdout, "encoding", None) or "utf-8"

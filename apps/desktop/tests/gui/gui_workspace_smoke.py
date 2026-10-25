@@ -94,7 +94,7 @@ def main() -> None:
             w.lang_var.set("fa")
             w._set_lang()
             root.update()
-            assert w.nav["overview"].cget("text") == "نمای کلی", w.nav["overview"].cget("text")
+            assert w.nav["plan"].cget("text") == "برنامه و وظایف", w.nav["plan"].cget("text")  # 5.11.0: 3 sections
             assert str(w.next_label.cget("anchor")) == "e"
             w.theme_var.set("dark")
             w._set_theme()

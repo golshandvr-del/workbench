@@ -35,6 +35,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
   - Run
 - Rail
   - Home
+    - Next step
     - Mission Map
     - Task details
     - Your projects
@@ -80,9 +81,10 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 |---|---|
 | **Toolbar › New Project** | Start a new guided project (the owner's algorithm, F1) or add a folder that already exists. |
 | **Toolbar › Open / Save / Run** | Open a project folder · save the project state now · do the Guide's next step. |
+| **Home › Next step** | The cockpit card (5.11.0): the project's next step with its own buttons (primary + More) and, whenever the step takes an answer, the paste panel inside the page (live diagnosis, Load ZIP…, Use this answer). Clicking an AI on the Mission Map shows that AI's own prompt/answer step here. |
 | **Home › Mission Map** | Parallel timelines: one lane per AI, one circle per task in its version's column. |
 | **Home › Task details / Your projects** | The clicked task (with a link into the Workbench) · every project as a list to open. |
-| **Projects** | Every project as a card; the Project Workbench of the open project; its profile and run report. |
+| **Projects** | Every project as a card; the Project Workbench of the open project — three sections since 5.11.0: **Plan & Tasks** (progress, attention, plan review, tasks, each AI's queue, activity) · **Timeline** · **Project settings** (details, AI team, account profiles, one *Project tools* menu of links); its next-step strip only links to Home. Its profile and run report. |
 | **Agents** | One card per AI (number = Mission Map lane, role, live state, current task, load, stats); the selected AI (queue, memory note, briefing for a fresh chat); balance (idle / stuck / overloaded / scope-overlap alerts, suggested moves); the dispatch desk (who gets a prompt now); the manual prompt and AI-response tools. |
 | **History** | Everything that happened, on a timeline; old prompts/responses; versions, releases and Git. |
 | **Settings** | Theme (Midnight / Daylight), Simple/Advanced, Motion (Reduce motion); application tools; **App Map…** (the live map of every page, section and command — `docs/UI_MAP.md`). |

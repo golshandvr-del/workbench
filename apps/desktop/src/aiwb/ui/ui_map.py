@@ -18,7 +18,10 @@ Section detection (pure widget conventions, no per-page code):
   (``SectionTitle`` / ``CardTitle`` style) is a section named by that text;
 * a widget with ``_aiwb_section = "Name"`` is a section of that name (``""`` = a header, not a section) and may add
   ``_aiwb_menu = (title, labels)`` for a canvas right-click menu;
-* a button with ``_aiwb_link = page_key`` is a *link* to another page, not a command of its own.
+* a button with ``_aiwb_link = page_key`` is a *link* to another page, not a command of its own (on a menu button:
+  every item of its menu is such a link);
+* a button or menu button with ``_aiwb_dynamic = "Name"`` changes with the project state (Home's Next-step card,
+  5.11.0): the map shows one control of that fixed name (a menu without items), never the current step's labels.
 """
 from __future__ import annotations
 
@@ -33,7 +36,7 @@ COMMAND_KINDS = ("button", "item", "option")
 RULES = {
     "page_min_commands": 3,       # a page with fewer own commands is "almost empty"
     "section_max_controls": 7,    # Miller: a section shows at most 7 direct controls
-    "page_max_visible": 10,       # a page shows at most 10 buttons/menus/options at once (3.3.0 rule)
+    "page_max_visible": 8,        # a page shows at most 8 buttons/menus/options at once (3.3.0: 10; 5.11.0 gate: 8)
     "menu_max_items": 12,         # a More menu holds at most 12 commands
     "weight_ratio_max": 4.0,      # heaviest rail destination ≤ 4 × the lightest (commands incl. their tools)
 }
@@ -160,6 +163,10 @@ def _visit(ch: Any, into: list[dict[str, Any]]) -> None:
         walk(ch, sec["children"])
         into.append(sec)
         return
+    dynamic = getattr(ch, "_aiwb_dynamic", None)
+    if dynamic and cls in ("TButton", "Button", "TMenubutton", "Menubutton"):
+        into.append(node(str(dynamic), "menu" if "Menubutton" in cls else "button"))
+        return
     if cls in ("TButton", "Button"):
         if _is_nav(ch):
             return
@@ -172,7 +179,8 @@ def _visit(ch: Any, into: list[dict[str, Any]]) -> None:
             items = menu_items(ch.nametowidget(ch.cget("menu")))
         except Exception:  # noqa: BLE001
             pass
-        into.append(node(_text(ch), "menu", [node(x, "item") for x in items]))
+        kind = "link" if getattr(ch, "_aiwb_link", None) else "item"  # 5.11.0: a menu of links to tools elsewhere
+        into.append(node(_text(ch), "menu", [node(x, kind) for x in items]))
         return
     if cls in ("TCheckbutton", "TRadiobutton", "Checkbutton", "Radiobutton"):
         if _text(ch):

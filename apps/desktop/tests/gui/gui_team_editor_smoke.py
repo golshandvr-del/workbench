@@ -75,8 +75,10 @@ def main() -> None:
             folder.mkdir()
             (folder / "main.py").write_text("print(1)\n", encoding="utf-8")
             ws = open_workbench(app, root, folder)
-            assert ws.next_btn.cget("text").startswith("Start the project"), ws.next_btn.cget("text")
-            ws.next_btn.invoke()
+            card = app.home_card  # 5.11.0: the step's button lives on Home's Next-step card
+            card.refresh()
+            assert card.next_btn.cget("text").startswith("Start the project"), card.next_btn.cget("text")
+            card.next_btn.invoke()
             pump(root, 10)
             form = ws.start_form
             assert form.win.winfo_exists() and form.mode == "start"
@@ -103,7 +105,8 @@ def main() -> None:
             assert set(enabled) == {"agent-project-manager", "agent-coder", "agent-checker"}, sorted(st["agents"])
             assert enabled["agent-checker"]["role"] == "reviewer"
             assert st["settings"]["goal"].startswith("Turn the script")
-            assert ws.next_btn.cget("text") == "Copy the charter prompt", ws.next_btn.cget("text")
+            card.refresh()
+            assert card.next_btn.cget("text") == "Copy the charter prompt", card.next_btn.cget("text")
 
             # 2) Agents › Team › Edit team…: rename, add, remove — through the real table
             app.shell.show("agents")

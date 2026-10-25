@@ -26,7 +26,8 @@ STATE_TEXT = {"done": "Done", "active": "In progress", "blocked": "Blocked", "at
 
 class MissionCanvas(tk.Canvas):
     def __init__(self, master: tk.Misc, assets: Assets, *, on_select: Callable[[str], Any] | None = None,
-                 on_menu: Callable[[str, int, int], Any] | None = None, motion: Any = None, **kw: Any) -> None:
+                 on_menu: Callable[[str, int, int], Any] | None = None, motion: Any = None,
+                 on_lane: Callable[[str], Any] | None = None, **kw: Any) -> None:
         super().__init__(master, highlightthickness=0, bd=0, **kw)
         self.motion = motion          # 5.3.0: shared animation clock (None = still picture)
         self._grown_for = ""          # branch growth plays once per project
@@ -34,6 +35,7 @@ class MissionCanvas(tk.Canvas):
         self._aiwb_keep_colours = True
         self.assets = assets
         self.on_select, self.on_menu = on_select, on_menu
+        self.on_lane = on_lane        # 5.11.0: click on an AI's hexagon or name → that AI's prompt/answer on Home
         self.model: dict[str, Any] = mission_model.build(None)
         self.geo: dict[str, Any] = {}
         self.node_items: dict[int, str] = {}      # canvas id → task id
@@ -258,8 +260,21 @@ class MissionCanvas(tk.Canvas):
                 best, dist = tid, d
         return best
 
+    def lane_at(self, x: int, y: int) -> str:
+        """Agent id of the lane whose hexagon or name label is under widget coordinates (x, y) ('' = none)."""
+        cx, cy = self.canvasx(x), self.canvasy(y)
+        for item in self.find_overlapping(cx - 2, cy - 2, cx + 2, cy + 2):
+            for tag in self.gettags(item):
+                if tag.startswith("lane:"):
+                    return tag[5:]
+        return ""
+
     # -- interaction
     def _motion(self, e: Any) -> None:
+        if not self.task_at(e.x, e.y) and self.on_lane is not None and self.lane_at(e.x, e.y):
+            self._unhover()
+            self.configure(cursor="hand2")
+            return
         tid = self.task_at(e.x, e.y)
         if tid != self.hovered:
             self._unhover()
@@ -317,6 +332,10 @@ class MissionCanvas(tk.Canvas):
         tid = self.task_at(e.x, e.y)
         if tid:
             self.select(tid)
+            return
+        lane = self.lane_at(e.x, e.y)
+        if lane and self.on_lane is not None:
+            self.on_lane(lane)
 
     def select(self, tid: str) -> None:
         self.selected = tid
