@@ -886,11 +886,11 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.create_milestone(data))
         if out:
             self.status_var.set(f"{out['milestone_id']} · {out['title']}")
-            self.show("timeline")
+            self.refresh()
         return out
 
     def accept_selected_milestone(self, milestone_id: str = "", force: bool | None = None) -> Any:
-        sel = milestone_id or next((i for i in self.mv_tree.selection() if i.startswith("MS-")), "")
+        sel = milestone_id  # 5.13.0 (B3): the milestone comes from its Mission Map column
         if not sel:
             self.status_var.set(self.wc.tr(("Select a milestone first.", "ابتدا یک Milestone انتخاب کنید.")))
             return None
@@ -906,7 +906,7 @@ class WorkspaceWindow:
                 return None
             out = self._guard(lambda: self.wc.accept_milestone(sel, force=True))
         if out:
-            self.show("timeline")
+            self.refresh()
         return out
 
     def dialog_version(self, data: dict[str, Any] | None = None) -> Any:
@@ -918,11 +918,11 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.propose_version(data))
         if out:
             self.status_var.set(f"{out['version_id']} · {out['label']} · " + self.wc.tr(("proposed (not released)", "پیشنهادی (منتشر نشده)")))
-            self.show("timeline")
+            self.refresh()
         return out
 
     def dialog_advance_version(self, version_id: str = "", status: str = "", facts: dict[str, str] | None = None) -> Any:
-        vid = version_id or next((i for i in self.mv_tree.selection() if i.startswith("VER-")), "")
+        vid = version_id  # 5.13.0 (B3): the version comes from its Mission Map column
         if not vid:
             self.status_var.set(self.wc.tr(("Select a version first.", "ابتدا یک نسخه انتخاب کنید.")))
             return None
@@ -940,7 +940,7 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.advance_version(vid, status, **facts))
         if out:
             self.status_var.set(f"{vid} → {out['status']}")
-            self.show("timeline")
+            self.refresh()
         return out
 
     def _select_from(self, tree: ttk.Treeview, kind: str) -> None:
