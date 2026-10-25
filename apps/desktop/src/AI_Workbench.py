@@ -7612,10 +7612,10 @@ class WorkbenchApp:
         queue_scroll.pack(side="right", fill="y")
         self.queue_actions = ui_actions.bar(
             queue_box,
-            primary=(("Run selected / retry…", lambda: self.run_queued_actions(all_pending=False)),
-                     ("Run all pending…", lambda: self.run_queued_actions(all_pending=True)),
+            primary=(("Run all pending…", lambda: self.run_queued_actions(all_pending=True)),
                      ("Build continuation handoff…", self.show_continuation_handoff, "Primary.TButton")),
-            more=(("Queue", (("Remove selected", self.remove_selected_actions),)),
+            more=(("Queue", (("Run selected / retry…", lambda: self.run_queued_actions(all_pending=False)),  # 5.11.0
+                             ("Remove selected", self.remove_selected_actions))),
                   ("After a failure", (("Repair prompt from latest failure…", self.show_latest_repair_prompt),))),
             pady=(5, 0))
 
