@@ -133,7 +133,7 @@ automatically) and the Timeline (pinch to zoom, drag, tap).
   A backup of the replaced project is always kept.
 
 ### Companion (pairing with the desktop)
-Desktop: **Settings → Mobile Companion… → Pair** shows a QR code and a 16-character code (valid 10 minutes, 5
+Desktop: **Settings → Application → More ▾ → Mobile Companion… → Pair** shows a QR code and a 16-character code (valid 10 minutes, 5
 attempts). Phone: *Scan QR* or type the code. The phone then sees the desktop project over your local
 network.
 
