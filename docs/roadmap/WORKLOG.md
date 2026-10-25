@@ -53,6 +53,7 @@ Progress (tick = committed and pushed):
     Workbench after Create → rewrite to Home in step 8), v5_map (regen UI_MAP after step 5), v5_polish ("two homes":
     Approve/Cancel were step labels on the card → fixed by ui_map `_aiwb_dynamic` ab75324/48437ac)
 - [x] 6 Create → Home (2f51d00)
-- [ ] 7 audit 8 visible
+- [ ] 7 audit 8 visible — live audit at max 8 (before step 5): Projects 9, Projects › Tools › Run & Report 9,
+  Agents 10, History 10, Settings 9 (Home 6). Script: /tmp/stats.py = tools/ui_map.live_tree + ui_map.audit(rules)
 - [ ] 8 smokes updated, all green
 - [ ] 9 docs, version, PR → CI → merge → tag → release
