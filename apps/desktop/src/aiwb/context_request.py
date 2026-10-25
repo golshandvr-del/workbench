@@ -284,11 +284,48 @@ def _structurally_unsafe(p: str) -> bool:
     return (not p or p.startswith("/") or ":" in p or ".." in parts or "\x00" in p)
 
 
+SKIP_DIRS = {".git", ".workbench", "node_modules", "__pycache__", ".venv", "venv", "dist", "build", ".idea", ".vscode"}
+
+
+def _expand_folders(items: list[RequestedItem], root: Path, out: list[ResolvedItem]) -> list[RequestedItem]:
+    """5.12.0: a folder item becomes its files (sorted, at most :data:`MAX_FOLDER_FILES`); an empty or missing folder
+    is reported once in ``out`` (status ``missing``) so the chat is told."""
+    result: list[RequestedItem] = []
+    for it in items:
+        if it.mode != FOLDER_MODE:
+            result.append(it)
+            continue
+        rel = it.path.rstrip("/")
+        base = root / rel if rel else root
+        found: list[str] = []
+        if not _structurally_unsafe(rel or ".") and base.is_dir():
+            try:
+                inside = base.resolve().is_relative_to(root.resolve())
+            except OSError:
+                inside = False
+            if inside:
+                for f in sorted(base.rglob("*")):
+                    parts = f.relative_to(root).parts
+                    if f.is_file() and not any(p in SKIP_DIRS for p in parts):
+                        found.append("/".join(parts))
+        if not found:
+            out.append(ResolvedItem(it.path, FOLDER_MODE, "missing", "the folder does not exist or is empty",
+                                    required=it.required, reason=it.reason))
+            continue
+        for p in found[:MAX_FOLDER_FILES]:
+            result.append(RequestedItem(p, "full_file", [], "", it.required, it.reason))
+        if len(found) > MAX_FOLDER_FILES:
+            out.append(ResolvedItem(it.path, FOLDER_MODE, "too_large",
+                                    f"{len(found)} files; the first {MAX_FOLDER_FILES} are included — ask for the "
+                                    "others by name", required=False, reason=it.reason))
+    return result
+
+
 def resolve(req: ContextRequest, root: Path, *, path_problem: Callable[[str], str],
             is_sensitive: Callable[[str], bool], allow_sensitive: set[str] | None = None) -> list[ResolvedItem]:
     allow_sensitive = allow_sensitive or set()
     out: list[ResolvedItem] = []
-    for it in req.items:
+    for it in _expand_folders(req.items, root, out):
         r = ResolvedItem(it.path, it.mode, "ready", required=it.required, reason=it.reason)
         out.append(r)
         if _structurally_unsafe(it.path):
