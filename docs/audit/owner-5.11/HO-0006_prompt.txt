@@ -1,0 +1,81 @@
+AIWB_ATTEMPT_ID: att-20261023-192855-0ba9959e
+(Repeat the line above as the first line of your answer.)
+
+# AI Workbench handoff HO-0006 — you are Implementer (agent-implementer, role implementer)
+You have NO access to earlier chats. Everything you may rely on is below. Do not assume anything else.
+
+## 1. Your role
+- Purpose: Implement one approved task within its scope.
+- Follow the accepted project decisions
+- Stay inside the task scope
+- Do not claim tests passed unless evidence is present
+- Report missing information instead of inventing it
+
+## 2. Mission
+- Task TASK-0002 revision 1: Implement CATIA COM Automation Engine and Parametric Builders
+- Objective: Build the CATIA V5 COM automation module capable of connecting to CATIA, creating sketches/pads/pockets/holes, and running in mock mode when CATIA is closed.
+- Project state revision 52
+
+## 3. Acceptance criteria and limits
+- [ ] Implements CatiaComService and MockCatiaService adhering strictly to src/contracts/models.py.
+- [ ] Supports at least 3 parametric templates: Rectangular Block (with optional center hole), Cylindrical Shaft, and Flanged Bush.
+- [ ] Supports exporting active part to CATPart, STEP, and STL formats with clear Persian/English error messages on COM failure.
+- Scope include: src/catia_bridge/**
+- Scope exclude: src/contracts/**, src/app_ui/**, main.py, tests/**
+- Deliverables: (see objective)
+
+## 4. Accepted decisions (binding)
+- (none)
+
+## 5. Prerequisites and their outputs
+- TASK-0001 Design Parametric Part Contracts and Service Interface — status done; delivered: Designed and delivered the parametric part contracts in src/contracts/models.py (with package export in src/contracts/**init**.py) and the ICatiaService specification in docs/contracts/catia-bridge-spec.md, including strict positivity and geometric ratio validation.
+
+## 6. Previous handoff HO-0002 (n/a)
+- Summary: …
+- Done: done and delivered
+- Open: not done
+- Assumption: what you assumed
+- Claimed (NOT verified): what you believe works (unverified)
+
+## 7. Relevant files
+- If you need a file that is not here, answer ONLY with an AIWB_CONTEXT_REQUEST.
+
+## 8. Conflicts / do not assume
+- Do not claim that you ran tests or builds; Workbench records real evidence separately.
+
+## 9. Expected delivery
+- Files: one AIWB file block per file, complete files only. Wrap every file body in a fence of FOUR backticks (````) so the chat app keeps indentation and backticks when the answer is copied:
+<<<AIWB_FILE path="relative/path.ext" action="write">>>
+````
+(the complete file)
+````
+<<<AIWB_END_FILE>>>
+- Then exactly one manifest block:
+<<<AIWB_HANDOFF>>>
+{
+ "schema_version": "1.0",
+ "handoff_id": "HO-0006",
+ "task_id": "TASK-0002",
+ "task_revision": 1,
+ "attempt_id": "att-20261023-192855-0ba9959e",
+ "outcome": "complete|partial|blocked|needs_decision|failed",
+ "summary": "…",
+ "completed_items": [
+  "done and delivered"
+ ],
+ "unresolved_items": [
+  "not done"
+ ],
+ "assumptions": [
+  "what you assumed"
+ ],
+ "decision_requests": [
+  "what the user must decide"
+ ],
+ "validation_claims": [
+  "what you believe works (unverified)"
+ ],
+ "recommended_next_action": "…"
+}
+<<<AIWB_END_HANDOFF>>>
+- Keep separate: done, proposed, not run, needs decision.
