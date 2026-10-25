@@ -104,8 +104,8 @@ def strip_copy_damage(text: str, fixes: list[str] | None = None) -> str:
     """Undo what selecting a rendered chat answer and copying it does (5.12.0, owner audit B1).
 
     * When most non-empty lines **outside** code fences end with ``\\`` (or ``/``) — lines such as ``{`` and
-      ``}`` never legitimately do — exactly that one character is removed from every line that has it. A fenced
-      block is repaired the same way only when it is damaged as much as the text around it.
+      ``}`` never legitimately do — exactly that one character is removed from every such line. Lines inside code
+      fences are never changed (chat apps copy code blocks verbatim).
     * Markdown escapes (``\\_ \\* \\[ \\] \\# \\` \\>``) outside fences and outside AIWB file bodies are
       removed: they are never part of JSON, of our markers or of prose.
 
@@ -121,21 +121,9 @@ def strip_copy_damage(text: str, fixes: list[str] | None = None) -> str:
     ch = _damaged_ending(lines, outside)
     n_end = 0
     if ch:
-        targets = set(outside)
-        # fenced blocks: repair a block only when it is itself damaged like the text around it
-        i = 0
-        while i < len(lines):
-            if fenced[i]:
-                j = i
-                while j + 1 < len(lines) and fenced[j + 1] and not (j > i and _FENCE_LOOSE.match(lines[j])):
-                    j += 1
-                inner = list(range(i + 1, j))
-                if _damaged_ending(lines, inner) == ch:
-                    targets.update(inner)
-                targets.update({i, j})  # the fence lines themselves may carry the damage
-                i = j + 1
-            else:
-                i += 1
+        # only text outside fences and the fence lines themselves: a chat copies code blocks verbatim, and a
+        # fenced shell script legitimately ends lines with "\\"
+        targets = set(outside) | {i for i, line in enumerate(lines) if _FENCE_LOOSE.match(line)}
         for i in sorted(targets):
             r = lines[i].rstrip()
             if r.endswith(ch):
