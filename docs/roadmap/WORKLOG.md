@@ -48,12 +48,12 @@ Progress (tick = committed and pushed):
 - [x] 1 PastePanel (ceee371)
 - [x] 2 next_card.py + test_next_card.py (3196e07…0aae0cb)
 - [x] 3/4 Home card, Task details More, lane click (acec763…95f168c, fix fb08e88; live path New→charter→accept→prompt→answer→file all from Home OK)
-- [ ] 5 Workbench 3 sections
+- [x] 5 Workbench 3 sections (8365dba controller, 56b7ea8 shell, 97bcea9 on_home, 3837ad2) — Projects now 8 visible; smokes using old keys/next_btn still to fix (step 8)
   - test run after steps 1-4,6 (d0ab492): unit 774 OK; GUI 42/46 — guide (fixed aa801f1), owner_path (expects
     Workbench after Create → rewrite to Home in step 8), v5_map (regen UI_MAP after step 5), v5_polish ("two homes":
     Approve/Cancel were step labels on the card → fixed by ui_map `_aiwb_dynamic` ab75324/48437ac)
 - [x] 6 Create → Home (2f51d00)
 - [ ] 7 audit 8 visible — live audit at max 8 (before step 5): Projects 9, Projects › Tools › Run & Report 9,
-  Agents 10, History 10, Settings 9 (Home 6). Script: /tmp/stats.py = tools/ui_map.live_tree + ui_map.audit(rules)
+  Agents 10, History 10, Settings 9 (Home 6). After step 5: Projects 8 ✓; left: Run & Report 9, Agents 10, History 10, Settings 9. Script: /tmp/stats.py = tools/ui_map.live_tree + ui_map.audit(rules)
 - [ ] 8 smokes updated, all green
 - [ ] 9 docs, version, PR → CI → merge → tag → release
