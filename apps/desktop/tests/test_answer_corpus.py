@@ -55,7 +55,10 @@ class CorpusShapeTests(unittest.TestCase):
         self.assertTrue(any(c["expect"] == "continue" for c in cases), "a cut-off answer")
         self.assertTrue(any("copy" in c["style"].lower() for c in cases), "chat copy damage")
         self.assertTrue(any(c["file"].endswith(".zip") for c in cases), "a ZIP")
-        self.assertTrue({"charter", "files"} <= {c["kind"] for c in cases})
+        self.assertTrue({"charter", "files", "context"} <= {c["kind"] for c in cases})
+        # 5.12.0 (owner audit B8): real answers of the owner, and the Windows rendered copy, are part of the corpus
+        self.assertTrue(any(c["source"].startswith("owner") for c in cases), "an owner answer")
+        self.assertTrue(any("Windows" in c["style"] and c["kind"] == k for c in cases for k in ("files",)), "win copy")
         ids = [c["id"] for c in cases]
         self.assertEqual(len(ids), len(set(ids)))
         for c in cases:
