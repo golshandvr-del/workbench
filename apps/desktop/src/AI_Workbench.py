@@ -5367,6 +5367,15 @@ class WorkbenchApp:
         if ctl is None or not row.get("enabled"):
             return None
         inputs: dict[str, str] = {}
+        card = getattr(self, "home_card", None)
+        if row.get("needs") == ["text"] and card is not None and getattr(self, "mission_input_hook", None) is None:
+            # 5.11.0: GET AI RESPONSE opens this task's paste panel on Home's card (no popup window)
+            steps = card._steps()
+            st = next((x for x in steps if x["key"] == row["step"]), None)
+            card.set_focus(st["agent_id"] if st else "", row["step"])
+            card.paste.box.focus_set()
+            self.set_status(f"{task_id}: paste the whole answer into the Next-step card below the map.")
+            return {"message": "paste on Home", "step": row["step"]}
         for need in row.get("needs", []):
             v = self._mission_input(need, row["hint"])
             if v is None or (not v.strip() and need not in OPTIONAL_INPUTS):
