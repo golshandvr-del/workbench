@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.11.0",
+  "version": "5.12.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -278,8 +278,8 @@
       "source": "apps/desktop/tests/test_ui_balance.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.11.0.md",
-      "source": "docs/release/v5.11.0/WINDOWS_RELEASE_CHECKLIST_v5.11.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.12.0.md",
+      "source": "docs/release/v5.12.0/WINDOWS_RELEASE_CHECKLIST_v5.12.0.md"
     },
     {
       "path": "install.ps1",
@@ -798,6 +798,10 @@
       "source": "apps/desktop/src/aiwb/ui/next_card.py"
     },
     {
+      "path": "aiwb/v2/context_step.py",
+      "source": "apps/desktop/src/aiwb/v2/context_step.py"
+    },
+    {
       "path": "test_team_setup.py",
       "source": "apps/desktop/tests/test_team_setup.py"
     },
@@ -816,6 +820,18 @@
     {
       "path": "test_next_card.py",
       "source": "apps/desktop/tests/test_next_card.py"
+    },
+    {
+      "path": "test_copy_damage.py",
+      "source": "apps/desktop/tests/test_copy_damage.py"
+    },
+    {
+      "path": "test_context_forgiving.py",
+      "source": "apps/desktop/tests/test_context_forgiving.py"
+    },
+    {
+      "path": "test_context_step.py",
+      "source": "apps/desktop/tests/test_context_step.py"
     }
   ],
   "zip_timestamp": [

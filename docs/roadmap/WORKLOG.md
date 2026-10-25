@@ -16,7 +16,93 @@ sudo apt-get install -y xvfb python3-tk imagemagick xdotool; pip install jsonsch
 
 Baseline before 5.11.0 (main `5066fe3`, tag `desktop-v5.10.0`): 765 unit tests OK (5 skipped), 46/46 GUI smoke.
 
-## 5.11.0 — Home = cockpit (branch `feat/v5.11.0-home-cockpit`)
+## 5.11.0 — DONE
+
+PR #67 merged (main `50967f0`), tag `desktop-v5.11.0` pushed (release-desktop.yml builds the Release). CI run 1 failed
+only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smokes pass with PYTHONIOENCODING=cp1252.
+
+## 5.12.0 — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
+
+Owner tested 5.11.0 on real Windows + GPT (2026-10-25). Audit B1–B8 in ROADMAP §1b, evidence `docs/audit/owner-5.11/`.
+The old Quick-mode plan (below, branch `feat/v5.12.0-quick-mode`, only a WORKLOG commit) moved to **5.14.0**.
+Order now: 5.12 real answers → 5.13 one-screen redesign → 5.14 Quick → 5.15 gate → mobile.
+
+Root causes (verified in code):
+- B1: rendered-chat copy on Windows ends every line outside code fences with `\` (Markdown hard break) and escapes
+  `_`; `intake/normalize.py` has no rule for it.
+- B2: `intake/preview.py` says "Context request ✓" on the marker alone; `context_request.parse_request` needs
+  `type` + `files` → GPT wrote `required_files`, no `type` (the task prompt never shows the format: only
+  `handoff.py:335` "answer ONLY with an AIWB_CONTEXT_REQUEST"; `CAPABILITY_LINE` is only in the 1.x prompt).
+  Even when parsed, `controller.route_answer` only notes an event and points to "Files & Context" (gone in 5.11);
+  guide.steps has no step for it → card never changes.
+
+Design:
+1. `normalize.strip_copy_damage(text)` (new, in normalize()): outside ``` fences, if ≥60 % of non-empty lines end
+   with `\` (or ` /`-free `/`?) → drop that one char; unescape `\_ \* \[ \] \# \-` outside fences; fix list
+   reported (`copy_damage:N`). Applied before every parser (charter, files, context, handoff).
+2. `WHOLE_ANSWER_RULE` (handoff.py) = "Write your WHOLE answer inside ONE code block fenced with five backticks
+   (`````) and copy it with that block's Copy button" — added to task, charter, fix, continue, context prompts.
+3. context_request: forgiving parse (`type` optional with marker; synonyms required_files/requested_files/
+   files_needed/paths/context_files/file_requests; string item → full_file; folder path `x/` → files under it
+   (cap MAX_ITEMS); key `file`/`filename` → path) + `fixes` list. Preview uses the real parser.
+   Task prompt §7 gets the short exact format.
+4. Guide: context request stored on the handoff (`context_request` {files, questions, fixes, at}); new step
+   `context:<hid>` (agent = that AI): "<Name> asked for N file(s)" → actions copy_context (pack_inline, ZIP when
+   big), sent, paste. Cleared on the next answer for that handoff. Controller message points to the card.
+5. Tests: test_copy_damage.py, test_context_forgiving.py, test_context_step.py; corpus + owner answer (clean +
+   backslash-damaged); smoke gui_context_smoke.py pasting via the real clipboard.
+6. Docs/version 5.12.0, CHANGELOG, README, USER_GUIDE, install.ps1 + release_manifest, ROADMAP ✅, PR→CI→tag.
+
+Progress (tick = committed and pushed):
+
+- [x] 0 ROADMAP §1b + 5.12–5.15 table (b89cac5, 17482e0); evidence docs/audit/owner-5.11/ (c6948b5…e07ed42)
+- [x] 1 strip_copy_damage + test (14fe114, 72d3791 never inside fences; test 7d86a7d; unit 782 OK)
+- [x] 2 WHOLE_ANSWER_RULE (aeacabb handoff.build_prompt, 291f1ee Guide.perform wraps every prompt, 556bc6c shell do_copy/start prompt; test 413ca5e)
+- [x] 3 forgiving context parser (48856a3, folders 7010d3a, damaged copy 61e1f74), preview = parser (e4781e6), prompt format (9a48fe2), tests 6b73668 35c849e, JSON comma+comment 546f8f7; unit 795 OK
+- [x] 4 v2/context_step.py (9153a38), controller links request→handoff (9467def), guide step + copy_context/context_sent + clear on answer (ad512e0, 664d24b), card+shell copy (a78c4df, 9548633), test_context_step f93ec7a; unit 801 OK
+- [x] 5 corpus F25 C31 X01-X04 (3432f2f builder, a1c392b replay kind context, 9a91f09…fc0f067 files, 4f9f3dd shape) 60 cases OK; gui_context_smoke.py 13fcb7a PASS; charter smoke expected the raw prompt (Copy now adds the answer rule) → 4941281; full GUI 47/47
+- [~] 6 version bump (3e66b2c…9b033fc via tools/bump_desktop_release.py in /tmp copy, one file per checkpoint), checklist cc68083, CHANGELOG 2b86858, README 9724c98, USER_GUIDE 4fb08bc, gate "✓ preview ⇒ card moves" (0d0d05a, d6a9935), ROADMAP e74f362; unit 802 OK, GUI 47/47 → next: PR → CI → merge → tag desktop-v5.12.0
+
+## 5.14.0 (planned, was 5.12.0) — Quick mode
+
+Roadmap: New Project ▾ → "Quick — one AI chat": describe the work → prompt in the chosen format → paste text or ZIP →
+preview/diff → transactional apply with Restore; same intake engine as 5.10.0; later "convert to a multi-AI project"
+without losing files. Gate: full Quick smoke with the three formats; test Quick → Guided conversion.
+
+Design (decided 2026-10-25, after reading the code):
+
+1. New pure module `aiwb/quick.py` (no Tk): `QUICK_FORMATS` (aiwb/json/zip), `build_prompt(task, files, fmt, name,
+   goal, contents)` (short 1.x-style prompt: task, project file list, selected file contents, the delivery rules of
+   the format = `v2.handoff.FILE_RULES/JSON_RULES/ZIP_RULES` without the handoff manifest), `read_answer(text|zip)` →
+   `aiwb.intake.answer_files.extract/zip_files` (all formats, fixes listed), `plan(root, files)` → per file
+   new/changed/same + unified diff (no write), `apply(root, files, summary)` → `AI_Workbench.apply_changes_transactionally`
+   is in the app module, so quick.py gets an `apply_fn` callback (the app passes its transactional apply → Restore
+   Manager sees it). Quick state in `.workbench/quick.json` (mode, task history, format, rounds).
+2. New `aiwb/ui/quick_window.py` — one page/window, 3 steps on one screen: (1) Describe the work + format radio +
+   "Copy prompt" (2) PastePanel (live diagnosis, Load ZIP…) "Preview files" (3) file list with new/changed + diff
+   view + "Apply" (+ "Restore last apply"). ≤ 8 controls in view.
+3. Toolbar New Project ▾ gets "Quick — one AI chat…" (structure5 + UI_TREE): asks name + parent + goal (small form),
+   creates the folder (`create_project_folder`), marks it quick, opens the Quick page. Home for a quick project:
+   the card shows the Quick step (no Mission Map lanes needed) — decide in step 4.
+4. "Convert to a multi-AI project…": opens the wizard in start mode (team + format), applies `team_setup.apply_start`;
+   files on disk untouched; quick.json marked converted; Home then shows the guided card.
+5. Tests: `test_quick.py` (prompt per format, read answers of the 3 formats + markdown + zip, plan/diff, apply +
+   restore via apply_fn stub, conversion keeps files); smoke `gui_quick_smoke.py` (real widgets, 3 formats, Restore,
+   convert → Guided card).
+6. Docs: UI_TREE/structure5, UI_MAP regen, screenshots `docs/audit/screens/v5.12-quick/`, CHANGELOG, README, USER_GUIDE,
+   install.ps1 + release_manifest (quick.py, ui/quick_window.py, test_quick.py), version 5.12.0, ROADMAP.
+
+Progress (tick = committed and pushed):
+
+- [ ] 1 aiwb/quick.py + test_quick.py
+- [ ] 2 ui/quick_window.py
+- [ ] 3 toolbar entry + create flow
+- [ ] 4 Home for quick projects
+- [ ] 5 convert to multi-AI
+- [ ] 6 smoke gui_quick_smoke.py, full run green
+- [ ] 7 docs, version, PR → CI → merge → tag → release
+
+## 5.11.0 (archive) — Home = cockpit (branch `feat/v5.11.0-home-cockpit`)
 
 Design (decided 2026-10-25):
 

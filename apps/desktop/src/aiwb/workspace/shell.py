@@ -403,7 +403,7 @@ class WorkspaceWindow:
             return None
         if out.get("prompt"):
             self.last_prompt, self.last_handoff_id = out["prompt"], out.get("handoff_id", "")
-            if action == "copy":
+            if action in ("copy", "copy_context"):  # 5.12.0: the requested files go to the clipboard too
                 self.clipboard(out["prompt"])
         self.show(self.wc.section)
         self.status_var.set(out["message"])
@@ -1067,6 +1067,8 @@ class WorkspaceWindow:
         if not text.strip():
             self.status_var.set(self.wc.tr(("There is no prompt to copy yet.", "هنوز پرامپتی برای کپی وجود ندارد.")))
             return ""
+        from ..v2.handoff import with_answer_rule
+        text = with_answer_rule(text)   # 5.12.0 (B1): the answer comes back in one code block
         self.clipboard(text)
         if self.last_handoff_id:
             self._guard(lambda: self.wc.ctl.mark_copied(self.last_handoff_id))
@@ -1094,6 +1096,8 @@ class WorkspaceWindow:
         prompt = self._guard(lambda: self.wc.ctl.charter_start_prompt(agent_id))
         if not prompt:
             return ""
+        from ..v2.handoff import with_answer_rule
+        prompt = with_answer_rule(prompt)
         self.last_prompt, self.last_handoff_id = prompt, ""
         self.clipboard(prompt)
         self.status_var.set(f"Start prompt for {agent_id} copied — paste it into that AI's own new chat.")

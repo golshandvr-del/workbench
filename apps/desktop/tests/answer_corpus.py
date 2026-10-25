@@ -10,7 +10,7 @@ Scenario (deterministic, so stored answers replay exactly):
   placeholder attempt id ``ATTEMPT`` below; replay puts the real one in its place (every model repeats the id the prompt
   gave it).
 
-``corpus.json`` lists every case: ``id``, ``file``, ``kind`` (charter | files), ``style`` (which chat app / habit it
+``corpus.json`` lists every case: ``id``, ``file``, ``kind`` (charter | files | context — 5.12.0), ``style`` (which chat app / habit it
 imitates), ``source`` and ``expect`` — ``accept`` (charter → proposal; files → linked, staged, no error in the smart
 check) or ``fix_prompt`` / ``continue`` (refused, with a prompt the user can send back).
 """
@@ -82,15 +82,30 @@ class Scenario:
         return self.c.project.handoffs.get(step["ref"])["attempt_id"]
 
 
+def _card(sc: "Scenario") -> tuple:
+    """What Home's Next-step card shows: the first guide step's key, title and actions."""
+    st = sc.g.steps()
+    return (st[0]["key"], st[0]["title"], tuple(a["id"] for a in st[0]["actions"])) if st else ()
+
+
+def _preview_ok(sc: "Scenario", text: str) -> bool:
+    """5.12.0 (owner audit B2/B8): the paste box's live diagnosis says ✓ for this text."""
+    from aiwb.intake.preview import preview
+    return bool(preview(text, sc.c.state()).ok)
+
+
 def replay(case: dict[str, Any]) -> dict[str, Any]:
     """Paste one corpus answer the way the user would; returns ``{"ok", "kind", "message", "prompt", ...}``."""
     sc = Scenario()
     try:
         raw = answer_bytes(case)
         if case["kind"] == "charter":
-            out = sc.paste_charter(raw.decode("utf-8"))
+            text = raw.decode("utf-8")
+            pv, before = _preview_ok(sc, text), _card(sc)
+            out = sc.paste_charter(text)
             ok = out["kind"] == "proposal"
-            res = {"kind": out["kind"], "message": out["message"], "prompt": out.get("prompt", "")}
+            res = {"kind": out["kind"], "message": out["message"], "prompt": out.get("prompt", ""),
+                   "preview_ok": pv, "card_changed": _card(sc) != before}
             if ok:
                 p = next(iter(sc.c.state()["proposals"].values()))
                 res["tasks"] = len([o for o in p["operations"] if o["operation"] == "create_task" and o["valid"]])
@@ -104,10 +119,22 @@ def replay(case: dict[str, Any]) -> dict[str, Any]:
             text = text.replace(ATTEMPT, att)
         else:
             text = raw.decode("utf-8").replace(ATTEMPT, att)
+        pv, before = _preview_ok(sc, text), _card(sc)
         out = sc.g.perform(step["key"], "paste", text=text)
+        seen = {"preview_ok": pv, "card_changed": _card(sc) != before}
+        if case["kind"] == "context":
+            # 5.12.0 (owner audit B2): a context request is usable when the card turns into the files step and the
+            # files can be copied for the chat
+            now = next((s for s in sc.g.steps() if s["key"] == step["key"]), {})
+            ok = out["kind"] == "context_request" and now.get("actions", [{}])[0].get("id") == "copy_context"
+            prompt = ""
+            if ok:
+                prompt = sc.g.perform(step["key"], "copy_context")["prompt"]
+                ok = prompt.startswith(f"AIWB_ATTEMPT_ID: {att}")
+            return {"ok": ok, "kind": out["kind"], "message": out["message"], "prompt": prompt, "errors": [], **seen}
         errors = [p for p in out.get("problems", []) if p["severity"] == "error"]
         ok = out["kind"] == "handoff" and bool(out.get("staged")) and not errors
         return {"ok": ok, "kind": out["kind"], "message": out["message"], "prompt": out.get("prompt", ""),
-                "staged": out.get("staged", []), "errors": [f"{p['code']}: {p['message']}" for p in errors]}
+                "staged": out.get("staged", []), "errors": [f"{p['code']}: {p['message']}" for p in errors], **seen}
     finally:
         sc.close()

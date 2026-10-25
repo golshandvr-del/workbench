@@ -266,6 +266,33 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              "; ".join(h.get("stale_reasons", []))[:300] or "The task changed after the prompt was made.",
                              [_a("accept_handoff", "Accept anyway…", "reason"), _a("reject_handoff", "Reject…", "reason")],
                              ref=h["handoff_id"], rank=11, task_id=h["task_id"]))
+        elif h["status"] in ("prepared", "prompt_exported", "response_received", "parsed") and h.get("context_request"):
+            # 5.12.0 (owner audit B2): the AI asked for files — the card gives them, then waits for the real answer
+            from .context_step import summary_line
+            req = h["context_request"]
+            n = len(req.get("items") or [])
+            what = f"{n} file{'s' if n != 1 else ''}" if n else f"{len(req.get('questions') or [])} answer(s)"
+            if not req.get("prepared_at"):
+                title, rank = f"{who} asked for {what} for {label}", 19
+                acts = [_a("copy_context", "Copy the files for the chat", primary=True),
+                        _a("paste", "Paste the answer", "text"), _a("copy", "Copy the task prompt again")]
+                why = ("Copy them, paste them into the same chat and send. ")
+            elif not req.get("sent_at"):
+                title, rank = f"Send the files {who} asked for ({label})", 19
+                acts = [_a("context_sent", "I sent them", primary=True), _a("copy_context", "Copy the files again"),
+                        _a("paste", "Paste the answer", "text")]
+                why = ("They are on the clipboard" + (" and in a ZIP to attach" if req.get("kind") == "zip" else "")
+                       + ": paste them into the same chat and send. ")
+            else:
+                title, rank = f"Paste {who}'s answer for {label}", 20
+                acts = [_a("paste", "Paste the answer", "text"), _a("copy_context", "Copy the files again")]
+                why = "The files were sent. "
+            acts.append(_a("abandon", "Drop this prompt…", "reason"))
+            out.append(_step(f"handoff:{h['handoff_id']}", "paste" if req.get("sent_at") else "prompt", title,
+                             f"{who} needs more context before it can answer: {summary_line(req)}. " + why
+                             + "Then paste its whole answer here. Workbench never sends anything itself.",
+                             acts, agent=who, ref=h["handoff_id"], prompt=h.get("prompt", ""), rank=rank,
+                             task_id=h["task_id"], context_request=req))
         elif h["status"] in ("prepared", "prompt_exported", "response_received", "parsed"):
             copied, sent = _copied(st, h), _sent(st, h)
             if not copied:
@@ -459,7 +486,15 @@ class Guide:
         self.ctl._dirty("validation waived")
         return out
 
-    def perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:  # noqa: C901
+    def perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:
+        """Do one action of a step. 5.12.0 (B1): every prompt handed back asks for the whole answer in one code block."""
+        out = self._perform(key, action, **inp)
+        if isinstance(out, dict) and isinstance(out.get("prompt"), str):
+            from .handoff import with_answer_rule
+            out["prompt"] = with_answer_rule(out["prompt"])
+        return out
+
+    def _perform(self, key: str, action: str, **inp: Any) -> dict[str, Any]:  # noqa: C901
         step = self.find(key)
         if action not in [a["id"] for a in step["actions"]]:
             raise ModelError(f"{action!r} is not possible for this step")
@@ -483,6 +518,32 @@ class Guide:
                 c.confirm_sent(ref)
             else:
                 self._set_guide(seen=True, manager_sent_at=now_utc())
+            return {"message": "Recorded as sent. Paste the answer when you have it."}
+        if action == "copy_context":
+            from .context_step import prepare
+            out = prepare(self.p.store, c.root, ref)
+            att = (self.p.handoffs.get(ref) or {}).get("attempt_id", "")
+            if att:
+                try:
+                    self.p.workflow.mark_context_prepared(att, kind=out["kind"])
+                except ModelError:
+                    pass
+            msg = f"{len(out['ready'])} file(s) copied for the chat"
+            if out["zip_path"]:
+                msg = f"{len(out['ready'])} file(s) packed in {out['zip_path']} — attach that ZIP and paste the note"
+            if out["missing"]:
+                msg += ". Not available: " + ", ".join(out["missing"][:4]) + (" …" if len(out["missing"]) > 4 else "")
+            return {"message": msg + ". Paste it into the same chat and send; then paste its answer here.",
+                    "prompt": out["text"], "zip_path": out["zip_path"], "context_files": out["ready"]}
+        if action == "context_sent":
+            from .context_step import mark_sent
+            mark_sent(self.p.store, ref)
+            att = (self.p.handoffs.get(ref) or {}).get("attempt_id", "")
+            if att:
+                try:
+                    self.p.workflow.mark_context_sent(att)
+                except ModelError:
+                    pass
             return {"message": "Recorded as sent. Paste the answer when you have it."}
         if action == "dismiss":
             self._set_guide(**{"continue": None})
@@ -735,11 +796,17 @@ class Guide:
                                                 "for": step["key"], "at": now_utc()}})
                 out["kind"] = "truncated"
                 return out
+        if r.kind == "context_request":
+            self._set_guide(**{"continue": None})   # 5.12.0: the card now shows the files step for that handoff
+            out["handoff_id"] = r.reference_id if r.reference_id in self.ctl.state()["handoffs"] else ""
+            return out
         if r.kind in ("proposal", "handoff", "charter_rejected"):
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):
                 self._set_guide(seen=True)
             if r.kind == "handoff":
+                from .context_step import clear
+                clear(self.p.store, r.reference_id)   # 5.12.0: the files the AI asked for were used
                 from .files import stage
                 staged = stage(self.p.store, r.reference_id, text)
                 if staged:

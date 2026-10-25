@@ -1,0 +1,31 @@
+AIWB\_ATTEMPT\_ID: att-20261022-120000-0a1b2c3d\
+
+<<<AIWB\_CONTEXT\_REQUEST>>>\
+{\
+  "schema\_version": "1.0",\
+  "handoff\_id": "HO-0006",\
+  "task\_id": "TASK-0002",\
+  "task\_revision": 1,\
+  "attempt\_id": "att-20261022-120000-0a1b2c3d",\
+  "required\_files": [\
+    {\
+      "path": "src/contracts/models.py",\
+      "reason": "Required to implement CatiaComService and MockCatiaService against the exact existing contract models, validation rules, field names, and types."\
+    },\
+    {\
+      "path": "src/contracts/\_\_init\_\_.py",\
+      "reason": "Required to verify the public contract exports and use the intended import interface."\
+    },\
+    {\
+      "path": "docs/contracts/catia-bridge-spec.md",\
+      "reason": "Required to implement the specified ICatiaService interface and preserve the accepted service behavior."\
+    },\
+    {\
+      "path": "src/catia\_bridge/",\
+      "reason": "Provide the directory listing and the complete contents of all existing files so the implementation can extend the current architecture without overwriting established functionality."\
+    }\
+  ],\
+  "reason": "The handoff identifies the contract files and interface specification as prerequisites but does not include their contents. Implementing the COM automation engine, mock service, parametric builders, and CATPart/STEP/STL exports without inspecting these files would require inventing interfaces and could violate the strict contract requirement.",\
+  "requested\_action": "Return the requested file contents and directory listing. Do not modify files."\
+}\
+<<<AIWB\_END\_CONTEXT\_REQUEST>>>\

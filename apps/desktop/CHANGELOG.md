@@ -1,3 +1,29 @@
+## [5.12.0] - 2026-10-25
+
+### Real chat answers work (Roadmap 5.12.0, owner audit of 5.11.0 — B1, B2, B8)
+
+- **A rendered chat answer copied on Windows works** (B1). Copying the *rendered* text of a ChatGPT answer on Windows
+  ends every line with `\` and escapes `_`. Workbench now removes that damage before reading — never inside a code
+  block — and lists it as an auto-fix.
+- **Every prompt asks for the whole answer in one code block** fenced with five backticks, to copy with that block's
+  Copy button: the answer comes back exactly as written.
+- **"The AI asks for files" is a real step, not a dead end** (B2). Before, the paste box said "Context request ✓" and
+  then nothing happened. Now:
+  - the request is read the way chat models write it — `required_files`, `paths`, plain paths, folders, no `type`;
+  - the paste preview uses the same reader, so ✓ means it really works;
+  - the task prompt shows the exact request format;
+  - Home's card turns into **"<AI> asked for N files"** → *Copy the files for the chat* (as text, or a ZIP to attach
+    when they are big; secrets never leave) → *I sent them* → *Paste the answer*.
+- JSON repair also removes a trailing comma that a comment follows.
+
+### Tests
+
+- `gui_context_smoke.py` (the gate): the owner's real GPT answer, put on the real clipboard as a Windows rendered copy,
+  is pasted into Home's inline panel and moves the card through the files step to the accepted delivery.
+- `test_copy_damage.py`, `test_context_forgiving.py`, `test_context_step.py`. The answer corpus has 60 cases. It now
+  includes the owner's real answer (clean and as a Windows copy) and Windows-copied files and charter, and it must
+  always hold owner answers (B8).
+
 ## [5.11.0] - 2026-10-25
 
 ### Core-path repair, step 4: one clear work page — Home is the cockpit (Roadmap 5.11.0)

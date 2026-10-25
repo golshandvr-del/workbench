@@ -47,6 +47,39 @@ ZIP_RULES = [
 ]
 
 
+# 5.12.0 (owner audit B1): text a chat app *renders* is damaged when it is selected and copied on Windows (every line
+# ends with "\\", "_" becomes "\\_"); the Copy button of a code block copies it verbatim. So every prompt Workbench
+# hands to a chat asks for the whole answer in ONE code block with a five-backtick fence (longer than the four-backtick
+# file fences inside it, so those stay intact). Workbench still repairs a damaged copy (intake.normalize).
+ANSWER_RULE_MARK = "## How to send your answer back"
+WHOLE_ANSWER_RULE = [
+    ANSWER_RULE_MARK,
+    "- Put your WHOLE answer — the AIWB_ATTEMPT_ID line, every marker, every file and the manifest — inside ONE code "
+    "block that starts with a line of five backticks (`````text) and ends with a line of five backticks (`````).",
+    "- Write nothing before or after that block. The user copies it with the block's Copy button; text outside a code "
+    "block is damaged when it is copied.",
+]
+
+
+def with_answer_rule(prompt: str) -> str:
+    """``prompt`` + :data:`WHOLE_ANSWER_RULE`, once (idempotent; empty prompts stay empty)."""
+    if not prompt or not prompt.strip() or ANSWER_RULE_MARK in prompt:
+        return prompt
+    return prompt.rstrip() + "\n\n" + "\n".join(WHOLE_ANSWER_RULE)
+
+
+# 5.12.0 (owner audit B2): the task prompt shows the exact shape of a context request (before, it only named it and
+# the chat had to guess — GPT wrote "required_files" and no "type"). Workbench also reads the usual guesses.
+CONTEXT_REQUEST_RULES = [
+    "- If you need a file that is not here, answer ONLY with this block (nothing else) and wait for the files:",
+    "<<<AIWB_CONTEXT_REQUEST>>>",
+    '{"schema_version": "1.0", "type": "AIWB_CONTEXT_REQUEST", "attempt_id": "<the AIWB_ATTEMPT_ID above>", '
+    '"reason": "why you need them", "files": [{"path": "relative/path.ext", "mode": "full_file"}, '
+    '{"path": "a/folder/"}], "questions": ["anything you must ask the user"]}',
+    "<<<AIWB_END_CONTEXT_REQUEST>>>",
+]
+
+
 def format_rules(state: dict[str, Any], agent_id: str = "") -> list[str]:
     """The delivery rules for the answer format the user chose (per AI, else for the project; default AIWB)."""
     agent = (state.get("agents") or {}).get(agent_id) or {}
@@ -332,7 +365,7 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
     else:
         lines += _section("6. Previous handoff", ["- This is the first handoff for this task."])
     lines += _section("7. Relevant files", [f"- {p}" for p in t.get("context_refs", [])]
-                      + ["- If you need a file that is not here, answer ONLY with an AIWB_CONTEXT_REQUEST."])
+                      + CONTEXT_REQUEST_RULES)
     lines += _section("8. Conflicts / do not assume", (t.get("flags") or [])
                       + ["- Do not claim that you ran tests or builds; Workbench records real evidence separately."])
     if h.get("note"):
@@ -350,7 +383,7 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
                     "recommended_next_action": "…"}, ensure_ascii=False, indent=1),
         "<<<AIWB_END_HANDOFF>>>",
         "- Keep separate: done, proposed, not run, needs decision."])
-    return "\n".join(lines)
+    return with_answer_rule("\n".join(lines))
 
 
 def sha256_text(text: str) -> str:

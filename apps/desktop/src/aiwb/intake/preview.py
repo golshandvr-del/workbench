@@ -82,8 +82,22 @@ def _preview(text: str, state: dict[str, Any] | None) -> Preview:
         return p
     if PROPOSAL_RE.search(text):
         return Preview("proposal", True, "Manager proposal ✓ — paste it to review its changes.")
-    if CONTEXT_RE.search(text):
-        return Preview("context_request", True, "Context request ✓ — the model asks for files or answers.")
+    from ..context_request import ContextRequestError, find_request, parse_request
+    if CONTEXT_RE.search(text) or find_request(text) is not None:
+        # 5.12.0 (owner audit B2): the same reader as the import — ✓ only when importing works
+        try:
+            req = parse_request(text)
+        except ContextRequestError as exc:
+            return Preview("context_request", False, f"Context request ✗ · {exc}", problems=[str(exc)])
+        names = [i.path for i in req.items]
+        p = Preview("context_request", True, counts={"files": len(names), "questions": len(req.questions)},
+                    fixes=list(req.fixes), paths=names)
+        what = [_plural(len(names), "file")] if names else []
+        what += [_plural(len(req.questions), "question")] if req.questions else []
+        p.line = "Context request ✓ · the model asks for " + " and ".join(what)
+        if p.fixes:
+            p.line += f" · {_plural(len(p.fixes), 'auto-fix', 'auto-fixes')}"
+        return p
     from .answer_files import extract
     ex = extract(text)
     paths = [f["path"] for f in ex.files]

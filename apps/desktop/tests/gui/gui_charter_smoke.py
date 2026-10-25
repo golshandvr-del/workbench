@@ -49,7 +49,8 @@ def main() -> None:
             assert "Plan & Tasks" in labels and "Project settings" in labels, labels
             prompt = w.dialog_charter({"goal": "Offline todo app for desktop and mobile"})
             assert "AIWB_PROJECT_CHARTER" in prompt and "how many AI chats work in parallel" in prompt
-            assert w.do_copy() == root.clipboard_get() == prompt
+            from aiwb.v2.handoff import with_answer_rule  # 5.12.0 (B1): Copy adds the whole-answer rule
+            assert w.do_copy() == root.clipboard_get() == with_answer_rule(prompt)
             good = json.loads(FIXTURE.read_text(encoding="utf-8"))
             good["base_state_revision"] = ctl.state()["state_revision"]
 

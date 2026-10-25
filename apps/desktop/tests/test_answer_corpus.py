@@ -55,7 +55,10 @@ class CorpusShapeTests(unittest.TestCase):
         self.assertTrue(any(c["expect"] == "continue" for c in cases), "a cut-off answer")
         self.assertTrue(any("copy" in c["style"].lower() for c in cases), "chat copy damage")
         self.assertTrue(any(c["file"].endswith(".zip") for c in cases), "a ZIP")
-        self.assertTrue({"charter", "files"} <= {c["kind"] for c in cases})
+        self.assertTrue({"charter", "files", "context"} <= {c["kind"] for c in cases})
+        # 5.12.0 (owner audit B8): real answers of the owner, and the Windows rendered copy, are part of the corpus
+        self.assertTrue(any(c["source"].startswith("owner") for c in cases), "an owner answer")
+        self.assertTrue(any("Windows" in c["style"] and c["kind"] == k for c in cases for k in ("files",)), "win copy")
         ids = [c["id"] for c in cases]
         self.assertEqual(len(ids), len(set(ids)))
         for c in cases:
@@ -118,6 +121,16 @@ class CorpusReplayTests(unittest.TestCase):
                     self.assertRegex(detail, r"t9|agent-designer|src/cli/main\.py", c["id"])
                 if c["expect"] == "continue":
                     self.assertRegex(r["prompt"] or r["message"], r"(?i)cut off|continue|again")
+
+    def test_preview_check_means_the_card_moves(self):
+        """5.12.0 gate (owner audit B2/B8): whenever the paste box says ✓, pasting changes Home's Next-step card —
+        never again "Context request ✓" followed by nothing; and every accepted answer was previewed with ✓."""
+        for c, r in self.results.values():
+            with self.subTest(c["id"]):
+                if r["preview_ok"]:
+                    self.assertTrue(r["card_changed"], f"{c['file']}: ✓ in the preview but the card did not change")
+                if r["ok"]:
+                    self.assertTrue(r["preview_ok"], f"{c['file']}: accepted, but the preview did not say ✓")
 
     def test_charters_keep_the_plan(self):
         for cid, (c, r) in self.results.items():
