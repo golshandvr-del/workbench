@@ -49,6 +49,9 @@ Progress (tick = committed and pushed):
 - [x] 2 next_card.py + test_next_card.py (3196e07…0aae0cb)
 - [x] 3/4 Home card, Task details More, lane click (acec763…95f168c, fix fb08e88; live path New→charter→accept→prompt→answer→file all from Home OK)
 - [ ] 5 Workbench 3 sections
+  - test run after steps 1-4,6 (d0ab492): unit 774 OK; GUI 42/46 — guide (fixed aa801f1), owner_path (expects
+    Workbench after Create → rewrite to Home in step 8), v5_map (regen UI_MAP after step 5), v5_polish ("two homes":
+    Approve/Cancel were step labels on the card → fixed by ui_map `_aiwb_dynamic` ab75324/48437ac)
 - [x] 6 Create → Home (2f51d00)
 - [ ] 7 audit 8 visible
 - [ ] 8 smokes updated, all green
