@@ -63,6 +63,13 @@ class CardModelTests(unittest.TestCase):
         self.assertIn("Core dev 2 has nothing to do", idle["title"])
         self.assertIn("Get the Project Charter", idle["explain"])
 
+    def test_focus_on_one_step(self):
+        steps = [charter(), handoff("agent-core-dev", 30), {**handoff("agent-core-dev", 31), "key": "handoff:H-2"}]
+        m = card_model(steps, NAMES, focus="agent-core-dev", step_key="handoff:H-2")
+        self.assertEqual(m["key"], "handoff:H-2")
+        gone = card_model(steps, NAMES, focus="agent-core-dev", step_key="handoff:closed")
+        self.assertEqual(gone["key"], "handoff:H-agent-core-dev")   # a closed step falls back to the AI's queue
+
     def test_paste_only_step_has_no_primary_button(self):
         st = _step("continue", "paste", "Paste", "", [_a("paste", "Paste the rest", "text")])
         m = card_model([st], NAMES)
