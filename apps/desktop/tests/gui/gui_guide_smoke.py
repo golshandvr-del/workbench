@@ -86,7 +86,7 @@ def main() -> None:
             card.refresh()
             card.do_next()
             root.update()
-            assert "Paste agent-core-dev's answer" in w.next_var.get(), w.next_var.get()
+            assert f"Paste {core_name}'s answer" in w.next_var.get(), w.next_var.get()  # 5.13.0 (B4): the name
             # the strip's link stays inside the window
             app.shell.show("workbench")
             for wd in (1024, 1280):
