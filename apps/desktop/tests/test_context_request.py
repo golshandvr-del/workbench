@@ -41,14 +41,21 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(r2.questions, ["q"])
 
     def test_rejects(self):
-        for bad in ("no block", req_text([]), req_text([{"path": "a", "mode": "range"}]),
-                    req_text([{"path": "a", "mode": "symbol", "symbol": "1x"}]),
-                    req_text([{"path": "a", "mode": "weird"}]),
+        # only what is really unreadable or asks for nothing is refused (5.12.0: the reader is forgiving)
+        for bad in ("no block", req_text([]), req_text([{"mode": "full_file"}]), req_text([42]),
                     "<<<AIWB_CONTEXT_REQUEST>>>{bad<<<AIWB_END_CONTEXT_REQUEST>>>"):
             with self.assertRaises(cr.ContextRequestError):
                 cr.parse_request(bad)
         with self.assertRaises(cr.ContextRequestError):
             cr.parse_request(req_text([{"path": "a"}], schema_version="2.0"))
+
+    def test_unclear_items_fall_back_to_the_whole_file(self):
+        # 5.12.0 (owner audit B2): a range without lines, a bad symbol or an unknown mode → full file, fix listed
+        for item in ({"path": "a", "mode": "range"}, {"path": "a", "mode": "symbol", "symbol": "1x"},
+                     {"path": "a", "mode": "weird"}):
+            r = cr.parse_request(req_text([item]))
+            self.assertEqual([(i.path, i.mode) for i in r.items], [("a", "full_file")], item)
+            self.assertTrue(r.fixes, item)
 
     def test_free_text_hints(self):
         self.assertIn("src/app.py", cr.free_text_hints("Please send me the file `src/app.py` so I can fix it."))
