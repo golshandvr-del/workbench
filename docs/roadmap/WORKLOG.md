@@ -47,9 +47,9 @@ Progress (tick = committed and pushed):
 
 - [x] 1 PastePanel (ceee371)
 - [x] 2 next_card.py + test_next_card.py (3196e07…0aae0cb)
-- [ ] 3/4 Home card, Task details More, lane click
+- [~] 3/4 Home card, Task details More, lane click (acec763…95f168c committed; live check pending)
 - [ ] 5 Workbench 3 sections
-- [ ] 6 Create → Home
+- [~] 6 Create → Home (2f51d00 committed; live check pending)
 - [ ] 7 audit 8 visible
 - [ ] 8 smokes updated, all green
 - [ ] 9 docs, version, PR → CI → merge → tag → release
