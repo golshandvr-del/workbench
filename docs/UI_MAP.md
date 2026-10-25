@@ -14,7 +14,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
 | Home | 4 | 0 | 11 | 6 | 0 |
-| Projects | 16 | 3 | 15 | 8 | 10 |
+| Projects | 14 | 2 | 9 | 7 | 10 |
 | Projects › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Projects › Tools › Run & Report | 2 | 0 | 11 | 8 | 0 |
 | Agents | 7 | 0 | 8 | 8 | 2 |
@@ -81,16 +81,6 @@ Audit:
         - Check & import answer [button]
       - Queue of each AI (double-click a step to do it) [section]
       - Recent activity [section]
-    - Timeline [tab]
-      - Filter [button]
-      - Lanes by agent [button]
-      - Milestones and versions [section]
-        - New milestone… [button]
-        - Accept milestone [button]
-        - More [menu]
-          - Propose version… [item]
-          - Record commit / tag / release… [item]
-      - Timeline (wheel or +/- to zoom, drag to pan, click an event) [section]
     - Project settings [tab]
       - Project details [section]
       - AI team [section]
