@@ -203,7 +203,17 @@ def parse_request(text: str) -> ContextRequest:
     if body is None:
         raise ContextRequestError("No AIWB_CONTEXT_REQUEST block found.")
     fixes: list[str] = []
-    data = _loads(body, fixes)
+    try:
+        data = _loads(body, fixes)
+    except ContextRequestError:
+        # 5.12.0 (B1): the raw markers were found, but the copy damaged the JSON — read the repaired text
+        from .intake.normalize import normalize
+        n = normalize(text or "")
+        m = BLOCK_RE.search(n.text)
+        if not n.fixes or not m:
+            raise
+        data = _loads(m.group(1), fixes)
+        fixes.extend(f for f in n.fixes if f.split(":")[0] in ("copy_damage", "markdown_escapes", "nbsp", "zero_width"))
     if isinstance(data, list):
         data = {"files": data}
         fixes.append("a bare list was read as files")
