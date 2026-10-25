@@ -411,6 +411,29 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                          agent=MANAGER, prompt=continue_project_prompt(upd, st), rank=90))
     out += github_steps(ctl, st)  # optional blue nodes never hide the manager update (roadmap 4.5.0)
     out.sort(key=lambda s: (s["rank"], s["key"]))
+    return _in_user_words(st, out)
+
+
+def _in_user_words(st: dict[str, Any], out: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """5.13.0 (owner audit B4): what the user reads names the AIs as the user named them — never ``agent-…``.
+
+    Only ``title``, ``explain`` and action labels change; prompts (read by the AIs) and ``agent_id`` stay as they are.
+    """
+    names = {aid: str((a or {}).get("name") or "").strip() for aid, a in (st.get("agents") or {}).items()}
+    names = {aid: n for aid, n in names.items() if n and n != aid}
+    if not names:
+        return out
+    order = sorted(names, key=len, reverse=True)  # agent-dev-2 before agent-dev
+
+    def h(text: str) -> str:
+        for aid in order:
+            if aid in text:
+                text = text.replace(aid, names[aid])
+        return text
+
+    for s in out:
+        s["title"], s["explain"] = h(s["title"]), h(s["explain"])
+        s["actions"] = [{**a, "label": h(a["label"])} for a in s["actions"]]
     return out
 
 
