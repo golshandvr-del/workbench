@@ -9912,7 +9912,8 @@ class WorkbenchApp:
         if getattr(self, "workbench_empty", None) is not None:
             self.workbench_empty.pack_forget()
         self.workspace_window = WorkspaceWindow(self.root, WorkspaceController(ctl, tools=tools, prefs=self.prefs),
-                                                clipboard=self._copy_text_to_clipboard, host=self.workbench_tab)
+                                                clipboard=self._copy_text_to_clipboard, host=self.workbench_tab,
+                                                on_home=lambda: self.shell.show("home"))
         self.workspace_window._project_root = str(root)
         if show and self.shell.current != "workbench":
             self.shell.show("workbench")
