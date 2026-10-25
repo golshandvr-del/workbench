@@ -57,7 +57,7 @@ Plan (each step = many small checkpoints; tests green at the end of each step):
 Progress (tick = committed and pushed):
 
 - [x] 1 user words: dispatch text 2a7fe49, guide `_in_user_words` at the source 52ea503, `tests/test_user_words.py` d3d6c0c (add to bump: --test test_user_words.py), status bar `status5.chats/summary` 3f353df (+ tests c8bcce2, 462768a, fb911d3, shell 61cfd12), Workbench phase line 4af65d3; unit 804 OK
-- [ ] 2 milestones/versions on the Mission Map, Workbench Timeline tab removed
+- [x] 2 map columns: `ui/column_menu.py` 368b182, canvas `column_at`/`on_column_menu` 8e741fc, app `mission_column_rows/menu/pick` (+`mission_input_hook`) ae3a83a, `tests/test_column_menu.py` b7b5d55 (add to bump), Workbench SECTIONS=(plan, project) 06a0289, Timeline view removed 92650a9..01a30e8, smokes moved (timeline→History, workflow, workspace, menu column) 57d438c..a72f4d7
 - [ ] 3 History unified with filter
 - [ ] 4 rail of four + project switcher + Settings › Project
 - [ ] 5 commands.py + audit by command id, More ≤ 3, no More on Home
