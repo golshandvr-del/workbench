@@ -65,3 +65,5 @@ Progress (tick = committed and pushed):
     f14aa4c, install.ps1 d02de57, CHANGELOG c021ea8, README 7890a85, USER_GUIDE 6e50725/fb6321a, copy message ca4482d,
     screenshots 2d95e71…69536a8, ROADMAP 3ecc846. **PR #67 opened** → wait for CI (Linux + Windows) → merge → tag
     `desktop-v5.11.0` (release-desktop.yml builds the Release on the tag)
+  - CI run 1 (cf035eb): Linux/Android/contracts green; Windows 45/46 — owner_path final print hit cp1252 ('▾') →
+    fixed 2af2242 (same encode/replace as paste_box); re-run all smokes locally with PYTHONIOENCODING=cp1252
