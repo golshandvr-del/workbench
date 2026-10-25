@@ -1,9 +1,9 @@
 """GUI smoke for the guided loop (roadmap 3.5.0 Gate).
 
-Home shows the active project's next step. In the Project Workbench the Next-step strip always has
-a primary button and a More menu for the other actions; the Overview lists the queue of each AI.
-Driven only through the strip (``do_next``) and the queue: goal → charter prompt copied → "I sent it"
-→ charter pasted → plan accepted → task prompt prepared and copied → the queue shows each AI.
+5.11.0: Home's Next-step card always has a primary button and a More menu for the other actions (the Workbench strip
+only names the step and links to Home); Plan & Tasks lists the queue of each AI. Driven through the card
+(``do_next``) and the queue: goal → charter prompt copied → "I sent it" → charter pasted → plan accepted → task prompt
+prepared and copied → the queue shows each AI.
 """
 from __future__ import annotations
 
@@ -36,19 +36,25 @@ def main() -> None:
             app.open_project_workbench()
             w = app.workspace_window
             ctl = w.wc.ctl
+            app.shell.show("home")
             root.update()
-            # empty project: the strip asks for the goal (form step), never a dead end
+            card = app.home_card
+            card.refresh()
+            # the Workbench strip names the step and only links to Home (one home per command)
+            assert w.next_btn.cget("text") == "Open on Home" and not hasattr(w, "next_menu")
+            # empty project: the card asks for the goal (form step), never a dead end
             assert "Start the project" in w.next_var.get(), w.next_var.get()
-            assert str(w.next_btn.cget("text")).startswith("Start the project"), w.next_btn.cget("text")
+            assert str(card.next_btn.cget("text")).startswith("Start the project"), card.next_btn.cget("text")
             out = w.guide_action("design", "design", {"goal": "Offline todo app for desktop and mobile"})
             assert out and "AIWB_PROJECT_CHARTER" in out["prompt"]
             root.update()
             assert "Project Charter" in w.next_var.get(), w.next_var.get()
-            # primary = copy → clipboard; More holds the rest
-            out = w.do_next()
+            # primary = copy → clipboard; More holds the rest; the paste action is the card's paste panel
+            card.refresh()
+            out = card.do_next()
             assert root.clipboard_get() == out["prompt"] and "AIWB_PROJECT_CHARTER" in out["prompt"]
-            more = [w.next_menu.entrycget(i, "label") for i in range(w.next_menu.index("end") + 1)]
-            assert "I sent it" in more and "Paste the charter" in more, more
+            more = card.labels()[1:]
+            assert "I sent it" in more and card.paste.winfo_manager(), (more, card.paste.winfo_manager())
             w.guide_action("charter", "sent", {})
             good = json.loads(FIXTURE.read_text(encoding="utf-8"))
             good["base_state_revision"] = ctl.state()["state_revision"]
@@ -57,31 +63,39 @@ def main() -> None:
             assert out["kind"] == "proposal", out
             root.update()
             assert "Review the plan" in w.next_var.get(), w.next_var.get()
-            assert w.next_btn.cget("text") == "Accept all valid changes"
-            w.do_next()
+            card.refresh()
+            assert card.next_btn.cget("text") == "Accept all valid changes", card.labels()
+            card.do_next()
             assert len(ctl.state()["tasks"]) == 3
-            # queue of each AI on the Overview
-            w.show("overview")
+            # queue of each AI in Plan & Tasks
+            w.show("plan")
             root.update()
             agents = [w.queue_tree.item(i, "text") for i in w.queue_tree.get_children()]
-            assert "agent-core-dev" in agents, agents
+            core_name = ctl.state()["agents"]["agent-core-dev"].get("name") or "agent-core-dev"
+            assert core_name in agents, agents  # 5.11.0: the AI's name, not its id
             core_step = w.queue_tree.get_children("q:agent-core-dev")[0]
             out = w.do_queue_selected(core_step)
             assert out and "AIWB_ATTEMPT_ID" in out["prompt"], out
             root.update()
             assert "Copy the prompt" in w.next_var.get(), w.next_var.get()
-            out = w.do_next()
+            card.refresh()
+            out = card.do_next()
             assert root.clipboard_get() == out["prompt"]
             root.update()
             assert "Send the copied prompt" in w.next_var.get(), w.next_var.get()
-            w.do_next()
+            card.refresh()
+            card.do_next()
             root.update()
             assert "Paste agent-core-dev's answer" in w.next_var.get(), w.next_var.get()
-            # strip stays inside the window
+            # the strip's link stays inside the window
+            app.shell.show("workbench")
             for wd in (1024, 1280):
                 root.geometry(f"{wd}x640+0+0")
                 root.update()
                 assert w.next_btn.winfo_rootx() + w.next_btn.winfo_width() <= root.winfo_rootx() + root.winfo_width() + 2
+            w.next_btn.invoke()
+            root.update()
+            assert app.shell.current == "home", app.shell.current
             # Home: next step card
             app.shell.show("home")
             root.update()
@@ -91,7 +105,7 @@ def main() -> None:
             assert app.home_card.paste.winfo_manager(), "the paste panel is on Home"
         finally:
             root.destroy()
-    print("PASS: guided loop GUI smoke - next-step strip, More menu, per-AI queue, Home card")
+    print("PASS: guided loop GUI smoke - Home card (button, More, paste panel), strip links to Home, per-AI queue")
 
 
 if __name__ == "__main__":
