@@ -86,15 +86,11 @@ def menu_labels(menu: tk.Menu) -> list[str]:
 
 
 def click(card: Any, label: str) -> None:
-    """Press ``label`` on Home's Next-step card: its primary button, or the item of its More menu."""
+    """Press ``label`` on Home's Next-step card: its primary button or one of the step's other buttons (5.13.0)."""
     card.refresh()
-    if card.next_btn.winfo_manager() and card.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
-        card.next_btn.invoke()
-        return
-    labels = menu_labels(card.next_menu)
-    hit = next((x for x in labels if x.rstrip("…").startswith(label.rstrip("…"))), None)
-    assert hit, f"neither {card.next_btn.cget('text')!r} nor More has {label!r}: {labels} ({card.title_var.get()!r})"
-    card.next_menu.invoke(labels.index(hit))
+    b = card.button(label)
+    assert b is not None, f"the card has no {label!r} button: {card.labels()} ({card.title_var.get()!r})"
+    b.invoke()
 
 
 def type_into(text: tk.Text, value: str) -> None:
