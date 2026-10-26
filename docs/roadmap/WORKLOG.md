@@ -124,7 +124,10 @@ Plan: C1–C7 are fixed in 5.13.0 step 6g–6m (before step 7 release), all befo
 Progress: 6f DONE (paste_box smoke accepts the milestone 32c41f8; unit 827 OK, GUI 47/47). C1 DONE: install.ps1
 be4ba71, launch_aiwb.clear_stale_bytecode + `.aiwb_version` stamp 9b68dcc/c6e3a4b, tests/test_stale_bytecode.py
 9a847ac (add to bump: --test test_stale_bytecode.py). C7 DONE: Settings button removed, Ctrl+Shift+F12 9c509ab, commands 04dc8e1, smokes ia 0d3de9c / map d742ef7,
-UI_MAP regen e2ec420..ec3d7e2 (tools/ui_map.py header 5ef9001). Next: C3, C6, C5, C2, C4.
+UI_MAP regen e2ec420..ec3d7e2 (tools/ui_map.py header 5ef9001).
+C3 DONE: Charter start prompts box removed 62b5ceb, charter smoke 0663842. C6 DONE: stuck alert says next step
+(STUCK_NEXT, days ≥ 48 h) d91ff92/25615ee, Balance names AIs + Apply button only with moves a34238a/af25afb, smokes
+agents 11df32d / ia f32e3dc, UI_MAP regen 6befad3/321a34b (ia/map/agents PASS). Next: C5, C2, C4.
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
