@@ -66,18 +66,15 @@ Progress (tick = committed and pushed):
   Save profile stay on Home 7f27ce0/8d587a1; App Map e2ddf3f/855cbac/d6137ac; regen UI_MAP e103789..047995d; unit 814 OK.
   Smokes for four destinations: ia 7121cef, single_shell 21649c0/fb76411, polish 7732616/a1fc61e (switcher menu
   invoked), UI_MAP regen a32b457/28d9b79 (audit clean); unit 814 OK, GUI 47/47.
-- [ ] 5 commands.py + audit by command id, More ≤ 3, no More on Home — plan (2026-10-26):
-  a) `aiwb/ui/commands.py`: COMMANDS = (id, labels/synonyms, where) — `command_of(path, label)`, `label(id)`;
-     structure5 TASK_MENU/PROJECT_MENU take labels from it; `tests/test_commands.py` (add to bump).
-  b) ui_map.audit: `two_homes` by command id (GENERIC keeps only true verbs: More/Refresh/Clear/Search/Browse…);
-     RULES `more_max_items` = 3 (Classic tools (1.x) exempt: removed in 5.14.0), `home_no_more`.
-  c) Home › Task details: no buttons (goal · done when · state); methods stay for scripts.
-  d) Next-step card: the step's other actions as buttons (≤ 3) + "All open steps (N)" list (focus/back), no More;
-     ui_map: `_aiwb_dynamic` on a frame = one node.
-  e) Workbench Plan & Tasks: drop "Copy prompt"/"Check & import answer" (= Home task menu).
-  f) ActionBar named menus (`group_menus`): Git Local/GitHub repos/Settings Application → labelled menus, More ≤ 3;
-     Build Center… leaves GitHub repos (Project tools has it); Mobile Companion… leaves Application (same).
-  g) regen UI_MAP, unit + GUI green, tick.
+- [x] 5 commands.py + audit by command id, More ≤ 3, no More on Home — `aiwb/ui/commands.py` d4fc0e7 (+ a word of
+  one job is that job everywhere a29e8fe); audit two_homes by id + `more_max_items`=3 + `home_more`=0 48f5dd7; Home ›
+  Task details only tells (goal · done when) 2c9a1f3/f1073ad; Next-step card: other actions as buttons + "All open
+  steps (N)" 845d2cf, ui_map frame `_aiwb_dynamic` 876d95e, smokes owner_path/paste_box 12eb9e0/3b9014c, guide
+  e0ed8e5/9f0a281; Workbench Plan & Tasks without Copy prompt/Check & import f8c82d1/507fa7b; ActionBar `menus=` (named
+  menus) 42f23db; Settings › Application = App Map… + Maintenance ▾ 50173ff/598e104; Git Local "Git for Windows ▾"
+  57713d9; GitHub repos "Project binding ▾" 6e2d66e; tests test_next_card e8d56f1/dc72387, test_ui_actions a40173d,
+  `tests/test_commands.py` 135eeb6/4231a5b (add to bump: --test test_commands.py), ia smoke 6620975; UI_MAP regen
+  7daef66..638dd67 (audit clean); unit OK, GUI 47/47 (ia fixed after the run).
 - [ ] 6 owner-path gate ≤ 14 clicks, screenshots
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
 
