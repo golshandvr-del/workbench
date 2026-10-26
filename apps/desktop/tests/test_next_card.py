@@ -84,6 +84,14 @@ class CardModelTests(unittest.TestCase):
         import ast
         from aiwb.ui.next_card import MAX_OTHERS
         tree = ast.parse((SRC / "aiwb" / "v2" / "guide.py").read_text(encoding="utf-8"))
+        appended = set()  # lists assigned to "acts" get one more action appended later (Drop this prompt…)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.List):
+                if any(isinstance(t, ast.Name) and t.id == "acts" for t in node.targets):
+                    appended.add(id(node.value))
+                if any(isinstance(t, ast.Tuple) and any(isinstance(e, ast.Name) and e.id == "acts" for e in t.elts)
+                       for t in node.targets):
+                    appended.add(id(node.value))
         checked = 0
         for node in ast.walk(tree):
             if not isinstance(node, ast.List) or not node.elts:
@@ -92,9 +100,8 @@ class CardModelTests(unittest.TestCase):
             if len(calls) != len(node.elts):
                 continue
             buttons = [c for c in calls if not any(isinstance(a, ast.Constant) and a.value == "text" for a in c.args[2:])]
-            # an "acts" list may get one more action appended (Drop this prompt…)
-            self.assertLessEqual(len(buttons) - 1, MAX_OTHERS + (0 if len(calls) > 2 else 1),
-                                 f"guide.py line {node.lineno}: {len(buttons)} buttons")
+            others = len(buttons) - 1 + (1 if id(node) in appended else 0)
+            self.assertLessEqual(others, MAX_OTHERS, f"guide.py line {node.lineno}: {others} other buttons")
             checked += 1
         self.assertGreater(checked, 20)
 
