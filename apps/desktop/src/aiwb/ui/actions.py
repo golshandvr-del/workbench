@@ -71,7 +71,8 @@ class ActionBar(ttk.Frame):
     """A row of up to MAX_PRIMARY buttons plus one grouped ``More ▾`` menu."""
 
     def __init__(self, master: tk.Misc, primary: Sequence[Item] = (), more: Sequence[tuple[str, Sequence[Item]]] = (),
-                 *, more_label: str = MORE_LABEL, side: str = "left", **kw: Any) -> None:
+                 *, more_label: str = MORE_LABEL, side: str = "left",
+                 menus: Sequence[tuple[str, Sequence[Item]]] = (), **kw: Any) -> None:
         super().__init__(master, **kw)
         if len(primary) > MAX_PRIMARY:
             raise ValueError(f"ActionBar allows at most {MAX_PRIMARY} primary buttons, got {len(primary)}")
@@ -106,6 +107,22 @@ class ActionBar(ttk.Frame):
                     label, command = item[0], item[1]
                     self.menu.add_command(label=label, command=command)
                     self.actions[label] = MenuAction(self.menu, int(self.menu.index("end")), label)
+        # 5.13.0 (B5): a group that belongs together gets its own *named* menu button ("Git for Windows ▾") instead of
+        # hiding in More (More holds at most 3 commands).
+        self.named: dict[str, ttk.Menubutton] = {}
+        for title, items in menus:
+            if not items:
+                continue
+            m = tk.Menu(self, tearoff=False)
+            mb = ttk.Menubutton(self, text=title, menu=m)
+            mb.pack(side=side, padx=(0, 6) if side == "left" else (6, 0))
+            self.named[title] = mb
+            for item in items:
+                if item is None:
+                    m.add_separator()
+                    continue
+                m.add_command(label=item[0], command=item[1])
+                self.actions[item[0]] = MenuAction(m, int(m.index("end")), item[0])
 
     def handle(self, label: str) -> Any:
         """The button or menu handle for *label* (same API either way)."""
@@ -246,9 +263,9 @@ def all_commands(views: Iterable[tk.Misc]) -> set[str]:
 
 
 def bar(master: tk.Misc, primary: Sequence[Item] = (), more: Sequence[tuple[str, Sequence[Item]]] = (),
-        **pack: Any) -> ActionBar:
+        menus: Sequence[tuple[str, Sequence[Item]]] = (), **pack: Any) -> ActionBar:
     """Create and pack an :class:`ActionBar` (``fill="x"`` by default)."""
-    ab = ActionBar(master, primary, more)
+    ab = ActionBar(master, primary, more, menus=menus)
     ab.pack(**({"fill": "x"} | pack))
     return ab
 
