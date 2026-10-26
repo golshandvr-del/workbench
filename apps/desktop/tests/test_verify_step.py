@@ -87,6 +87,26 @@ class VerifyStepTests(unittest.TestCase):
         with self.assertRaises(ModelError):
             self.g.waive_validation(self.tid, "late")
 
+    def test_passed_is_one_click_without_a_dialog(self) -> None:
+        """5.13.0 (gate ≤ 14 clicks): "Tests/build passed" needs no input; a run id still goes via Record…"""
+        acts = {a["id"]: a for a in self.step()["actions"]}
+        self.assertEqual(acts["validation_passed"]["needs"], [])
+        self.assertEqual(acts["validation_passed"]["label"], "Tests/build passed")
+        self.assertIn("run_id", acts["record_validation"]["needs"])
+
+    def test_a_finished_milestone_comes_before_new_prompts(self) -> None:
+        """5.13.0: "Accept milestone" ranks before "Start …" / "Prepare all prompts" (it was hidden behind them)."""
+        p = self.c.project
+        other = p.tasks.create({"title": "UI", "objective": "ui", "acceptance_criteria": ["shows"]})
+        p.tasks.transition(other["task_id"], "ready", "test")
+        p.timeline.create_milestone("Core ready", [self.tid]) if hasattr(p.timeline, "create_milestone") else None
+        self.g.perform(f"task:{self.tid}", "validation_passed")
+        self.g.perform(f"task:{self.tid}", "approve")
+        keys = [s["key"] for s in self.g.steps()]
+        ms = [k for k in keys if k.startswith("milestone:")]
+        if ms:
+            self.assertLess(keys.index(ms[0]), keys.index(f"task:{other['task_id']}"), keys)
+
     def test_prompts_ask_for_four_backtick_fences_and_they_parse(self) -> None:
         text = "\n".join(FILE_RULES)
         self.assertIn("````", text)
