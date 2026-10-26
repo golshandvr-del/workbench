@@ -121,5 +121,46 @@ class CardModelTests(unittest.TestCase):
         self.assertEqual(names_of(None), {})
 
 
+
+class CardWidgetTests(unittest.TestCase):
+    """5.13.0 (owner audit C2): the card never shows a blank blue button (primary without words)."""
+
+    def setUp(self):
+        import tkinter as tk
+        try:
+            self.root = tk.Tk()
+        except tk.TclError:
+            self.skipTest("no display")
+        self.root.withdraw()
+
+    def tearDown(self):
+        self.root.destroy()
+
+    def card(self, steps):
+        from aiwb.ui.next_card import NextStepCard
+        return NextStepCard(self.root, steps=lambda: steps, state=lambda: {}, perform=lambda *a: {},
+                            clipboard=lambda t: None, status=lambda m: None)
+
+    def test_no_blank_button_before_refresh(self):
+        c = self.card([])
+        self.assertFalse(c.next_btn.winfo_manager(), "the empty primary button is not shown before refresh()")
+
+    def test_paste_only_step_shows_no_primary(self):
+        c = self.card([_step("continue", "paste", "Paste", "", [_a("paste", "Paste the rest", "text")])])
+        c.refresh()
+        self.assertFalse(c.next_btn.winfo_manager())
+
+    def test_blank_label_is_never_shown(self):
+        c = self.card([_step("x", "prompt", "X", "", [_a("go", "   ")])])
+        c.refresh()
+        self.assertFalse(c.next_btn.winfo_manager())
+
+    def test_primary_with_words_is_shown(self):
+        c = self.card([charter()])
+        c.refresh()
+        self.assertTrue(c.next_btn.winfo_manager())
+        self.assertEqual(c.next_btn.cget("text"), "Copy the charter prompt")
+
+
 if __name__ == "__main__":
     unittest.main()
