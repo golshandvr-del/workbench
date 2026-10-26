@@ -665,14 +665,9 @@ class WorkspaceWindow:
         am.add_command(label=self.wc.tr(("Enable / disable selected", "فعال / غیرفعال کردن انتخاب‌شده")),
                        command=self.toggle_selected_account)
         ttk.Menubutton(ab, text="More", menu=am).pack(side=side, padx=4)
-        ch = self.wc.ctl.charter()
-        if ch:
-            cb = ttk.LabelFrame(f, text="Charter start prompts", padding=6)
-            cb.grid(row=4, column=0, sticky="ew", pady=6)
-            agents = sorted(ch.get("start_prompts") or {})
-            self.charter_agent_var = tk.StringVar(value=agents[0] if agents else "")
-            ttk.Combobox(cb, textvariable=self.charter_agent_var, values=agents, width=24, state="readonly").pack(side=side)
-            ttk.Button(cb, text="Copy start prompt", command=self.copy_start_prompt).pack(side=side, padx=4)
+        # 5.13.0 (owner audit C3): no "Charter start prompts" box here — it listed the charter's agent ids
+        # ("agent-architect") and duplicated Agents › Selected AI › Copy briefing (the first message of a new chat with
+        # that AI). copy_start_prompt() stays for scripts and tests.
         items = self.wc.tool_items("project")
         if items:
             tf = ttk.LabelFrame(f, text=self.wc.tr(("Files, builds and the phone", "فایل‌ها، Build و موبایل")), padding=6)
@@ -984,7 +979,9 @@ class WorkspaceWindow:
         return prompt
 
     def copy_start_prompt(self, agent_id: str = "") -> str:
-        agent_id = agent_id or (self.charter_agent_var.get() if hasattr(self, "charter_agent_var") else "")
+        if not agent_id:
+            agents = sorted((self.wc.ctl.charter() or {}).get("start_prompts") or {})
+            agent_id = agents[0] if agents else ""
         prompt = self._guard(lambda: self.wc.ctl.charter_start_prompt(agent_id))
         if not prompt:
             return ""
