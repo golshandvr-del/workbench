@@ -4739,6 +4739,18 @@ class WorkbenchApp:
             pass
         if not (Path(created) / ".workbench" / "v2" / "state.json").is_file():
             self.set_status(f"Created {created.name}. Next: Start the project — give the goal and your AI team.")
+            return
+        # 5.13.0 (gate ≤ 14 clicks): the project-manager prompt is the only next move — Create copies it at once, like
+        # "Prepare" copies a task prompt (5.11.0). The card says so; "Copy the charter prompt" stays to copy it again.
+        try:
+            card = self.home_card
+            card.refresh()
+            if card.model.get("key") == "charter" and (card.model.get("primary") or {}).get("id") == "copy":
+                card.action("copy")
+                card.message_var.set("Project created. The project-manager prompt is copied: paste it into that chat, "
+                                     "send it, then paste the whole answer below.")
+        except Exception:  # noqa: BLE001 — copying is a convenience; the card still offers the button
+            pass
 
     def save_now(self) -> None:
         """Toolbar › Save: write the profile and settings now (the V2 project state is saved on every change)."""
