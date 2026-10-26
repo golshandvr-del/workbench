@@ -13,12 +13,12 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
-| Home | 4 | 0 | 11 | 6 | 0 |
+| Home | 4 | 0 | 7 | 4 | 0 |
 | Agents | 5 | 0 | 8 | 6 | 0 |
 | History | 7 | 6 | 10 | 7 | 0 |
-| History › Tools › Git / GitHub | 2 | 3 | 24 | 5 | 0 |
-| Settings | 18 | 2 | 12 | 8 | 10 |
-| Settings › Project › Project settings | 9 | 2 | 5 | 5 | 10 |
+| History › Tools › Git / GitHub | 2 | 3 | 24 | 6 | 0 |
+| Settings | 18 | 2 | 11 | 9 | 10 |
+| Settings › Project › Project settings | 9 | 2 | 3 | 5 | 10 |
 | Settings › Classic tools (1.x) › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Settings › Classic tools (1.x) › AI Response | 0 | 0 | 15 | 4 | 0 |
 | Settings › Classic tools (1.x) › Project Profile | 1 | 0 | 4 | 4 | 0 |
@@ -31,10 +31,12 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 - `page_max_visible` = 8
 - `menu_max_items` = 12
 - `weight_ratio_max` = 4.0
+- `more_max_items` = 3
+- `home_more` = 0
 
 Audit:
 
-- none: the map is balanced.
+- Settings: 9 controls at once (max 8)
 
 ## Tree
 
@@ -61,11 +63,6 @@ Audit:
       - Hide finished tasks [option]
       - Only AIs with open work [option]
     - Task details [section]
-      - Open task in Workbench [button]
-      - More [menu]
-        - Jump to active task [item]
-        - Copy task summary [item]
-        - Copy map summary [item]
     - Next step [section]
       - Next action [button]
   - Agents [page]
@@ -114,18 +111,20 @@ Audit:
           - Review & Sync… [button]
           - More [menu]
             - Create work branch [item]
+          - Git for Windows [menu]
             - Check Git [item]
             - Install Git [item]
             - Update Git [item]
         - GitHub repositories [tab]
           - GitHub Repository Browser · Project Binding [section]
-            - More [menu]
-              - Open on GitHub [item]
+            - Project binding [menu]
               - Initialize & Link Local… [item]
               - Initial Push Review… [item]
               - Binding Settings… [item]
               - Refresh Binding Metadata [item]
               - Unlink Project [item]
+            - More [menu]
+              - Open on GitHub [item]
               - Build Center… [item]
             - Sync & Build… [button]
             - Clone Selected… [button]
@@ -149,9 +148,9 @@ Audit:
     - Application [section]
       - App Map… [button]
       - More [menu]
-        - Mobile Companion… [item]
         - Restore Manager… [item]
         - Validation Profiles… [item]
+      - Support [menu]
         - Export redacted diagnostics… [item]
         - Open application data folder [item]
     - Motion [section]
@@ -164,8 +163,6 @@ Audit:
         - Plan & Tasks [tab]
           - Needs your attention [section]
           - Tasks [section]
-            - Copy prompt [button]
-            - Check & import answer [button]
           - Queue of each AI (double-click a step to do it) [section]
           - Recent activity [section]
         - Project settings [tab]
