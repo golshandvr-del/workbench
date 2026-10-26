@@ -121,6 +121,9 @@ Progress (tick = committed and pushed):
   This is ui_map.extract() walking every page to draw the map (developer audit tool, not for users). → move it out of
   Settings (keep it for tests / a hidden dev flag), or at least run without visibly switching pages + explain it.
 Plan: C1–C7 are fixed in 5.13.0 step 6g–6m (before step 7 release), all before the mobile app.
+Progress: 6f DONE (paste_box smoke accepts the milestone 32c41f8; unit 827 OK, GUI 47/47). C1 DONE: install.ps1
+be4ba71, launch_aiwb.clear_stale_bytecode + `.aiwb_version` stamp 9b68dcc/c6e3a4b, tests/test_stale_bytecode.py
+9a847ac (add to bump: --test test_stale_bytecode.py). Next: C7 (App Map out of Settings), C3, C6, C5, C2, C4.
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
