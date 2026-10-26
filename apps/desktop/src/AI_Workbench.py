@@ -5489,14 +5489,22 @@ class WorkbenchApp:
                 pass
 
     def _make_projects_dashboard(self) -> None:
-        """Projects page header (5.7.0): the project library as cards, above the Workbench of the open project.
+        """Toolbar › project switcher › All projects… (5.13.0, audit B3/B4): the project library as cards in its own
+        window (5.7.0–5.12.0: the header of the Projects page, which left the rail).
 
-        Home shows only the active project; the library (create, open, find, reveal, remove) lives here. The old
+        The window is built once, withdrawn, and shown by :meth:`open_all_projects`; closing it only hides it. The old
         table ``projects_tree`` stays as the selection model behind the cards (not laid out, so not on screen).
         """
         from aiwb.ui.projects5 import ProjectCards
-        tab = self.workbench_tab
-        strip = ttk.Frame(tab, padding=(10, 8, 10, 0))
+        win = tk.Toplevel(self.root)
+        win.withdraw()
+        win.title("All projects")
+        win.transient(self.root)
+        win.protocol("WM_DELETE_WINDOW", win.withdraw)
+        self.projects_win = win
+        tab = ttk.Frame(win, padding=0)
+        tab.pack(fill="both", expand=True)
+        strip = ttk.Frame(tab, padding=(10, 8, 10, 10))
         # App Map: the header row (title label first) is the section "Your projects" with its commands
         strip.pack(side="top", fill="x")
         self.projects_strip = strip
@@ -5523,29 +5531,28 @@ class WorkbenchApp:
         # the selected card's details as one line (no wrapping: a wrapped label here would drive the page width)
         self.projects_detail = ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", width=1)
         self.projects_detail.pack(fill="x", pady=(4, 0))
-        # short windows: the cards fold away so the Workbench below keeps its room (the header row stays)
-        self.projects_compact = False
-        tab.bind("<Configure>", self._fit_project_cards, add="+")
+        self.projects_compact = False  # 5.7.0–5.12.0 (cards folded on short pages); kept for callers
 
         # selection model behind the cards (kept for callers and tests; never laid out)
         columns = ("description", "state", "last_opened", "path")
         self.projects_tree = ttk.Treeview(strip, columns=columns, show="tree headings", selectmode="browse")
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
 
-    COMPACT_BELOW = 700  # px of Projects page height under which the project cards fold away
+    COMPACT_BELOW = 700  # px of page height under which History folds its details (5.7.0)
 
-    def _fit_project_cards(self, event: Any = None) -> None:
-        h = event.height if event is not None else self.workbench_tab.winfo_height()
-        compact = 1 < h < self.COMPACT_BELOW
-        if compact == self.projects_compact:
-            return
-        self.projects_compact = compact
-        if compact:
-            self.project_cards.pack_forget()
-            self.projects_detail.pack_forget()
-        else:
-            self.project_cards.pack(fill="x", pady=(6, 0))
-            self.projects_detail.pack(fill="x", pady=(4, 0))
+    def open_all_projects(self) -> tk.Toplevel:
+        """Toolbar › project switcher › All projects…: show the library window (create, open, find, reveal, remove)."""
+        win = self.projects_win
+        self.refresh_project_list()
+        if win.state() == "withdrawn":
+            try:
+                ui_layout.place_dialog(win, 900, 260, self.root)
+            except Exception:  # noqa: BLE001 - placement is cosmetic
+                pass
+        win.deiconify()
+        win.lift()
+        self.project_cards.draw()
+        return win
 
     def _project_card_selected(self, path: str) -> None:
         if self.projects_tree.exists(path):
