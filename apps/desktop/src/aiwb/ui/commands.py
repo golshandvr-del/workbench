@@ -57,7 +57,7 @@ COMMANDS: tuple[Command, ...] = (
     Command("classic.copy_prompt", ("Copy prompt",), ("Settings › Classic tools (1.x)",),
             "Copy the prompt built on the 1.x Prompt page."),
     # -- application
-    Command("app.map", ("App Map…",), ("Settings",), "Every place and command of the application."),
+    # app.map ("App Map…") left Settings in 5.13.0 (C7): developers open it with Ctrl+Shift+F12, it has no button
     Command("app.restore", ("Restore Manager…",), (), "Undo applied changes."),
     Command("app.validation", ("Validation Profiles…",), (), "Build/test commands per project type."),
     Command("app.companion", ("Mobile Companion…",), (), "Pair the phone app."),
