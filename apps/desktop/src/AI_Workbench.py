@@ -5153,6 +5153,7 @@ class WorkbenchApp:
             self.agents_team_var.set("Open a project to see its AI team.")
             self.agents_dispatch_var.set("—")
             self.agents_balance_var.set("—")
+            self._balance_bar_shown(False)
             self.agents_rows = []
             self.agents_cards.set_rows([])
             self.agents_who_var.set("Open a project to see its AI team.")
@@ -5180,6 +5181,7 @@ class WorkbenchApp:
             self._balance_bar_shown(bool(moves))  # 5.13.0 (C6): the button only when there is a move to apply
         except Exception:  # noqa: BLE001
             self.agents_balance_var.set("The plan is not complete yet.")
+            self._balance_bar_shown(False)
         try:
             from aiwb.v2.waves import dispatch
             d = dispatch(st)
