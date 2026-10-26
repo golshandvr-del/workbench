@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.12.0",
+  "version": "5.13.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -278,8 +278,8 @@
       "source": "apps/desktop/tests/test_ui_balance.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.12.0.md",
-      "source": "docs/release/v5.12.0/WINDOWS_RELEASE_CHECKLIST_v5.12.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.13.0.md",
+      "source": "docs/release/v5.13.0/WINDOWS_RELEASE_CHECKLIST_v5.13.0.md"
     },
     {
       "path": "install.ps1",
@@ -802,6 +802,18 @@
       "source": "apps/desktop/src/aiwb/v2/context_step.py"
     },
     {
+      "path": "aiwb/ui/column_menu.py",
+      "source": "apps/desktop/src/aiwb/ui/column_menu.py"
+    },
+    {
+      "path": "aiwb/ui/commands.py",
+      "source": "apps/desktop/src/aiwb/ui/commands.py"
+    },
+    {
+      "path": "aiwb/ui/history_feed.py",
+      "source": "apps/desktop/src/aiwb/ui/history_feed.py"
+    },
+    {
       "path": "test_team_setup.py",
       "source": "apps/desktop/tests/test_team_setup.py"
     },
@@ -832,6 +844,26 @@
     {
       "path": "test_context_step.py",
       "source": "apps/desktop/tests/test_context_step.py"
+    },
+    {
+      "path": "test_column_menu.py",
+      "source": "apps/desktop/tests/test_column_menu.py"
+    },
+    {
+      "path": "test_commands.py",
+      "source": "apps/desktop/tests/test_commands.py"
+    },
+    {
+      "path": "test_history_feed.py",
+      "source": "apps/desktop/tests/test_history_feed.py"
+    },
+    {
+      "path": "test_stale_bytecode.py",
+      "source": "apps/desktop/tests/test_stale_bytecode.py"
+    },
+    {
+      "path": "test_user_words.py",
+      "source": "apps/desktop/tests/test_user_words.py"
     }
   ],
   "zip_timestamp": [
