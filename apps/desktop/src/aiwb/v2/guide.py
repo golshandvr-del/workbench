@@ -368,7 +368,8 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
         if all(tasks.get(x, {}).get("status") in ("done", "cancelled", "superseded") for x in m["task_ids"]):
             out.append(_step(f"milestone:{m['milestone_id']}", "decision", f"Accept milestone {m['title']}",
                              "All its tasks are done. Check its criteria: " + "; ".join(m.get("criteria", []))[:300],
-                             [_a("accept_milestone", "Accept the milestone")], ref=m["milestone_id"], rank=75))
+                             [_a("accept_milestone", "Accept the milestone")], ref=m["milestone_id"],
+                             rank=15))  # 5.13.0: close a finished milestone before new prompts start (was 75)
     connected = bool(((st["settings"].get("flow") or {}).get("repo") or {}).get("full_name"))
     for v in sorted(st["versions"].values(), key=lambda v: v["version_id"]):
         if v["status"] in ("released", "withdrawn") or connected:  # connected: the GitHub release step (4.5.0)
