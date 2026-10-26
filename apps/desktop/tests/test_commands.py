@@ -24,8 +24,8 @@ class RegistryTests(unittest.TestCase):
         """Two commands may share a word only in places that do not overlap (History's Copy prompt ≠ Home's)."""
         seen: dict[str, list[commands.Command]] = {}
         for c in commands.COMMANDS:
-            for lab in c.labels:
-                seen.setdefault(commands.norm(lab), []).append(c)
+            for lab in {commands.norm(x) for x in c.labels}:
+                seen.setdefault(lab, []).append(c)
         for lab, cs in seen.items():
             for i, a in enumerate(cs):
                 for b in cs[i + 1:]:
@@ -60,7 +60,11 @@ class AuditTests(unittest.TestCase):
 
     def test_two_words_for_one_job_are_two_homes(self):
         t = self.tree([ui_map.node("COPY PROMPT", "item")], [ui_map.node("Prepare prompt for this task", "button")])
-        # "Agents" is not in task.copy_prompt's places: the label there is its own command → no clash
+        out = ui_map.two_homes(t)  # a synonym used only by task.copy_prompt is that job on Agents too
+        self.assertEqual(len(out), 1)
+        self.assertIn("task.copy_prompt", out[0])
+        t = self.tree([ui_map.node("COPY PROMPT", "item")], [ui_map.node("Copy prompt", "button")])
+        # "Copy prompt" means several jobs (History, Classic tools): outside their places it is its own command
         self.assertEqual(ui_map.two_homes(t), [])
         t = self.tree([ui_map.node("Edit team…", "button")], [ui_map.node("Edit team…", "button")])
         self.assertEqual(len(ui_map.two_homes(t)), 1)
