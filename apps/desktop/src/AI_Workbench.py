@@ -7832,10 +7832,10 @@ class WorkbenchApp:
                      ("Commit changes…", self.commit_changes),
                      ("Push to GitHub…", self.push_changes),
                      ("Review & Sync…", self.open_git_review_sync, "Primary.TButton")),
-            more=(("Branch", (("Create work branch", self.create_workbench_branch),)),
-                  ("Git for Windows (winget)", (("Check Git", self.check_git_installation),
-                                                ("Install Git", lambda: self.install_or_update_git("install")),
-                                                ("Update Git", lambda: self.install_or_update_git("upgrade"))))),
+            more=(("Branch", (("Create work branch", self.create_workbench_branch),)),),
+            menus=(("Git for Windows", (("Check Git", self.check_git_installation),  # 5.13.0: its own menu (B5)
+                                        ("Install Git", lambda: self.install_or_update_git("install")),
+                                        ("Update Git", lambda: self.install_or_update_git("upgrade")))),),
             pady=(0, 7))
         ttk.Label(tab, text="Local changes (sensitive paths or detected secrets are blocked from commit)").pack(anchor="w", pady=(3, 4))
         status_frame = ttk.Frame(tab)
