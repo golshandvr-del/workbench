@@ -4677,11 +4677,11 @@ class WorkbenchApp:
         bar = ui_actions.ActionBar(
             card,
             primary=(("App Map…", self.open_app_map),),  # 5.11.0: a page shows at most 8 controls; the rest in More
-            # 5.13.0 (B5): More ≤ 3; Mobile Companion… has one home (Settings › Project › Project tools)
-            more=(("Tools", (("Restore Manager…", self.open_restore_manager),
-                             ("Validation Profiles…", self.manage_validation_profiles))),),
-            menus=(("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
-                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir())))),),
+            # 5.13.0 (B5): no More — one named menu; Mobile Companion… has one home (Settings › Project › Project tools)
+            menus=(("Maintenance", (("Restore Manager…", self.open_restore_manager),
+                                    ("Validation Profiles…", self.manage_validation_profiles), None,
+                                    ("Export redacted diagnostics…", self.export_redacted_diagnostics),
+                                    ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir())))),),
             style=ui_layout.row_style(card))
         bar.grid(row=2, column=0, sticky="w")
 
