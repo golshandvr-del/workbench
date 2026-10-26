@@ -108,15 +108,11 @@ def menu_labels(menu: tk.Menu) -> list[str]:
 
 
 def do_step(o: Owner, card: Any, label: str) -> None:
-    """Press the action ``label`` of Home's card: its primary button if it is that action, else More › label."""
-    if card.next_btn.winfo_manager() and card.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
-        o.click(card.next_btn)
-        return
-    labels = menu_labels(card.next_menu)
-    hit = next((x for x in labels if x.rstrip("…").startswith(label.rstrip("…"))), None)
-    assert hit, (f"neither the card's button ({card.next_btn.cget('text')!r}) nor More has {label!r}: {labels} "
-                 f"— card: {card.title_var.get()!r}")
-    o.click_menu(card.next_menu, hit)
+    """Press the action ``label`` of Home's card: its primary button or one of the step's other buttons (5.13.0: the
+    card has no More)."""
+    b = card.button(label)
+    assert b is not None, f"the card has no {label!r} button: {card.labels()} — card: {card.title_var.get()!r}"
+    o.click(b)
 
 
 def use_answer(o: Owner, card: Any, text: str, needle: str) -> str:
