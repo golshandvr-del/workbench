@@ -109,6 +109,7 @@ def main() -> None:
             assert not any(str(wd.cget("text")) == "More" for wd in card._bar.winfo_children()
                            if wd.winfo_class() == "TMenubutton"), "the card has no More"
             opened = card.model["open"]
+            assert len(opened) > 1, opened   # the plan's other ready tasks wait too
             if len(opened) > 1:
                 assert card.steps_btn.winfo_manager() and f"({len(opened)})" in card.steps_btn.cget("text")
                 menu = card.steps_menu
