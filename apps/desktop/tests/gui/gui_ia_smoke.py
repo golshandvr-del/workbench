@@ -42,7 +42,8 @@ REQUIRED = {
             "Unlink Project", "Open on GitHub", "Clone Selected…", "Initialize & Link Local…", "Initial Push Review…",
             "Binding Settings…", "Refresh Binding Metadata", "Build Center…", "Sync & Build…"],
     # 5.13.0: Mobile Companion… has one home, Settings › Project › Project settings › Project tools
-    "settings": ["Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
+    # 5.13.0 (C7): App Map… left Settings — a developer tool (Ctrl+Shift+F12), not a user command
+    "settings": ["Validation Profiles…", "Restore Manager…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
     "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Apply suggested moves", "Prepare all prompts",
