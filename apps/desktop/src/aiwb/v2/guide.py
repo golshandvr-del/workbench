@@ -335,7 +335,7 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              "Run the tests or the build (e.g. ./gradlew test or a CI run), then record what really happened. "
                              "A model's claim does not count. If you cannot run anything here, accept it on review alone "
                              "— it stays marked NOT RUN.",
-                             [_a("validation_passed", "Tests/build passed…", "run_id"),
+                             [_a("validation_passed", "Tests/build passed"),  # 5.13.0: one click; a run id via Record…
                               _a("validation_failed", "Tests/build failed…", "note"),
                               _a("waive_validation", "I can't run tests — accept on review…", "reason"),
                               _a("record_validation", "Record the result (passed/failed)…", "result", "run_id")], ref=tid, rank=14))
