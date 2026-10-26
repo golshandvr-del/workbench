@@ -4810,10 +4810,10 @@ class WorkbenchApp:
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
         self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
 
-    TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
+    TOOLS_HINT = {"settings": "The 1.x pages for one AI chat — kept until Quick mode replaces them.",
                   "history": "Commits, pushes, branches and GitHub releases of this project."}
 
-    def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "") -> ttk.Frame:
+    def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "", title: str = "Tools") -> ttk.Frame:
         """The "Tools" card of a rail destination (5.5.0): links to the expert pages that belong to it.
 
         Packed first with ``side="bottom"`` so it stays visible under a page body that expands; every button is a
@@ -4824,12 +4824,12 @@ class WorkbenchApp:
             self.tool_buttons: dict[str, ttk.Button] = {}
             self.agents_tool_buttons = self.tool_buttons  # 5.1.0 name, kept for callers and tests
         card = ttk.Frame(page, style="Card.TFrame", padding=(14, 8))
-        card._aiwb_section = "Tools"  # type: ignore[attr-defined]
+        card._aiwb_section = title  # type: ignore[attr-defined]
         slaves = page.pack_slaves()
         card.pack(side="bottom", fill="x", pady=(9, 0), **({"before": slaves[0]} if slaves else {}))
         head = ttk.Frame(card, style="Card.TFrame")
         head.pack(fill="x")
-        ttk.Label(head, text="Tools", style="CardTitle.TLabel").pack(side="left")
+        ttk.Label(head, text=title, style="CardTitle.TLabel").pack(side="left")
         ttk.Label(head, text=hint or self.TOOLS_HINT.get(dest, ""), style="CardMuted.TLabel").pack(side="left",
                                                                                                 padx=(12, 0))
         for key, label in reversed(structure5.tools_of(dest)):  # packed from the right: reversed = reading order
