@@ -7,7 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from aiwb.ui.timeline_canvas import RADIUS, build_model, importance  # noqa: E402
+from aiwb.ui.timeline_canvas import RADIUS, build_model, fit_label, importance, when_label  # noqa: E402
 
 
 def rec(i, et, at="2026-10-19T10:00:00Z", **refs_after):
@@ -68,6 +68,21 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(ts[0], ts[1])
         self.assertEqual(ts[1], ts[2])
         self.assertFalse(m["events"][0]["dated"])
+
+    def test_lane_names_are_ai_names(self):
+        """5.13.0 (owner audit C4): lanes are titled with the AI's name; "project" reads "Project"."""
+        st = {**self.state(), "agents": {"agent-core-dev": {"name": "Core developer"}}}
+        recs = [rec(1, "task_created", task_id="TASK-0001"), rec(2, "project_settings_updated")]
+        m = build_model(recs, st)
+        self.assertEqual(m["lane_names"], {"project": "Project", "agent-core-dev": "Core developer"})
+
+    def test_labels_fit(self):
+        self.assertEqual(fit_label("Core developer"), "Core developer")
+        long = fit_label("CATIA COM Automation Engine developer")
+        self.assertLessEqual(len(long), 18)
+        self.assertTrue(long.endswith("…"))
+        self.assertEqual(when_label(0.0), "")
+        self.assertRegex(when_label(1792999999.0), r"^\d\d \w{3} \d\d:\d\d$")
 
     def test_empty(self):
         m = build_model([], {"tasks": {}, "versions": {}})
