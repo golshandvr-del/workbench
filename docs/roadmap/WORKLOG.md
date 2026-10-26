@@ -94,7 +94,10 @@ Progress (tick = committed and pushed):
   screenshots f) fix tests.
   DONE a 5f28484.. : a) a052329 b) 3128a9d c) 3c115b5 d) dd338ea e) smoke 5f28484 PASS 14 clicks (12 to the first
   file) + 3 pastes; screenshots bd86362..537464c (12 png). f) tests: next = unit run + GUI full run.
-- [ ] 7 tests/docs/version/PR/CI/tag/Release
+- [ ] 7 tests/docs/version/PR/CI/tag/Release — unit 840 OK, GUI 47/47; bump (5 files, one per checkpoint, via
+  /tmp/bump copy of tools/bump_desktop_release.py with --module ui/column_menu.py ui/commands.py ui/history_feed.py and
+  --test test_column_menu/commands/history_feed/stale_bytecode/user_words) ..c12d66e; checklist 4e39659; CHANGELOG
+  0de50af; USER_GUIDE 27f185b/a93a3af; README 0985334; ROADMAP ✅ 9c48612 → next: PR → CI → merge → tag desktop-v5.13.0
 
 ### Owner test of 5.12.0 on Windows (2026-10-26, 4 screenshots → docs/audit/owner-5.12/) — findings C1–C7
 - C1 CRITICAL (root cause found): title/status say **5.11.0** after installing 5.12.0. The Setup.bat payload is right
