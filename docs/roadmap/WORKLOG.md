@@ -66,7 +66,18 @@ Progress (tick = committed and pushed):
   Save profile stay on Home 7f27ce0/8d587a1; App Map e2ddf3f/855cbac/d6137ac; regen UI_MAP e103789..047995d; unit 814 OK.
   Smokes for four destinations: ia 7121cef, single_shell 21649c0/fb76411, polish 7732616/a1fc61e (switcher menu
   invoked), UI_MAP regen a32b457/28d9b79 (audit clean); unit 814 OK, GUI 47/47.
-- [ ] 5 commands.py + audit by command id, More ≤ 3, no More on Home
+- [ ] 5 commands.py + audit by command id, More ≤ 3, no More on Home — plan (2026-10-26):
+  a) `aiwb/ui/commands.py`: COMMANDS = (id, labels/synonyms, where) — `command_of(path, label)`, `label(id)`;
+     structure5 TASK_MENU/PROJECT_MENU take labels from it; `tests/test_commands.py` (add to bump).
+  b) ui_map.audit: `two_homes` by command id (GENERIC keeps only true verbs: More/Refresh/Clear/Search/Browse…);
+     RULES `more_max_items` = 3 (Classic tools (1.x) exempt: removed in 5.14.0), `home_no_more`.
+  c) Home › Task details: no buttons (goal · done when · state); methods stay for scripts.
+  d) Next-step card: the step's other actions as buttons (≤ 3) + "All open steps (N)" list (focus/back), no More;
+     ui_map: `_aiwb_dynamic` on a frame = one node.
+  e) Workbench Plan & Tasks: drop "Copy prompt"/"Check & import answer" (= Home task menu).
+  f) ActionBar named menus (`group_menus`): Git Local/GitHub repos/Settings Application → labelled menus, More ≤ 3;
+     Build Center… leaves GitHub repos (Project tools has it); Mobile Companion… leaves Application (same).
+  g) regen UI_MAP, unit + GUI green, tick.
 - [ ] 6 owner-path gate ≤ 14 clicks, screenshots
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
 
