@@ -34,7 +34,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 
 Audit:
 
-- rail destinations unbalanced: {'Home': 11, 'Agents': 8, 'History': 34, 'Settings': 67} (max ratio 4.0)
+- none: the map is balanced.
 
 ## Tree
 
