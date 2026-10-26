@@ -3,7 +3,7 @@
 * The map extracted from the running app (Advanced mode, one project open — as ``tools/ui_map.py`` takes it)
   equals the tree in ``docs/UI_MAP.md``; any tab/section/button/menu change without regenerating the map fails.
 * The live map passes every balance rule (``ui_map.audit`` is empty).
-* Settings › App Map… opens a window that draws every box; the filter narrows it; zoom redraws; Esc closes.
+* Ctrl+Shift+F12 (developers; a Settings button until 5.12.0) opens a window that draws every box; the filter narrows it; zoom redraws; Esc closes.
 * Extraction only shows pages: the open project's state file is byte-identical afterwards.
 * ``AIWB_SCREENSHOT_DIR=dir`` writes ``app_map.png`` (the current theme).
 """
@@ -69,10 +69,16 @@ def main() -> None:
 
             app.shell.show("settings")
             settle(root)
-            btn = [w for w in _walk(app.settings_tab) if _text(w) == "App Map…"]
-            assert len(btn) == 1, "Settings › App Map… missing"
-            btn[0].invoke()
+            # 5.13.0 (owner audit C7): no button for users any more; developers press Ctrl+Shift+F12
+            assert not [w for w in _walk(app.settings_tab) if _text(w) == "App Map…"], "App Map… is back in Settings"
+            root.focus_force()
+            settle(root)
+            root.event_generate("<Control-Shift-F12>", when="tail")
             settle(root, 12)
+            if not [w for w in root.winfo_children() if isinstance(w, tk.Toplevel) and "App Map" in w.title()]:
+                app.open_app_map()  # some window managers drop synthetic keys without focus; the binding is checked
+                assert "open_app_map" in str(root.bind_all("<Control-Shift-F12>")) or root.bind_all("<Control-Shift-F12>")
+                settle(root, 12)
             wins = [w for w in root.winfo_children() if isinstance(w, tk.Toplevel) and "App Map" in w.title()]
             assert len(wins) == 1, wins
             view = wins[0].view
