@@ -602,7 +602,7 @@ class WorkspaceWindow:
                  ("Answer format", settings.get("answer_format", "") or "aiwb"), ("Folder", str(self.wc.ctl.root))]
         self.details_var = tk.StringVar(value="\n".join(f"{k}: {v or '—'}" for k, v in facts))
         ttk.Label(det, textvariable=self.details_var, wraplength=760, justify="left", anchor=anchor).pack(fill="x")
-        ttk.Label(det, text="Change them on Home (Next step › More › Change the project details…) until the plan is "
+        ttk.Label(det, text="Change them on Home (Next step › Change the project details…) until the plan is "
                             "accepted. The AIs themselves: Agents › Edit team…", style="WS.Muted.TLabel",
                   wraplength=760, anchor=anchor).pack(fill="x", pady=(4, 0))
         team = ttk.LabelFrame(f, text=self.wc.tr(("AI team", "تیم AI")), padding=6)
