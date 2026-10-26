@@ -56,8 +56,9 @@ def fit_to_screen(root: tk.Tk, want: tuple[int, int] = (1280, 820), minimum: tup
 
 # Page -> rail destination of the 5.x shell (roadmap 5.1.0/5.5.0, docs/UI_TREE.md): an expert page lives under the
 # Tools section of its home destination (structure5.TOOL_HOME). 5.13.0: four destinations; the Workbench page is the
-# engine behind Home (its guide, its dialogs) and belongs to Home; the 1.x pages belong to Settings.
-RAIL_OF: dict[str, str] = {"home": "home", "workbench": "home", "agents": "agents", "prompt": "settings",
+# engine behind Home (its guide, its dialogs), shown only as Settings › Project › Project settings…; the 1.x pages
+# belong to Settings › Classic tools (1.x).
+RAIL_OF: dict[str, str] = {"home": "home", "workbench": "settings", "agents": "agents", "prompt": "settings",
                            "response": "settings", "profile": "settings", "run": "settings", "git": "history",
                            "history": "history", "settings": "settings"}
 # Rail destination -> page shown when it is clicked
