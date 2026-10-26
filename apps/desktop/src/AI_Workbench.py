@@ -4611,11 +4611,12 @@ class WorkbenchApp:
         self.shell = AppShell(self.root, self.prefs, title=APP_NAME, version=APP_VERSION,
                               commands={"new_guided": self.new_guided_project, "new_folder": self.add_existing_project,
                                         "open": self.add_existing_project, "save": self.save_now,
-                                        "run": self.run_next_step},
+                                        "run": self.run_next_step, "project_items": self.switcher_items,
+                                        "all_projects": self.open_all_projects,
+                                        "reveal_project": self.open_workspace},
                               message=self.status_var, facts=self.status_state)
         self.notebook = self.shell.notebook
         self.notebook.bind("<<NotebookTabChanged>>", lambda _e: self.shell.sync_from_notebook(), add="+")
-        self.shell.project_label.configure(textvariable=self.workspace_var)
         self.manager_tab = self.shell.add_page("home", padding=(8, 8), on_show=self.refresh_home_next_step)
         self.workbench_tab = self.shell.add_page("workbench", padding=0, on_show=self._show_workbench_page)
         self.agents_tab = self.shell.add_page("agents", padding=(8, 8), on_show=self.refresh_agents_page)
@@ -5539,6 +5540,21 @@ class WorkbenchApp:
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
 
     COMPACT_BELOW = 700  # px of page height under which History folds its details (5.7.0)
+
+    def switcher_items(self) -> list[tuple[str, Any, bool]]:
+        """Toolbar › project switcher: the recent projects (open one first) as ``(label, open, is_open)``."""
+        from aiwb.ui import projects5
+        rows = projects5.rows(self.settings_data.get("projects", []), self.workspace, manifest=read_project_manifest)
+        return [(r["name"], (lambda p=r["path"]: self.switch_project(p)), r["state"] == "Active")
+                for r in rows if r["state"] != "Missing"]
+
+    def switch_project(self, path: str | Path) -> None:
+        """Open another project from the switcher; Home shows its map and its next step."""
+        target = Path(path)
+        if self.workspace is not None and target.resolve() == self.workspace.resolve():
+            self.shell.show("home")
+            return
+        self.set_workspace(target, focus_project=True)
 
     def open_all_projects(self) -> tk.Toplevel:
         """Toolbar › project switcher › All projects…: show the library window (create, open, find, reveal, remove)."""
@@ -8982,6 +8998,7 @@ class WorkbenchApp:
         manifest = read_project_manifest(resolved)
         display_name = str(manifest.get("name") or resolved.name)
         self.workspace_var.set(f"{display_name}  ·  {resolved}")
+        self.shell.toolbar.set_project(display_name)  # 5.13.0: the project switcher "<name> ▾"
         self._load_project_profile(resolved)
         try:
             self._write_initial_project_manifest(resolved)
@@ -8996,8 +9013,11 @@ class WorkbenchApp:
         self.refresh_workflow_status()
         self._refresh_history_view()
         self.refresh_project_list()
-        if focus_project:
-            self.notebook.select(self.profile_tab)
+        if focus_project:  # 5.13.0: opening a project shows Home (its map and next step), never the 1.x Profile
+            self.shell.show("home")
+            win = getattr(self, "projects_win", None)
+            if win is not None:
+                win.withdraw()
         self.set_status(f"Active project: {display_name} · preparing local version history and Git status.")
         self.refresh_git(silent=True, ensure_version_baseline=True)
 
