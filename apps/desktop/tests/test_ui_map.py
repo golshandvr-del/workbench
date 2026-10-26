@@ -128,7 +128,7 @@ class DocumentTests(unittest.TestCase):
         dest_label = {r[0]: r[1] for r in structure5.RAIL}
         for key, label in structure5.TOOLS:
             home = rail[dest_label[structure5.TOOL_HOME[key]]]
-            tools = next(c for c in home["children"] if c["label"] == "Tools")
+            tools = next(c for c in home["children"] if c["label"] in ("Tools", structure5.CLASSIC))
             self.assertIn(label, [c["label"] for c in tools["children"] if c["kind"] == "page"], key)
 
     def test_task_menu_matches_design(self):
@@ -142,7 +142,7 @@ class DocumentTests(unittest.TestCase):
         mobile = ui_map.parse_markdown(part, "AI Workbench Mobile")
         bar = mobile["children"][0]
         self.assertEqual(bar["label"], "Bottom bar")
-        self.assertEqual([c["label"] for c in bar["children"]], [r[1] for r in structure5.RAIL])
+        self.assertEqual([c["label"] for c in bar["children"]], [r[1] for r in structure5.MOBILE_BAR])
         menu = next(n for _p, n in ui_map.iter_nodes(mobile) if n["kind"] == "menu")
         self.assertEqual([c["label"] for c in menu["children"]], [m[1] for m in structure5.TASK_MENU])
 
