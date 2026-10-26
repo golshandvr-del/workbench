@@ -70,6 +70,34 @@ class CardModelTests(unittest.TestCase):
         gone = card_model(steps, NAMES, focus="agent-core-dev", step_key="handoff:closed")
         self.assertEqual(gone["key"], "handoff:H-agent-core-dev")   # a closed step falls back to the AI's queue
 
+    def test_open_steps_list_names_the_ai(self):
+        """5.13.0: "All open steps (N)" lists every open step with the AI's name (never its id)."""
+        m = card_model([charter(), handoff("agent-core-dev", 30)], NAMES)
+        self.assertEqual([s["key"] for s in m["open"]], ["charter", "handoff:H-agent-core-dev"])
+        self.assertTrue(m["open"][1]["title"].endswith(" · Core dev"), m["open"][1]["title"])
+        self.assertNotIn("agent-", " ".join(s["title"] for s in m["open"]))
+        self.assertEqual(card_model([], NAMES)["open"], [])
+
+    def test_no_guide_step_needs_more_than_three_other_buttons(self):
+        """5.13.0 (B5): Home has no More, so a step shows its other actions as buttons — at most MAX_OTHERS. Every
+        literal action list in the guide is checked (the paste action goes to the panel, the primary is the button)."""
+        import ast
+        from aiwb.ui.next_card import MAX_OTHERS
+        tree = ast.parse((SRC / "aiwb" / "v2" / "guide.py").read_text(encoding="utf-8"))
+        checked = 0
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.List) or not node.elts:
+                continue
+            calls = [e for e in node.elts if isinstance(e, ast.Call) and getattr(e.func, "id", "") == "_a"]
+            if len(calls) != len(node.elts):
+                continue
+            buttons = [c for c in calls if not any(isinstance(a, ast.Constant) and a.value == "text" for a in c.args[2:])]
+            # an "acts" list may get one more action appended (Drop this prompt…)
+            self.assertLessEqual(len(buttons) - 1, MAX_OTHERS + (0 if len(calls) > 2 else 1),
+                                 f"guide.py line {node.lineno}: {len(buttons)} buttons")
+            checked += 1
+        self.assertGreater(checked, 20)
+
     def test_paste_only_step_has_no_primary_button(self):
         st = _step("continue", "paste", "Paste", "", [_a("paste", "Paste the rest", "text")])
         m = card_model([st], NAMES)
