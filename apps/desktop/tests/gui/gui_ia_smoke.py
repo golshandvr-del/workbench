@@ -41,7 +41,8 @@ REQUIRED = {
             "Replace Credential…", "Refresh Accounts", "Disconnect", "Refresh Repositories", "Link to Active Project…",
             "Unlink Project", "Open on GitHub", "Clone Selected…", "Initialize & Link Local…", "Initial Push Review…",
             "Binding Settings…", "Refresh Binding Metadata", "Build Center…", "Sync & Build…"],
-    "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
+    # 5.13.0: Mobile Companion… has one home, Settings › Project › Project settings › Project tools
+    "settings": ["Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
     "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Apply suggested moves", "Prepare all prompts",
