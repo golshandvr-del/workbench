@@ -60,6 +60,22 @@ class ActionBarTests(unittest.TestCase):
         self.assertIn("B", found)
         self.assertNotIn("GROUP", found)
 
+    def test_named_menu_instead_of_more(self):
+        """5.13.0 (B5): a group gets its own menu button; its commands keep button-like handles."""
+        f = tk.Frame(self.root)
+        f.pack()
+        bar = actions.bar(f, primary=(("A", self.cmd("a")),), menus=(("Git for Windows", (("Check Git", self.cmd("c")),
+                                                                                       None,
+                                                                                       ("Install Git", self.cmd("i")))),))
+        self.root.update()
+        self.assertIsNone(bar.more_button)
+        self.assertEqual(list(bar.named), ["Git for Windows"])
+        self.assertEqual(bar.labels(), ["A", "Check Git", "Install Git"])
+        bar.handle("Install Git").invoke()
+        self.assertEqual(self.calls[-1], "i")
+        found = actions.all_commands([f])
+        self.assertTrue({"A", "Check Git", "Install Git", "Git for Windows"} <= found, found)
+
     def test_no_more_button_without_secondary_items(self):
         bar = actions.ActionBar(self.root, (("Only", self.cmd("o")),))
         self.assertIsNone(bar.more_button)
