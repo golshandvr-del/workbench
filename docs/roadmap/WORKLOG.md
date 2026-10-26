@@ -131,7 +131,11 @@ agents 11df32d / ia f32e3dc, UI_MAP regen 6befad3/321a34b (ia/map/agents PASS). 
 team_setup.ROLE_LABEL ("Developer") b63dc34, Edit team… on the Team title row 22d1eda, tests test_agents_cards
 b83c39f (C5+C6); smokes agents/ia/layout/map/team PASS. C2 DONE: next_btn not packed until refresh gives a
 non-blank label d429f7f, widget tests test_next_card.CardWidgetTests cf86ea3; owner_path/paste_box/ia/map/layout PASS.
-Next: C4.
+C4 DONE: Timeline tab already gone from the Workbench (step 2); the same canvas is History › Timeline, so its drawing
+was fixed: lane = AI name (model `lane_names`) de516c1, names fit by pixel width with "…" 721b5b1, version label
+"v0.1.0" above the lanes clear of dots + dated axis ends 4d1bb74, tests test_timeline_canvas 6a993a7, screenshot
+docs/audit/screens/v5.13-one-screen/c4_timeline_fixed.png. C1–C7 ALL DONE → next: step 7 (full unit + GUI run,
+docs, version 5.13.0, PR, CI, tag, Release).
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
