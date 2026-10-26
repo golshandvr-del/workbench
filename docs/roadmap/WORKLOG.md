@@ -94,7 +94,7 @@ Progress (tick = committed and pushed):
   screenshots f) fix tests.
   DONE a 5f28484.. : a) a052329 b) 3128a9d c) 3c115b5 d) dd338ea e) smoke 5f28484 PASS 14 clicks (12 to the first
   file) + 3 pastes; screenshots bd86362..537464c (12 png). f) tests: next = unit run + GUI full run.
-- [ ] 7 tests/docs/version/PR/CI/tag/Release — unit 840 OK, GUI 47/47; bump (5 files, one per checkpoint, via
+- [x] 7 RELEASED desktop-v5.13.0 (PR #69 merged a230eba, CI all green incl. Windows, release workflow success, payload checked: APP_VERSION 5.13.0 + launcher/installer C1 fix). NEXT: 5.14.0 Quick mode on branch feat/v5.14.0-quick. — unit 840 OK, GUI 47/47; bump (5 files, one per checkpoint, via
   /tmp/bump copy of tools/bump_desktop_release.py with --module ui/column_menu.py ui/commands.py ui/history_feed.py and
   --test test_column_menu/commands/history_feed/stale_bytecode/user_words) ..c12d66e; checklist 4e39659; CHANGELOG
   0de50af; USER_GUIDE 27f185b/a93a3af; README 0985334; ROADMAP ✅ 9c48612 → next: PR → CI → merge → tag desktop-v5.13.0
