@@ -170,6 +170,17 @@ class TimelineCanvas(tk.Canvas):
         span = max(self.width_px() - LEFT - RIGHT, 50) * self.zoom
         return m["t0"] + (x + self.offset - LEFT) / span * (m["t1"] - m["t0"])
 
+    def _fit_px(self, text: str, room: int = LEFT - 22) -> str:
+        """Trim ``text`` (ending in "…") until it is at most ``room`` pixels wide in the lane font."""
+        try:
+            from tkinter import font as tkfont
+            f = tkfont.Font(root=self, family="Segoe UI", size=9)
+        except tk.TclError:
+            return text
+        while len(text) > 2 and f.measure(text) > room:
+            text = text.rstrip("…")[:-1].rstrip() + "…"
+        return text
+
     def y_of(self, lane: str) -> float:
         lanes = self.model["lanes"]
         i = lanes.index(lane) if lane in lanes else 0
@@ -207,7 +218,7 @@ class TimelineCanvas(tk.Canvas):
             y = self.y_of(lane)
             self.create_line(LEFT, y, w - RIGHT, y, fill=p["grid"])
             # 5.13.0 (owner audit C4): the AI's name, cut with "…" to fit the label column (it was clipped by the axis)
-            self.create_text(8, y, text=fit_label(names.get(lane, lane)), anchor="w", fill=p["muted"],
+            self.create_text(8, y, text=self._fit_px(fit_label(names.get(lane, lane))), anchor="w", fill=p["muted"],
                              font=("Segoe UI", 9))
         if m["events"] or m["versions"]:  # the two ends of the shown span, so the axis says when
             for t, anchor in ((self.t_at(LEFT), "sw"), (self.t_at(w - RIGHT), "se")):
