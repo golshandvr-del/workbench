@@ -92,6 +92,8 @@ Progress (tick = committed and pushed):
   milestone(14, milestone rank 15: finish before starting new prompts). Sub-steps: a) guide accept_handoff approves
   b) validation_passed without needs c) milestone rank d) Create copies charter prompt e) smoke + MAX_CLICKS=14 +
   screenshots f) fix tests.
+  DONE a 5f28484.. : a) a052329 b) 3128a9d c) 3c115b5 d) dd338ea e) smoke 5f28484 PASS 14 clicks (12 to the first
+  file) + 3 pastes; screenshots bd86362..537464c (12 png). f) tests: next = unit run + GUI full run.
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
