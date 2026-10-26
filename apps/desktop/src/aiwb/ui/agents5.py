@@ -14,8 +14,9 @@ from .assets import Assets
 from .tokens5 import font5, palette5
 
 ALERT_TEXT = {"idle": "Idle", "stuck": "Stuck", "overloaded": "Overloaded", "overlap": "Scope overlap"}
-ROLE_TEXT = {"project_manager": "Project manager", "architect": "Architect", "implementer": "Implementer",
-             "reviewer": "Reviewer", "researcher": "Researcher"}
+# 5.13.0 (owner audit C5): the card says the role in the words the user picked in the team table ("Developer",
+# "Reviewer / tester"), never the internal role id ("Implementer" read as a foreign word on "UI Developer").
+from aiwb.v2.team_setup import ROLE_LABEL as ROLE_TEXT  # noqa: E402
 
 
 def cards(state: dict[str, Any] | None) -> list[dict[str, Any]]:
