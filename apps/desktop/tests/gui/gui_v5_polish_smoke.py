@@ -100,12 +100,15 @@ def main() -> None:
             tree = ui_map.extract(app)
             home = section_labels(tree, "Home")
             assert home == ["Mission Map", "Map view", "Task details", "Next step"], home
-            assert "Your projects" in section_labels(tree, "Projects"), section_labels(tree, "Projects")
+            assert "Project" in section_labels(tree, "Settings"), section_labels(tree, "Settings")  # 5.13.0
+            assert "Projects" not in [c["label"] for c in tree["children"][1]["children"]], "Projects left the rail"
             assert not ui_map.audit(tree), ui_map.audit(tree)
 
-            # -- Projects: the library as cards
-            app.shell.show("workbench")
-            app.refresh_project_list()
+            # -- Toolbar › project switcher › All projects…: the library as cards (5.13.0: its own window)
+            items = app.switcher_items()
+            assert [lab for lab, _f, _o in items][0] == "Polish project" and items[0][2], items
+            assert "Alpha site" in [lab for lab, _f, _o in items], items
+            app.open_all_projects()
             settle(root)
             cards = app.project_cards
             paths = [r["path"] for r in cards.rows]
@@ -119,6 +122,7 @@ def main() -> None:
             app.project_search_var.set("")
             settle(root)
             assert len(cards.rows) == 2, cards.rows
+            app.projects_win.withdraw()
 
             # -- Home › Map view
             app.shell.show("home")
@@ -154,11 +158,11 @@ def main() -> None:
                 shot(root, f"history_{tag}.png")
                 app.shell.show("home")
                 shot(root, f"home_{tag}.png")
-                app.shell.show("workbench")
-                shot(root, f"projects_{tag}.png")
+                app.shell.show("settings")
+                shot(root, f"settings_{tag}.png")
             after = state_file.read_bytes() if state_file.exists() else b""
             assert after == before, "5.7.0 views read the project state, never write it"
-            print("5.7.0 polish: Home = active project, Projects = library cards, Map view, History timeline: PASS")
+            print("5.7.0 polish: Home = active project, All projects = library cards, Map view, History timeline: PASS")
         finally:
             try:
                 root.destroy()
