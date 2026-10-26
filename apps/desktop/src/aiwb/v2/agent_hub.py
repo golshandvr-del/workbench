@@ -127,7 +127,7 @@ STUCK_NEXT = {
     "waiting_for_response": "paste the chat's answer on Home (a cut-off answer gets a continue prompt)",
     "needs_user_review": "review the delivery on Home",
     "validation_pending": "record the tests/build result on Home",
-    "blocked": "open it on Home and choose Unblock or Re-plan",
+    "blocked": "on Home: 'It can continue now' or 'Ask the project manager to re-plan'",
     "needs_decision": "open it on Home and decide",
 }
 
