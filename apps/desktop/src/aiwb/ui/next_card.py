@@ -128,8 +128,9 @@ class NextStepCard(ttk.Frame):
         self.message_label.pack(anchor="w", pady=(2, 0))
         bar = ttk.Frame(self, style="Card.TFrame")
         bar.pack(fill="x", pady=(6, 0))
+        # 5.13.0 (owner audit C2): not packed here — refresh() shows it only with a label. Packed empty, it stayed a
+        # blank blue square whenever the first refresh did not run (5.11 window + 5.12 card after the stale-.pyc bug).
         self.next_btn = ttk.Button(bar, text="", style="Primary.TButton", command=self.do_next)
-        self.next_btn.pack(side="left")
         self.others = ttk.Frame(bar, style="Card.TFrame")  # the step's other actions (rebuilt by refresh)
         self.others.pack(side="left")
         self.other_buttons: dict[str, ttk.Button] = {}
@@ -165,7 +166,7 @@ class NextStepCard(ttk.Frame):
         self.next_btn.pack_forget()
         self.others.pack_forget()
         self.steps_btn.pack_forget()
-        if m["primary"] is not None:
+        if m["primary"] is not None and str(m["primary"]["text"]).strip():  # a button never shows without words
             self.next_btn.configure(text=m["primary"]["text"])
             self.next_btn.pack(side="left")
         for b in self.other_buttons.values():
