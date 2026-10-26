@@ -99,13 +99,13 @@ class VerifyStepTests(unittest.TestCase):
         p = self.c.project
         other = p.tasks.create({"title": "UI", "objective": "ui", "acceptance_criteria": ["shows"]})
         p.tasks.transition(other["task_id"], "ready", "test")
-        p.timeline.create_milestone("Core ready", [self.tid]) if hasattr(p.timeline, "create_milestone") else None
+        m = p.timeline.create_milestone({"title": "Core ready", "task_ids": [self.tid]})
         self.g.perform(f"task:{self.tid}", "validation_passed")
         self.g.perform(f"task:{self.tid}", "approve")
+        self.assertEqual(self.c.state()["tasks"][self.tid]["status"], "done")
         keys = [s["key"] for s in self.g.steps()]
-        ms = [k for k in keys if k.startswith("milestone:")]
-        if ms:
-            self.assertLess(keys.index(ms[0]), keys.index(f"task:{other['task_id']}"), keys)
+        self.assertEqual(keys[0], f"milestone:{m['milestone_id']}", keys)
+        self.assertIn(f"task:{other['task_id']}", keys)
 
     def test_prompts_ask_for_four_backtick_fences_and_they_parse(self) -> None:
         text = "\n".join(FILE_RULES)
