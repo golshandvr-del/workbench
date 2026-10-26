@@ -85,6 +85,13 @@ Progress (tick = committed and pushed):
   paste real answer. Budget: 11 + context(2) + approve/verify(2) + milestone(2) = 17 > 14 → must cut: e.g. Accept the
   delivery also approves the review when validation is waived/recorded, or verification asked inline on the card.
   Decide, implement, then MAX_CLICKS=14 + screenshots docs/audit/screens/v5.13-one-screen/.
+  DECISION (2026-10-26, run 2): 14 clicks = New ▾(1) Guided(2) Next(3) Next(4) Create(5, also copies the charter
+  prompt, like Prepare in 5.11) Use(6 charter) Accept plan(7) Prepare+copy(8) Use(9 context request) Copy the
+  files(10) Use(11 real answer; "I sent them" optional) Accept the delivery(12, also records the review approval —
+  one judgement, not two) Tests/build passed(13, no run_id dialog: run id optional, auto manual-<time>) Accept the
+  milestone(14, milestone rank 15: finish before starting new prompts). Sub-steps: a) guide accept_handoff approves
+  b) validation_passed without needs c) milestone rank d) Create copies charter prompt e) smoke + MAX_CLICKS=14 +
+  screenshots f) fix tests.
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
