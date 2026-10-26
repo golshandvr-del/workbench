@@ -4809,16 +4809,18 @@ class WorkbenchApp:
                   wraplength=900).pack(anchor="w", pady=(3, 10))
         team = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         team.pack(fill="x", pady=(0, 9))
-        ttk.Label(team, text="Team", style="CardTitle.TLabel").pack(anchor="w")
+        team_head = ttk.Frame(team, style="Card.TFrame")  # 5.13.0 (C5): Edit team… sits on the title row, not alone
+        team_head.pack(fill="x")
+        ttk.Label(team_head, text="Team", style="CardTitle.TLabel").pack(side="left")
         self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")  # plain-text twin of the cards
         from aiwb.ui import agents5
         self.agents_cards = agents5.AgentCards(team, self.shell.assets, on_select=self.agents_select)
         self.agents_cards.pack(fill="x", pady=(6, 0))
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
-            team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
+            team_head, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
             style="Card.TFrame")  # 5.11.0: Copy team summary → Dispatch desk › More (Agents ≤ 8 controls)
-        self.agents_team_bar.pack(anchor="w", pady=(6, 0))
+        self.agents_team_bar.pack(side="right")
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
         pair.pack(fill="x", pady=(0, 9))
         pair.columnconfigure(0, weight=1, uniform="pair")
