@@ -207,6 +207,9 @@ def _visit(ch: Any, into: list[dict[str, Any]]) -> None:
     walk(ch, into)
 
 
+SWITCHER = "Project switcher"  # the toolbar's "<name> ▾" menu (5.13.0)
+
+
 def extract(app: Any) -> dict[str, Any]:
     """The whole live map of a running application (Advanced mode shows every page).
 
@@ -220,6 +223,8 @@ def extract(app: Any) -> dict[str, Any]:
     for _id, label, _icon, kids in structure5.TOOLBAR:
         tb["children"].append(node(label, "menu", [node(c[1], "item") for c in kids]) if kids
                               else node(label, "button"))
+    # 5.13.0: the project switcher "<name> ▾" (its recent projects change; the fixed items are mapped)
+    tb["children"].append(node(SWITCHER, "menu", [node(lab, "item") for _c, lab in structure5.PROJECT_MENU]))
     root["children"].append(tb)
     rail = node("Rail", "area")
     before = sh.current
@@ -234,10 +239,19 @@ def extract(app: Any) -> dict[str, Any]:
         else:
             walk(sh.pages[pkey], page["children"])
         homed = [(k, lab) for k, lab in structure5.TOOLS if structure5.TOOL_HOME[k] == key]
+        if key == "settings" and getattr(app, "workspace_window", None) is not None:
+            # 5.13.0: Settings › Project › Project settings… opens the Workbench page (Projects left the rail)
+            proj = next((c for c in page["children"] if c["label"] == "Project" and c["kind"] == "section"), None)
+            if proj is not None:
+                sh.show("workbench")
+                app.root.update_idletasks()
+                app.root.update()
+                proj["children"].append(node("Project settings", "page", _workbench(app)))
         if homed:  # the expert pages of this destination, each mapped as a sub-page under its "Tools" section
-            tools = next((c for c in page["children"] if c["label"] == "Tools" and c["kind"] == "section"), None)
+            label_t = structure5.CLASSIC if key == "settings" else "Tools"
+            tools = next((c for c in page["children"] if c["label"] == label_t and c["kind"] == "section"), None)
             if tools is None:
-                tools = node("Tools", "section")
+                tools = node(label_t, "section")
                 page["children"].append(tools)
             tools["children"] = [c for c in tools["children"] if c["kind"] != "link"]  # each link becomes its page
             for tkey, tlabel in homed:
