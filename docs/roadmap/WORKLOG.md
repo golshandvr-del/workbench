@@ -96,6 +96,32 @@ Progress (tick = committed and pushed):
   file) + 3 pastes; screenshots bd86362..537464c (12 png). f) tests: next = unit run + GUI full run.
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
 
+### Owner test of 5.12.0 on Windows (2026-10-26, 4 screenshots → docs/audit/owner-5.12/) — findings C1–C7
+- C1 CRITICAL (root cause found): title/status say **5.11.0** after installing 5.12.0. The Setup.bat payload is right
+  (APP_VERSION 5.12.0, checked by decoding the release asset), but every zip entry has the same date 2026-10-17 00:00
+  and AI_Workbench.py / aiwb/__init__.py / github/api_client.py have the SAME SIZE in 5.11 and 5.12 (only a digit
+  changed). Python validates `__pycache__/*.pyc` by source mtime+size → the 5.11 bytecode stays "valid" and keeps
+  running (install.ps1 copies over the old dir and `compileall` does not recompile). The owner ran 5.11's main window
+  with 5.12 modules: all his screenshots are of that mix. Fix: install.ps1 removes `__pycache__` (and old *.pyc) before
+  copying + `compileall -f`; launch_aiwb.py compares AI_Workbench.APP_VERSION with aiwb.__version__ and, on mismatch,
+  clears the caches and restarts once; test that both versions match after install (test_release_gate).
+- C2 Home Next-step card: a blank blue square (the primary button with no text) + "More"; a faint "Full screen view"
+  label floats inside the paste box. (5.11 main + 5.12 card mix and/or empty label when the step has no primary.)
+- C3 Projects › Project settings › "Charter start prompts" (agent-architect + Copy start prompt): a template agent
+  in a user-team project, old feature with no meaning for the owner → remove from settings (start prompts are built
+  by the app on the card).
+- C4 Projects › Timeline canvas: "project" lane label clipped, "0.0.0" label on the dot, empty sparse axis. 5.13.0
+  drops the Timeline tab (milestones are on the map) → make sure the canvas is gone from the owner's path; if kept,
+  fix label placement.
+- C5 Agents › "Edit team…" alone in a strip under the cards (bad spacing); card "UI Developer" shows role
+  "Implementer" (role text should be the user's description).
+- C6 Agents › Balance: "Reviewer: TASK-0004 has been 'blocked' for 93 h" + "Apply suggested moves" with no moves
+  listed → show the moves (or hide the button when there are none); "blocked" time should say what to do.
+- C7 Settings › App Map…: the app "hangs", switches tabs and opens pages by itself, then a big tree window opens.
+  This is ui_map.extract() walking every page to draw the map (developer audit tool, not for users). → move it out of
+  Settings (keep it for tests / a hidden dev flag), or at least run without visibly switching pages + explain it.
+Plan: C1–C7 are fixed in 5.13.0 step 6g–6m (before step 7 release), all before the mobile app.
+
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
 Owner tested 5.11.0 on real Windows + GPT (2026-10-25). Audit B1–B8 in ROADMAP §1b, evidence `docs/audit/owner-5.11/`.
