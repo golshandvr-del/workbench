@@ -199,6 +199,10 @@ def main() -> None:
                 assert prim["id"] not in ("approve", "validation_passed"), st_
                 ws.guide_action(rev["key"], prim["id"], {n: "" for n in prim["needs"]})
                 o.pump(200)
+            # 5.13.0: a milestone finished by that task is the next step (rank 15, before new prompts) — accept it
+            for ms_step in [s for s in ws.wc.guide_steps() if any(a["id"] == "accept_milestone" for a in s["actions"])]:
+                ws.guide_action(ms_step["key"], "accept_milestone", {})
+                o.pump(200)
             nxt = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:")
                        and any(a["id"] == "prepare" for a in s["actions"]))
             ws.guide_action(nxt["key"], "prepare", {})
