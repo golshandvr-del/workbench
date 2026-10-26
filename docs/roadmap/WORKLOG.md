@@ -129,7 +129,9 @@ C3 DONE: Charter start prompts box removed 62b5ceb, charter smoke 0663842. C6 DO
 (STUCK_NEXT, days ≥ 48 h) d91ff92/25615ee, Balance names AIs + Apply button only with moves a34238a/af25afb, smokes
 agents 11df32d / ia f32e3dc, UI_MAP regen 6befad3/321a34b (ia/map/agents PASS). C5 DONE: card role =
 team_setup.ROLE_LABEL ("Developer") b63dc34, Edit team… on the Team title row 22d1eda, tests test_agents_cards
-b83c39f (C5+C6); smokes agents/ia/layout/map/team PASS. Next: C2, C4.
+b83c39f (C5+C6); smokes agents/ia/layout/map/team PASS. C2 DONE: next_btn not packed until refresh gives a
+non-blank label d429f7f, widget tests test_next_card.CardWidgetTests cf86ea3; owner_path/paste_box/ia/map/layout PASS.
+Next: C4.
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
