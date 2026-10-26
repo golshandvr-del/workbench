@@ -8066,12 +8066,13 @@ class WorkbenchApp:
                      ("Clone Selected…", self._clone_selected_github_repository),
                      ("Sync & Build…", self.open_sync_build)),
             more=(("Selected repository", (("Open on GitHub", self._open_selected_github_repository),)),
-                  ("Active project binding", (("Initialize & Link Local…", self._initialize_and_link_active_project),
-                                              ("Initial Push Review…", self._review_initial_push_files),
-                                              ("Binding Settings…", self._configure_active_github_binding),
-                                              ("Refresh Binding Metadata", self._refresh_active_binding_metadata),
-                                              ("Unlink Project", self._unlink_active_github_repository))),
                   ("Builds", (("Build Center…", self.open_build_center),))),
+            # 5.13.0 (B5): the binding commands belong together — their own menu, not a long More
+            menus=(("Project binding", (("Initialize & Link Local…", self._initialize_and_link_active_project),
+                                        ("Initial Push Review…", self._review_initial_push_files),
+                                        ("Binding Settings…", self._configure_active_github_binding),
+                                        ("Refresh Binding Metadata", self._refresh_active_binding_metadata),
+                                        ("Unlink Project", self._unlink_active_github_repository))),),
             pady=(0, 0))
         h = self.github_repository_actions.handle
         self.github_repository_refresh_button = h("Refresh Repositories")
