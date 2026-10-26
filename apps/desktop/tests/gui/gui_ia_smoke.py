@@ -46,8 +46,8 @@ REQUIRED = {
     "settings": ["Validation Profiles…", "Restore Manager…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
-    "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Apply suggested moves", "Prepare all prompts",
-               "Parallel chats…"],  # 5.6.0 Agents hub
+    "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Prepare all prompts",
+               "Parallel chats…"],  # 5.6.0 Agents hub; 5.13.0 (C6): "Apply suggested moves" only when moves exist
 }
 # Buttons that would only duplicate a rail page.
 RAIL_DUPLICATES = {"Project Workbench…", "Go to Prompt", "Open Settings…"}
