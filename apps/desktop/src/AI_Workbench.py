@@ -5136,6 +5136,14 @@ class WorkbenchApp:
         self.refresh_agents_page()
         return done
 
+    def _balance_bar_shown(self, shown: bool) -> None:
+        """Balance › Apply suggested moves is shown only when moves are listed above it (owner audit C6)."""
+        bar = self.agents_balance_bar
+        if shown and not bar.winfo_manager():
+            bar.pack(anchor="w", pady=(6, 0))
+        elif not shown and bar.winfo_manager():
+            bar.pack_forget()
+
     def refresh_agents_page(self) -> None:
         if not hasattr(self, "agents_team_var"):
             return
@@ -5163,10 +5171,13 @@ class WorkbenchApp:
             lines = [" · ".join(f"{agents5.ALERT_TEXT[k]} {sum(a['kind'] == k for a in found)}" for k in kinds)
                      if found else "No alerts — every AI has fair work."]
             lines += [f"⚠ {a['text']}" for a in found if a["kind"] in ("stuck", "overloaded", "overlap")][:2]
-            lines += [f"Suggest: {m['task_id']} {m['from_agent_id']} → {m['to_agent_id']}" for m in moves[:2]]
+            names = {a["agent_id"]: a.get("name") or a["agent_id"] for a in st.get("agents", {}).values()}
+            lines += [f"Suggest: move {m['task_id']} from {names.get(m['from_agent_id'], m['from_agent_id'])} to "
+                      f"{names.get(m['to_agent_id'], m['to_agent_id'])}" for m in moves[:2]]
             if len(moves) > 2:
                 lines[-1] += f"  (+{len(moves) - 2} more)"
             self.agents_balance_var.set("\n".join(lines))
+            self._balance_bar_shown(bool(moves))  # 5.13.0 (C6): the button only when there is a move to apply
         except Exception:  # noqa: BLE001
             self.agents_balance_var.set("The plan is not complete yet.")
         try:
