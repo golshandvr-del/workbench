@@ -189,10 +189,9 @@ def main() -> None:
 
             # 3) the next task answered as Markdown code blocks without any manifest; first a cut-off version
             rev = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:"))
-            assert any(a["id"] == "approve" for a in rev["actions"]), rev     # task 1 waits for the user's review
-            ws.guide_action(rev["key"], "approve", {"note": ""})
-            o.pump(200)
-            ws.guide_action(rev["key"], "validation_passed", {"run_id": ""})
+            # 5.13.0: "Accept" was the review too — task 1 now waits only for the tests/build result (one click)
+            assert any(a["id"] == "validation_passed" and not a["needs"] for a in rev["actions"]), rev
+            ws.guide_action(rev["key"], "validation_passed", {})
             o.pump(200)
             while any(s["key"] == rev["key"] for s in ws.wc.guide_steps()):    # e.g. close / done steps, if any
                 st_ = next(s for s in ws.wc.guide_steps() if s["key"] == rev["key"])
