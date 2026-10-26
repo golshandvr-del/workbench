@@ -49,7 +49,7 @@ def main() -> None:
             assert out and "AIWB_PROJECT_CHARTER" in out["prompt"]
             root.update()
             assert "Project Charter" in w.next_var.get(), w.next_var.get()
-            # primary = copy → clipboard; More holds the rest; the paste action is the card's paste panel
+            # primary = copy → clipboard; the other actions are buttons (5.13.0); the paste action is the card's paste panel
             card.refresh()
             out = card.do_next()
             assert root.clipboard_get() == out["prompt"] and "AIWB_PROJECT_CHARTER" in out["prompt"]
@@ -105,7 +105,7 @@ def main() -> None:
             assert app.home_card.paste.winfo_manager(), "the paste panel is on Home"
         finally:
             root.destroy()
-    print("PASS: guided loop GUI smoke - Home card (button, More, paste panel), strip links to Home, per-AI queue")
+    print("PASS: guided loop GUI smoke - Home card (button, other actions, paste panel), strip links to Home, per-AI queue")
 
 
 if __name__ == "__main__":
