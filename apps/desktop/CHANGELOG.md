@@ -1,3 +1,37 @@
+## [5.13.0] - 2026-10-26
+
+### One project, one screen (Roadmap 5.13.0, owner audits of 5.11.0 — B3, B4, B5 — and of 5.12.0 — C1–C7)
+
+- **Installing an update really runs the new version** (C1). After installing 5.12.0 the window still said 5.11.0:
+  the payload's files all carry one date and a version bump changes a single digit, so Python kept trusting the old
+  `__pycache__`. The installer now deletes every cached `.pyc` and force-compiles; the launcher also clears the caches
+  once whenever the installed version changes.
+- **Four places instead of five**: Home · Agents · History · Settings. Projects left the rail — the project name in the
+  toolbar is a menu (recent projects, All projects…, Reveal folder, Remove from list); Project settings live in
+  Settings › Project; the 1.x pages are one window under Settings › Project › Classic tools (B3).
+- **Milestones and versions are on the Mission Map**: right-click a column header for New milestone… / Accept
+  milestone / Propose version… / Record release…. The Workbench's Timeline tab is gone (B3).
+- **History is one list** with a filter: All · Prompts · Answers · Saved · Events · Versions (B3).
+- **Your words, not the app's** (B4): steps, the status bar and alerts name the AI ("Core developer"), never
+  `agent-…`, `HO-…`, waves or F-keys. Agent cards show the role you picked ("Developer", not "Implementer") (C5).
+- **Every command has one home** (B5): Home has no More menu (the step's other actions are buttons, plus "All open
+  steps (N)"); More menus hold at most three items.
+- **The whole owner path from Home**: New Project → Charter → the AI asks for files → answer → Accept → Tests passed →
+  Milestone accepted in **14 clicks + 3 pastes**. *Accept the delivery* also records the review; *Tests/build passed*
+  needs no run id; a finished milestone comes before new prompts.
+- Owner test of 5.12.0 fixed: no blank blue button on the Next-step card (C2); no "Charter start prompts" box with
+  agent ids in Project settings — Agents › Copy briefing does it (C3); History's timeline names its lanes, keeps
+  labels clear of the dots and dates the axis (C4); *Edit team…* sits on the Team title row (C5); Balance shows *Apply
+  suggested moves* only when it lists moves, named by AI, and a stuck task says what to do ("blocked for 4 days — on
+  Home: 'It can continue now' or 'Ask the project manager to re-plan'") (C6); the App Map, a developer tool that walks
+  every page, left Settings (Ctrl+Shift+F12) (C7).
+
+### Tests
+
+- `gui_owner_path_smoke.py` (the gate, 14 clicks), `test_stale_bytecode.py` (C1), `test_user_words.py`,
+  `test_column_menu.py`, `test_history_feed.py`, `test_commands.py`; card widget tests in `test_next_card.py`;
+  `test_agents_cards.py` and `test_timeline_canvas.py` extended. Unit 840 OK, GUI 47/47.
+
 ## [5.12.0] - 2026-10-25
 
 ### Real chat answers work (Roadmap 5.12.0, owner audit of 5.11.0 — B1, B2, B8)
