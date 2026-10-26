@@ -45,6 +45,25 @@ class Cards(unittest.TestCase):
         self.assertEqual(len(text.splitlines()), len(rows))
         self.assertEqual(agents5.cards(None), [])
 
+    def test_role_in_user_words(self):
+        """5.13.0 (owner audit C5): the card shows the team-table role label, not the internal role id."""
+        from aiwb.v2.team_setup import ROLE_LABEL
+        rows = agents5.cards(self.ctl.state())
+        self.assertTrue(rows)
+        for r in rows:
+            self.assertEqual(r["role_text"], ROLE_LABEL.get(r["role"], r["role_text"]))
+            self.assertNotEqual(r["role_text"], "Implementer")
+
+    def test_stuck_alert_says_next_step(self):
+        """5.13.0 (owner audit C6): a stuck alert tells what to do and long waits read in days."""
+        self.assertEqual(hub._age(5), "5 h")
+        self.assertEqual(hub._age(93), "4 days")
+        for st_, text in hub.STUCK_NEXT.items():
+            self.assertTrue(text and "agent-" not in text, st_)
+        for a in hub.alerts(self.ctl.state()):
+            if a["kind"] == "stuck":
+                self.assertIn(" — ", a["text"])
+
     def test_state_word_priority(self):
         base = {"alerts": [], "current_task_id": ""}
         self.assertEqual(agents5.state_of(base), "Free")
