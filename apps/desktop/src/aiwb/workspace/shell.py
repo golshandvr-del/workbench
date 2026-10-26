@@ -334,8 +334,6 @@ class WorkspaceWindow:
 
     def _ask_text(self, title: str) -> str:
         """Multi-line paste box for a whole model answer."""
-        if hasattr(self, "answer_text") and self.answer_text.winfo_exists() and self.answer_text.get("1.0", "end-1c").strip():
-            return self.answer_text.get("1.0", "end-1c")
         from ..ui.paste_box import ask_answer   # 5.10.0: live diagnosis + Load ZIP…
         try:
             state = self.wc.ctl.state()
@@ -998,7 +996,7 @@ class WorkspaceWindow:
         return prompt
 
     def do_import(self, text: str | None = None) -> Any:
-        raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
+        raw = text if text is not None else self._ask_text("Paste the model's answer")  # 5.13.0: no answer box here
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
         if r.kind == "charter_rejected":
