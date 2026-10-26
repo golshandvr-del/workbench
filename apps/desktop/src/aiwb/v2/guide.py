@@ -258,8 +258,8 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"Check what {who} delivered for {label}",
                              (h.get("summary") or "The answer was read.") + (f" Missing: {'; '.join(missing[:4])}." if missing else "")
                              + (f" Accepting adds {len(h.get('staged_files') or [])} delivered file(s) to the project files"
-                                " (old versions are backed up); it never closes the task." if h.get("staged_files")
-                                else " Accepting never closes the task."),
+                                " (old versions are backed up) and records your review approval; tests are recorded next."
+                                if h.get("staged_files") else " Accepting records your review approval; tests are recorded next."),
                              acts, agent=USER, ref=h["handoff_id"], rank=10, task_id=h["task_id"]))
         elif h["status"] in ("stale", "reconciliation_required"):
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"The answer for {label} is out of date",
@@ -612,9 +612,18 @@ class Guide:
             return {"message": f"Decision {ref} recorded."}
         if action == "accept_handoff":
             from .files import integrate
-            c.resolve_handoff(ref, True, str(inp.get("reason", "")) or "accepted in the guided loop")
+            reason = str(inp.get("reason", "")).strip()
+            c.resolve_handoff(ref, True, reason or "accepted in the guided loop")
             written = integrate(self.p.store, c.root, ref)
             added = f" {len(written)} file(s) added to the project files." if written else ""
+            tid = (self.p.handoffs.get(ref) or {}).get("task_id", "")
+            if not reason and tid and (self.p.tasks.get(tid) or {}).get("status") == "in_review":
+                # 5.13.0 (gate ≤ 14 clicks): a clean "Accept the delivery" is the user's review — one judgement, not
+                # two clicks. "Accept anyway…" (problems found) leaves the review to the user.
+                out = c.review_task(tid, True, "approved with the delivery")
+                nxt = {"validation_pending": " Next: record whether the tests/build passed.",
+                       "done": f" {tid} is done."}.get(out["status"], "")
+                return {"message": f"Delivery {ref} accepted and {tid} approved.{added}{nxt}", "files": written}
             return {"message": f"Delivery {ref} accepted.{added} Next: review the task.", "files": written}
         if action == "reject_handoff":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")))
