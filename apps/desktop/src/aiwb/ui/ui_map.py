@@ -21,7 +21,8 @@ Section detection (pure widget conventions, no per-page code):
 * a button with ``_aiwb_link = page_key`` is a *link* to another page, not a command of its own (on a menu button:
   every item of its menu is such a link);
 * a button or menu button with ``_aiwb_dynamic = "Name"`` changes with the project state (Home's Next-step card,
-  5.11.0): the map shows one control of that fixed name (a menu without items), never the current step's labels.
+  5.11.0): the map shows one control of that fixed name (a menu without items), never the current step's labels;
+  on a frame (5.13.0: the step's other actions) the whole row is that one control.
 """
 from __future__ import annotations
 
@@ -172,6 +173,9 @@ def _visit(ch: Any, into: list[dict[str, Any]]) -> None:
     dynamic = getattr(ch, "_aiwb_dynamic", None)
     if dynamic and cls in ("TButton", "Button", "TMenubutton", "Menubutton"):
         into.append(node(str(dynamic), "menu" if "Menubutton" in cls else "button"))
+        return
+    if dynamic and cls in ("TFrame", "Frame"):  # 5.13.0: a row of state-dependent buttons = one control by role
+        into.append(node(str(dynamic), "button"))
         return
     if cls in ("TButton", "Button"):
         if _is_nav(ch):
