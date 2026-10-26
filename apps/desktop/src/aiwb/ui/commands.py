@@ -10,7 +10,8 @@ entry here; an entry is needed only when two different words mean the same job, 
 different places (History's "Copy prompt" copies a past prompt, the task menu's copies the task's next prompt).
 
 ``where`` is a tuple of App Map page paths (``"Home"``, ``"Settings › Project"``, ``"Toolbar"`` …); a label means the
-command when the node's page path starts with one of them. ``()`` = anywhere.
+command when the node's page path starts with one of them. ``()`` = anywhere. Outside those places a label that only
+one command uses still means that command (its home is where it belongs; anywhere else is a second home).
 """
 from __future__ import annotations
 
@@ -75,9 +76,12 @@ def _in(path: str, where: tuple[str, ...]) -> bool:
 def command_of(path: str, label: str) -> str:
     """The command id of the control ``label`` found on the page ``path`` (``"label:<norm>"`` when unregistered)."""
     n = norm(label)
-    for c in COMMANDS:
-        if _in(path, c.where) and any(norm(x) == n for x in c.labels):
+    named = [c for c in COMMANDS if any(norm(x) == n for x in c.labels)]
+    for c in named:
+        if _in(path, c.where):
             return c.id
+    if len(named) == 1:  # a word of one job only is that job everywhere — so a second home of it is caught
+        return named[0].id
     return "label:" + n
 
 
