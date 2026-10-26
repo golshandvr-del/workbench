@@ -5210,20 +5210,11 @@ class WorkbenchApp:
         detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
         detail._aiwb_section = "Task details"  # type: ignore[attr-defined]
         detail.pack(fill="x", pady=(8, 12))
-        ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
+        ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=1000,
                   justify="left").pack(side="left", fill="x", expand=True)
-        # 5.11.0: one button + More, so Home shows at most 8 controls at once (the cockpit card has the rest)
-        self.mission_detail_bar = ui_actions.ActionBar(
-            detail, primary=(("Open task in Workbench", self.mission_open_task),),
-            more=(("", (("Jump to active task", self.mission_jump_active),
-                        ("Copy task summary", self.mission_copy_task),
-                        ("Copy map summary", self.mission_copy_summary))),), style="Card.TFrame")
-        self.mission_detail_bar.pack(side="right")
-        self.mission_open_btn = self.mission_detail_bar.buttons["Open task in Workbench"]
-        self.mission_open_btn.state(["disabled"])
-        self.mission_copy_btn = self.mission_detail_bar.actions["Copy task summary"]
-        self.mission_copy_btn.configure(state="disabled")
-        self.mission_jump_btn = self.mission_detail_bar.actions["Jump to active task"]
+        # 5.13.0 (B5): Task details only *tells* (goal · done when · state) — no buttons. A task's commands have one
+        # home, the task menu (right-click a circle); its prompt and answer are the Next-step card's (click its AI).
+        # mission_open_task / mission_jump_active / mission_copy_task stay for scripts and the keyboard.
         self._mission_rev: tuple[str, int] | None = None
         self._make_home_next_card(body)
         self.shell.status_listeners.append(self.refresh_mission)
@@ -5292,8 +5283,6 @@ class WorkbenchApp:
         if self.mission.selected and self.mission.node(self.mission.selected) is None:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
-            self.mission_open_btn.state(["disabled"])
-            self.mission_copy_btn.configure(state="disabled")
         return model
 
     def mission_jump_active(self) -> str:
@@ -5334,11 +5323,20 @@ class WorkbenchApp:
         from aiwb.ui.mission_canvas import STATE_TEXT
         lane = next((ln for ln in self.mission.model["lanes"] if any(n["task_id"] == task_id for n in ln["nodes"])), {})
         col = self.mission.model["columns"][nd["column"]]["label"]
-        self.mission_detail_var.set(f"{nd['title']}  ·  {task_id}  ·  AI {lane.get('number', '?')} "
-                                    f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
-                                    f"[{nd['status']}]")
-        self.mission_open_btn.state(["!disabled"])
-        self.mission_copy_btn.configure(state="normal")
+        text = (f"{nd['title']}  ·  {task_id}  ·  AI {lane.get('number', '?')} ({lane.get('name', '')})  ·  {col}  ·  "
+                f"{STATE_TEXT[nd['state']]} [{nd['status']}]")
+        try:  # 5.13.0: the task's goal and "done when" (reading only)
+            ctl = self._mission_ctl()
+            task = ((ctl.state() if ctl is not None else {}).get("tasks") or {}).get(task_id) or {}
+        except Exception:  # noqa: BLE001 - details are a convenience; the map must keep working
+            task = {}
+        goal = str(task.get("objective") or "").strip()
+        done = [str(x).strip() for x in (task.get("acceptance_criteria") or []) if str(x).strip()]
+        if goal:
+            text += f"\nGoal: {goal[:240]}"
+        if done:
+            text += f"\nDone when: {done[0][:200]}" + (f" (+{len(done) - 1} more)" if len(done) > 1 else "")
+        self.mission_detail_var.set(text)
 
     # -- Mission Map › right-click menu (roadmap 5.4.0)
     def _mission_ctl(self) -> Any:
