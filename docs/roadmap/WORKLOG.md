@@ -127,7 +127,9 @@ be4ba71, launch_aiwb.clear_stale_bytecode + `.aiwb_version` stamp 9b68dcc/c6e3a4
 UI_MAP regen e2ec420..ec3d7e2 (tools/ui_map.py header 5ef9001).
 C3 DONE: Charter start prompts box removed 62b5ceb, charter smoke 0663842. C6 DONE: stuck alert says next step
 (STUCK_NEXT, days ≥ 48 h) d91ff92/25615ee, Balance names AIs + Apply button only with moves a34238a/af25afb, smokes
-agents 11df32d / ia f32e3dc, UI_MAP regen 6befad3/321a34b (ia/map/agents PASS). Next: C5, C2, C4.
+agents 11df32d / ia f32e3dc, UI_MAP regen 6befad3/321a34b (ia/map/agents PASS). C5 DONE: card role =
+team_setup.ROLE_LABEL ("Developer") b63dc34, Edit team… on the Team title row 22d1eda, tests test_agents_cards
+b83c39f (C5+C6); smokes agents/ia/layout/map/team PASS. Next: C2, C4.
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
