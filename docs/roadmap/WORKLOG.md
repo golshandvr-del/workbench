@@ -75,7 +75,16 @@ Progress (tick = committed and pushed):
   57713d9; GitHub repos "Project binding ▾" 6e2d66e; tests test_next_card e8d56f1/dc72387, test_ui_actions a40173d,
   `tests/test_commands.py` 135eeb6/4231a5b (add to bump: --test test_commands.py), ia smoke 6620975; UI_MAP regen
   7daef66..638dd67 (audit clean); unit OK, GUI 47/47 (ia fixed after the run).
-- [ ] 6 owner-path gate ≤ 14 clicks, screenshots
+- [ ] 6 owner-path gate ≤ 14 clicks, screenshots — findings 2026-10-26 (explored with a copy of gui_owner_path_smoke, nothing committed): today's path = 11 clicks up
+  to "Accept the delivery" (file on disk). After that, on Home: Review → Approve (12) → Verify → "Tests/build passed…"
+  (13, needs run_id: opens an input dialog = Owner records it as a dialog → use the card's inline input or accept
+  "I can't run tests — accept on review…" path with the inline field) → MS-0001 "Accept milestone Core ready" is in
+  "All open steps" behind "Prepare the prompts for 2 tasks" (rank 39 < 75) → reach it via steps_menu (1 click) +
+  "Accept the milestone" (1 click). Gate path still missing a context request: use fixture X03 shape
+  (AIWB_CONTEXT_REQUEST for src/core/store.py) as the first answer → "Copy the files for the chat" → "I sent them" →
+  paste real answer. Budget: 11 + context(2) + approve/verify(2) + milestone(2) = 17 > 14 → must cut: e.g. Accept the
+  delivery also approves the review when validation is waived/recorded, or verification asked inline on the card.
+  Decide, implement, then MAX_CLICKS=14 + screenshots docs/audit/screens/v5.13-one-screen/.
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
 
 ## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
