@@ -4753,13 +4753,17 @@ class WorkbenchApp:
         if self.workspace is None:
             self.set_status("Open or create a project first — Run does the project's next guided step.")
             return None
-        ws = getattr(self, "workspace_window", None)
-        if ws is None or getattr(ws, "_project_root", None) != str(self.workspace):
-            self.shell.show("workbench")
-            self.set_status("Workbench opened — press Run again to do the next step.")
+        self.shell.show("home")  # 5.13.0: the next step is done on Home (the Workbench page left the rail)
+        ws = self._home_ws()
+        if ws is None:
+            self._ensure_home_workbench()
+            ws = self._home_ws()
+        if ws is None:
+            self.set_status("Preparing the project — press Run again to do the next step.")
             return None
-        self.shell.show("workbench")
-        return ws.do_next()
+        out = ws.do_next()
+        self.refresh_home_next_step()
+        return out
 
     def status_state(self) -> dict[str, Any] | None:
         """V2 state of the open project for the status bar (read only; never creates or writes files)."""
