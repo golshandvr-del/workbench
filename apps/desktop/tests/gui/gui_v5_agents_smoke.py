@@ -92,7 +92,8 @@ def main() -> None:
             b1 = next(r for r in rows if r["agent_id"] == "agent-b1")
             assert "overloaded" in b1["alerts"], b1
             bal = app.agents_balance_var.get()
-            assert "Suggest:" in bal and "agent-b1" in bal, bal
+            assert "Suggest: move" in bal and "from Builder One" in bal, bal  # 5.13.0 (C6): AI names, not ids
+            assert app.agents_balance_bar.winfo_manager(), "moves listed → Apply suggested moves is shown"
             # select a card by clicking it
             cards = app.agents_cards
             idx = [r["agent_id"] for r in rows].index("agent-b1")
@@ -127,6 +128,7 @@ def main() -> None:
             workers = [k for k in after if k in ("agent-b1", "agent-b2", "agent-b3")]
             assert max(after[k] for k in workers) - min(after[k] for k in workers) <= 1, after
             assert not agent_hub.rebalance(ctl.state()), "balanced after applying"
+            assert not app.agents_balance_bar.winfo_manager(), "no moves → no Apply suggested moves (C6)"
             settle(root, 4)
             print(f"5.6.0 Agents hub: {len(rows)} cards = lanes, alerts, briefing, note, {len(moved)} move(s): PASS")
         finally:
