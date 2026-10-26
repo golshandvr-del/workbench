@@ -103,7 +103,7 @@ def main() -> None:
             app.open_project_settings()  # 5.13.0: Settings › Project › Project settings… shows the Workbench page
             root.update()
             assert app.shell.current == "workbench" and app.shell.rail.current == "settings"
-            app.shell.show("projects")  # old key of 5.0–5.12 -> Home
+            app.shell.select_rail("projects")  # old destination key of 5.0–5.12 -> Home
             root.update()
             assert app.shell.current == "home"
             assert app.shell.toolbar.project_var.get() == "Shell project", app.shell.toolbar.project_var.get()
