@@ -580,20 +580,13 @@ class WorkspaceWindow:
         pf = ttk.Frame(f, style="WS.TFrame")
         pf.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(6, 0))
         pf.columnconfigure(0, weight=1)
-        pf.columnconfigure(1, weight=1)
-        ttk.Label(pf, text=self.wc.tr(("Prompt to copy (Workbench never sends it)", "پرامپت برای کپی (Workbench آن را ارسال نمی‌کند)"))).grid(row=0, column=0, sticky="w")
-        ttk.Label(pf, text=self.wc.tr(("Paste the model's answer", "پاسخ مدل را Paste کنید"))).grid(row=0, column=1, sticky="w")
+        # 5.13.0 (B5): copying a prompt and pasting an answer have one home — Home's Next-step card (and the task
+        # menu). This page only shows the last prompt; do_copy/do_import stay for scripts.
+        ttk.Label(pf, text=self.wc.tr(("Last prompt (copy it and paste the answer on Home)",
+                                       "آخرین پرامپت (کپی و چسباندن پاسخ در Home)"))).grid(row=0, column=0, sticky="w")
         self.prompt_text = tk.Text(pf, height=7, wrap="word")
-        self.prompt_text.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
+        self.prompt_text.grid(row=1, column=0, sticky="nsew")
         self.prompt_text.insert("1.0", self.last_prompt)
-        self.answer_text = tk.Text(pf, height=7, wrap="word")
-        self.answer_text.grid(row=1, column=1, sticky="nsew")
-        bb = ttk.Frame(pf, style="WS.TFrame")
-        bb.grid(row=2, column=0, columnspan=2, sticky="ew", pady=4)
-        side = "right" if self.wc.rtl else "left"
-        ttk.Button(bb, text=self.wc.tr(("Copy prompt", "کپی پرامپت")), command=self.do_copy).pack(side=side)
-        ttk.Button(bb, text=self.wc.tr(("Check & import answer", "بررسی و ثبت پاسخ")), style="WS.Primary.TButton",
-                   command=self.do_import).pack(side=side, padx=4)
 
     def _view_project(self, f: ttk.Frame) -> None:
         """Project settings (5.11.0): project details · the AI team and its manager · account profiles · charter start
