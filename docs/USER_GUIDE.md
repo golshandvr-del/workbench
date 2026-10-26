@@ -131,7 +131,7 @@ Main screen → **Standalone mode**. Create a project, then use the same loop: t
 automatically) and the Timeline (pinch to zoom, drag, tap).
 
 ### Moving a project between PC and phone
-* Desktop: **Project Workbench → Project settings → Project tools ▾ → Export project for the phone…** → a
+* Desktop: **Settings › Project › Project tools ▾ → Export project for the phone…** → a
   `.aiwb-bundle.json` file (*Import project from the phone…* is in the same menu).
 * Phone: **Import project bundle** and pick the file (or the other way round with *Export*).
 * Bundles are **never merged**. The app tells you whether the incoming copy is *new*, *the same*, *newer*,
