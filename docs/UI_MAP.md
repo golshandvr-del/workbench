@@ -17,7 +17,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings ›
 | Agents | 5 | 0 | 8 | 6 | 0 |
 | History | 7 | 6 | 10 | 7 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 6 | 0 |
-| Settings | 18 | 2 | 11 | 8 | 10 |
+| Settings | 18 | 2 | 10 | 7 | 10 |
 | Settings › Project › Project settings | 9 | 2 | 3 | 5 | 10 |
 | Settings › Classic tools (1.x) › Prompt | 0 | 0 | 20 | 7 | 0 |
 | Settings › Classic tools (1.x) › AI Response | 0 | 0 | 15 | 4 | 0 |
@@ -146,7 +146,6 @@ Audit:
       - Simple [option]
       - Advanced [option]
     - Application [section]
-      - App Map… [button]
       - Maintenance [menu]
         - Restore Manager… [item]
         - Validation Profiles… [item]
