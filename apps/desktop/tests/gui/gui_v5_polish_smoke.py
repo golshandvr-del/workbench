@@ -162,7 +162,36 @@ def main() -> None:
                 shot(root, f"settings_{tag}.png")
             after = state_file.read_bytes() if state_file.exists() else b""
             assert after == before, "5.7.0 views read the project state, never write it"
-            print("5.7.0 polish: Home = active project, All projects = library cards, Map view, History timeline: PASS")
+
+            # -- 5.13.0: Toolbar › "<name> ▾" — the real menu: recent projects (open one marked), All projects…, Reveal
+            tb = app.shell.toolbar
+            assert tb.project_btn.text_lbl.cget("text") == "Polish project", tb.project_btn.text_lbl.cget("text")
+            rows = tb.fill_project_menu()
+            assert rows[-2:] == ["All projects…", "Reveal folder"] and "Alpha site" in rows, rows
+            menu = tb.project_menu
+            labels = {menu.entrycget(i, "label"): i for i in range(int(menu.index("end")) + 1)
+                      if menu.type(i) == "command"}
+            assert "● Polish project" in labels, labels
+            app.shell.show("agents")
+            menu.invoke(labels["    Alpha site"])
+            wait_for_project_ready(app, root, first)
+            settle(root)
+            assert app.workspace.resolve() == first.resolve() and app.shell.current == "home", (app.workspace,
+                                                                                                 app.shell.current)
+            assert tb.project_var.get() == "Alpha site", tb.project_var.get()
+            tb.fill_project_menu()
+            labels = {menu.entrycget(i, "label"): i for i in range(int(menu.index("end")) + 1)
+                      if menu.type(i) == "command"}
+            menu.invoke(labels["All projects…"])
+            settle(root)
+            assert app.projects_win.state() != "withdrawn", "All projects… shows the library window"
+            app.projects_win.protocol("WM_DELETE_WINDOW")  # closing only hides it
+            app.projects_win.withdraw()
+            menu.invoke(labels["    Polish project"])
+            wait_for_project_ready(app, root, project)
+            settle(root)
+            assert tb.project_var.get() == "Polish project" and app.shell.current == "home"
+            print("5.7.0 polish: Home = active project, switcher menu + All projects = library cards, Map view, History timeline: PASS")
         finally:
             try:
                 root.destroy()
