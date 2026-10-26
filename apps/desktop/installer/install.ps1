@@ -279,6 +279,15 @@ try {
     New-Item -ItemType Directory -Path $installDir -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $dataDir 'backups') -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $dataDir 'logs') -Force | Out-Null
+    # 5.13.0 (owner audit C1): Python trusts __pycache__ when the source keeps its size and mtime. The payload's files
+    # all carry the same date and a version bump changes only a digit, so the previous version's bytecode stayed
+    # "valid" and the old app kept running after an update. Drop every cached .pyc before copying the new sources.
+    if (Test-Path -LiteralPath $installDir -PathType Container) {
+        Get-ChildItem -LiteralPath $installDir -Recurse -Directory -Filter '__pycache__' -ErrorAction SilentlyContinue |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Recurse -Force -ErrorAction SilentlyContinue }
+        Get-ChildItem -LiteralPath $installDir -Recurse -File -Filter '*.pyc' -ErrorAction SilentlyContinue |
+            ForEach-Object { Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue }
+    }
 
     foreach ($fileName in @('AI_Workbench.py', 'conversation_store.py', 'project_version_store.py', 'restore_service.py', 'validation_profiles.py', 'README.md', 'README_FA.md', 'ARCHITECTURE.md', 'CHANGELOG.md', 'test_workbench.py', 'test_conversation_history.py', 'test_project_version_store.py', 'test_restore_service.py', 'test_validation_profiles.py', 'test_v114_features.py', 'test_git_service.py', 'test_github_accounts.py', 'test_github_repository_browser.py', 'test_github_repository_binding_v144.py', 'test_windows_credential_store.py', 'test_git_sync.py', 'test_github_actions.py', 'WINDOWS_RELEASE_CHECKLIST_v5.12.0.md', 'test_github_artifacts.py', 'test_orchestrator.py', 'test_rc_hardening.py', 'test_inbox.py', 'test_intake_normalize.py', 'test_ui_actions.py', 'test_timeline_canvas.py', 'test_v2_charter.py', 'test_v2_guide.py', 'test_repair_diagnostics.py', 'test_context_request.py', 'test_v2_model.py', 'test_v2_flow.py', 'test_v2_reference_scenario.py', 'test_v2_controller.py', 'test_i18n.py', 'test_companion.py', 'test_qr_pairing.py', 'test_workspace.py', 'test_team_planner.py', 'test_workflow_timeline.py', 'test_dashboard.py', 'test_gui_design_system.py', 'test_single_shell.py', 'test_bundle.py', 'test_release_gate.py', 'test_verify_step.py', 'test_flow.py', 'test_waves.py', 'test_diagnose.py', 'test_files.py', 'test_report.py', 'test_repo.py', 'test_closeout.py', 'test_algorithm_e2e.py', 'test_visual5_foundation.py', 'test_ui_tree.py', 'launch_aiwb.py', 'test_shell5.py', 'test_mission_model.py', 'test_motion.py', 'test_task_menu.py', 'test_ui_map.py', 'test_ui_balance.py', 'test_agent_hub.py', 'test_agents_cards.py', 'test_projects_cards.py', 'test_shared_tokens.py', 'test_mission_fixture.py', 'test_ui_call_signatures.py', 'test_profile_to_charter.py', 'test_team_setup.py', 'test_answer_files.py', 'test_answer_preview.py', 'test_answer_corpus.py', 'test_next_card.py', 'test_copy_damage.py', 'test_context_forgiving.py', 'test_context_step.py')) {
         $source = Join-Path $payloadDir $fileName
@@ -314,7 +323,7 @@ try {
         $pythonwPath = $python.ExePath
     }
     # Roadmap 5.0.0: pre-compile once so every start loads cached bytecode, and start through the splash launcher.
-    try { & $python.ExePath -m compileall -q -j 0 $installDir | Out-Null } catch { Write-Step 'Pre-compiling skipped (not required).' }
+    try { & $python.ExePath -m compileall -f -q -j 0 $installDir | Out-Null } catch { Write-Step 'Pre-compiling skipped (not required).' }
     $appScript = Join-Path $installDir 'launch_aiwb.py'
     if (-not (Test-Path -LiteralPath $appScript -PathType Leaf)) { $appScript = Join-Path $installDir 'AI_Workbench.py' }
     $vbsPath = Join-Path $installDir 'launch.vbs'
