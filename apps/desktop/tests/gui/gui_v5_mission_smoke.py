@@ -108,7 +108,8 @@ def main() -> None:
             settle(root, 3)
             assert c.selected == tid
             assert tid in app.mission_detail_var.get() and "0.2.0" in app.mission_detail_var.get()
-            assert "disabled" not in app.mission_open_btn.state()
+            assert "Goal:" in app.mission_detail_var.get(), app.mission_detail_var.get()  # 5.13.0: details tell
+            assert not hasattr(app, "mission_open_btn"), "5.13.0: Task details has no buttons"
             shot_at = {}
             for theme in ("dark", "light"):
                 app.prefs.set_theme(theme)
