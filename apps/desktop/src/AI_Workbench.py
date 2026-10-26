@@ -4834,7 +4834,7 @@ class WorkbenchApp:
                         ("Copy team summary", self.agents_copy_team),
                         ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
-        self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
+        # 5.13.0: no Tools card here — Prompt and AI Response are Settings › Classic tools (1.x) until Quick (5.14.0)
 
     TOOLS_HINT = {"settings": "The 1.x pages for one AI chat — kept until Quick mode replaces them.",
                   "history": "Commits, pushes, branches and GitHub releases of this project."}
@@ -9024,6 +9024,9 @@ class WorkbenchApp:
         display_name = str(manifest.get("name") or resolved.name)
         self.workspace_var.set(f"{display_name}  ·  {resolved}")
         self.shell.toolbar.set_project(display_name)  # 5.13.0: the project switcher "<name> ▾"
+        if hasattr(self, "settings_project_var"):
+            self.settings_project_var.set(f"{display_name} · {resolved}. Details, the project manager, account "
+                                          "profiles, files, builds and the phone.")
         self._load_project_profile(resolved)
         try:
             self._write_initial_project_manifest(resolved)
