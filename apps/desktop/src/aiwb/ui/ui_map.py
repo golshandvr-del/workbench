@@ -40,9 +40,14 @@ RULES = {
     "menu_max_items": 12,         # a More menu holds at most 12 commands
     "weight_ratio_max": 4.0,      # heaviest rail destination ≤ 4 × the lightest (5.13.0: its own commands; the expert
                                   # sub-pages under Tools / Classic tools are held to the page rules on their own)
+    "more_max_items": 3,          # 5.13.0 (B5): a "More" menu holds at most 3 commands — move, group or delete the rest
+    "home_more": 0,               # 5.13.0 (B5): Home has no "More" at all
 }
 # Labels that may appear in several places because they mean "this place's" variant of a generic verb.
-GENERIC = {"More", "Refresh", "Clear", "Search", "Browse…", "Copy prompt"}
+# 5.13.0: words that mean different jobs in different places ("Copy prompt") are told apart in aiwb.ui.commands.
+GENERIC = {"More", "Refresh", "Clear", "Search", "Browse…"}
+# 5.13.0: the 1.x pages keep their own menus until Quick mode replaces them (5.14.0); the More rule skips them.
+MORE_EXEMPT = ("Settings › Classic tools (1.x)",)
 
 TITLE_STYLES = ("SectionTitle", "CardTitle")
 
@@ -397,8 +402,14 @@ def audit(tree: dict[str, Any], rules: dict[str, Any] | None = None) -> list[str
                 out.append(f"{' › '.join(path[1:])}: {len(direct)} direct controls (max {r['section_max_controls']})")
         if n["kind"] == "menu":
             items = [c for c in n["children"] if c["kind"] == "item"]
+            where = " › ".join(path[1:])
             if len(items) > r["menu_max_items"]:
-                out.append(f"{' › '.join(path[1:])}: menu of {len(items)} items (max {r['menu_max_items']})")
+                out.append(f"{where}: menu of {len(items)} items (max {r['menu_max_items']})")
+            if n["label"] == "More" and path[:1] == ("Rail",):
+                if path[1:2] == ("Home",) and r["home_more"] == 0:
+                    out.append(f"{where}: Home has no More (move the command to its one home or delete it)")
+                elif len(items) > r["more_max_items"] and not where.startswith(MORE_EXEMPT):
+                    out.append(f"{where}: More of {len(items)} items (max {r['more_max_items']})")
         if n["kind"] in KINDS and n["children"]:
             labels = [c["label"] for c in n["children"]]
             dup = sorted({x for x in labels if labels.count(x) > 1 and x not in GENERIC})
@@ -415,17 +426,33 @@ def audit(tree: dict[str, Any], rules: dict[str, Any] | None = None) -> list[str
 
 
 def two_homes(tree: dict[str, Any]) -> list[str]:
-    """Command labels found on more than one page (generic verbs excepted). The Toolbar counts as a home."""
+    """Commands found on more than one page, by **command id** (5.13.0, :mod:`aiwb.ui.commands`): two words for one
+    job count as one command. Generic verbs excepted; the Toolbar counts as a home; a page's home is its full path."""
+    from .commands import command_of
     homes: dict[str, set[str]] = {}
+    labels: dict[str, set[str]] = {}
 
-    def rec(n: dict[str, Any], owner: str) -> None:
+    def rec(n: dict[str, Any], path: tuple[str, ...], owner: str) -> None:
         for c in n["children"]:
-            o = c["label"] if c["kind"] in ("page", "area") else owner
+            p = path + (c["label"],)
+            if c["kind"] == "area":
+                o = "" if c["label"] == "Rail" else c["label"]
+            elif c["kind"] == "page":
+                o = " › ".join(p[1:])
+            else:
+                o = owner
             if c["kind"] in COMMAND_KINDS and c["label"] not in GENERIC:
-                homes.setdefault(_norm(c["label"]), set()).add(owner)
-            rec(c, o)
-    rec(tree, "")
-    return sorted(f"{k} ({', '.join(sorted(v))})" for k, v in homes.items() if len(v) > 1)
+                cid = command_of(owner, c["label"])
+                homes.setdefault(cid, set()).add(owner)
+                labels.setdefault(cid, set()).add(c["label"])
+            rec(c, p, o)
+    rec(tree, (), "")
+    out = []
+    for cid, where in homes.items():
+        if len(where) > 1:
+            name = cid[6:] if cid.startswith("label:") else f"{cid} = {' / '.join(sorted(labels[cid]))}"
+            out.append(f"{name} ({', '.join(sorted(where))})")
+    return sorted(out)
 
 
 def _norm(label: str) -> str:
