@@ -4575,7 +4575,7 @@ class WorkbenchApp:
             self.save_profile()
             return
         self.save_profile()
-        self.shell.show("workbench")
+        self.shell.show("home")  # 5.13.0: the next step lives on Home
         self.set_status("Profile saved — it will be part of the project manager's prompt. Next: Start the project.")
 
     def _make_menu(self) -> None:
