@@ -4637,11 +4637,11 @@ class WorkbenchApp:
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
-        self.tool_cards = {"projects": self._make_tools_card(self.workbench_tab, "projects"),
-                           "history": self._make_tools_card(self.history_tab, "history")}
+        self.tool_cards = {"history": self._make_tools_card(self.history_tab, "history")}
         self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
         self.settings_scroll.pack(fill="both", expand=True)
         self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
+        self._make_settings_project(self.settings_scroll.body)
         self.activity_progress = ttk.Progressbar(self.shell.statusbar.slot, mode="indeterminate", length=100)
         self.activity_progress.grid(row=0, column=0)
         self.activity_progress.grid_remove()
@@ -4684,6 +4684,31 @@ class WorkbenchApp:
                                ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
             style=ui_layout.row_style(card))
         bar.grid(row=2, column=0, sticky="w")
+
+    def _make_settings_project(self, body: ttk.Frame) -> None:
+        """Settings › Project and Settings › Classic tools (1.x) (5.13.0, audit B3/B4/B5).
+
+        Project: the open project's settings (details, the AI team's manager, account profiles, files, builds and the
+        phone) — the Workbench page, which left the rail with Projects. Classic tools: the 1.x pages (Prompt, AI
+        Response, Project Profile, Run & Report) until Quick mode replaces them (5.14.0).
+        """
+        from aiwb.ui import structure5
+        card = ttk.Frame(body, style="Card.TFrame", padding=(18, 14))
+        card.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(card, text="Project", style="CardTitle.TLabel").pack(anchor="w")
+        self.settings_project_var = tk.StringVar(value="No project is open.")
+        ttk.Label(card, textvariable=self.settings_project_var, style="CardHint.TLabel", wraplength=640,
+                  justify="left").pack(anchor="w", pady=(2, 8))
+        self.settings_project_bar = ui_actions.ActionBar(
+            card, primary=(("Project settings…", self.open_project_settings),), style="Card.TFrame")
+        self.settings_project_bar.pack(anchor="w")
+        holder = ttk.Frame(body)
+        holder.grid(row=6, column=0, sticky="ew", pady=(0, 10))
+        self.tool_cards["settings"] = self._make_tools_card(holder, "settings", title=structure5.CLASSIC)
+
+    def open_project_settings(self) -> None:
+        """Settings › Project › Project settings…: the open project's details, team manager, accounts and tools."""
+        self.agents_workbench("project")
 
     def open_app_map(self) -> Any:
         """Settings › App Map…: every page, section and command of this running app, drawn (roadmap 5.5.0)."""
