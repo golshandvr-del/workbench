@@ -7,7 +7,7 @@ Generated from the running application by `tools/ui_map.py` (Advanced mode, one 
 Kinds: `area` (Toolbar, Rail, Status bar) · `page` · `section` · `tab` · `button` · `menu` → `item` ·
 `option` (choice control) · `link` (opens another page; the command lives there).
 
-Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app: Settings › App Map).
+Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app for developers: Ctrl+Shift+F12).
 
 ## Counts
 
