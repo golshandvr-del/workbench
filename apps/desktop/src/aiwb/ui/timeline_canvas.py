@@ -106,6 +106,22 @@ def build_model(records: list[dict[str, Any]], state: dict[str, Any]) -> dict[st
     return {"events": events, "versions": versions, "lanes": lanes, "lane_names": lane_names, "t0": t0, "t1": t1}
 
 
+def fit_label(text: str, limit: int = 18) -> str:
+    """A lane title that fits the label column (LEFT px): long names end with "…" instead of running under the axis."""
+    text = str(text)
+    return text if len(text) <= limit else text[:limit - 1].rstrip() + "…"
+
+
+def when_label(t: float) -> str:
+    """'26 Oct 14:05' for an axis end ('' for the 0.0 placeholder of a model without dated events)."""
+    if t <= 0:
+        return ""
+    try:
+        return datetime.fromtimestamp(t).strftime("%d %b %H:%M")
+    except (OverflowError, OSError, ValueError):
+        return ""
+
+
 class TimelineCanvas(tk.Canvas):
     """Draws a :func:`build_model` result. ``palette`` uses the Workbench theme tokens."""
 
@@ -148,6 +164,12 @@ class TimelineCanvas(tk.Canvas):
         span = max(self.width_px() - LEFT - RIGHT, 50) * self.zoom
         return LEFT + (t - m["t0"]) / (m["t1"] - m["t0"]) * span - self.offset
 
+    def t_at(self, x: float) -> float:
+        """The time under the x pixel (inverse of :meth:`x_of`)."""
+        m = self.model
+        span = max(self.width_px() - LEFT - RIGHT, 50) * self.zoom
+        return m["t0"] + (x + self.offset - LEFT) / span * (m["t1"] - m["t0"])
+
     def y_of(self, lane: str) -> float:
         lanes = self.model["lanes"]
         i = lanes.index(lane) if lane in lanes else 0
@@ -178,20 +200,30 @@ class TimelineCanvas(tk.Canvas):
         self._tip = self._tip_bg = None
         m, p = self.model, self.p
         w = self.width_px()
-        h = TOP + LANE_H * max(len(m["lanes"]), 1) + 8
+        h = TOP + LANE_H * max(len(m["lanes"]), 1) + 18  # + the date line under the lanes
         self.configure(scrollregion=(0, 0, w, h))
+        names = m.get("lane_names") or {}
         for lane in m["lanes"]:
             y = self.y_of(lane)
             self.create_line(LEFT, y, w - RIGHT, y, fill=p["grid"])
-            self.create_text(8, y, text=lane, anchor="w", fill=p["muted"], font=("Segoe UI", 9))
+            # 5.13.0 (owner audit C4): the AI's name, cut with "…" to fit the label column (it was clipped by the axis)
+            self.create_text(8, y, text=fit_label(names.get(lane, lane)), anchor="w", fill=p["muted"],
+                             font=("Segoe UI", 9))
+        if m["events"] or m["versions"]:  # the two ends of the shown span, so the axis says when
+            for t, anchor in ((self.t_at(LEFT), "sw"), (self.t_at(w - RIGHT), "se")):
+                self.create_text(LEFT if anchor == "sw" else w - RIGHT, h - 1, text=when_label(t), anchor=anchor,
+                                 fill=p["muted"], font=("Segoe UI", 8))
         for v in m["versions"]:
             x = self.x_of(v["t"])
             if x < LEFT or x > w - RIGHT:
                 continue
-            cid = self.create_line(x, TOP - 6, x, h - 4, fill=p["success"] if v["released"] else p["accent"],
+            cid = self.create_line(x, TOP - 2, x, h - 14, fill=p["success"] if v["released"] else p["accent"],
                                    width=2, dash=() if v["released"] else (5, 4), tags=("version",))
             self.items[cid] = {"kind": "version", **v}
-            self.create_text(x + 3, TOP - 14, text=v["label"], anchor="w", fill=p["text"], font=("Segoe UI", 8, "bold"))
+            # the label sits above the lanes, left of the line near the right edge (it overlapped the dot before)
+            right = x > w - RIGHT - 80
+            self.create_text(x - 4 if right else x + 4, TOP - 12, text="v" + str(v["label"]).lstrip("vV"),
+                             anchor="e" if right else "w", fill=p["text"], font=("Segoe UI", 8, "bold"))
         colour = {"critical": p["danger"], "major": p["warning"], "normal": p["accent"], "minor": p["muted"]}
         for ev in m["events"]:
             x = self.x_of(ev["t"])
