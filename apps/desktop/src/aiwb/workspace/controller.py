@@ -20,14 +20,15 @@ from ..v2.resources import binding_readiness, current_binding
 
 # 5.11.0 (audit A7): three sections instead of seven. The 2.3.0–5.10.0 keys stay valid as aliases, so old ui.json
 # files, attention links and callers keep working.
-SECTIONS = ("plan", "timeline", "project")
-SECTION_ALIASES = {"overview": "plan", "tasks": "plan", "team": "project", "files": "project", "versions": "project",
-                   "settings": "project"}
+# 5.13.0 (owner audit B3): the Timeline section is gone — milestones and versions are on the Mission Map's columns
+# (Home = now and next) and past events are in History (the past). "timeline" stays a valid alias.
+SECTIONS = ("plan", "project")
+SECTION_ALIASES = {"overview": "plan", "tasks": "plan", "timeline": "plan", "team": "project", "files": "project",
+                   "versions": "project", "settings": "project"}
 SECTION_LABELS = {
-    "plan": ("Plan & Tasks", "برنامه و وظایف"), "timeline": ("Timeline", "تاریخچه"),
-    "project": ("Project settings", "تنظیمات پروژه"),
+    "plan": ("Plan & Tasks", "برنامه و وظایف"), "project": ("Project settings", "تنظیمات پروژه"),
 }
-SHORT_LABELS = {"plan": ("Plan", "برنامه"), "timeline": ("Time", "زمان"), "project": ("Project", "پروژه")}
+SHORT_LABELS = {"plan": ("Plan", "برنامه"), "project": ("Project", "پروژه")}
 
 
 def canonical_section(key: str) -> str:
@@ -529,16 +530,17 @@ class WorkspaceController:
         return self.guide().flow()
 
     def flow_text(self) -> str:
+        """5.13.0 (owner audit B4): where the project is, in the user's words — no flowchart node, no "wave"."""
         f = self.flow_position()
-        kind = {"app": "app", "user": "you", "github": "GitHub"}[f["kind"]]
-        text = f"Flow {f['node']} · {f['title']} ({kind})" + (f" · cycle {f['cycle']}" if f["cycle"] > 1 else "")
+        who = {"app": "Workbench", "user": "you", "github": "GitHub"}[f["kind"]]
+        text = f"Now: {f['title']} ({who})" + (f" · round {f['cycle']}" if f["cycle"] > 1 else "")
         from aiwb.v2.waves import dispatch, waves
         st = self.ctl.state()
         w, d = waves(st), dispatch(st)
         if st.get("tasks"):
-            text += f" · chats {len(d['active'])}/{d['limit']} · waves left {len(w['waves'])}"
+            text += f" · {len(d['active'])} of {d['limit']} chats busy"
             if w["cycle"]:
-                text += f" · dependency cycle: {', '.join(w['cycle'][:4])}"
+                text += f" · tasks wait for each other: {', '.join(w['cycle'][:4])}"
         return text
 
     def guide_queues(self) -> dict[str, list[dict[str, Any]]]:

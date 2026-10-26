@@ -55,13 +55,16 @@ def fit_to_screen(root: tk.Tk, want: tuple[int, int] = (1280, 820), minimum: tup
 
 
 # Page -> rail destination of the 5.x shell (roadmap 5.1.0/5.5.0, docs/UI_TREE.md): an expert page lives under the
-# Tools section of its home destination (structure5.TOOL_HOME).
-RAIL_OF: dict[str, str] = {"home": "home", "workbench": "projects", "agents": "agents", "prompt": "agents",
-                           "response": "agents", "profile": "projects", "run": "projects", "git": "history",
+# Tools section of its home destination (structure5.TOOL_HOME). 5.13.0: four destinations; the Workbench page is the
+# engine behind Home (its guide, its dialogs), shown only as Settings › Project › Project settings…; the 1.x pages
+# belong to Settings › Classic tools (1.x).
+RAIL_OF: dict[str, str] = {"home": "home", "workbench": "settings", "agents": "agents", "prompt": "settings",
+                           "response": "settings", "profile": "settings", "run": "settings", "git": "history",
                            "history": "history", "settings": "settings"}
 # Rail destination -> page shown when it is clicked
-RAIL_PAGE: dict[str, str] = {"home": "home", "projects": "workbench", "agents": "agents", "history": "history",
-                             "settings": "settings"}
+RAIL_PAGE: dict[str, str] = {"home": "home", "agents": "agents", "history": "history", "settings": "settings"}
+# Old destination keys (settings, scripts, links of 5.0–5.12) -> the destination that holds them now
+RAIL_ALIASES: dict[str, str] = {"projects": "home"}
 STATUS_POLL_MS = 2500
 
 
@@ -141,6 +144,7 @@ class AppShell:
         return ""
 
     def select_rail(self, dest: str) -> None:
+        dest = RAIL_ALIASES.get(dest, dest)
         self.show(RAIL_PAGE.get(dest, dest))
 
     def show(self, key: str) -> None:
@@ -217,23 +221,8 @@ class AppShell:
         return facts
 
     def _count_facts(self, facts: dict[str, Any]) -> None:
-        """Status bar: when the number of running agents changes, count up/down to it (5.3.0)."""
-        from .motion import value_text
-        from .tokens5 import MOTION
-        old = getattr(self, "_shown_running", None)
-        new = int(facts.get("running", 0))
-        self._shown_running = new
-        if old is None or old == new or "running" not in str(facts.get("text", "")):
-            self.statusbar.show_facts(facts)
-            return
-        tail = facts["text"].split(" ", 1)[1] if " " in facts["text"] else ""
-
-        def step(t: float) -> None:
-            n = value_text(old, new, t)
-            text = facts["text"] if t >= 1 else f"{n} {tail}"
-            self.statusbar.show_facts({**facts, "text": text})
-        self.motion.tween("status:count", 0.0, 1.0, MOTION["page_ms"] * 2, step, ease="linear",
-                          alive=self.statusbar.winfo_exists)
+        """Status bar: the facts sentence (5.13.0: a plain sentence with names — no counter to animate)."""
+        self.statusbar.show_facts(facts)
 
     def _poll_status(self) -> None:
         try:

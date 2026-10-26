@@ -3,7 +3,7 @@
 * 2000 ledger events render in < 300 ms (median of 3 redraws).
 * Circle size follows importance; released version → solid line, proposed → dashed.
 * Dark theme palette is used; zoom/pan keep the canvas consistent.
-* In the Project Workbench the Timeline page shows the canvas and a click opens the event in the Inspector.
+* History › Timeline shows the canvas and a click opens the event in the Workbench Inspector (5.13.0).
 """
 from __future__ import annotations
 
@@ -92,9 +92,12 @@ def main() -> None:
             app.open_project_workbench()
             w = app.workspace_window
             w.wc.ctl.project.tasks.create({"title": "First task", "objective": "Do the first thing"})
-            w.show("timeline")
+            # 5.13.0 (B3): the Workbench has no Timeline section any more — the past lives in History
+            app.shell.show("history")
             root.update()
-            c = w.tl_canvas
+            app.refresh_history_timeline()
+            root.update()
+            c = app.history_tl
             assert c.model["events"], "timeline canvas has the project's events"
             cid = next(k for k, v in c.items.items() if v["kind"] == "event")
             x0, y0, x1, y1 = c.coords(cid)
@@ -102,6 +105,23 @@ def main() -> None:
             assert got and got["kind"] == "event", got
             assert w.wc.selection == ("event", got["id"]), w.wc.selection
             assert c.selected == got["id"]
+            # 5.13.0 (B3): one History — the events are in the same list, with one Show filter
+            ctl = w.wc.ctl
+            ctl.project.timeline.propose_version({"label": "0.9.0"})
+            app.shell.show("history")
+            root.update()
+            app.set_history_kind("all")
+            assert app.history_tree.exists("events"), app.history_tree.get_children()
+            app.set_history_kind("versions")
+            kids = app.history_tree.get_children("events")
+            assert kids and all("Version" in app.history_tree.item(k, "text") or "Milestone" in
+                                app.history_tree.item(k, "text") for k in kids), kids
+            app.history_tree.selection_set(kids[0])
+            root.update()
+            assert "Version proposed" in app.history_output_view.get("1.0", "end"), "event facts in the details"
+            app.set_history_kind("prompts")
+            assert not app.history_tree.exists("events")
+            app.set_history_kind("all")
         finally:
             root.destroy()
     print("PASS: visual timeline GUI smoke - 2000 events < 300ms, importance circles, version lines, dark, click -> Inspector")

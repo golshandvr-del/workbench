@@ -111,8 +111,11 @@ class Pad(tk.Frame):
             self.chev_lbl.configure(background=bg, image=self.assets.icon("chevron_down", 12, color=p["text_dim"]))
 
 
+NO_PROJECT = "No project open"
+
+
 class Toolbar(tk.Frame):
-    """New Project ▾ · Open · Save · Run (from :data:`structure5.TOOLBAR`) and the open project's name."""
+    """New Project ▾ · Open · Save · Run (from :data:`structure5.TOOLBAR`) and the project switcher "<name> ▾"."""
 
     def __init__(self, master: tk.Misc, assets: Assets, commands: dict[str, Callable[[], Any]]) -> None:
         super().__init__(master, bd=0, highlightthickness=0)
@@ -135,18 +138,49 @@ class Toolbar(tk.Frame):
             b = Pad(self, assets, icon=icon, text=label, command=cmd, chevron=bool(kids), name=tid)
             b.pack(side="left", padx=(round(8 * sc), 0), pady=round(6 * sc))
             self.buttons[tid] = b
+        # 5.13.0 (B3/B4): the open project's name is the project switcher "<name> ▾" (Projects left the rail)
         self.project_var = tk.StringVar(value="")
-        self.project_lbl = tk.Label(self, textvariable=self.project_var, bd=0, font=font5("small", sc))
-        self.project_lbl._aiwb_keep_colours = True  # type: ignore[attr-defined]
-        self.project_lbl.pack(side="right", padx=round(14 * sc))
+        self.project_btn = Pad(self, assets, icon="projects", text=NO_PROJECT, command=self.post_project_menu,
+                               chevron=True, name="project")
+        self.project_btn.pack(side="right", padx=(0, round(10 * sc)), pady=round(6 * sc))
+        self.project_lbl = self.project_btn.text_lbl  # 5.1.0 name, kept for callers
+        self.project_menu = tk.Menu(self, tearoff=False)
+        self.menus["project"] = self.project_menu
         self.recolor()
+
+    def set_project(self, name: str) -> None:
+        """Show the open project's name on the switcher (``""`` = no project)."""
+        name = (name or "").strip()
+        self.project_var.set(name)
+        short = name if len(name) <= 28 else name[:27] + "…"
+        self.project_btn.text_lbl.configure(text=short or NO_PROJECT)
+
+    def fill_project_menu(self) -> list[str]:
+        """Recent projects (``commands["project_items"]`` → ``[(label, callable, is_open)]``), then PROJECT_MENU."""
+        m = self.project_menu
+        m.delete(0, "end")
+        rows = []
+        items = self.commands.get("project_items")
+        for label, fn, is_open in (items() if items is not None else [])[:8]:
+            m.add_command(label=("● " if is_open else "    ") + label, command=fn)
+            rows.append(label)
+        if rows:
+            m.add_separator()
+        for cid, label in structure5.PROJECT_MENU:
+            m.add_command(label=label, command=lambda c=cid: self._run(c))
+            rows.append(label)
+        return rows
+
+    def post_project_menu(self) -> None:
+        self.fill_project_menu()
+        self.post_menu("project")
 
     def _run(self, cid: str) -> Any:
         fn = self.commands.get(cid)
         return fn() if fn is not None else None
 
     def post_menu(self, tid: str) -> None:
-        b = self.buttons[tid]
+        b = self.buttons[tid] if tid in self.buttons else self.project_btn
         try:
             self.menus[tid].tk_popup(b.winfo_rootx(), b.winfo_rooty() + b.winfo_height() + 2)
         finally:
@@ -155,7 +189,7 @@ class Toolbar(tk.Frame):
     def recolor(self) -> None:
         p = palette5(self.assets.theme)
         self.configure(background=p["panel"])
-        self.project_lbl.configure(background=p["panel"], foreground=p["text_dim"])
+        self.project_btn.recolor()
         for m in self.menus.values():
             m.configure(background=p["menu"], foreground=p["text"], activebackground=p["active"],
                         activeforeground=p["active_text"], relief="flat", bd=1)
@@ -164,7 +198,7 @@ class Toolbar(tk.Frame):
 
 
 class IconRail(tk.Frame):
-    """Five destinations (from :data:`structure5.RAIL`), a sliding selection marker and the user's avatar."""
+    """The destinations of :data:`structure5.RAIL` (5.13.0: four), a sliding selection marker and the avatar."""
 
     def __init__(self, master: tk.Misc, assets: Assets, on_select: Callable[[str], Any]) -> None:
         super().__init__(master, bd=0, highlightthickness=0)

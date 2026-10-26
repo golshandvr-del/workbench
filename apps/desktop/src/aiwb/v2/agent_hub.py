@@ -121,6 +121,22 @@ def _stage_since(state: dict[str, Any], t: dict[str, Any]) -> datetime | None:
     return max(stamps) if stamps else None
 
 
+# 5.13.0 (owner audit C6): a "stuck" alert says what to do next, not only how long it has waited.
+STUCK_NEXT = {
+    "prompt_copied": "paste the prompt into its chat, or copy it again on Home",
+    "waiting_for_response": "paste the chat's answer on Home (a cut-off answer gets a continue prompt)",
+    "needs_user_review": "review the delivery on Home",
+    "validation_pending": "record the tests/build result on Home",
+    "blocked": "on Home: 'It can continue now' or 'Ask the project manager to re-plan'",
+    "needs_decision": "open it on Home and decide",
+}
+
+
+def _age(hours: float) -> str:
+    """'5 h', or '3 days' from 48 h on (\"blocked for 93 h\" read as a bug to the owner)."""
+    return f"{hours:.0f} h" if hours < 48 else f"{hours / 24:.0f} days"
+
+
 def alerts(state: dict[str, Any], *, now: datetime | None = None, stuck_hours: float = STUCK_HOURS
            ) -> list[dict[str, Any]]:
     """Every idle / stuck / overloaded / overlap finding, most urgent first."""
@@ -147,7 +163,8 @@ def alerts(state: dict[str, Any], *, now: datetime | None = None, stuck_hours: f
             h = _hours(_stage_since(state, t), t_now)
             if h is not None and h > stuck_hours:
                 out.append({"kind": "stuck", "agent_id": a["agent_id"], "task_id": t["task_id"], "rank": 1,
-                            "text": f"{a['name']}: {t['task_id']} has been '{st.replace('_', ' ')}' for {h:.0f} h."})
+                            "text": f"{a['name']}: {t['task_id']} has been '{st.replace('_', ' ')}' for {_age(h)}"
+                                    f" — {STUCK_NEXT.get(st, 'open it on Home')}."})
     out += overlaps(state)
     return sorted(out, key=lambda x: (x["rank"], x["agent_id"], x.get("task_id", "")))
 

@@ -81,6 +81,23 @@ class IntegrateTests(unittest.TestCase):
         self.assertEqual(ev[-1]["count"], 2)
         self.assertNotIn(".workbench/v2/state.json", [x["path"] for x in list_files(self.root)])
 
+    def test_accepting_the_delivery_is_the_review(self) -> None:
+        """5.13.0 (gate ≤ 14 clicks): a clean "Accept the delivery" records the user's review approval, so the task
+        goes straight to the tests/build step; the review is a real manual_review evidence, never a test result."""
+        self.g.perform(f"task:{self.tid}", "prepare")
+        self.g.perform(self.step()["key"], "paste", text=self.answer())
+        st = self.step()
+        self.assertIn("records your review approval", st["explain"])
+        out = self.g.perform(st["key"], "accept_handoff")
+        self.assertIn(f"{self.tid} approved", out["message"])
+        s = self.c.state()
+        self.assertEqual(s["tasks"][self.tid]["status"], "validation_pending")
+        ev = [(e["type"], e["result"]) for e in s["evidence"].values() if e["subject_id"] == self.tid]
+        self.assertIn(("manual_review", "approved"), ev)
+        self.assertFalse(any(t in ("test_run", "build_run") for t, _ in ev), "no test result is made up")
+        nxt = next(x for x in self.g.steps() if x["key"] == f"task:{self.tid}")
+        self.assertTrue(nxt["title"].startswith("Verify"), nxt["title"])
+
     def test_unsafe_and_out_of_scope_are_never_staged(self) -> None:
         self.g.perform(f"task:{self.tid}", "prepare")
         bad = self.answer().replace('path="src/util/__init__.py"', 'path="../evil.py"').replace(

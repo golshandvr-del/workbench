@@ -98,15 +98,16 @@ def main() -> None:
             assert str(w.next_label.cget("anchor")) == "e"
             w.theme_var.set("dark")
             w._set_theme()
-            w.show("timeline")
+            w.show("timeline")  # 5.13.0 (B3): an old key — opens Plan & Tasks (milestones/versions are on the map)
             root.update()
-            assert len(w.tl_tree.get_children()) > 0
+            assert w.wc.section == "plan", w.wc.section
             w.lang_var.set("en")
             w._set_lang()
             assert (ctl.project.store.revision, ctl.project.store.ledger.count()) == (rev, n), "view change wrote state"
-            # timeline event → inspector → open task
-            first = w.tl_tree.get_children()[0]
-            w.tl_tree.selection_set(first)
+            # an event → inspector
+            first = w.wc.timeline_page(0)["items"][0]["event_id"]
+            w.wc.select("event", first)
+            w._render_inspector()
             root.update()
             assert w.insp_title.get()
             w.close()

@@ -4,7 +4,7 @@
 * At 1024x640, 1280x720, 1600x900 and 1920x1080, in Midnight and Daylight, every toolbar button and rail item is
   fully inside the window and no button on any page is squeezed or clipped.
 * Every rail destination opens its page; expert pages light up Agents (Agents › Tools).
-* Toolbar Save / Run work without a project; the status bar shows the V2 facts (agents running, milestone).
+* Toolbar Save / Run work without a project; the status bar shows the V2 facts (whose answer is awaited, milestone).
 * Changing theme or page never writes project state.
 * ``AIWB_SCREENSHOT_DIR=dir`` writes ``shell_midnight.png`` / ``shell_daylight.png`` (needs ImageMagick ``import``).
 """
@@ -80,7 +80,7 @@ def main() -> None:
             ctl = app.workspace_window.wc.ctl
             rev, n = ctl.project.store.revision, ctl.project.store.ledger.count()
             facts = sh.refresh_status()
-            assert facts["text"] in ("No agents running",) or "running" in facts["text"], facts
+            assert "running" not in facts["text"] and facts["text"], facts  # 5.13.0 (B4): only what is true
             assert sh.statusbar.saved_var.get() == "Saved"
             # every destination opens its page; each tool maps to its home destination (5.5.0 TOOL_HOME)
             for dest in sh.nav:

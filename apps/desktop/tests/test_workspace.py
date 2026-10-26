@@ -171,11 +171,11 @@ class WorkspaceControllerTests(Base):
         self.assertEqual((again.section, again.inspector_open, again.sidebar_open, again.theme), ("project", False, False, "dark"))
 
     def test_old_section_keys_are_aliases(self):
-        """5.11.0: seven sections became three; the 2.3.0 keys (ui.json, attention links) still work."""
+        """5.11.0: seven sections became three; 5.13.0: Timeline moved to the Mission Map — the old keys still work."""
         from aiwb.workspace.controller import canonical_section
-        self.assertEqual(SECTIONS, ("plan", "timeline", "project"))
+        self.assertEqual(SECTIONS, ("plan", "project"))
         for old, new in (("overview", "plan"), ("tasks", "plan"), ("team", "project"), ("files", "project"),
-                         ("versions", "project"), ("settings", "project"), ("timeline", "timeline")):
+                         ("versions", "project"), ("settings", "project"), ("timeline", "plan")):
             self.assertEqual(canonical_section(old), new)
             self.wc.set_section(old)
             self.assertEqual(self.wc.section, new)

@@ -72,13 +72,11 @@ def main() -> None:
             assert any("Waiting for test/build" in line for line in w.progress_details), w.progress_details
             assert "0 of 3 tasks verified" in w.progress_var.get(), w.progress_var.get()
 
-            w.show("timeline")
-            root.update()
-            lanes = w.show_lanes()
+            # 5.13.0 (B3): no Timeline section — lanes are a read model, milestones/versions live on the map
+            lanes = w.wc.timeline_lanes()
             assert "agent-implementer" in lanes, list(lanes)
-            assert w.tl_tree.exists("lane:agent-implementer")
             m = w.dialog_milestone({"title": "MVP", "task_ids": tids[:2], "target_date": "2026-12-01"})
-            assert m and w.mv_tree.exists(m["milestone_id"])
+            assert m and any(r["milestone_id"] == m["milestone_id"] for r in w.wc.milestone_rows())
             assert w.accept_selected_milestone(m["milestone_id"], force=False) is None
             assert "open tasks" in w.status_var.get()
             assert w.accept_selected_milestone(m["milestone_id"], force=True)["status"] == "accepted"
@@ -88,15 +86,21 @@ def main() -> None:
             assert w.dialog_advance_version(v["version_id"], "local", {"commit_sha": "abcdef1"})["status"] == "local"
             assert w.dialog_advance_version(v["version_id"], "tagged", {"tag": "v1.0.0"})["status"] == "tagged"
             assert w.dialog_advance_version(v["version_id"], "released", {"run_id": "123"})["status"] == "released"
-            assert w.mv_tree.set(v["version_id"], "status") == "released"
+            assert next(r for r in w.wc.version_rows() if r["version_id"] == v["version_id"])["status"] == "released"
+            app.shell.show("home")
+            root.update()
+            app.refresh_mission(app.status_state(), force=True)
+            labels = [c["label"] for c in app.mission.model["columns"]]
+            assert any("1.0.0" in lb for lb in labels), labels  # the version is a column on the Mission Map
+            app.shell.show("workbench")
+            root.update()
 
             rev = ctl.state()["state_revision"]
-            w.tl_family.set("version")
-            res = w._fill_timeline(0)
+            res = w.wc.timeline_page(0, families=["version"])
             assert res["total"] >= 4, res["total"]
             w.wc.set_language("fa")
-            w.show("timeline")
-            w.show_lanes()
+            w.show("timeline")  # an old key: opens Plan & Tasks
+            assert w.wc.section == "plan", w.wc.section
             w.show("tasks")
             w.show("overview")
             root.update()

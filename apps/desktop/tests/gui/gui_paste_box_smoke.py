@@ -86,15 +86,11 @@ def menu_labels(menu: tk.Menu) -> list[str]:
 
 
 def click(card: Any, label: str) -> None:
-    """Press ``label`` on Home's Next-step card: its primary button, or the item of its More menu."""
+    """Press ``label`` on Home's Next-step card: its primary button or one of the step's other buttons (5.13.0)."""
     card.refresh()
-    if card.next_btn.winfo_manager() and card.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
-        card.next_btn.invoke()
-        return
-    labels = menu_labels(card.next_menu)
-    hit = next((x for x in labels if x.rstrip("…").startswith(label.rstrip("…"))), None)
-    assert hit, f"neither {card.next_btn.cget('text')!r} nor More has {label!r}: {labels} ({card.title_var.get()!r})"
-    card.next_menu.invoke(labels.index(hit))
+    b = card.button(label)
+    assert b is not None, f"the card has no {label!r} button: {card.labels()} ({card.title_var.get()!r})"
+    b.invoke()
 
 
 def type_into(text: tk.Text, value: str) -> None:
@@ -193,16 +189,19 @@ def main() -> None:
 
             # 3) the next task answered as Markdown code blocks without any manifest; first a cut-off version
             rev = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:"))
-            assert any(a["id"] == "approve" for a in rev["actions"]), rev     # task 1 waits for the user's review
-            ws.guide_action(rev["key"], "approve", {"note": ""})
-            o.pump(200)
-            ws.guide_action(rev["key"], "validation_passed", {"run_id": ""})
+            # 5.13.0: "Accept" was the review too — task 1 now waits only for the tests/build result (one click)
+            assert any(a["id"] == "validation_passed" and not a["needs"] for a in rev["actions"]), rev
+            ws.guide_action(rev["key"], "validation_passed", {})
             o.pump(200)
             while any(s["key"] == rev["key"] for s in ws.wc.guide_steps()):    # e.g. close / done steps, if any
                 st_ = next(s for s in ws.wc.guide_steps() if s["key"] == rev["key"])
                 prim = next(a for a in st_["actions"] if a["primary"])
                 assert prim["id"] not in ("approve", "validation_passed"), st_
                 ws.guide_action(rev["key"], prim["id"], {n: "" for n in prim["needs"]})
+                o.pump(200)
+            # 5.13.0: a milestone finished by that task is the next step (rank 15, before new prompts) — accept it
+            for ms_step in [s for s in ws.wc.guide_steps() if any(a["id"] == "accept_milestone" for a in s["actions"])]:
+                ws.guide_action(ms_step["key"], "accept_milestone", {})
                 o.pump(200)
             nxt = next(s for s in ws.wc.guide_steps() if s["key"].startswith("task:")
                        and any(a["id"] == "prepare" for a in s["actions"]))

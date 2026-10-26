@@ -1,4 +1,4 @@
-"""Status-bar facts of the 5.x shell (roadmap 5.1.0): "● 5 agents running · Milestone V0.1.0 … Autosaved".
+"""Status-bar facts of the 5.x shell (roadmap 5.1.0; 5.13.0: "Waiting for an answer from Coder · Milestone V0.1.0").
 
 Pure functions over the V2 project state (no Tk), so the numbers are tested and the bar never guesses.
 Reading the state never writes it.
@@ -41,12 +41,55 @@ def current_milestone(state: dict[str, Any]) -> str:
     return str(vs[-1].get("label") or "") if vs else ""
 
 
+READY = ("prepared",)                                   # prompt made, not copied yet
+WAITING = ("prompt_exported",)                          # copied / sent: the AI's chat has it
+TO_CHECK = ("response_received", "parsed", "reconciled", "stale", "reconciliation_required")  # answer pasted
+
+
+def _name(state: dict[str, Any], aid: str) -> str:
+    return str(((state.get("agents") or {}).get(aid) or {}).get("name") or "").strip() or aid
+
+
+def _who(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def chats(state: dict[str, Any]) -> dict[str, list[str]]:
+    """5.13.0 (owner audit B4): the AIs by what is true of their chat — ``waiting`` (has the prompt, no answer yet),
+    ``ready`` (prompt made, not copied), ``check`` (answer pasted, the user checks it). Names, not ids."""
+    agents = state.get("agents", {}) or {}
+    tasks = state.get("tasks", {}) or {}
+    out: dict[str, list[str]] = {"waiting": [], "ready": [], "check": []}
+    for h in sorted((state.get("handoffs", {}) or {}).values(), key=lambda h: str(h.get("handoff_id", ""))):
+        aid = str(h.get("to_agent_id") or h.get("agent_id")
+                  or (tasks.get(h.get("task_id", "")) or {}).get("owner_agent_id") or "")
+        if not aid or (agents and aid not in agents):
+            continue
+        st = h.get("status")
+        key = "waiting" if st in WAITING else "ready" if st in READY else "check" if st in TO_CHECK else ""
+        if key and _name(state, aid) not in out[key]:
+            out[key].append(_name(state, aid))
+    return out
+
+
 def summary(state: dict[str, Any] | None) -> dict[str, Any]:
-    """Everything the status bar shows, as data (``text`` is the left-hand sentence)."""
+    """Everything the status bar shows, as data (``text`` is the left-hand sentence).
+
+    5.13.0 (owner audit B4): only what is true — "Waiting for an answer from Coder" when Coder's chat has the
+    prompt, never "2 agents running" when no AI has anything. ``running`` = AIs whose answer is awaited.
+    """
     if state is None:
         return {"running": 0, "milestone": "", "live": False, "text": "No project open"}
-    n = len(running_agents(state))
+    c = chats(state)
+    parts = []
+    if c["waiting"]:
+        parts.append(f"Waiting for an answer from {_who(c['waiting'])}")
+    if c["check"]:
+        parts.append(f"Check the answer of {_who(c['check'])}")
+    if c["ready"]:
+        parts.append(f"Prompt ready for {_who(c['ready'])}")
     milestone = current_milestone(state)
-    head = f"{n} agent{'s' if n != 1 else ''} running" if n else "No agents running"
+    head = "  ·  ".join(parts) or "Nothing waiting"
     text = head + (f"  ·  Milestone {milestone}" if milestone else "")
-    return {"running": n, "milestone": milestone, "live": n > 0, "text": text}
+    n = len(c["waiting"])
+    return {"running": n, "milestone": milestone, "live": n > 0, "text": text, "chats": c}

@@ -33,30 +33,24 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
   - Open
   - Save
   - Run
+  - Project switcher
+    - Recent projects
+    - All projects…
+    - Reveal folder
 - Rail
   - Home
     - Next step
     - Mission Map
     - Task details
-    - Your projects
-  - Projects
-    - Project cards
-    - Project Workbench
-    - Tools
-      - Project Profile
-      - Run & Report
   - Agents
     - Team
     - Selected AI
     - Balance
     - Dispatch desk
-    - Tools
-      - Prompt
-      - AI Response
   - History
     - Timeline
-    - Prompts & responses
-    - Versions
+    - One list
+    - Selected step
     - Tools
       - Git / GitHub
   - Settings
@@ -64,6 +58,12 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
     - Experience
     - Motion
     - Application
+    - Project
+    - Classic tools (1.x)
+      - Prompt
+      - AI Response
+      - Project Profile
+      - Run & Report
 - Task menu
   - COPY PROMPT
   - SEND PROMPT

@@ -81,8 +81,8 @@ def main() -> None:
             # mode: simple hides expert pages, advanced shows them; one source of truth
             app.prefs.set_mode("simple")
             root.update()
-            assert list(app.shell.nav) == ["home", "projects", "agents", "history", "settings"], list(app.shell.nav)
-            assert all(b.winfo_ismapped() for b in app.shell.nav.values()), "5.x rail: five fixed destinations"
+            assert list(app.shell.nav) == ["home", "agents", "history", "settings"], list(app.shell.nav)  # 5.13.0
+            assert all(b.winfo_ismapped() for b in app.shell.nav.values()), "5.13.0 rail: four fixed destinations"
             assert "git" not in app.shell.visible_pages() and "workbench" in app.shell.visible_pages()
             assert w.wc.mode == "simple" and ctl.mode == "simple"
             app.prefs.set_mode("advanced")
@@ -94,15 +94,19 @@ def main() -> None:
             # existing calls that select a page directly keep the rail in sync
             app.notebook.select(app.response_tab)
             root.update()
-            assert app.shell.current == "response" and app.shell.nav_var.get() == "agents"  # Agents › Tools
-            assert app.shell.rail.current == "agents"
+            assert app.shell.current == "response" and app.shell.nav_var.get() == "settings"  # Settings › Classic tools
+            assert app.shell.rail.current == "settings"
             # 5.x toolbar + status bar
             assert [b.text for b in app.shell.toolbar.buttons.values()] == ["New Project", "Open", "Save", "Run"]
             facts = app.shell.refresh_status()
-            assert facts["text"].endswith("running") or "Milestone" in facts["text"], facts
-            app.shell.nav["projects"].invoke()
+            assert "running" not in facts["text"] and facts["text"], facts  # 5.13.0 (B4): only what is true
+            app.open_project_settings()  # 5.13.0: Settings › Project › Project settings… shows the Workbench page
             root.update()
-            assert app.shell.current == "workbench"
+            assert app.shell.current == "workbench" and app.shell.rail.current == "settings"
+            app.shell.select_rail("projects")  # old destination key of 5.0–5.12 -> Home
+            root.update()
+            assert app.shell.current == "home"
+            assert app.shell.toolbar.project_var.get() == "Shell project", app.shell.toolbar.project_var.get()
             assert (ctl.project.store.revision, ctl.project.store.ledger.count()) == (rev, n), "view change wrote state"
             print("Single shell smoke passed: Workbench embedded (no Toplevel) · one Fluent theme · one language (RTL rail) · "
                   "one Simple/Advanced mode · settings persisted · no hard-coded colours")

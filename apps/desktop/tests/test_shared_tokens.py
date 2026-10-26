@@ -33,8 +33,10 @@ class SharedTokensTest(unittest.TestCase):
         self.assertEqual(self.d["motion"], tokens5.MOTION)
 
     def test_rail_equal_desktop(self) -> None:
-        self.assertEqual([(r["key"], r["label"], r["icon"]) for r in self.d["rail"]],
-                         [(k, label, i) for k, label, i, _s in structure5.RAIL])
+        """The shared tokens feed the phone: its bottom bar is structure5.MOBILE_BAR (5.13.0: the desktop rail is four)."""
+        self.assertEqual([(r["key"], r["label"], r["icon"]) for r in self.d["rail"]], list(structure5.MOBILE_BAR))
+        desktop = {k for k, _l, _i, _s in structure5.RAIL}
+        self.assertTrue(desktop <= {k for k, _l, _i in structure5.MOBILE_BAR})
 
 
 if __name__ == "__main__":

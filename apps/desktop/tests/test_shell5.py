@@ -25,22 +25,31 @@ class StatusFactsTests(unittest.TestCase):
                                                  "text": "No project open"})
 
     def test_idle_project(self):
-        self.assertEqual(status5.summary(state())["text"], "No agents running")
+        self.assertEqual(status5.summary(state())["text"], "Nothing waiting")
 
-    def test_running_from_tasks_and_handoffs(self):
-        s = state(tasks={"t1": {"status": "in_progress", "owner_agent_id": "a1"},
-                         "t2": {"status": "ready", "owner_agent_id": "a2"},
-                         "t3": {"status": "todo", "owner_agent_id": "a3"}},
-                  handoffs={"h1": {"status": "prompt_exported", "task_id": "t3"},
-                            "h2": {"status": "accepted", "task_id": "t2"}})
-        self.assertEqual(status5.running_agents(s), ["a1", "a3"])
-        self.assertEqual(status5.summary(s)["text"], "2 agents running")
-        self.assertTrue(status5.summary(s)["live"])
+    def test_only_what_is_true_with_names(self):
+        """5.13.0 (owner audit B4): a task in progress is not "an agent running"; a sent prompt is a wait."""
+        s = state(agents={"a1": {"name": "Coder"}, "a2": {"name": "Tester"}, "a3": {}},
+                  tasks={"t1": {"status": "in_progress", "owner_agent_id": "a1"},
+                         "t2": {"status": "ready", "owner_agent_id": "a2"}, "t3": {"status": "todo",
+                                                                               "owner_agent_id": "a3"}},
+                  handoffs={"h1": {"handoff_id": "h1", "status": "prompt_exported", "task_id": "t3", "to_agent_id": "a3"},
+                            "h2": {"handoff_id": "h2", "status": "accepted", "task_id": "t2", "to_agent_id": "a2"}})
+        f = status5.summary(s)
+        self.assertEqual(f["text"], "Waiting for an answer from a3")
+        self.assertEqual((f["running"], f["live"]), (1, True))
+        s["handoffs"]["h3"] = {"handoff_id": "h3", "status": "prepared", "task_id": "t1", "to_agent_id": "a1"}
+        s["handoffs"]["h4"] = {"handoff_id": "h4", "status": "parsed", "task_id": "t2", "to_agent_id": "a2"}
+        self.assertEqual(status5.summary(s)["text"],
+                         "Waiting for an answer from a3  ·  Check the answer of Tester  ·  Prompt ready for Coder")
 
-    def test_one_agent_singular_and_unknown_agents_ignored(self):
-        s = state(tasks={"t1": {"status": "in_review", "owner_agent_id": "a1"},
-                         "t2": {"status": "in_progress", "owner_agent_id": "ghost"}})
-        self.assertEqual(status5.summary(s)["text"], "1 agent running")
+    def test_two_waiting_and_unknown_agents_ignored(self):
+        s = state(agents={"a1": {"name": "Coder"}, "a2": {"name": "Tester"}},
+                  handoffs={"h1": {"handoff_id": "h1", "status": "prompt_exported", "to_agent_id": "a1"},
+                            "h2": {"handoff_id": "h2", "status": "prompt_exported", "to_agent_id": "a2"},
+                            "h3": {"handoff_id": "h3", "status": "prompt_exported", "to_agent_id": "ghost"}})
+        self.assertEqual(status5.summary(s)["text"], "Waiting for an answer from Coder and Tester")
+        self.assertNotIn("running", status5.summary(s)["text"])
 
     def test_milestone_first_planned_then_open_version(self):
         s = state(milestones={"m2": {"milestone_id": "m2", "title": "V0.2.0", "status": "planned"},
@@ -73,7 +82,7 @@ class ShellMapTests(unittest.TestCase):
         """5.5.0: each expert tool sits under the destination it belongs to (structure5.TOOL_HOME)."""
         for key, _label in structure5.TOOLS:
             self.assertEqual(ui_shell.RAIL_OF[key], structure5.TOOL_HOME[key], key)
-        self.assertEqual({structure5.TOOL_HOME[k] for k, _l in structure5.TOOLS}, {"projects", "agents", "history"})
+        self.assertEqual({structure5.TOOL_HOME[k] for k, _l in structure5.TOOLS}, {"settings", "history"})
 
     def test_rail_destinations_are_never_advanced_only(self):
         for page in ui_shell.RAIL_PAGE.values():

@@ -68,3 +68,4 @@ logs/
 .DS_Store
 Thumbs.db
 Desktop.ini
+apps/desktop/src/.aiwb_version

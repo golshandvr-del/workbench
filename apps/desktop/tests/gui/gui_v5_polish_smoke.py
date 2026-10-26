@@ -100,12 +100,15 @@ def main() -> None:
             tree = ui_map.extract(app)
             home = section_labels(tree, "Home")
             assert home == ["Mission Map", "Map view", "Task details", "Next step"], home
-            assert "Your projects" in section_labels(tree, "Projects"), section_labels(tree, "Projects")
+            assert "Project" in section_labels(tree, "Settings"), section_labels(tree, "Settings")  # 5.13.0
+            assert "Projects" not in [c["label"] for c in tree["children"][1]["children"]], "Projects left the rail"
             assert not ui_map.audit(tree), ui_map.audit(tree)
 
-            # -- Projects: the library as cards
-            app.shell.show("workbench")
-            app.refresh_project_list()
+            # -- Toolbar › project switcher › All projects…: the library as cards (5.13.0: its own window)
+            items = app.switcher_items()
+            assert [lab for lab, _f, _o in items][0] == "Polish project" and items[0][2], items
+            assert "Alpha site" in [lab for lab, _f, _o in items], items
+            app.open_all_projects()
             settle(root)
             cards = app.project_cards
             paths = [r["path"] for r in cards.rows]
@@ -119,6 +122,7 @@ def main() -> None:
             app.project_search_var.set("")
             settle(root)
             assert len(cards.rows) == 2, cards.rows
+            app.projects_win.withdraw()
 
             # -- Home › Map view
             app.shell.show("home")
@@ -154,11 +158,40 @@ def main() -> None:
                 shot(root, f"history_{tag}.png")
                 app.shell.show("home")
                 shot(root, f"home_{tag}.png")
-                app.shell.show("workbench")
-                shot(root, f"projects_{tag}.png")
+                app.shell.show("settings")
+                shot(root, f"settings_{tag}.png")
             after = state_file.read_bytes() if state_file.exists() else b""
             assert after == before, "5.7.0 views read the project state, never write it"
-            print("5.7.0 polish: Home = active project, Projects = library cards, Map view, History timeline: PASS")
+
+            # -- 5.13.0: Toolbar › "<name> ▾" — the real menu: recent projects (open one marked), All projects…, Reveal
+            tb = app.shell.toolbar
+            assert tb.project_btn.text_lbl.cget("text") == "Polish project", tb.project_btn.text_lbl.cget("text")
+            rows = tb.fill_project_menu()
+            assert rows[-2:] == ["All projects…", "Reveal folder"] and "Alpha site" in rows, rows
+            menu = tb.project_menu
+            labels = {menu.entrycget(i, "label"): i for i in range(int(menu.index("end")) + 1)
+                      if menu.type(i) == "command"}
+            assert "● Polish project" in labels, labels
+            app.shell.show("agents")
+            menu.invoke(labels["    Alpha site"])
+            wait_for_project_ready(app, root, first)
+            settle(root)
+            assert app.workspace.resolve() == first.resolve() and app.shell.current == "home", (app.workspace,
+                                                                                                 app.shell.current)
+            assert tb.project_var.get() == "Alpha site", tb.project_var.get()
+            tb.fill_project_menu()
+            labels = {menu.entrycget(i, "label"): i for i in range(int(menu.index("end")) + 1)
+                      if menu.type(i) == "command"}
+            menu.invoke(labels["All projects…"])
+            settle(root)
+            assert app.projects_win.state() != "withdrawn", "All projects… shows the library window"
+            app.projects_win.protocol("WM_DELETE_WINDOW")  # closing only hides it
+            app.projects_win.withdraw()
+            menu.invoke(labels["    Polish project"])
+            wait_for_project_ready(app, root, project)
+            settle(root)
+            assert tb.project_var.get() == "Polish project" and app.shell.current == "home"
+            print("5.7.0 polish: Home = active project, switcher menu + All projects = library cards, Map view, History timeline: PASS")
         finally:
             try:
                 root.destroy()

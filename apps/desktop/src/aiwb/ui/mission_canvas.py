@@ -27,7 +27,8 @@ STATE_TEXT = {"done": "Done", "active": "In progress", "blocked": "Blocked", "at
 class MissionCanvas(tk.Canvas):
     def __init__(self, master: tk.Misc, assets: Assets, *, on_select: Callable[[str], Any] | None = None,
                  on_menu: Callable[[str, int, int], Any] | None = None, motion: Any = None,
-                 on_lane: Callable[[str], Any] | None = None, **kw: Any) -> None:
+                 on_lane: Callable[[str], Any] | None = None,
+                 on_column_menu: Callable[[int, int, int], Any] | None = None, **kw: Any) -> None:
         super().__init__(master, highlightthickness=0, bd=0, **kw)
         self.motion = motion          # 5.3.0: shared animation clock (None = still picture)
         self._grown_for = ""          # branch growth plays once per project
@@ -36,6 +37,7 @@ class MissionCanvas(tk.Canvas):
         self.assets = assets
         self.on_select, self.on_menu = on_select, on_menu
         self.on_lane = on_lane        # 5.11.0: click on an AI's hexagon or name → that AI's prompt/answer on Home
+        self.on_column_menu = on_column_menu  # 5.13.0: right-click on a milestone/version column → its menu
         self.model: dict[str, Any] = mission_model.build(None)
         self.geo: dict[str, Any] = {}
         self.node_items: dict[int, str] = {}      # canvas id → task id
@@ -121,9 +123,9 @@ class MissionCanvas(tk.Canvas):
             done = col.get("status") in ("released", "accepted")
             self.create_line(x, top + 16 * s, x, bottom, fill=p["version"] if not done else p["go"],
                              dash=(max(2, round(4 * s)), max(2, round(5 * s))), width=max(1, round(s)),
-                             tags=("column",))
+                             tags=("column", f"col:{i}"))
             self.create_text(x, top, text=col["label"], fill=p["version"] if not done else p["go"],
-                             font=font5("mono", s), tags=("column_label",))
+                             font=font5("mono", s), tags=("column_label", f"col:{i}"))
         # lanes
         for i, lane in enumerate(m["lanes"]):
             y = g["lane_y"][i]
@@ -269,6 +271,16 @@ class MissionCanvas(tk.Canvas):
                     return tag[5:]
         return ""
 
+    def column_at(self, x: int, y: int) -> int:
+        """Index of the column whose label or dashed rail is under widget coordinates (x, y) (-1 = none)."""
+        cx, cy = self.canvasx(x), self.canvasy(y)
+        r = max(3, round(5 * self.assets.scale))
+        for item in self.find_overlapping(cx - r, cy - 2, cx + r, cy + 2):
+            for tag in self.gettags(item):
+                if tag.startswith("col:"):
+                    return int(tag[4:])
+        return -1
+
     # -- interaction
     def _motion(self, e: Any) -> None:
         if not self.task_at(e.x, e.y) and self.on_lane is not None and self.lane_at(e.x, e.y):
@@ -356,3 +368,7 @@ class MissionCanvas(tk.Canvas):
         tid = self.task_at(e.x, e.y)
         if tid and self.on_menu is not None:
             self.on_menu(tid, e.x_root, e.y_root)
+            return
+        col = self.column_at(e.x, e.y) if not tid else -1
+        if col >= 0 and self.on_column_menu is not None:
+            self.on_column_menu(col, e.x_root, e.y_root)

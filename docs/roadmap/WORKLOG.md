@@ -21,7 +21,126 @@ Baseline before 5.11.0 (main `5066fe3`, tag `desktop-v5.10.0`): 765 unit tests O
 PR #67 merged (main `50967f0`), tag `desktop-v5.11.0` pushed (release-desktop.yml builds the Release). CI run 1 failed
 only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smokes pass with PYTHONIOENCODING=cp1252.
 
-## 5.12.0 — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
+## 5.12.0 — DONE
+
+PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
+first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
+
+## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
+
+Facts (read in code 2026-10-25): rail = `structure5.RAIL` (5 dests) + `ui/shell.py` RAIL_OF/RAIL_PAGE/PAGES/NAV_ORDER;
+pages added in `AI_Workbench._make_ui` (home, workbench, agents, prompt, response, profile, history, run, git,
+settings); Projects page = `_make_projects_dashboard` (cards strip) + embedded Workbench (`workspace/shell.py`,
+3 sections from `workspace/controller.SECTIONS`); App Map `ui/ui_map.py` extract/audit (RULES, GENERIC,
+two_homes by label); tests tied to the rail: test_ui_map (also mobile section of UI_MAP.md = structure5.RAIL),
+test_shell5, test_ui_tree; guide steps have keys title/explain/actions[label] and show agent ids
+("Paste agent-core-dev's answer for TASK-0001 …"); status bar text = `ui/status5.summary` ("N agents running").
+
+Plan (each step = many small checkpoints; tests green at the end of each step):
+1. User words (B4): guide titles/explain/labels use the AI **name** (never `agent-…`), no `F\d+`, `wave`, `handoff`,
+   `HO-`; status bar says what is true ("Waiting for <AI>'s answer" / "<AI>: prompt ready" / "Nothing waiting").
+   New `tests/test_user_words.py` scans every guide step in the scripted runs of test_v2_guide + corpus scenario.
+2. Mission Map carries milestones/versions: column header right-click menu (New milestone… / Accept milestone /
+   Propose version… / Record release…) using the existing Workbench functions; Timeline tab of the Workbench removed.
+3. History = one list with filter (All · Prompts · Answers · Events · Versions); Workbench events go there.
+4. Rail = Home · Agents · History · Settings; Projects leaves the rail → project switcher in the toolbar (the project
+   name becomes a menu button "<name> ▾": recent projects, All projects…, Reveal folder, Remove from list). The
+   Workbench page stays only as the engine behind Home (not navigable); Project settings → Settings › Project;
+   classic pages → Settings › Project › Classic tools (1.x)… (one window). Mobile section of UI_MAP follows RAIL
+   (desktop-only change is allowed: mobile keeps its own list in a new `structure5.MOBILE_BAR`).
+5. `ui/commands.py`: every command id + its labels (synonyms like Copy prompt / Prepare prompt for this task /
+   COPY PROMPT); App Map audit: one home per command id, More ≤ 3 items, Home has no More; remove duplicates.
+6. Gate smoke `gui_owner_path_smoke` extended: New Project → Charter → task → context request → files → answer →
+   Accept → Milestone, only from Home, ≤ 14 clicks + pastes; screenshots `docs/audit/screens/v5.13-one-screen/`.
+7. Fix all smokes/tests, UI_TREE.md, regen UI_MAP, docs, version 5.13.0, PR → CI → tag → Release.
+
+Progress (tick = committed and pushed):
+
+- [x] 1 user words: dispatch text 2a7fe49, guide `_in_user_words` at the source 52ea503, `tests/test_user_words.py` d3d6c0c (add to bump: --test test_user_words.py), status bar `status5.chats/summary` 3f353df (+ tests c8bcce2, 462768a, fb911d3, shell 61cfd12), Workbench phase line 4af65d3; unit 804 OK
+- [x] 2 map columns: `ui/column_menu.py` 368b182, canvas `column_at`/`on_column_menu` 8e741fc, app `mission_column_rows/menu/pick` (+`mission_input_hook`) ae3a83a, `tests/test_column_menu.py` b7b5d55 (add to bump), Workbench SECTIONS=(plan, project) 06a0289, Timeline view removed 92650a9..01a30e8, smokes moved (timeline→History, workflow, workspace, menu column) 57d438c..a72f4d7
+- [x] 3 one History: `ui/history_feed.py` f4c75c6/e4216df, History "Show" filter (All·Prompts·Answers·Saved·Events·Versions) replaces "Saved only" + events group 6de191f, show_history ceb9915, event details 80741ea, `tests/test_history_feed.py` 70c82a8 (add to bump), smoke b07b9f9; unit 814 OK
+- [x] 4 rail of four + project switcher + Settings › Project — structure5 RAIL=4, MOBILE_BAR, PROJECT_MENU,
+  CLASSIC 574cb21/a7cac63; UI_TREE 65ceb7f; shell RAIL_OF/RAIL_PAGE + alias projects→home 5834060, workbench→settings
+  6db2836; toolbar switcher 93b8465; tests 7cf5809/e1cb430/e86c56a/1c4d5cb; tools card title f10ec49; "All projects"
+  window 3c542db; switcher items/switch_project be9e738; Settings › Project + Classic tools 31f1e59/ceae17f; Run and
+  Save profile stay on Home 7f27ce0/8d587a1; App Map e2ddf3f/855cbac/d6137ac; regen UI_MAP e103789..047995d; unit 814 OK.
+  Smokes for four destinations: ia 7121cef, single_shell 21649c0/fb76411, polish 7732616/a1fc61e (switcher menu
+  invoked), UI_MAP regen a32b457/28d9b79 (audit clean); unit 814 OK, GUI 47/47.
+- [x] 5 commands.py + audit by command id, More ≤ 3, no More on Home — `aiwb/ui/commands.py` d4fc0e7 (+ a word of
+  one job is that job everywhere a29e8fe); audit two_homes by id + `more_max_items`=3 + `home_more`=0 48f5dd7; Home ›
+  Task details only tells (goal · done when) 2c9a1f3/f1073ad; Next-step card: other actions as buttons + "All open
+  steps (N)" 845d2cf, ui_map frame `_aiwb_dynamic` 876d95e, smokes owner_path/paste_box 12eb9e0/3b9014c, guide
+  e0ed8e5/9f0a281; Workbench Plan & Tasks without Copy prompt/Check & import f8c82d1/507fa7b; ActionBar `menus=` (named
+  menus) 42f23db; Settings › Application = App Map… + Maintenance ▾ 50173ff/598e104; Git Local "Git for Windows ▾"
+  57713d9; GitHub repos "Project binding ▾" 6e2d66e; tests test_next_card e8d56f1/dc72387, test_ui_actions a40173d,
+  `tests/test_commands.py` 135eeb6/4231a5b (add to bump: --test test_commands.py), ia smoke 6620975; UI_MAP regen
+  7daef66..638dd67 (audit clean); unit OK, GUI 47/47 (ia fixed after the run).
+- [ ] 6 owner-path gate ≤ 14 clicks, screenshots — findings 2026-10-26 (explored with a copy of gui_owner_path_smoke, nothing committed): today's path = 11 clicks up
+  to "Accept the delivery" (file on disk). After that, on Home: Review → Approve (12) → Verify → "Tests/build passed…"
+  (13, needs run_id: opens an input dialog = Owner records it as a dialog → use the card's inline input or accept
+  "I can't run tests — accept on review…" path with the inline field) → MS-0001 "Accept milestone Core ready" is in
+  "All open steps" behind "Prepare the prompts for 2 tasks" (rank 39 < 75) → reach it via steps_menu (1 click) +
+  "Accept the milestone" (1 click). Gate path still missing a context request: use fixture X03 shape
+  (AIWB_CONTEXT_REQUEST for src/core/store.py) as the first answer → "Copy the files for the chat" → "I sent them" →
+  paste real answer. Budget: 11 + context(2) + approve/verify(2) + milestone(2) = 17 > 14 → must cut: e.g. Accept the
+  delivery also approves the review when validation is waived/recorded, or verification asked inline on the card.
+  Decide, implement, then MAX_CLICKS=14 + screenshots docs/audit/screens/v5.13-one-screen/.
+  DECISION (2026-10-26, run 2): 14 clicks = New ▾(1) Guided(2) Next(3) Next(4) Create(5, also copies the charter
+  prompt, like Prepare in 5.11) Use(6 charter) Accept plan(7) Prepare+copy(8) Use(9 context request) Copy the
+  files(10) Use(11 real answer; "I sent them" optional) Accept the delivery(12, also records the review approval —
+  one judgement, not two) Tests/build passed(13, no run_id dialog: run id optional, auto manual-<time>) Accept the
+  milestone(14, milestone rank 15: finish before starting new prompts). Sub-steps: a) guide accept_handoff approves
+  b) validation_passed without needs c) milestone rank d) Create copies charter prompt e) smoke + MAX_CLICKS=14 +
+  screenshots f) fix tests.
+  DONE a 5f28484.. : a) a052329 b) 3128a9d c) 3c115b5 d) dd338ea e) smoke 5f28484 PASS 14 clicks (12 to the first
+  file) + 3 pastes; screenshots bd86362..537464c (12 png). f) tests: next = unit run + GUI full run.
+- [ ] 7 tests/docs/version/PR/CI/tag/Release — unit 840 OK, GUI 47/47; bump (5 files, one per checkpoint, via
+  /tmp/bump copy of tools/bump_desktop_release.py with --module ui/column_menu.py ui/commands.py ui/history_feed.py and
+  --test test_column_menu/commands/history_feed/stale_bytecode/user_words) ..c12d66e; checklist 4e39659; CHANGELOG
+  0de50af; USER_GUIDE 27f185b/a93a3af; README 0985334; ROADMAP ✅ 9c48612 → next: PR → CI → merge → tag desktop-v5.13.0
+
+### Owner test of 5.12.0 on Windows (2026-10-26, 4 screenshots → docs/audit/owner-5.12/) — findings C1–C7
+- C1 CRITICAL (root cause found): title/status say **5.11.0** after installing 5.12.0. The Setup.bat payload is right
+  (APP_VERSION 5.12.0, checked by decoding the release asset), but every zip entry has the same date 2026-10-17 00:00
+  and AI_Workbench.py / aiwb/__init__.py / github/api_client.py have the SAME SIZE in 5.11 and 5.12 (only a digit
+  changed). Python validates `__pycache__/*.pyc` by source mtime+size → the 5.11 bytecode stays "valid" and keeps
+  running (install.ps1 copies over the old dir and `compileall` does not recompile). The owner ran 5.11's main window
+  with 5.12 modules: all his screenshots are of that mix. Fix: install.ps1 removes `__pycache__` (and old *.pyc) before
+  copying + `compileall -f`; launch_aiwb.py compares AI_Workbench.APP_VERSION with aiwb.__version__ and, on mismatch,
+  clears the caches and restarts once; test that both versions match after install (test_release_gate).
+- C2 Home Next-step card: a blank blue square (the primary button with no text) + "More"; a faint "Full screen view"
+  label floats inside the paste box. (5.11 main + 5.12 card mix and/or empty label when the step has no primary.)
+- C3 Projects › Project settings › "Charter start prompts" (agent-architect + Copy start prompt): a template agent
+  in a user-team project, old feature with no meaning for the owner → remove from settings (start prompts are built
+  by the app on the card).
+- C4 Projects › Timeline canvas: "project" lane label clipped, "0.0.0" label on the dot, empty sparse axis. 5.13.0
+  drops the Timeline tab (milestones are on the map) → make sure the canvas is gone from the owner's path; if kept,
+  fix label placement.
+- C5 Agents › "Edit team…" alone in a strip under the cards (bad spacing); card "UI Developer" shows role
+  "Implementer" (role text should be the user's description).
+- C6 Agents › Balance: "Reviewer: TASK-0004 has been 'blocked' for 93 h" + "Apply suggested moves" with no moves
+  listed → show the moves (or hide the button when there are none); "blocked" time should say what to do.
+- C7 Settings › App Map…: the app "hangs", switches tabs and opens pages by itself, then a big tree window opens.
+  This is ui_map.extract() walking every page to draw the map (developer audit tool, not for users). → move it out of
+  Settings (keep it for tests / a hidden dev flag), or at least run without visibly switching pages + explain it.
+Plan: C1–C7 are fixed in 5.13.0 step 6g–6m (before step 7 release), all before the mobile app.
+Progress: 6f DONE (paste_box smoke accepts the milestone 32c41f8; unit 827 OK, GUI 47/47). C1 DONE: install.ps1
+be4ba71, launch_aiwb.clear_stale_bytecode + `.aiwb_version` stamp 9b68dcc/c6e3a4b, tests/test_stale_bytecode.py
+9a847ac (add to bump: --test test_stale_bytecode.py). C7 DONE: Settings button removed, Ctrl+Shift+F12 9c509ab, commands 04dc8e1, smokes ia 0d3de9c / map d742ef7,
+UI_MAP regen e2ec420..ec3d7e2 (tools/ui_map.py header 5ef9001).
+C3 DONE: Charter start prompts box removed 62b5ceb, charter smoke 0663842. C6 DONE: stuck alert says next step
+(STUCK_NEXT, days ≥ 48 h) d91ff92/25615ee, Balance names AIs + Apply button only with moves a34238a/af25afb, smokes
+agents 11df32d / ia f32e3dc, UI_MAP regen 6befad3/321a34b (ia/map/agents PASS). C5 DONE: card role =
+team_setup.ROLE_LABEL ("Developer") b63dc34, Edit team… on the Team title row 22d1eda, tests test_agents_cards
+b83c39f (C5+C6); smokes agents/ia/layout/map/team PASS. C2 DONE: next_btn not packed until refresh gives a
+non-blank label d429f7f, widget tests test_next_card.CardWidgetTests cf86ea3; owner_path/paste_box/ia/map/layout PASS.
+C4 DONE: Timeline tab already gone from the Workbench (step 2); the same canvas is History › Timeline, so its drawing
+was fixed: lane = AI name (model `lane_names`) de516c1, names fit by pixel width with "…" 721b5b1, version label
+"v0.1.0" above the lanes clear of dots + dated axis ends 4d1bb74, tests test_timeline_canvas 6a993a7, screenshot
+docs/audit/screens/v5.13-one-screen/c4_timeline_fixed.png. C1–C7 ALL DONE → next: step 7 (full unit + GUI run,
+docs, version 5.13.0, PR, CI, tag, Release).
+
+## 5.12.0 (archive) — Real chat answers work (B1, B2, B8) (branch `feat/v5.12.0-real-answers`)
 
 Owner tested 5.11.0 on real Windows + GPT (2026-10-25). Audit B1–B8 in ROADMAP §1b, evidence `docs/audit/owner-5.11/`.
 The old Quick-mode plan (below, branch `feat/v5.12.0-quick-mode`, only a WORKLOG commit) moved to **5.14.0**.
@@ -61,7 +180,7 @@ Progress (tick = committed and pushed):
 - [x] 3 forgiving context parser (48856a3, folders 7010d3a, damaged copy 61e1f74), preview = parser (e4781e6), prompt format (9a48fe2), tests 6b73668 35c849e, JSON comma+comment 546f8f7; unit 795 OK
 - [x] 4 v2/context_step.py (9153a38), controller links request→handoff (9467def), guide step + copy_context/context_sent + clear on answer (ad512e0, 664d24b), card+shell copy (a78c4df, 9548633), test_context_step f93ec7a; unit 801 OK
 - [x] 5 corpus F25 C31 X01-X04 (3432f2f builder, a1c392b replay kind context, 9a91f09…fc0f067 files, 4f9f3dd shape) 60 cases OK; gui_context_smoke.py 13fcb7a PASS; charter smoke expected the raw prompt (Copy now adds the answer rule) → 4941281; full GUI 47/47
-- [~] 6 version bump (3e66b2c…9b033fc via tools/bump_desktop_release.py in /tmp copy, one file per checkpoint), checklist cc68083, CHANGELOG 2b86858, README 9724c98, USER_GUIDE 4fb08bc, gate "✓ preview ⇒ card moves" (0d0d05a, d6a9935), ROADMAP e74f362; unit 802 OK, GUI 47/47 → next: PR → CI → merge → tag desktop-v5.12.0
+- [x] 6 version bump (3e66b2c…9b033fc via tools/bump_desktop_release.py in /tmp copy, one file per checkpoint), checklist cc68083, CHANGELOG 2b86858, README 9724c98, USER_GUIDE 4fb08bc, gate "✓ preview ⇒ card moves" (0d0d05a, d6a9935), ROADMAP e74f362; unit 802 OK, GUI 47/47 → next: PR → CI → merge → tag desktop-v5.12.0
 
 ## 5.14.0 (planned, was 5.12.0) — Quick mode
 

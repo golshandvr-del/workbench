@@ -7,10 +7,12 @@ the New Project wizard, and Home's Next-step card (its primary button, its More 
 Typing and pasting go into the real Entry/Text widgets. Any modal dialog that opens on the way is a failure (5.11.0:
 no popup paste box), and so is a click count above the 5.11.0 gate.
 
-Path: New Project ▾ › Guided project → wizard (Next, Next, Create) → **Home** (not the Workbench, 5.11.0) → Copy the
-charter prompt → paste the charter in the card → Use this answer → Accept → Prepare (also copies the prompt) → paste
-the answer in the card → Use this answer → Accept the files → the file exists on disk. The status bar never says
-"No project open" (A6). Gate: ≤ 12 clicks + the pastes.
+Path (5.13.0 gate, owner audit B3–B5): New Project ▾ › Guided project → wizard (Next, Next, Create — Create also
+copies the project-manager prompt) → **Home** → paste the charter in the card → Use this answer → Accept → Prepare
+(also copies the prompt) → the AI asks for a file: paste its context request → Use this answer → Copy the files for
+the chat → paste the real answer → Use this answer → Accept the delivery (also your review) → the file exists on disk
+→ Tests/build passed → Accept the milestone. The status bar never says "No project open" (A6).
+Gate: ≤ 14 clicks + the pastes (5.11.0: ≤ 12 up to the first file).
 
 ``AIWB_SCREENSHOT_DIR=dir`` writes one screenshot per step (needs ImageMagick ``import``).
 """
@@ -31,7 +33,8 @@ from typing import Any
 import AI_Workbench as wb
 from gui_smoke_helpers import wait_for_project_ready
 
-MAX_CLICKS = 12          # roadmap 5.11.0 gate: New Project → first file on disk in ≤ 12 clicks (+ the pastes)
+MAX_CLICKS = 14          # roadmap 5.13.0 gate: New Project → … → milestone accepted in ≤ 14 clicks (+ the pastes)
+MAX_CLICKS_FIRST_FILE = 12  # roadmap 5.11.0 gate: New Project → first file on disk
 REPO = Path(__file__).resolve().parents[4]
 CHARTER = REPO / "packages/contracts/fixtures/valid/project-charter.v1.todo.json"
 F4 = "````"
@@ -108,15 +111,11 @@ def menu_labels(menu: tk.Menu) -> list[str]:
 
 
 def do_step(o: Owner, card: Any, label: str) -> None:
-    """Press the action ``label`` of Home's card: its primary button if it is that action, else More › label."""
-    if card.next_btn.winfo_manager() and card.next_btn.cget("text").rstrip("…").startswith(label.rstrip("…")):
-        o.click(card.next_btn)
-        return
-    labels = menu_labels(card.next_menu)
-    hit = next((x for x in labels if x.rstrip("…").startswith(label.rstrip("…"))), None)
-    assert hit, (f"neither the card's button ({card.next_btn.cget('text')!r}) nor More has {label!r}: {labels} "
-                 f"— card: {card.title_var.get()!r}")
-    o.click_menu(card.next_menu, hit)
+    """Press the action ``label`` of Home's card: its primary button or one of the step's other buttons (5.13.0: the
+    card has no More)."""
+    b = card.button(label)
+    assert b is not None, f"the card has no {label!r} button: {card.labels()} — card: {card.title_var.get()!r}"
+    o.click(b)
 
 
 def use_answer(o: Owner, card: Any, text: str, needle: str) -> str:
@@ -199,11 +198,10 @@ def main() -> None:
             assert sorted(a for a, v in st["agents"].items() if v.get("enabled", True)) == [
                 "agent-core-dev", "agent-desktop-dev", "agent-mobile-dev", "agent-project-manager"], sorted(st["agents"])
             assert st["settings"]["team"]["max_parallel_chats"] == 3
-            # 3) Copy the charter prompt (clipboard) — on Home's card
+            # 3) 5.13.0: Create already copied the charter prompt; the card says so and can copy it again
             assert card.next_btn.cget("text") == "Copy the charter prompt", card.labels()
-            o.click(card.next_btn)
-            o.pump(300)
-            assert "Project Charter" in root.clipboard_get()
+            assert "Project Charter" in root.clipboard_get(), "Create copies the project-manager prompt"
+            assert "copied" in card.message_var.get(), card.message_var.get()
             o.shot("03_charter_copied")
             # 4) paste the charter in the card's own panel (no popup — the 5.7.0 crash lived there, A11)
             data = json.loads(CHARTER.read_text(encoding="utf-8"))
@@ -224,8 +222,24 @@ def main() -> None:
             assert prompt.startswith("AIWB_ATTEMPT_ID:"), prompt[:80]
             assert "copied" in card.message_var.get(), card.message_var.get()
             o.shot("05_task_prompt_copied")
-            # 7) paste the answer in the card → Use this answer → Accept the files
+            # 7) the AI first asks for a file it needs (context request, 5.12.0 B2) → the card turns into the files step
             h = next(h for h in ws.wc.ctl.state()["handoffs"].values() if h["status"] in ("prepared", "prompt_exported"))
+            (Path(app.workspace) / "src" / "core").mkdir(parents=True, exist_ok=True)
+            (Path(app.workspace) / "src" / "core" / "store.py").write_text("ITEMS = []\n", encoding="utf-8")
+            req = {"schema_version": "1.0", "type": "AIWB_CONTEXT_REQUEST", "attempt_id": h["attempt_id"],
+                   "reason": "I need the store", "files": [{"path": "src/core/store.py", "mode": "full_file"}],
+                   "questions": []}
+            use_answer(o, card, f"AIWB_ATTEMPT_ID: {h['attempt_id']}\n<<<AIWB_CONTEXT_REQUEST>>>\n" + json.dumps(req)
+                       + "\n<<<AIWB_END_CONTEXT_REQUEST>>>", "Context request ✓")
+            assert "asked for 1 file" in card.title_var.get(), (card.title_var.get(), card.labels())
+            o.shot("06a_context_request")
+            assert card.next_btn.cget("text") == "Copy the files for the chat", card.labels()
+            o.click(card.next_btn)
+            o.pump(300)
+            assert "ITEMS = []" in root.clipboard_get(), "the requested file is on the clipboard"
+            o.shot("06b_files_copied")
+            # 8) "I sent them" is optional: the paste panel is already on the card → paste the real answer
+            assert card.paste.winfo_manager(), (card.title_var.get(), card.labels())
             man = {"schema_version": "1.0", "handoff_id": h["handoff_id"], "task_id": h["task_id"],
                    "task_revision": h["task_revision"], "attempt_id": h["attempt_id"], "outcome": "complete",
                    "summary": "core done", "completed_items": ["core"], "unresolved_items": [],
@@ -234,24 +248,42 @@ def main() -> None:
                       f'<<<AIWB_FILE path="src/core/snake.py" action="write">>>\n{F4}\nSPEED = 5\n{F4}\n'
                       "<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n" + json.dumps(man) + "\n<<<AIWB_END_HANDOFF>>>\n")
             use_answer(o, card, answer, "✓")
-            o.shot("06_answer_pasted")
+            o.shot("06c_answer_pasted")
             labels = card.labels()
             assert any(lbl.startswith("Accept") for lbl in labels), f"no Accept after the answer: {labels}"
             do_step(o, card, next(lbl for lbl in labels if lbl.startswith("Accept")))
             o.pump(600)
             target = Path(app.workspace) / "src" / "core" / "snake.py"
             assert target.is_file() and "SPEED = 5" in target.read_text(encoding="utf-8"), "the file is on disk"
+            first_file = len(o.clicks)
             o.shot("07_file_written")
+            # 9) 5.13.0: accepting the delivery was the review; the card asks what the tests/build really did
+            tid = h["task_id"]
+            assert ws.wc.ctl.state()["tasks"][tid]["status"] == "validation_pending", ws.wc.ctl.state()["tasks"][tid]
+            assert card.title_var.get().startswith("Verify"), (card.title_var.get(), card.labels())
+            do_step(o, card, "Tests/build passed")
+            o.pump(500)
+            assert ws.wc.ctl.state()["tasks"][tid]["status"] == "done", ws.wc.ctl.state()["tasks"][tid]["status"]
+            # 10) the milestone of that task is finished: it is the next step (before the next prompts)
+            assert card.title_var.get().startswith("Accept milestone"), (card.title_var.get(), card.labels())
+            o.shot("08_milestone_ready")
+            do_step(o, card, "Accept the milestone")
+            o.pump(500)
+            ms = ws.wc.ctl.state()["milestones"]
+            assert any(m["status"] == "accepted" for m in ms.values()), {k: m["status"] for k, m in ms.items()}
+            o.shot("09_milestone_accepted")
             # the whole path stayed on Home, with no popup, no crash, and within the click budget
             assert app.shell.current == "home", f"the path left Home for {app.shell.current!r}"
             assert not o.dialogs, f"modal dialogs opened on the way: {o.dialogs}"
             assert not o.errors, "UI callback errors:\n" + "\n".join(o.errors)
             assert not [b for b in boxes if b[0] == "showerror"], f"error boxes: {boxes}"
+            assert first_file <= MAX_CLICKS_FIRST_FILE, f"{first_file} clicks to the first file: {o.clicks}"
             assert len(o.clicks) <= MAX_CLICKS, f"{len(o.clicks)} clicks (max {MAX_CLICKS}): {o.clicks}"
         finally:
             root.destroy()
-    msg = (f"Owner path smoke passed (only Home): New Project > wizard (project, 3 named AIs) -> Home card -> charter "
-           f"prompt -> inline paste -> accept -> prompt copied -> inline paste -> accept -> file on disk in "
+    msg = (f"Owner path smoke passed (only Home): New Project > wizard (project, 3 named AIs) -> charter prompt copied "
+           f"-> inline paste -> accept -> prompt copied -> context request -> files copied -> answer -> accept "
+           f"(+ review) -> file on disk ({first_file} clicks) -> tests passed -> milestone accepted in "
            f"{len(o.clicks)} clicks + {o.pastes} pastes (max {MAX_CLICKS}): {' / '.join(o.clicks)}")
     # a Windows console (cp1252) cannot print ▾/…: replace what it cannot encode instead of failing a passed smoke
     enc = getattr(sys.stdout, "encoding", None) or "utf-8"

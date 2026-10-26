@@ -74,7 +74,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, simpledialog, ttk
 
 APP_NAME = "AI Workbench"
-APP_VERSION = "5.12.0"
+APP_VERSION = "5.13.0"
 PROTOCOL = "workbench-v1"  # Backward-compatible response protocol
 PROTOCOL_V2 = "workbench-v2"
 PROTOCOL_V3 = "workbench-v3"
@@ -4575,7 +4575,7 @@ class WorkbenchApp:
             self.save_profile()
             return
         self.save_profile()
-        self.shell.show("workbench")
+        self.shell.show("home")  # 5.13.0: the next step lives on Home
         self.set_status("Profile saved — it will be part of the project manager's prompt. Next: Start the project.")
 
     def _make_menu(self) -> None:
@@ -4611,18 +4611,19 @@ class WorkbenchApp:
         self.shell = AppShell(self.root, self.prefs, title=APP_NAME, version=APP_VERSION,
                               commands={"new_guided": self.new_guided_project, "new_folder": self.add_existing_project,
                                         "open": self.add_existing_project, "save": self.save_now,
-                                        "run": self.run_next_step},
+                                        "run": self.run_next_step, "project_items": self.switcher_items,
+                                        "all_projects": self.open_all_projects,
+                                        "reveal_project": self.open_workspace},
                               message=self.status_var, facts=self.status_state)
         self.notebook = self.shell.notebook
         self.notebook.bind("<<NotebookTabChanged>>", lambda _e: self.shell.sync_from_notebook(), add="+")
-        self.shell.project_label.configure(textvariable=self.workspace_var)
         self.manager_tab = self.shell.add_page("home", padding=(8, 8), on_show=self.refresh_home_next_step)
         self.workbench_tab = self.shell.add_page("workbench", padding=0, on_show=self._show_workbench_page)
         self.agents_tab = self.shell.add_page("agents", padding=(8, 8), on_show=self.refresh_agents_page)
         self.project_tab = self.shell.add_page("prompt", padding=8)
         self.response_tab = self.shell.add_page("response", padding=8)
         self.profile_tab = self.shell.add_page("profile", padding=10)
-        self.history_tab = self.shell.add_page("history", padding=8, on_show=self.refresh_history_timeline)
+        self.history_tab = self.shell.add_page("history", padding=8, on_show=self.show_history)
         self.run_tab = self.shell.add_page("run", padding=8)
         self.git_tab = self.shell.add_page("git", padding=8)
         self.settings_tab = self.shell.add_page("settings", padding=(8, 8))
@@ -4636,11 +4637,11 @@ class WorkbenchApp:
         self._make_history_tab()
         self._make_run_tab()
         self._make_git_tab()
-        self.tool_cards = {"projects": self._make_tools_card(self.workbench_tab, "projects"),
-                           "history": self._make_tools_card(self.history_tab, "history")}
+        self.tool_cards = {"history": self._make_tools_card(self.history_tab, "history")}
         self.settings_scroll = ui_layout.ScrollPage(self.settings_tab)
         self.settings_scroll.pack(fill="both", expand=True)
         self.settings_widgets = build_settings_page(self.shell, self.settings_scroll.body, extra=self._settings_app_section)
+        self._make_settings_project(self.settings_scroll.body)
         self.activity_progress = ttk.Progressbar(self.shell.statusbar.slot, mode="indeterminate", length=100)
         self.activity_progress.grid(row=0, column=0)
         self.activity_progress.grid_remove()
@@ -4673,19 +4674,48 @@ class WorkbenchApp:
                 pass
 
     def _settings_app_section(self, card: ttk.Frame) -> None:
+        # 5.13.0 (owner audit C7): no "App Map…" here. It is the developer's audit of the UI (docs/UI_MAP.md is drawn
+        # from it): to read every page it opens them one by one, so for a user the app seemed to hang, flip tabs by
+        # itself and then show a big tree. Developers open it with Ctrl+Shift+F12.
+        self.root.bind_all("<Control-Shift-F12>", lambda _e: self.open_app_map(), add="+")
         bar = ui_actions.ActionBar(
             card,
-            primary=(("App Map…", self.open_app_map),),  # 5.11.0: a page shows at most 8 controls; the rest in More
-            more=(("Tools", (("Mobile Companion…", self.open_companion),
-                             ("Restore Manager…", self.open_restore_manager),
-                             ("Validation Profiles…", self.manage_validation_profiles))),
-                  ("Support", (("Export redacted diagnostics…", self.export_redacted_diagnostics),
-                               ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir()))))),
+            # 5.13.0 (B5): no More — one named menu; Mobile Companion… has one home (Settings › Project › Project tools)
+            menus=(("Maintenance", (("Restore Manager…", self.open_restore_manager),
+                                    ("Validation Profiles…", self.manage_validation_profiles), None,
+                                    ("Export redacted diagnostics…", self.export_redacted_diagnostics),
+                                    ("Open application data folder", lambda: open_folder_in_explorer(app_data_dir())))),),
             style=ui_layout.row_style(card))
         bar.grid(row=2, column=0, sticky="w")
 
+    def _make_settings_project(self, body: ttk.Frame) -> None:
+        """Settings › Project and Settings › Classic tools (1.x) (5.13.0, audit B3/B4/B5).
+
+        Project: the open project's settings (details, the AI team's manager, account profiles, files, builds and the
+        phone) — the Workbench page, which left the rail with Projects. Classic tools: the 1.x pages (Prompt, AI
+        Response, Project Profile, Run & Report) until Quick mode replaces them (5.14.0).
+        """
+        from aiwb.ui import structure5
+        card = ttk.Frame(body, style="Card.TFrame", padding=(18, 14))
+        card.grid(row=5, column=0, sticky="ew", pady=(0, 10))
+        ttk.Label(card, text="Project", style="CardTitle.TLabel").pack(anchor="w")
+        self.settings_project_var = tk.StringVar(value="No project is open.")
+        ttk.Label(card, textvariable=self.settings_project_var, style="CardHint.TLabel", wraplength=640,
+                  justify="left").pack(anchor="w", pady=(2, 8))
+        self.settings_project_bar = ui_actions.ActionBar(
+            card, primary=(("Project settings…", self.open_project_settings),), style="Card.TFrame")
+        self.settings_project_bar.pack(anchor="w")
+        holder = ttk.Frame(body)
+        holder.grid(row=6, column=0, sticky="ew", pady=(0, 10))
+        self.tool_cards["settings"] = self._make_tools_card(holder, "settings", title=structure5.CLASSIC)
+
+    def open_project_settings(self) -> None:
+        """Settings › Project › Project settings…: the open project's details, team manager, accounts and tools."""
+        self.agents_workbench("project")
+
     def open_app_map(self) -> Any:
-        """Settings › App Map…: every page, section and command of this running app, drawn (roadmap 5.5.0)."""
+        """Ctrl+Shift+F12 (developers; Settings › App Map… until 5.12.0): every page, section and command of this running
+        app, drawn (roadmap 5.5.0). It visits every page to read it, so the window flips pages while it works."""
         from aiwb.ui import map_view, ui_map
         tree = ui_map.extract(self)
         win = map_view.open_window(self.root, tree, theme=self.prefs.theme)
@@ -4713,6 +4743,18 @@ class WorkbenchApp:
             pass
         if not (Path(created) / ".workbench" / "v2" / "state.json").is_file():
             self.set_status(f"Created {created.name}. Next: Start the project — give the goal and your AI team.")
+            return
+        # 5.13.0 (gate ≤ 14 clicks): the project-manager prompt is the only next move — Create copies it at once, like
+        # "Prepare" copies a task prompt (5.11.0). The card says so; "Copy the charter prompt" stays to copy it again.
+        try:
+            card = self.home_card
+            card.refresh()
+            if card.model.get("key") == "charter" and (card.model.get("primary") or {}).get("id") == "copy":
+                card.action("copy")
+                card.message_var.set("Project created. The project-manager prompt is copied: paste it into that chat, "
+                                     "send it, then paste the whole answer below.")
+        except Exception:  # noqa: BLE001 — copying is a convenience; the card still offers the button
+            pass
 
     def save_now(self) -> None:
         """Toolbar › Save: write the profile and settings now (the V2 project state is saved on every change)."""
@@ -4727,13 +4769,17 @@ class WorkbenchApp:
         if self.workspace is None:
             self.set_status("Open or create a project first — Run does the project's next guided step.")
             return None
-        ws = getattr(self, "workspace_window", None)
-        if ws is None or getattr(ws, "_project_root", None) != str(self.workspace):
-            self.shell.show("workbench")
-            self.set_status("Workbench opened — press Run again to do the next step.")
+        self.shell.show("home")  # 5.13.0: the next step is done on Home (the Workbench page left the rail)
+        ws = self._home_ws()
+        if ws is None:
+            self._ensure_home_workbench()
+            ws = self._home_ws()
+        if ws is None:
+            self.set_status("Preparing the project — press Run again to do the next step.")
             return None
-        self.shell.show("workbench")
-        return ws.do_next()
+        out = ws.do_next()
+        self.refresh_home_next_step()
+        return out
 
     def status_state(self) -> dict[str, Any] | None:
         """V2 state of the open project for the status bar (read only; never creates or writes files)."""
@@ -4763,16 +4809,18 @@ class WorkbenchApp:
                   wraplength=900).pack(anchor="w", pady=(3, 10))
         team = ttk.Frame(tab, style="Card.TFrame", padding=(14, 10))
         team.pack(fill="x", pady=(0, 9))
-        ttk.Label(team, text="Team", style="CardTitle.TLabel").pack(anchor="w")
+        team_head = ttk.Frame(team, style="Card.TFrame")  # 5.13.0 (C5): Edit team… sits on the title row, not alone
+        team_head.pack(fill="x")
+        ttk.Label(team_head, text="Team", style="CardTitle.TLabel").pack(side="left")
         self.agents_team_var = tk.StringVar(value="Open a project to see its AI team.")  # plain-text twin of the cards
         from aiwb.ui import agents5
         self.agents_cards = agents5.AgentCards(team, self.shell.assets, on_select=self.agents_select)
         self.agents_cards.pack(fill="x", pady=(6, 0))
         self.agents_rows: list[dict[str, Any]] = []
         self.agents_team_bar = ui_actions.ActionBar(
-            team, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
+            team_head, primary=(("Edit team…", self.agents_edit_team, "Primary.TButton"),),
             style="Card.TFrame")  # 5.11.0: Copy team summary → Dispatch desk › More (Agents ≤ 8 controls)
-        self.agents_team_bar.pack(anchor="w", pady=(6, 0))
+        self.agents_team_bar.pack(side="right")
         pair = ttk.Frame(tab)  # 5.6.0: Selected AI | Balance side by side, so the page fits without scrolling
         pair.pack(fill="x", pady=(0, 9))
         pair.columnconfigure(0, weight=1, uniform="pair")
@@ -4808,12 +4856,12 @@ class WorkbenchApp:
                         ("Copy team summary", self.agents_copy_team),
                         ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
-        self._make_tools_card(tab, "agents", "Manual prompt work: build a prompt yourself, import an AI answer.")
+        # 5.13.0: no Tools card here — Prompt and AI Response are Settings › Classic tools (1.x) until Quick (5.14.0)
 
-    TOOLS_HINT = {"projects": "Describe the project for the AIs, and run it to get a report.",
+    TOOLS_HINT = {"settings": "The 1.x pages for one AI chat — kept until Quick mode replaces them.",
                   "history": "Commits, pushes, branches and GitHub releases of this project."}
 
-    def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "") -> ttk.Frame:
+    def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "", title: str = "Tools") -> ttk.Frame:
         """The "Tools" card of a rail destination (5.5.0): links to the expert pages that belong to it.
 
         Packed first with ``side="bottom"`` so it stays visible under a page body that expands; every button is a
@@ -4824,12 +4872,12 @@ class WorkbenchApp:
             self.tool_buttons: dict[str, ttk.Button] = {}
             self.agents_tool_buttons = self.tool_buttons  # 5.1.0 name, kept for callers and tests
         card = ttk.Frame(page, style="Card.TFrame", padding=(14, 8))
-        card._aiwb_section = "Tools"  # type: ignore[attr-defined]
+        card._aiwb_section = title  # type: ignore[attr-defined]
         slaves = page.pack_slaves()
         card.pack(side="bottom", fill="x", pady=(9, 0), **({"before": slaves[0]} if slaves else {}))
         head = ttk.Frame(card, style="Card.TFrame")
         head.pack(fill="x")
-        ttk.Label(head, text="Tools", style="CardTitle.TLabel").pack(side="left")
+        ttk.Label(head, text=title, style="CardTitle.TLabel").pack(side="left")
         ttk.Label(head, text=hint or self.TOOLS_HINT.get(dest, ""), style="CardMuted.TLabel").pack(side="left",
                                                                                                 padx=(12, 0))
         for key, label in reversed(structure5.tools_of(dest)):  # packed from the right: reversed = reading order
@@ -5090,6 +5138,14 @@ class WorkbenchApp:
         self.refresh_agents_page()
         return done
 
+    def _balance_bar_shown(self, shown: bool) -> None:
+        """Balance › Apply suggested moves is shown only when moves are listed above it (owner audit C6)."""
+        bar = self.agents_balance_bar
+        if shown and not bar.winfo_manager():
+            bar.pack(anchor="w", pady=(6, 0))
+        elif not shown and bar.winfo_manager():
+            bar.pack_forget()
+
     def refresh_agents_page(self) -> None:
         if not hasattr(self, "agents_team_var"):
             return
@@ -5099,6 +5155,7 @@ class WorkbenchApp:
             self.agents_team_var.set("Open a project to see its AI team.")
             self.agents_dispatch_var.set("—")
             self.agents_balance_var.set("—")
+            self._balance_bar_shown(False)
             self.agents_rows = []
             self.agents_cards.set_rows([])
             self.agents_who_var.set("Open a project to see its AI team.")
@@ -5117,12 +5174,16 @@ class WorkbenchApp:
             lines = [" · ".join(f"{agents5.ALERT_TEXT[k]} {sum(a['kind'] == k for a in found)}" for k in kinds)
                      if found else "No alerts — every AI has fair work."]
             lines += [f"⚠ {a['text']}" for a in found if a["kind"] in ("stuck", "overloaded", "overlap")][:2]
-            lines += [f"Suggest: {m['task_id']} {m['from_agent_id']} → {m['to_agent_id']}" for m in moves[:2]]
+            names = {a["agent_id"]: a.get("name") or a["agent_id"] for a in st.get("agents", {}).values()}
+            lines += [f"Suggest: move {m['task_id']} from {names.get(m['from_agent_id'], m['from_agent_id'])} to "
+                      f"{names.get(m['to_agent_id'], m['to_agent_id'])}" for m in moves[:2]]
             if len(moves) > 2:
                 lines[-1] += f"  (+{len(moves) - 2} more)"
             self.agents_balance_var.set("\n".join(lines))
+            self._balance_bar_shown(bool(moves))  # 5.13.0 (C6): the button only when there is a move to apply
         except Exception:  # noqa: BLE001
             self.agents_balance_var.set("The plan is not complete yet.")
+            self._balance_bar_shown(False)
         try:
             from aiwb.v2.waves import dispatch
             d = dispatch(st)
@@ -5169,7 +5230,7 @@ class WorkbenchApp:
         ttk.Label(head, textvariable=self.mission_summary_var, style="Hint.TLabel").pack(side="left", padx=(12, 0))
         self.mission = MissionCanvas(body, self.shell.assets, on_select=self.mission_select, height=300,
                                      motion=self.shell.motion, on_menu=self.mission_menu,
-                                     on_lane=self.mission_lane)
+                                     on_lane=self.mission_lane, on_column_menu=self.mission_column_menu)
         self.mission.pack(fill="x")
         self._make_mission_view_row(body)
         from aiwb.ui import structure5
@@ -5180,20 +5241,11 @@ class WorkbenchApp:
         detail = ttk.Frame(body, style="Card.TFrame", padding=(12, 8))
         detail._aiwb_section = "Task details"  # type: ignore[attr-defined]
         detail.pack(fill="x", pady=(8, 12))
-        ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=900,
+        ttk.Label(detail, textvariable=self.mission_detail_var, style="CardMuted.TLabel", wraplength=1000,
                   justify="left").pack(side="left", fill="x", expand=True)
-        # 5.11.0: one button + More, so Home shows at most 8 controls at once (the cockpit card has the rest)
-        self.mission_detail_bar = ui_actions.ActionBar(
-            detail, primary=(("Open task in Workbench", self.mission_open_task),),
-            more=(("", (("Jump to active task", self.mission_jump_active),
-                        ("Copy task summary", self.mission_copy_task),
-                        ("Copy map summary", self.mission_copy_summary))),), style="Card.TFrame")
-        self.mission_detail_bar.pack(side="right")
-        self.mission_open_btn = self.mission_detail_bar.buttons["Open task in Workbench"]
-        self.mission_open_btn.state(["disabled"])
-        self.mission_copy_btn = self.mission_detail_bar.actions["Copy task summary"]
-        self.mission_copy_btn.configure(state="disabled")
-        self.mission_jump_btn = self.mission_detail_bar.actions["Jump to active task"]
+        # 5.13.0 (B5): Task details only *tells* (goal · done when · state) — no buttons. A task's commands have one
+        # home, the task menu (right-click a circle); its prompt and answer are the Next-step card's (click its AI).
+        # mission_open_task / mission_jump_active / mission_copy_task stay for scripts and the keyboard.
         self._mission_rev: tuple[str, int] | None = None
         self._make_home_next_card(body)
         self.shell.status_listeners.append(self.refresh_mission)
@@ -5262,8 +5314,6 @@ class WorkbenchApp:
         if self.mission.selected and self.mission.node(self.mission.selected) is None:
             self.mission.selected = ""
             self.mission_detail_var.set("Click a task circle to see its details.")
-            self.mission_open_btn.state(["disabled"])
-            self.mission_copy_btn.configure(state="disabled")
         return model
 
     def mission_jump_active(self) -> str:
@@ -5304,11 +5354,20 @@ class WorkbenchApp:
         from aiwb.ui.mission_canvas import STATE_TEXT
         lane = next((ln for ln in self.mission.model["lanes"] if any(n["task_id"] == task_id for n in ln["nodes"])), {})
         col = self.mission.model["columns"][nd["column"]]["label"]
-        self.mission_detail_var.set(f"{nd['title']}  ·  {task_id}  ·  AI {lane.get('number', '?')} "
-                                    f"({lane.get('name', '')})  ·  {col}  ·  {STATE_TEXT[nd['state']]} "
-                                    f"[{nd['status']}]")
-        self.mission_open_btn.state(["!disabled"])
-        self.mission_copy_btn.configure(state="normal")
+        text = (f"{nd['title']}  ·  {task_id}  ·  AI {lane.get('number', '?')} ({lane.get('name', '')})  ·  {col}  ·  "
+                f"{STATE_TEXT[nd['state']]} [{nd['status']}]")
+        try:  # 5.13.0: the task's goal and "done when" (reading only)
+            ctl = self._mission_ctl()
+            task = ((ctl.state() if ctl is not None else {}).get("tasks") or {}).get(task_id) or {}
+        except Exception:  # noqa: BLE001 - details are a convenience; the map must keep working
+            task = {}
+        goal = str(task.get("objective") or "").strip()
+        done = [str(x).strip() for x in (task.get("acceptance_criteria") or []) if str(x).strip()]
+        if goal:
+            text += f"\nGoal: {goal[:240]}"
+        if done:
+            text += f"\nDone when: {done[0][:200]}" + (f" (+{len(done) - 1} more)" if len(done) > 1 else "")
+        self.mission_detail_var.set(text)
 
     # -- Mission Map › right-click menu (roadmap 5.4.0)
     def _mission_ctl(self) -> Any:
@@ -5344,6 +5403,73 @@ class WorkbenchApp:
         self.mission_popup = FloatingMenu(self.mission, self.shell.assets, rows, motion=self.shell.motion,
                                           title=task_id, on_pick=lambda row: self.mission_menu_pick(task_id, row))
         return self.mission_popup.popup(x_root, y_root)
+
+    # -- Mission Map › right-click on a milestone / version column (roadmap 5.13.0, owner audit B3)
+    def mission_column_rows(self, index: int) -> list[dict[str, Any]]:
+        """The column menu rows (ACCEPT MILESTONE · RECORD RELEASE · NEW MILESTONE · PROPOSE VERSION)."""
+        from aiwb.ui import column_menu
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        steps = Guide(ctl).steps() if ctl is not None else []
+        return column_menu.items(steps, self.mission.model, index)
+
+    def mission_column_menu(self, index: int, x_root: int, y_root: int) -> Any:
+        from aiwb.ui.menu5 import FloatingMenu
+        old = getattr(self, "mission_popup", None)
+        if old is not None:
+            old.close()
+        try:
+            rows = self.mission_column_rows(index)
+        except Exception as exc:  # noqa: BLE001 - a broken store is reported, never hidden
+            messagebox.showerror("Mission Map", redact(str(exc)))
+            return None
+        label = self.mission.model["columns"][index]["label"]
+        self.mission_popup = FloatingMenu(self.mission, self.shell.assets, rows, motion=self.shell.motion,
+                                          title=label, on_pick=lambda row: self.mission_column_pick(row))
+        return self.mission_popup.popup(x_root, y_root)
+
+    def mission_column_pick(self, row: dict[str, Any]) -> dict[str, Any] | None:
+        """Run a column menu row: Guide steps through the Guide, new milestone / version through the timeline."""
+        from aiwb.v2.guide import Guide
+        ctl = self._mission_ctl()
+        if ctl is None or not row.get("enabled"):
+            return None
+        asks = {"title": ("New milestone", "Milestone title:"), "label": ("Propose version", "Version (e.g. 1.2.0):"),
+                "commit_sha": ("Record the release", "Commit SHA of the release:"),
+                "tag": ("Record the release", "Tag (optional, default v<version>):"),
+                "run_id": ("Record the release", "Build/CI run id or link:")}
+        inputs: dict[str, str] = {}
+        for need in row.get("needs", []):
+            title, prompt = asks.get(need, (row["label"], need))
+            hook = getattr(self, "mission_input_hook", None)
+            v = hook(need, prompt) if hook is not None else simpledialog.askstring(title, prompt, parent=self.root)
+            if v is None or (not v.strip() and need not in ("tag",)):
+                self.set_status("Cancelled — nothing changed.")
+                return None
+            inputs[need] = v.strip()
+        tl = ctl.project.timeline
+        try:
+            if row["id"] == "new_milestone":
+                m = tl.create_milestone({"title": inputs["title"], "task_ids": row.get("task_ids", [])})
+                out = {"message": f"Milestone {m['title']} created with {len(m['task_ids'])} task(s).", **m}
+            elif row["id"] == "propose_version":
+                v = tl.propose_version({"label": inputs["label"], "milestone_ids": row.get("milestone_ids", [])})
+                out = {"message": f"Version {v['label']} proposed (not released).", **v}
+            else:
+                out = Guide(ctl).perform(row["step"], row["action"], **inputs)
+        except Exception as exc:  # noqa: BLE001 - the model refuses impossible changes with a clear message
+            messagebox.showerror("Mission Map", redact(str(exc)))
+            return None
+        self.set_status(out.get("message", "Done."))
+        ws = getattr(self, "workspace_window", None)
+        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
+            try:
+                ws.refresh()
+            except Exception:  # noqa: BLE001 - the Workbench redraws on its next visit
+                pass
+        self.refresh_mission(self.status_state(), force=True)
+        self.shell.refresh_status()
+        return out
 
     def _mission_input(self, need: str, label: str) -> str | None:
         """Ask for one input of a Guide action (tests replace ``mission_input_hook``)."""
@@ -5422,14 +5548,22 @@ class WorkbenchApp:
                 pass
 
     def _make_projects_dashboard(self) -> None:
-        """Projects page header (5.7.0): the project library as cards, above the Workbench of the open project.
+        """Toolbar › project switcher › All projects… (5.13.0, audit B3/B4): the project library as cards in its own
+        window (5.7.0–5.12.0: the header of the Projects page, which left the rail).
 
-        Home shows only the active project; the library (create, open, find, reveal, remove) lives here. The old
+        The window is built once, withdrawn, and shown by :meth:`open_all_projects`; closing it only hides it. The old
         table ``projects_tree`` stays as the selection model behind the cards (not laid out, so not on screen).
         """
         from aiwb.ui.projects5 import ProjectCards
-        tab = self.workbench_tab
-        strip = ttk.Frame(tab, padding=(10, 8, 10, 0))
+        win = tk.Toplevel(self.root)
+        win.withdraw()
+        win.title("All projects")
+        win.transient(self.root)
+        win.protocol("WM_DELETE_WINDOW", win.withdraw)
+        self.projects_win = win
+        tab = ttk.Frame(win, padding=0)
+        tab.pack(fill="both", expand=True)
+        strip = ttk.Frame(tab, padding=(10, 8, 10, 10))
         # App Map: the header row (title label first) is the section "Your projects" with its commands
         strip.pack(side="top", fill="x")
         self.projects_strip = strip
@@ -5456,29 +5590,43 @@ class WorkbenchApp:
         # the selected card's details as one line (no wrapping: a wrapped label here would drive the page width)
         self.projects_detail = ttk.Label(strip, textvariable=self.manager_detail_var, style="Hint.TLabel", width=1)
         self.projects_detail.pack(fill="x", pady=(4, 0))
-        # short windows: the cards fold away so the Workbench below keeps its room (the header row stays)
-        self.projects_compact = False
-        tab.bind("<Configure>", self._fit_project_cards, add="+")
+        self.projects_compact = False  # 5.7.0–5.12.0 (cards folded on short pages); kept for callers
 
         # selection model behind the cards (kept for callers and tests; never laid out)
         columns = ("description", "state", "last_opened", "path")
         self.projects_tree = ttk.Treeview(strip, columns=columns, show="tree headings", selectmode="browse")
         self.projects_tree.bind("<<TreeviewSelect>>", self._project_selection_changed)
 
-    COMPACT_BELOW = 700  # px of Projects page height under which the project cards fold away
+    COMPACT_BELOW = 700  # px of page height under which History folds its details (5.7.0)
 
-    def _fit_project_cards(self, event: Any = None) -> None:
-        h = event.height if event is not None else self.workbench_tab.winfo_height()
-        compact = 1 < h < self.COMPACT_BELOW
-        if compact == self.projects_compact:
+    def switcher_items(self) -> list[tuple[str, Any, bool]]:
+        """Toolbar › project switcher: the recent projects (open one first) as ``(label, open, is_open)``."""
+        from aiwb.ui import projects5
+        rows = projects5.rows(self.settings_data.get("projects", []), self.workspace, manifest=read_project_manifest)
+        return [(r["name"], (lambda p=r["path"]: self.switch_project(p)), r["state"] == "Active")
+                for r in rows if r["state"] != "Missing"]
+
+    def switch_project(self, path: str | Path) -> None:
+        """Open another project from the switcher; Home shows its map and its next step."""
+        target = Path(path)
+        if self.workspace is not None and target.resolve() == self.workspace.resolve():
+            self.shell.show("home")
             return
-        self.projects_compact = compact
-        if compact:
-            self.project_cards.pack_forget()
-            self.projects_detail.pack_forget()
-        else:
-            self.project_cards.pack(fill="x", pady=(6, 0))
-            self.projects_detail.pack(fill="x", pady=(4, 0))
+        self.set_workspace(target, focus_project=True)
+
+    def open_all_projects(self) -> tk.Toplevel:
+        """Toolbar › project switcher › All projects…: show the library window (create, open, find, reveal, remove)."""
+        win = self.projects_win
+        self.refresh_project_list()
+        if win.state() == "withdrawn":
+            try:
+                ui_layout.place_dialog(win, 900, 260, self.root)
+            except Exception:  # noqa: BLE001 - placement is cosmetic
+                pass
+        win.deiconify()
+        win.lift()
+        self.project_cards.draw()
+        return win
 
     def _project_card_selected(self, path: str) -> None:
         if self.projects_tree.exists(path):
@@ -6299,6 +6447,11 @@ class WorkbenchApp:
         else:
             self.history_tl.pack(fill="x", pady=(6, 0))
 
+    def show_history(self) -> None:
+        """History page shown: its timeline and its one list (5.13.0: events are part of the list, so refresh both)."""
+        self.refresh_history_timeline()
+        self._refresh_history_view()
+
     def refresh_history_timeline(self) -> dict[str, Any] | None:
         """Redraw History › Timeline from the open project (reading never writes)."""
         tl = getattr(self, "history_tl", None)
@@ -6339,8 +6492,9 @@ class WorkbenchApp:
         ttk.Label(tab, text="History", style="SectionTitle.TLabel").pack(anchor="w")
         ttk.Label(
             tab,
-            text="Everything that happened in this project: events on the timeline, then every prompt and response. "
-                 "Right-click a step to rename, move or delete it. Kept locally in .workbench, never uploaded.",
+            text="Everything that happened in this project, in one list: prompts, answers, events, milestones and "
+                 "versions — choose what to show. Right-click a step to rename, move or delete it. Kept locally in "
+                 ".workbench, never uploaded.",
             style="Hint.TLabel", wraplength=1160, justify="left",
         ).pack(anchor="w", pady=(2, 8))
         self._make_history_timeline(tab)
@@ -6366,8 +6520,14 @@ class WorkbenchApp:
         # 5.11.0: the list filters as you type (short pause) — no Search button (History shows at most 8 controls)
         self.history_filter_entry.bind("<KeyRelease>", self._history_filter_typed, add="+")
         ttk.Button(filter_row, text="Clear", command=self._clear_history_filter).pack(side="left", padx=(4, 0))
-        self.history_saved_only_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(filter_row, text="Saved only", variable=self.history_saved_only_var, command=self._refresh_history_view).pack(side="left", padx=(6, 0))
+        # 5.13.0 (B3): one History — the Workbench's Timeline events live here too, with one "Show" filter
+        from aiwb.ui import history_feed
+        ttk.Label(filter_row, text="Show").pack(side="left", padx=(10, 4))
+        self.history_kind_var = tk.StringVar(value=history_feed.LABELS["all"])
+        kind_box = ttk.Combobox(filter_row, textvariable=self.history_kind_var, state="readonly", width=10,
+                                values=[label for _key, label in history_feed.KINDS])
+        kind_box.pack(side="left")
+        kind_box.bind("<<ComboboxSelected>>", lambda _event: self._refresh_history_view(), add="+")
         tree_frame = ttk.Frame(left)
         tree_frame.pack(fill="both", expand=True)
         self.history_tree = ttk.Treeview(tree_frame, columns=("status", "stage", "feature", "version"), show="tree headings", selectmode="browse")
@@ -6428,6 +6588,42 @@ class WorkbenchApp:
                                  ("Create repair prompt from this step", self._repair_from_selected_history))),),
         ).pack(side="left")
 
+    def history_kind(self) -> str:
+        """The History "Show" filter as a key (all, prompts, answers, saved, events, versions)."""
+        from aiwb.ui import history_feed
+        var = getattr(self, "history_kind_var", None)
+        return history_feed.KEY_OF_LABEL.get(str(var.get() if var is not None else ""), "all")
+
+    def set_history_kind(self, kind: str) -> None:
+        from aiwb.ui import history_feed
+        self.history_kind_var.set(history_feed.LABELS[kind])
+        self._refresh_history_view()
+
+    def _insert_history_events(self, kind: str, text: str = "") -> int:
+        """The project's events (what the Workbench Timeline listed) as one group of the History tree (5.13.0)."""
+        from aiwb.ui import history_feed
+        if kind not in history_feed.SHOWS_EVENTS:
+            return 0
+        try:
+            ctl = self._mission_ctl()
+            if ctl is None:
+                return 0
+            recs = ctl.project.store.ledger.query(families=history_feed.event_families(kind), text=text)["items"]
+            names = {aid: str((a or {}).get("name") or aid) for aid, a in (ctl.state().get("agents") or {}).items()}
+        except Exception:  # noqa: BLE001 - a project without a V2 ledger simply has no events here
+            return 0
+        rows = history_feed.event_rows(recs, kind, names)
+        self.history_events = {r["id"]: r for r in rows}
+        if not rows:
+            return 0
+        group = "Versions and milestones" if kind == "versions" else "Project events"
+        self.history_tree.insert("", "end", iid="events", text=f"{group} · {len(rows)}", values=("", "", "", ""),
+                                 open=True)
+        for r in rows:
+            self.history_tree.insert("events", "end", iid="event-" + r["id"], text=f"{r['when']} · {r['title']}"[:220],
+                                     values=(r["detail"][:80], "event", r["family"], ""))
+        return len(rows)
+
     def _history_filter_typed(self, event: Any = None) -> None:
         """Debounced live filter of the history list (5.11.0)."""
         if event is not None and getattr(event, "keysym", "") == "Return":
@@ -6478,12 +6674,12 @@ class WorkbenchApp:
             return
         filter_var = getattr(self, "history_filter_var", None)
         filter_query = str(filter_var.get() if filter_var is not None else "").strip().casefold()
-        saved_only = bool(getattr(self, "history_saved_only_var", None) and self.history_saved_only_var.get())
+        kind = self.history_kind()
         if filter_query:
             searchable_fields = ("task_id", "task_summary", "label", "title", "feature", "project_version", "stage", "status", "output_format", "version_record_id")
             all_entries = [entry for entry in all_entries if any(filter_query in str(entry.get(field, "")).casefold() for field in searchable_fields)]
-        if saved_only:
-            all_entries = [entry for entry in all_entries if bool(entry.get("project_history_saved", False))]
+        from aiwb.ui import history_feed
+        all_entries = history_feed.filter_steps(all_entries, kind)
         by_id = {str(item.get("id", "")): item for item in all_entries if item.get("id")}
         task_groups: dict[str, str] = {}
         for entry in all_entries:
@@ -6538,6 +6734,7 @@ class WorkbenchApp:
                 task_id = str(entry.get("task_id") or "unassigned")
                 insert_entry(entry, task_groups.get(task_id, ""), set())
 
+        self._insert_history_events(kind, filter_query)
         selected_iid = "entry-" + selected_target if selected_target and "entry-" + selected_target in self.history_tree.get_children("") else None
         # Entry nodes are normally nested; query existence via Treeview.exists.
         if selected_target and self.history_tree.exists("entry-" + selected_target):
@@ -6846,6 +7043,13 @@ class WorkbenchApp:
 
     def _on_history_selection(self, _event: Any) -> None:
         selection = self.history_tree.selection() if hasattr(self, "history_tree") else ()
+        if selection and selection[0].startswith("event-"):
+            self._clear_history_details()  # 5.13.0: an event is read-only — its facts in the details pane
+            r = getattr(self, "history_events", {}).get(selection[0][6:], {})
+            self.history_title_var.set(r.get("title", ""))
+            self._set_text(self.history_output_view, "\n".join(x for x in (r.get("when", ""), r.get("title", ""),
+                                                                           r.get("detail", "")) if x))
+            return
         if not selection or not selection[0].startswith("entry-"):
             self._clear_history_details()
             return
@@ -7659,10 +7863,10 @@ class WorkbenchApp:
                      ("Commit changes…", self.commit_changes),
                      ("Push to GitHub…", self.push_changes),
                      ("Review & Sync…", self.open_git_review_sync, "Primary.TButton")),
-            more=(("Branch", (("Create work branch", self.create_workbench_branch),)),
-                  ("Git for Windows (winget)", (("Check Git", self.check_git_installation),
-                                                ("Install Git", lambda: self.install_or_update_git("install")),
-                                                ("Update Git", lambda: self.install_or_update_git("upgrade"))))),
+            more=(("Branch", (("Create work branch", self.create_workbench_branch),)),),
+            menus=(("Git for Windows", (("Check Git", self.check_git_installation),  # 5.13.0: its own menu (B5)
+                                        ("Install Git", lambda: self.install_or_update_git("install")),
+                                        ("Update Git", lambda: self.install_or_update_git("upgrade")))),),
             pady=(0, 7))
         ttk.Label(tab, text="Local changes (sensitive paths or detected secrets are blocked from commit)").pack(anchor="w", pady=(3, 4))
         status_frame = ttk.Frame(tab)
@@ -7893,12 +8097,13 @@ class WorkbenchApp:
                      ("Clone Selected…", self._clone_selected_github_repository),
                      ("Sync & Build…", self.open_sync_build)),
             more=(("Selected repository", (("Open on GitHub", self._open_selected_github_repository),)),
-                  ("Active project binding", (("Initialize & Link Local…", self._initialize_and_link_active_project),
-                                              ("Initial Push Review…", self._review_initial_push_files),
-                                              ("Binding Settings…", self._configure_active_github_binding),
-                                              ("Refresh Binding Metadata", self._refresh_active_binding_metadata),
-                                              ("Unlink Project", self._unlink_active_github_repository))),
                   ("Builds", (("Build Center…", self.open_build_center),))),
+            # 5.13.0 (B5): the binding commands belong together — their own menu, not a long More
+            menus=(("Project binding", (("Initialize & Link Local…", self._initialize_and_link_active_project),
+                                        ("Initial Push Review…", self._review_initial_push_files),
+                                        ("Binding Settings…", self._configure_active_github_binding),
+                                        ("Refresh Binding Metadata", self._refresh_active_binding_metadata),
+                                        ("Unlink Project", self._unlink_active_github_repository))),),
             pady=(0, 0))
         h = self.github_repository_actions.handle
         self.github_repository_refresh_button = h("Refresh Repositories")
@@ -8852,6 +9057,10 @@ class WorkbenchApp:
         manifest = read_project_manifest(resolved)
         display_name = str(manifest.get("name") or resolved.name)
         self.workspace_var.set(f"{display_name}  ·  {resolved}")
+        self.shell.toolbar.set_project(display_name)  # 5.13.0: the project switcher "<name> ▾"
+        if hasattr(self, "settings_project_var"):
+            self.settings_project_var.set(f"{display_name} · {resolved}. Details, the project manager, account "
+                                          "profiles, files, builds and the phone.")
         self._load_project_profile(resolved)
         try:
             self._write_initial_project_manifest(resolved)
@@ -8866,8 +9075,11 @@ class WorkbenchApp:
         self.refresh_workflow_status()
         self._refresh_history_view()
         self.refresh_project_list()
-        if focus_project:
-            self.notebook.select(self.profile_tab)
+        if focus_project:  # 5.13.0: opening a project shows Home (its map and next step), never the 1.x Profile
+            self.shell.show("home")
+            win = getattr(self, "projects_win", None)
+            if win is not None:
+                win.withdraw()
         self.set_status(f"Active project: {display_name} · preparing local version history and Git status.")
         self.refresh_git(silent=True, ensure_version_baseline=True)
 

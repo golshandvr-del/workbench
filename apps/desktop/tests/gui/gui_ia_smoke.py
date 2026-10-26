@@ -21,8 +21,7 @@ from gui_smoke_helpers import wait_for_project_ready
 # Commands present before the 3.3.0 rearrangement (from the 3.2.0 UI tree) — none may disappear.
 REQUIRED = {
     # 5.5.0: Add existing folder… has one home, Toolbar › New Project. 5.7.0: the project library moved from Home to
-    # Projects (rail page "workbench"); Home shows only the active project.
-    "workbench": ["+ New project", "Open selected", "Reveal folder", "Remove from list"],
+    # Projects; 5.13.0: to the window Toolbar › project switcher › All projects… (checked below, key "all projects").
     "prompt": ["Select recommended context", "Why these files?", "Select all", "Clear", "Build prompt", "Copy prompt",
                "Save prompt…", "Add history to prompt", "Manage custom instructions…"],
     "response": ["Paste & detect format", "Load response / ZIP…", "Analyze / preview files…", "Import diagnostics…",
@@ -42,11 +41,13 @@ REQUIRED = {
             "Replace Credential…", "Refresh Accounts", "Disconnect", "Refresh Repositories", "Link to Active Project…",
             "Unlink Project", "Open on GitHub", "Clone Selected…", "Initialize & Link Local…", "Initial Push Review…",
             "Binding Settings…", "Refresh Binding Metadata", "Build Center…", "Sync & Build…"],
-    "settings": ["Mobile Companion…", "Validation Profiles…", "Restore Manager…", "App Map…", "Export redacted diagnostics…",
+    # 5.13.0: Mobile Companion… has one home, Settings › Project › Project settings › Project tools
+    # 5.13.0 (C7): App Map… left Settings — a developer tool (Ctrl+Shift+F12), not a user command
+    "settings": ["Validation Profiles…", "Restore Manager…", "Export redacted diagnostics…",
                  "Open application data folder"],
     "profile": ["Save profile", "Restore defaults"],
-    "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Apply suggested moves", "Prepare all prompts",
-               "Parallel chats…"],  # 5.6.0 Agents hub
+    "agents": ["Edit team…", "Copy team summary", "Copy briefing", "Memory note…", "Prepare all prompts",
+               "Parallel chats…"],  # 5.6.0 Agents hub; 5.13.0 (C6): "Apply suggested moves" only when moves exist
 }
 # Buttons that would only duplicate a rail page.
 RAIL_DUPLICATES = {"Project Workbench…", "Go to Prompt", "Open Settings…"}
@@ -117,6 +118,12 @@ def main() -> None:
                     else:
                         tree_md.extend(ui_actions.describe(view))
                 tree_md.append("")
+            library = ["+ New project", "Open selected", "Reveal folder", "Remove from list"]  # 5.13.0
+            reachable = ui_actions.all_commands([app.open_all_projects()])
+            missing = [c for c in library if c not in reachable]
+            if missing:
+                failures.append(f"all projects: commands no longer reachable {missing}")
+            app.projects_win.withdraw()
             for bar in [w for w in _all(root) if isinstance(w, ui_actions.ActionBar)]:
                 if len(bar.buttons) > ui_actions.MAX_PRIMARY:
                     failures.append(f"action bar with {len(bar.buttons)} primary buttons: {list(bar.buttons)}")

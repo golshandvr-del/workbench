@@ -258,8 +258,8 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"Check what {who} delivered for {label}",
                              (h.get("summary") or "The answer was read.") + (f" Missing: {'; '.join(missing[:4])}." if missing else "")
                              + (f" Accepting adds {len(h.get('staged_files') or [])} delivered file(s) to the project files"
-                                " (old versions are backed up); it never closes the task." if h.get("staged_files")
-                                else " Accepting never closes the task."),
+                                " (old versions are backed up) and records your review approval; tests are recorded next."
+                                if h.get("staged_files") else " Accepting records your review approval; tests are recorded next."),
                              acts, agent=USER, ref=h["handoff_id"], rank=10, task_id=h["task_id"]))
         elif h["status"] in ("stale", "reconciliation_required"):
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"The answer for {label} is out of date",
@@ -313,9 +313,9 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
     from .waves import dispatch
     desk = dispatch(st)
     if len(desk["next"]) > 1:
-        names = ", ".join(f"{x} → {desk['owners'][x]}" for x in desk["next"])
-        out.append(_step("dispatch", "prompt", f"Prepare the prompts for {len(desk['next'])} parallel tasks",
-                         f"Parallel paths of this wave: {names}. {desk['slots']} of {desk['limit']} chat(s) are free"
+        names = ", ".join(f"{(tasks.get(x) or {}).get('title') or x} ({desk['owners'][x]})" for x in desk["next"])
+        out.append(_step("dispatch", "prompt", f"Prepare the prompts for {len(desk['next'])} tasks that can run side by side",
+                         f"These can start now: {names}. {desk['slots']} of {desk['limit']} chats are free"
                          + (f"; {len(desk['queued'])} more task(s) wait for a free chat." if desk["queued"] else ".")
                          + " Each AI gets its own self-contained prompt.",
                          [_a("prepare_all", "Prepare all prompts")], rank=39, task_ids=list(desk["next"])))
@@ -335,7 +335,7 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              "Run the tests or the build (e.g. ./gradlew test or a CI run), then record what really happened. "
                              "A model's claim does not count. If you cannot run anything here, accept it on review alone "
                              "— it stays marked NOT RUN.",
-                             [_a("validation_passed", "Tests/build passed…", "run_id"),
+                             [_a("validation_passed", "Tests/build passed"),  # 5.13.0: one click; a run id via Record…
                               _a("validation_failed", "Tests/build failed…", "note"),
                               _a("waive_validation", "I can't run tests — accept on review…", "reason"),
                               _a("record_validation", "Record the result (passed/failed)…", "result", "run_id")], ref=tid, rank=14))
@@ -368,7 +368,8 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
         if all(tasks.get(x, {}).get("status") in ("done", "cancelled", "superseded") for x in m["task_ids"]):
             out.append(_step(f"milestone:{m['milestone_id']}", "decision", f"Accept milestone {m['title']}",
                              "All its tasks are done. Check its criteria: " + "; ".join(m.get("criteria", []))[:300],
-                             [_a("accept_milestone", "Accept the milestone")], ref=m["milestone_id"], rank=75))
+                             [_a("accept_milestone", "Accept the milestone")], ref=m["milestone_id"],
+                             rank=15))  # 5.13.0: close a finished milestone before new prompts start (was 75)
     connected = bool(((st["settings"].get("flow") or {}).get("repo") or {}).get("full_name"))
     for v in sorted(st["versions"].values(), key=lambda v: v["version_id"]):
         if v["status"] in ("released", "withdrawn") or connected:  # connected: the GitHub release step (4.5.0)
@@ -411,6 +412,29 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                          agent=MANAGER, prompt=continue_project_prompt(upd, st), rank=90))
     out += github_steps(ctl, st)  # optional blue nodes never hide the manager update (roadmap 4.5.0)
     out.sort(key=lambda s: (s["rank"], s["key"]))
+    return _in_user_words(st, out)
+
+
+def _in_user_words(st: dict[str, Any], out: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """5.13.0 (owner audit B4): what the user reads names the AIs as the user named them — never ``agent-…``.
+
+    Only ``title``, ``explain`` and action labels change; prompts (read by the AIs) and ``agent_id`` stay as they are.
+    """
+    names = {aid: str((a or {}).get("name") or "").strip() for aid, a in (st.get("agents") or {}).items()}
+    names = {aid: n for aid, n in names.items() if n and n != aid}
+    if not names:
+        return out
+    order = sorted(names, key=len, reverse=True)  # agent-dev-2 before agent-dev
+
+    def h(text: str) -> str:
+        for aid in order:
+            if aid in text:
+                text = text.replace(aid, names[aid])
+        return text
+
+    for s in out:
+        s["title"], s["explain"] = h(s["title"]), h(s["explain"])
+        s["actions"] = [{**a, "label": h(a["label"])} for a in s["actions"]]
     return out
 
 
@@ -589,9 +613,18 @@ class Guide:
             return {"message": f"Decision {ref} recorded."}
         if action == "accept_handoff":
             from .files import integrate
-            c.resolve_handoff(ref, True, str(inp.get("reason", "")) or "accepted in the guided loop")
+            reason = str(inp.get("reason", "")).strip()
+            c.resolve_handoff(ref, True, reason or "accepted in the guided loop")
             written = integrate(self.p.store, c.root, ref)
             added = f" {len(written)} file(s) added to the project files." if written else ""
+            tid = (self.p.handoffs.get(ref) or {}).get("task_id", "")
+            if not reason and tid and (self.p.tasks.get(tid) or {}).get("status") == "in_review":
+                # 5.13.0 (gate ≤ 14 clicks): a clean "Accept the delivery" is the user's review — one judgement, not
+                # two clicks. "Accept anyway…" (problems found) leaves the review to the user.
+                out = c.review_task(tid, True, "approved with the delivery")
+                nxt = {"validation_pending": " Next: record whether the tests/build passed.",
+                       "done": f" {tid} is done."}.get(out["status"], "")
+                return {"message": f"Delivery {ref} accepted and {tid} approved.{added}{nxt}", "files": written}
             return {"message": f"Delivery {ref} accepted.{added} Next: review the task.", "files": written}
         if action == "reject_handoff":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")))

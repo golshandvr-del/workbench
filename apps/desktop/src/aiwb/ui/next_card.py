@@ -4,12 +4,15 @@ Before 5.11.0 Home only *named* the next step and sent the user to the Workbench
 popup paste box. The card now does the step itself, on Home:
 
 * the step's title and explanation, with each AI's **name** (not its id);
-* the primary action as a button, the other actions in **More**;
+* the primary action as a button, the step's other actions as small buttons beside it (5.13.0: no **More** on Home —
+  a step has at most :data:`MAX_OTHERS` other actions), and **All open steps (N)**: every open step of the project,
+  one click shows it on the card;
 * whenever the step accepts an answer, the **paste panel inside the page** (:class:`aiwb.ui.paste_box.PastePanel`,
   live diagnosis + Load ZIP…) — no popup window;
 * "Prepare the prompt" also copies it (one click less), and every prompt an action yields (fix prompt, continue
   prompt, change request) is copied and said so;
-* clicking an AI on the Mission Map *focuses* the card on that AI's own queue; More › "Back to the next step" returns.
+* clicking an AI on the Mission Map *focuses* the card on that AI's own queue; All open steps › "Back to the next step"
+  returns.
 
 :func:`card_model` is pure (``test_next_card.py``); :class:`NextStepCard` draws it and runs the actions through the
 ``perform(key, action, inputs)`` callback — the embedded Workbench's ``guide_action``, the same code path as before.
@@ -22,6 +25,8 @@ from typing import Any, Callable
 
 USER = "you"
 BACK_LABEL = "Back to the next step"
+MAX_OTHERS = 3  # 5.13.0: the step's other actions shown as buttons beside the primary one (no More on Home)
+STEPS_LABEL = "All open steps"
 # actions whose result prompt is copied at once (the user's next move is to paste it into a chat)
 COPY_RESULT = ("paste", "request_changes", "troubleshoot", "repair", "review_prompt", "manager_prompt", "escalate",
                "copy_context")  # 5.12.0: the files the AI asked for go to the clipboard at once
@@ -53,11 +58,16 @@ def card_model(steps: list[dict[str, Any]], names: dict[str, str], focus: str = 
     """What the card shows for the guide's ``steps`` (most urgent first); ``focus`` = one AI's queue only,
     ``step_key`` = that very step when it is still open (Mission Map › GET AI RESPONSE on a task).
 
-    Keys: ``key``, ``title``, ``explain``, ``who``, ``primary`` (action or None), ``more`` (actions), ``paste``
-    (the action that takes the answer text, or None), ``focus``, ``empty``.
+    Keys: ``key``, ``title``, ``explain``, ``who``, ``primary`` (action or None), ``more`` (the step's other actions,
+    shown as buttons), ``paste`` (the action that takes the answer text, or None), ``focus``, ``empty``, ``open`` (every
+    open step: ``key``, ``agent_id``, ``title`` with the AI's name — the "All open steps" list).
     """
+    opened = [{"key": s["key"], "agent_id": s["agent_id"],
+               "title": humanize(s["title"], names)
+               + ("" if s["agent_id"] in (USER, "") else f" · {names.get(s['agent_id'], s['agent_id'])}")}
+              for s in steps]
     base = {"key": "", "title": "", "explain": "", "who": "", "primary": None, "more": [], "paste": None,
-            "focus": focus, "empty": False, "agent_id": ""}
+            "focus": focus, "empty": False, "agent_id": "", "open": opened}
     if not steps:
         return {**base, "empty": True, "title": "Open or create a project to see its next step."}
     pick = steps[0]
@@ -118,15 +128,19 @@ class NextStepCard(ttk.Frame):
         self.message_label.pack(anchor="w", pady=(2, 0))
         bar = ttk.Frame(self, style="Card.TFrame")
         bar.pack(fill="x", pady=(6, 0))
+        # 5.13.0 (owner audit C2): not packed here — refresh() shows it only with a label. Packed empty, it stayed a
+        # blank blue square whenever the first refresh did not run (5.11 window + 5.12 card after the stale-.pyc bug).
         self.next_btn = ttk.Button(bar, text="", style="Primary.TButton", command=self.do_next)
-        self.next_btn.pack(side="left")
-        self.next_menu = tk.Menu(bar, tearoff=False)
-        self.next_more = ttk.Menubutton(bar, text="More", menu=self.next_menu)
-        self.next_more.pack(side="left", padx=(6, 0))
+        self.others = ttk.Frame(bar, style="Card.TFrame")  # the step's other actions (rebuilt by refresh)
+        self.others.pack(side="left")
+        self.other_buttons: dict[str, ttk.Button] = {}
+        self.steps_menu = tk.Menu(bar, tearoff=False)
+        self.steps_btn = ttk.Menubutton(bar, text=STEPS_LABEL, menu=self.steps_menu)
         self._bar = bar
-        # the App Map shows these two by role: their labels are the current step's actions (ui_map._aiwb_dynamic)
+        # the App Map shows these by role: their labels are the current step's (ui_map._aiwb_dynamic)
         self.next_btn._aiwb_dynamic = "Next action"  # type: ignore[attr-defined]
-        self.next_more._aiwb_dynamic = "More"  # type: ignore[attr-defined]
+        self.others._aiwb_dynamic = "Other actions of the step"  # type: ignore[attr-defined]
+        self.steps_btn._aiwb_dynamic = STEPS_LABEL  # type: ignore[attr-defined]
         from .paste_box import PastePanel
         self.paste = PastePanel(self, state=self._state, on_use=self.use_answer, height=6, wraplength=wraplength,
                                 style="Card.TFrame")
@@ -150,17 +164,31 @@ class NextStepCard(ttk.Frame):
         self.title_var.set(m["title"] + who)
         self.explain_var.set(m["explain"])
         self.next_btn.pack_forget()
-        self.next_more.pack_forget()
-        if m["primary"] is not None:
+        self.others.pack_forget()
+        self.steps_btn.pack_forget()
+        if m["primary"] is not None and str(m["primary"]["text"]).strip():  # a button never shows without words
             self.next_btn.configure(text=m["primary"]["text"])
             self.next_btn.pack(side="left")
-        self.next_menu.delete(0, "end")
-        for a in m["more"]:
-            self.next_menu.add_command(label=a["text"], command=lambda i=a["id"]: self.action(i))
-        if self.focus_agent:
-            self.next_menu.add_command(label=BACK_LABEL, command=lambda: self.set_focus(""))
-        if self.next_menu.index("end") is not None:
-            self.next_more.pack(side="left", padx=(6 if m["primary"] is not None else 0, 0))
+        for b in self.other_buttons.values():
+            b.destroy()
+        self.other_buttons = {}
+        for k, a in enumerate(m["more"]):
+            b = ttk.Button(self.others, text=a["text"], command=lambda i=a["id"]: self.action(i))
+            b.pack(side="left", padx=(6 if k or m["primary"] is not None else 0, 0))
+            self.other_buttons[a["text"]] = b
+        if self.other_buttons:
+            self.others.pack(side="left")
+        self.steps_menu.delete(0, "end")
+        if self.focus_agent or self.focus_key:
+            self.steps_menu.add_command(label=BACK_LABEL, command=lambda: self.set_focus(""))
+            self.steps_menu.add_separator()
+        for st in m["open"]:
+            mark = "● " if st["key"] == m["key"] else "   "
+            self.steps_menu.add_command(label=mark + st["title"],
+                                        command=lambda k=st["key"], a=st["agent_id"]: self.show_step(a, k))
+        if len(m["open"]) > 1 or self.focus_agent or self.focus_key:
+            self.steps_btn.configure(text=f"{STEPS_LABEL} ({len(m['open'])})")
+            self.steps_btn.pack(side="right")
         if m["paste"] is not None:
             self.paste.ok_btn.configure(text="Use this answer")
             if not self.paste.winfo_manager():
@@ -171,6 +199,11 @@ class NextStepCard(ttk.Frame):
             self.paste.pack_forget()
         return m
 
+    def show_step(self, agent_id: str, step_key: str) -> dict[str, Any]:
+        """All open steps › one step: the card shows that step (the first open step = the project's next step)."""
+        first = self.model["open"][0]["key"] if self.model.get("open") else ""
+        return self.set_focus("", "") if step_key == first else self.set_focus(agent_id, step_key)
+
     def set_focus(self, agent_id: str, step_key: str = "") -> dict[str, Any]:
         """Show one AI's queue (Mission Map click on its name) — ``""`` = the project's next step; ``step_key`` picks
         one open step of that queue (a task's own prompt/answer)."""
@@ -180,10 +213,15 @@ class NextStepCard(ttk.Frame):
 
     # ------------------------------------------------------------------ actions
     def labels(self) -> list[str]:
-        """Every action label on the card: the primary button, then More (for tests and the click counter)."""
+        """Every action label on the card: the primary button, then the other buttons (tests, click counter)."""
         out = [self.next_btn.cget("text")] if self.next_btn.winfo_manager() else []
-        end = self.next_menu.index("end")
-        return out + ([] if end is None else [self.next_menu.entrycget(i, "label") for i in range(end + 1)])
+        return out + list(self.other_buttons)
+
+    def button(self, label: str) -> ttk.Button | None:
+        """The card's button whose label starts with ``label`` (a trailing ``…`` ignored), or None."""
+        want = label.rstrip("…")
+        cands = ([self.next_btn] if self.next_btn.winfo_manager() else []) + list(self.other_buttons.values())
+        return next((b for b in cands if str(b.cget("text")).rstrip("…").startswith(want)), None)
 
     def do_next(self) -> Any:
         m = self.model

@@ -22,27 +22,28 @@ this source when Android asks).
 
 ## 2. The main window
 
-One window ("Mission Map" look, Midnight or Daylight): a **toolbar** on top (New Project ▾ · Open · Save · Run),
-an **icon rail** on the left and a **status bar** at the bottom (agents running, milestone, saved state).
-Each rail page has one job:
+One window ("Mission Map" look, Midnight or Daylight): a **toolbar** on top (New Project ▾ · Open · Save · Run and,
+on the right, the **project name as a menu** — *<name> ▾*: recent projects, All projects…, Reveal folder, Remove from
+list), an **icon rail** of four places on the left and a **status bar** at the bottom (who you are waiting for, the
+milestone, saved state). Each place has one job (5.13.0: Home = now and next, History = the past):
 
 | Page | What it is for |
 |---|---|
 | **Home** | The cockpit of the active project: the **Mission Map** (one lane per AI, one circle per task in its version's column), **Map view**, task details and the **Next step** card — where you do every step (5.11.0) |
-| **Projects** | **Your projects** as cards (click = select, double-click = open, *Find* filters; *More ▾* → Open selected · Reveal folder · Remove from list), then the Workbench of the open project in three sections: **Plan & Tasks** · **Timeline** · **Project settings** |
 | **Agents** | One card per AI (state, current task, load, record), the selected AI's queue, *Copy briefing*, *Memory note…*, Balance alerts and suggested moves |
-| **History** | **Timeline** of everything that happened, then every prompt and AI answer of the project |
-| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Mobile Companion, Restore Manager, App Map |
+| **History** | **Timeline** of everything that happened, then **one list** with a *Show* filter: All · Prompts · Answers · Saved · Events · Versions |
+| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Maintenance ▾; **Settings › Project**: the project's settings, Project tools ▾ (bundles, Mobile Companion…) and *Classic tools (1.x)…* |
 
-*Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Projects › Project Profile and
-Run & Report, Agents › Prompt and AI Response, History › Git / GitHub. Every page shows at most eight controls at once
-and at most four main buttons per bar; the rest are under **More ▾**.
+*Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Agents › Prompt and AI Response,
+History › Git / GitHub. Every command has **one** home; Home has no More menu (the step's other actions are buttons,
+plus *All open steps (N)*), and other More menus hold at most three items.
 
 **Mission Map tips (Home):** right-click a task circle for COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS
 DONE (only the ones possible now are enabled). *Map view* → **Hide finished tasks** and **Only AIs with open work**
 make a big project readable; the lane numbers never change. **Click an AI's number or name** and the Next-step card
-shows that AI's own prompt or answer step (*More › Back to the next step* returns). *Task details › More* has Jump to
-active task, Copy task summary and **Copy map summary** (every lane and its tasks as plain text). On short windows the project cards (Projects) and the History timeline fold away.
+shows that AI's own prompt or answer step (*All open steps › Back to the next step* returns). **Right-click a column
+header** (a version) for New milestone… · Accept milestone · Propose version… · Record release…. *Task details › More* has Jump to
+active task, Copy task summary and **Copy map summary** (every lane and its tasks as plain text). On short windows the History timeline folds away.
 
 ## 3. Your first project (the guided loop)
 
@@ -117,7 +118,8 @@ working in parallel (`test_algorithm_e2e.py`, `AlgorithmE2ETest`).
 
 ## 4. Timeline
 
-Projects › Workbench → **Timeline**: one lane per AI plus "project". Circle size = importance (minor → critical).
+**History › Timeline**: one lane per AI (by its name) plus "Project"; the dates of the shown span are under the axis.
+Circle size = importance (minor → critical).
 Dashed vertical line = proposed version, solid = released. Mouse wheel or `+`/`-` to zoom, drag to pan,
 click an event to see its details.
 
@@ -129,7 +131,7 @@ Main screen → **Standalone mode**. Create a project, then use the same loop: t
 automatically) and the Timeline (pinch to zoom, drag, tap).
 
 ### Moving a project between PC and phone
-* Desktop: **Project Workbench → Project settings → Project tools ▾ → Export project for the phone…** → a
+* Desktop: **Settings › Project › Project tools ▾ → Export project for the phone…** → a
   `.aiwb-bundle.json` file (*Import project from the phone…* is in the same menu).
 * Phone: **Import project bundle** and pick the file (or the other way round with *Export*).
 * Bundles are **never merged**. The app tells you whether the incoming copy is *new*, *the same*, *newer*,

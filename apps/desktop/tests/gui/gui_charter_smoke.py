@@ -81,12 +81,20 @@ def main() -> None:
             assert sorted(v["label"] for v in st["versions"].values()) == ["0.1.0", "0.2.0"]
             w.show("team")
             root.update()
-            assert w.charter_agent_var.get() == "agent-core-dev"
+            # 5.13.0 (C3): no "Charter start prompts" box in Project settings (Agents › Copy briefing does it)
+            assert not [x for x in _all(w.win) if _label(x) in ("Charter start prompts", "Copy start prompt")]
             sp = w.copy_start_prompt("agent-mobile-dev")
             assert root.clipboard_get() == sp and "mobile/**" in sp and "NO access" in sp
         finally:
             root.destroy()
     print("PASS: Project Charter GUI smoke - prompt, refusal with fix prompt, tolerant import, review, start prompts")
+
+
+def _label(w: tk.Misc) -> str:
+    try:
+        return str(w.cget("text"))
+    except tk.TclError:
+        return ""
 
 
 def _all(w: tk.Misc):

@@ -94,8 +94,8 @@ class AlgorithmWalk(unittest.TestCase):
         self.do(k, "sent")
         self.do(k, "paste", text=self.answer(tid, files))
         self.assertTrue(self.c.state()["handoffs"][k.split(":", 1)[1]].get("staged_files"))
-        self.do(k, "accept_handoff")
-        self.do(f"task:{tid}", "approve")
+        self.do(k, "accept_handoff")   # 5.13.0: accepting the delivery is the review (no separate Approve)
+        self.assertEqual(self.c.state()["tasks"][tid]["status"], "validation_pending")
         self.do(f"task:{tid}", "validation_passed", run_id=f"ci-{tid}")
         self.assertEqual(self.c.state()["tasks"][tid]["status"], "done")
 
@@ -180,7 +180,7 @@ class AlgorithmWalk(unittest.TestCase):
         ev = self.events()
         self.edge("F13", "F16", "handoff_accepted" in ev)
         self.edge("F16", "F17", "files_integrated" in ev and (self.root / "src/core/todo.py").is_file())
-        self.do(f"task:{core}", "approve")
+        self.assertEqual(c.state()["tasks"][core]["status"], "validation_pending")  # 5.13.0: accept = review
         self.do(f"task:{core}", "validation_passed", run_id="ci-core")
         # C2 checkpoint: approved files are saved to the project branch right away (F22), by hand here
         self.do("github:save", "prepare_save")

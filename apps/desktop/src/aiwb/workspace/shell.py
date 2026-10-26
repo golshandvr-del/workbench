@@ -255,7 +255,8 @@ class WorkspaceWindow:
         self.pub_var.set(bar["publish"])
         steps = self.wc.guide_steps()
         st = self.guide_step = steps[0]
-        who = "" if st["agent_id"] == "you" else f"  [{st['agent_id']}]"
+        aname = str(((self.wc.ctl.state().get("agents") or {}).get(st["agent_id"]) or {}).get("name") or st["agent_id"])
+        who = "" if st["agent_id"] == "you" or aname in st["title"] else f"  [{aname}]"  # 5.13.0 (B4): the name
         self.next_var.set(("← " if self.wc.rtl else "→ ") + "Next step: " + st["title"] + who)
         self.next_explain_var.set(st["explain"] + (f"  ({len(steps) - 1} more open)" if len(steps) > 1 else ""))
         self.flow_var.set(self.wc.flow_text())
@@ -333,8 +334,6 @@ class WorkspaceWindow:
 
     def _ask_text(self, title: str) -> str:
         """Multi-line paste box for a whole model answer."""
-        if hasattr(self, "answer_text") and self.answer_text.winfo_exists() and self.answer_text.get("1.0", "end-1c").strip():
-            return self.answer_text.get("1.0", "end-1c")
         from ..ui.paste_box import ask_answer   # 5.10.0: live diagnosis + Load ZIP…
         try:
             state = self.wc.ctl.state()
@@ -579,20 +578,13 @@ class WorkspaceWindow:
         pf = ttk.Frame(f, style="WS.TFrame")
         pf.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=(6, 0))
         pf.columnconfigure(0, weight=1)
-        pf.columnconfigure(1, weight=1)
-        ttk.Label(pf, text=self.wc.tr(("Prompt to copy (Workbench never sends it)", "پرامپت برای کپی (Workbench آن را ارسال نمی‌کند)"))).grid(row=0, column=0, sticky="w")
-        ttk.Label(pf, text=self.wc.tr(("Paste the model's answer", "پاسخ مدل را Paste کنید"))).grid(row=0, column=1, sticky="w")
+        # 5.13.0 (B5): copying a prompt and pasting an answer have one home — Home's Next-step card (and the task
+        # menu). This page only shows the last prompt; do_copy/do_import stay for scripts.
+        ttk.Label(pf, text=self.wc.tr(("Last prompt (copy it and paste the answer on Home)",
+                                       "آخرین پرامپت (کپی و چسباندن پاسخ در Home)"))).grid(row=0, column=0, sticky="w")
         self.prompt_text = tk.Text(pf, height=7, wrap="word")
-        self.prompt_text.grid(row=1, column=0, sticky="nsew", padx=(0, 4))
+        self.prompt_text.grid(row=1, column=0, sticky="nsew")
         self.prompt_text.insert("1.0", self.last_prompt)
-        self.answer_text = tk.Text(pf, height=7, wrap="word")
-        self.answer_text.grid(row=1, column=1, sticky="nsew")
-        bb = ttk.Frame(pf, style="WS.TFrame")
-        bb.grid(row=2, column=0, columnspan=2, sticky="ew", pady=4)
-        side = "right" if self.wc.rtl else "left"
-        ttk.Button(bb, text=self.wc.tr(("Copy prompt", "کپی پرامپت")), command=self.do_copy).pack(side=side)
-        ttk.Button(bb, text=self.wc.tr(("Check & import answer", "بررسی و ثبت پاسخ")), style="WS.Primary.TButton",
-                   command=self.do_import).pack(side=side, padx=4)
 
     def _view_project(self, f: ttk.Frame) -> None:
         """Project settings (5.11.0): project details · the AI team and its manager · account profiles · charter start
@@ -610,7 +602,7 @@ class WorkspaceWindow:
                  ("Answer format", settings.get("answer_format", "") or "aiwb"), ("Folder", str(self.wc.ctl.root))]
         self.details_var = tk.StringVar(value="\n".join(f"{k}: {v or '—'}" for k, v in facts))
         ttk.Label(det, textvariable=self.details_var, wraplength=760, justify="left", anchor=anchor).pack(fill="x")
-        ttk.Label(det, text="Change them on Home (Next step › More › Change the project details…) until the plan is "
+        ttk.Label(det, text="Change them on Home (Next step › Change the project details…) until the plan is "
                             "accepted. The AIs themselves: Agents › Edit team…", style="WS.Muted.TLabel",
                   wraplength=760, anchor=anchor).pack(fill="x", pady=(4, 0))
         team = ttk.LabelFrame(f, text=self.wc.tr(("AI team", "تیم AI")), padding=6)
@@ -673,14 +665,9 @@ class WorkspaceWindow:
         am.add_command(label=self.wc.tr(("Enable / disable selected", "فعال / غیرفعال کردن انتخاب‌شده")),
                        command=self.toggle_selected_account)
         ttk.Menubutton(ab, text="More", menu=am).pack(side=side, padx=4)
-        ch = self.wc.ctl.charter()
-        if ch:
-            cb = ttk.LabelFrame(f, text="Charter start prompts", padding=6)
-            cb.grid(row=4, column=0, sticky="ew", pady=6)
-            agents = sorted(ch.get("start_prompts") or {})
-            self.charter_agent_var = tk.StringVar(value=agents[0] if agents else "")
-            ttk.Combobox(cb, textvariable=self.charter_agent_var, values=agents, width=24, state="readonly").pack(side=side)
-            ttk.Button(cb, text="Copy start prompt", command=self.copy_start_prompt).pack(side=side, padx=4)
+        # 5.13.0 (owner audit C3): no "Charter start prompts" box here — it listed the charter's agent ids
+        # ("agent-architect") and duplicated Agents › Selected AI › Copy briefing (the first message of a new chat with
+        # that AI). copy_start_prompt() stays for scripts and tests.
         items = self.wc.tool_items("project")
         if items:
             tf = ttk.LabelFrame(f, text=self.wc.tr(("Files, builds and the phone", "فایل‌ها، Build و موبایل")), padding=6)
@@ -870,84 +857,6 @@ class WorkspaceWindow:
             self.show("tasks")
         return prompt
 
-    def _view_timeline(self, f: ttk.Frame) -> None:
-        self._heading(f, self.wc.section_label("timeline"))
-        f.rowconfigure(2, weight=1)
-        # 3.6.0: visual timeline above the event list (lanes per AI, importance circles, version lines)
-        from ..ui.timeline_canvas import TimelineCanvas
-        vis = ttk.LabelFrame(f, text="Timeline (wheel or +/- to zoom, drag to pan, click an event)", padding=4)
-        vis.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(4, 0))
-        self.tl_canvas = TimelineCanvas(vis, palette=getattr(self, "pal", None), height=180,
-                                        on_select=self.select_timeline_event)
-        self.tl_canvas.pack(fill="x", expand=True)
-        self.tl_canvas.set_model(self.wc.timeline_model())
-        flt = ttk.Frame(f, style="WS.TFrame")
-        flt.grid(row=1, column=0, sticky="ew")
-        self.tl_family = tk.StringVar(value="")
-        from ..v2.events import FAMILIES
-        ttk.Combobox(flt, textvariable=self.tl_family, values=[""] + list(FAMILIES), width=10, state="readonly").pack(side="left")
-        self.tl_text = tk.StringVar()
-        ttk.Entry(flt, textvariable=self.tl_text, width=24).pack(side="left", padx=4)
-        ttk.Button(flt, text=self.wc.tr(("Filter", "فیلتر")), command=lambda: self._fill_timeline(0)).pack(side="left")
-        self.tl_page_var = tk.StringVar()
-        ttk.Label(flt, textvariable=self.tl_page_var, style="WS.Muted.TLabel").pack(side="right")
-        ttk.Button(flt, text="›", width=3, command=lambda: self._fill_timeline(self.tl_page + 1)).pack(side="right")
-        ttk.Button(flt, text="‹", width=3, command=lambda: self._fill_timeline(self.tl_page - 1)).pack(side="right")
-        self.tl_tree = ttk.Treeview(f, columns=("event", "ref", "source"), show="headings", style="WS.Treeview")
-        for c, pair, wdt in (("event", ("Event", "رویداد"), 420), ("ref", ("Reference", "مرجع"), 160), ("source", ("Source", "منبع"), 110)):
-            self.tl_tree.heading(c, text=self.wc.tr(pair))
-            self.tl_tree.column(c, width=wdt, stretch=c == "event")
-        sb = ttk.Scrollbar(f, orient="vertical", command=self.tl_tree.yview)
-        self.tl_tree.configure(yscrollcommand=sb.set)
-        self.tl_tree.grid(row=2, column=0, sticky="nsew")
-        sb.grid(row=2, column=1, sticky="ns")
-        self.tl_tree.bind("<<TreeviewSelect>>", lambda _e: self._select_from(self.tl_tree, "event"))
-        self.tl_page = 0
-        self._fill_timeline(0)
-        side = "right" if self.wc.rtl else "left"
-        ttk.Button(flt, text=self.wc.tr(("Lanes by agent", "Lane بر اساس Agent")), command=self.show_lanes).pack(side="left", padx=4)
-        mv = ttk.LabelFrame(f, text=self.wc.tr(("Milestones and versions", "Milestone و نسخه‌ها")), padding=6)
-        mv.grid(row=3, column=0, columnspan=2, sticky="ew", pady=4)
-        self.mv_tree = ttk.Treeview(mv, columns=("status", "detail"), show="tree headings", style="WS.Treeview", height=4)
-        for c, pair, wdt in (("#0", ("Item", "مورد"), 260), ("status", ("Status", "وضعیت"), 140),
-                             ("detail", ("Tasks / reference", "Taskها / مرجع"), 300)):
-            self.mv_tree.heading(c, text=self.wc.tr(pair))
-            self.mv_tree.column(c, width=wdt, stretch=c != "status")
-        for m in self.wc.milestone_rows():
-            self.mv_tree.insert("", "end", iid=m["milestone_id"], text=f"{m['milestone_id']} {m['title']}",
-                                values=(m["status"], m["progress_text"] + " " + self.wc.tr(("tasks done", "Task انجام‌شده"))))
-        for v in self.wc.version_rows():
-            ref = " · ".join(x for x in (v["commit_sha"][:10], v["tag"], v["run_id"] and f"run {v['run_id']}") if x)
-            self.mv_tree.insert("", "end", iid=v["version_id"], text=f"{v['version_id']} {v['label']}",
-                                values=(v["status_text"], ref or self.wc.tr(("no commit/build yet", "هنوز Commit/Build ندارد"))))
-        for pi in self.wc.planned():
-            if pi["kind"] == "milestone" and pi["date"] and self.mv_tree.exists(pi["ref"]):
-                self.mv_tree.item(pi["ref"], text=self.mv_tree.item(pi["ref"], "text") + self.wc.tr(
-                    ((" (planned ", " (برنامه‌ریزی‌شده ")) ) + pi["date"] + ")")
-        self.mv_tree.pack(fill="x")
-        bb = ttk.Frame(mv, style="WS.TFrame")
-        bb.pack(fill="x", pady=(4, 0))
-        ttk.Button(bb, text=self.wc.tr(("New milestone…", "Milestone جدید…")), command=self.dialog_milestone).pack(side=side)
-        ttk.Button(bb, text=self.wc.tr(("Accept milestone", "پذیرش Milestone")), command=self.accept_selected_milestone).pack(side=side, padx=4)
-        vm = tk.Menu(bb, tearoff=False)  # 5.11.0: versions in More (the Timeline shows at most 5 controls)
-        vm.add_command(label=self.wc.tr(("Propose version…", "پیشنهاد نسخه…")), command=self.dialog_version)
-        vm.add_command(label=self.wc.tr(("Record commit / tag / release…", "ثبت Commit / Tag / انتشار…")),
-                       command=self.dialog_advance_version)
-        ttk.Menubutton(bb, text="More", menu=vm).pack(side=side)
-
-    def show_lanes(self) -> dict[str, list[dict[str, Any]]]:
-        """Replace the list with one parent row per lane (agent); children are that lane's events (oldest first)."""
-        lanes = self.wc.timeline_lanes()
-        self.tl_tree.delete(*self.tl_tree.get_children())
-        for lane, recs in sorted(lanes.items()):
-            self.tl_tree.insert("", "end", iid=f"lane:{lane}", values=(f"▸ {lane} · {len(recs)}", "", ""), open=False)
-            for rec in recs[-50:]:
-                self.tl_tree.insert(f"lane:{lane}", "end", iid=rec["event_id"],
-                                    values=(self.wc.event_text(rec), "", rec["source"]))
-        self.tl_tree.configure(show="tree headings")
-        self.tl_page_var.set(self.wc.tr(("lanes", "Laneها")) + f" · {len(lanes)}")
-        return lanes
-
     def _ask(self, title: str, prompt: str, initial: str = "") -> str:
         v = simpledialog.askstring(title, prompt, initialvalue=initial, parent=self.win)
         return (v or "").strip()
@@ -963,11 +872,11 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.create_milestone(data))
         if out:
             self.status_var.set(f"{out['milestone_id']} · {out['title']}")
-            self.show("timeline")
+            self.refresh()
         return out
 
     def accept_selected_milestone(self, milestone_id: str = "", force: bool | None = None) -> Any:
-        sel = milestone_id or next((i for i in self.mv_tree.selection() if i.startswith("MS-")), "")
+        sel = milestone_id  # 5.13.0 (B3): the milestone comes from its Mission Map column
         if not sel:
             self.status_var.set(self.wc.tr(("Select a milestone first.", "ابتدا یک Milestone انتخاب کنید.")))
             return None
@@ -983,7 +892,7 @@ class WorkspaceWindow:
                 return None
             out = self._guard(lambda: self.wc.accept_milestone(sel, force=True))
         if out:
-            self.show("timeline")
+            self.refresh()
         return out
 
     def dialog_version(self, data: dict[str, Any] | None = None) -> Any:
@@ -995,11 +904,11 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.propose_version(data))
         if out:
             self.status_var.set(f"{out['version_id']} · {out['label']} · " + self.wc.tr(("proposed (not released)", "پیشنهادی (منتشر نشده)")))
-            self.show("timeline")
+            self.refresh()
         return out
 
     def dialog_advance_version(self, version_id: str = "", status: str = "", facts: dict[str, str] | None = None) -> Any:
-        vid = version_id or next((i for i in self.mv_tree.selection() if i.startswith("VER-")), "")
+        vid = version_id  # 5.13.0 (B3): the version comes from its Mission Map column
         if not vid:
             self.status_var.set(self.wc.tr(("Select a version first.", "ابتدا یک نسخه انتخاب کنید.")))
             return None
@@ -1017,30 +926,8 @@ class WorkspaceWindow:
         out = self._guard(lambda: self.wc.advance_version(vid, status, **facts))
         if out:
             self.status_var.set(f"{vid} → {out['status']}")
-            self.show("timeline")
+            self.refresh()
         return out
-
-    def _fill_timeline(self, page: int) -> dict[str, Any]:
-        page = max(page, 0)
-        fam = self.tl_family.get()
-        res = self.wc.timeline_page(page, families=[fam] if fam else [], text=self.tl_text.get())
-        if res["pages"] and page >= res["pages"]:
-            return self._fill_timeline(res["pages"] - 1)
-        self.tl_page = page
-        self.tl_tree.delete(*self.tl_tree.get_children())
-        for rec in res["items"]:
-            refs = rec.get("refs", {})
-            ref = next(iter(refs.values()), "") if refs else ""
-            self.tl_tree.insert("", "end", iid=rec["event_id"], values=(self.wc.event_text(rec), ref if isinstance(ref, str) else "", rec["source"]))
-        self.tl_page_var.set(f"{page + 1}/{max(res['pages'], 1)} · {res['total']}")
-        return res
-
-    def select_timeline_event(self, event_id: str) -> None:
-        """Canvas click → Inspector (and the same row in the event list when it is on this page)."""
-        self.wc.select("event", event_id)
-        if hasattr(self, "tl_tree") and self.tl_tree.winfo_exists() and self.tl_tree.exists(event_id):
-            self.tl_tree.see(event_id)
-        self._render_inspector()
 
     def _select_from(self, tree: ttk.Treeview, kind: str) -> None:
         sel = tree.selection()
@@ -1092,7 +979,9 @@ class WorkspaceWindow:
         return prompt
 
     def copy_start_prompt(self, agent_id: str = "") -> str:
-        agent_id = agent_id or (self.charter_agent_var.get() if hasattr(self, "charter_agent_var") else "")
+        if not agent_id:
+            agents = sorted((self.wc.ctl.charter() or {}).get("start_prompts") or {})
+            agent_id = agents[0] if agents else ""
         prompt = self._guard(lambda: self.wc.ctl.charter_start_prompt(agent_id))
         if not prompt:
             return ""
@@ -1104,7 +993,7 @@ class WorkspaceWindow:
         return prompt
 
     def do_import(self, text: str | None = None) -> Any:
-        raw = text if text is not None else self.answer_text.get("1.0", "end-1c")
+        raw = text if text is not None else self._ask_text("Paste the model's answer")  # 5.13.0: no answer box here
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
         if r.kind == "charter_rejected":
