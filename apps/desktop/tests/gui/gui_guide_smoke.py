@@ -103,6 +103,28 @@ def main() -> None:
             name = ctl.state()["agents"]["agent-core-dev"].get("name") or "agent-core-dev"
             assert f"Paste {name}'s answer" in app.home_next_var.get(), app.home_next_var.get()
             assert app.home_card.paste.winfo_manager(), "the paste panel is on Home"
+            # 5.13.0 (B5): no More on the card — "All open steps (N)" lists every open step; picking one shows it,
+            # "Back to the next step" returns
+            card.refresh()
+            assert not any(str(wd.cget("text")) == "More" for wd in card._bar.winfo_children()
+                           if wd.winfo_class() == "TMenubutton"), "the card has no More"
+            opened = card.model["open"]
+            if len(opened) > 1:
+                assert card.steps_btn.winfo_manager() and f"({len(opened)})" in card.steps_btn.cget("text")
+                menu = card.steps_menu
+                rows = [menu.entrycget(i, "label") for i in range(int(menu.index("end")) + 1)
+                        if menu.type(i) == "command"]
+                assert rows[0].startswith("● "), rows
+                first_key = card.model["key"]
+                menu.invoke(int(menu.index("end")))   # the last open step
+                root.update()
+                assert card.model["key"] == opened[-1]["key"] != first_key, (card.model["key"], opened)
+                rows = [menu.entrycget(i, "label") for i in range(int(menu.index("end")) + 1)
+                        if menu.type(i) == "command"]
+                assert rows[0] == "Back to the next step", rows
+                menu.invoke(0)
+                root.update()
+                assert card.model["key"] == first_key
         finally:
             root.destroy()
     print("PASS: guided loop GUI smoke - Home card (button, other actions, paste panel), strip links to Home, per-AI queue")
