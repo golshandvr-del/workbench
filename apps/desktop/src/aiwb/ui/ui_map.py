@@ -38,7 +38,8 @@ RULES = {
     "section_max_controls": 7,    # Miller: a section shows at most 7 direct controls
     "page_max_visible": 8,        # a page shows at most 8 buttons/menus/options at once (3.3.0: 10; 5.11.0 gate: 8)
     "menu_max_items": 12,         # a More menu holds at most 12 commands
-    "weight_ratio_max": 4.0,      # heaviest rail destination ≤ 4 × the lightest (commands incl. their tools)
+    "weight_ratio_max": 4.0,      # heaviest rail destination ≤ 4 × the lightest (5.13.0: its own commands; the expert
+                                  # sub-pages under Tools / Classic tools are held to the page rules on their own)
 }
 # Labels that may appear in several places because they mean "this place's" variant of a generic verb.
 GENERIC = {"More", "Refresh", "Clear", "Search", "Browse…", "Copy prompt"}
@@ -406,7 +407,7 @@ def audit(tree: dict[str, Any], rules: dict[str, Any] | None = None) -> list[str
     out += [f"command with two homes: {x}" for x in two_homes(tree)]
     rail = next((c for c in tree["children"] if c["label"] == "Rail"), None)
     if rail is not None and rail["children"]:
-        weights = {pg["label"]: commands(pg, into_pages=True) for pg in rail["children"]}
+        weights = {pg["label"]: commands(pg) for pg in rail["children"]}
         lo, hi = min(weights.values()), max(weights.values())
         if lo == 0 or hi / lo > r["weight_ratio_max"]:
             out.append(f"rail destinations unbalanced: {weights} (max ratio {r['weight_ratio_max']})")
