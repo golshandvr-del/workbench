@@ -59,7 +59,12 @@ Progress (tick = committed and pushed):
 - [x] 1 user words: dispatch text 2a7fe49, guide `_in_user_words` at the source 52ea503, `tests/test_user_words.py` d3d6c0c (add to bump: --test test_user_words.py), status bar `status5.chats/summary` 3f353df (+ tests c8bcce2, 462768a, fb911d3, shell 61cfd12), Workbench phase line 4af65d3; unit 804 OK
 - [x] 2 map columns: `ui/column_menu.py` 368b182, canvas `column_at`/`on_column_menu` 8e741fc, app `mission_column_rows/menu/pick` (+`mission_input_hook`) ae3a83a, `tests/test_column_menu.py` b7b5d55 (add to bump), Workbench SECTIONS=(plan, project) 06a0289, Timeline view removed 92650a9..01a30e8, smokes moved (timeline→History, workflow, workspace, menu column) 57d438c..a72f4d7
 - [x] 3 one History: `ui/history_feed.py` f4c75c6/e4216df, History "Show" filter (All·Prompts·Answers·Saved·Events·Versions) replaces "Saved only" + events group 6de191f, show_history ceb9915, event details 80741ea, `tests/test_history_feed.py` 70c82a8 (add to bump), smoke b07b9f9; unit 814 OK
-- [ ] 4 rail of four + project switcher + Settings › Project
+- [ ] 4 rail of four + project switcher + Settings › Project — done so far: structure5 RAIL=4, MOBILE_BAR, PROJECT_MENU,
+  CLASSIC 574cb21/a7cac63; UI_TREE 65ceb7f; shell RAIL_OF/RAIL_PAGE + alias projects→home 5834060, workbench→settings
+  6db2836; toolbar switcher 93b8465; tests 7cf5809/e1cb430/e86c56a/1c4d5cb; tools card title f10ec49; "All projects"
+  window 3c542db; switcher items/switch_project be9e738; Settings › Project + Classic tools 31f1e59/ceae17f; Run and
+  Save profile stay on Home 7f27ce0/8d587a1; App Map e2ddf3f/855cbac/d6137ac; regen UI_MAP e103789..047995d; unit 814 OK.
+  Left: GUI smokes fixed for the four-item rail, then tick.
 - [ ] 5 commands.py + audit by command id, More ≤ 3, no More on Home
 - [ ] 6 owner-path gate ≤ 14 clicks, screenshots
 - [ ] 7 tests/docs/version/PR/CI/tag/Release
