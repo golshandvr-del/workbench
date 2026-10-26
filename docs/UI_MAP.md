@@ -14,7 +14,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app for developer
 | Page | Sections | Tabs | Commands | Visible at once | Links |
 |---|---:|---:|---:|---:|---:|
 | Home | 4 | 0 | 7 | 4 | 0 |
-| Agents | 5 | 0 | 8 | 6 | 0 |
+| Agents | 5 | 0 | 7 | 5 | 0 |
 | History | 7 | 6 | 10 | 7 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 6 | 0 |
 | Settings | 18 | 2 | 10 | 7 | 10 |
@@ -74,7 +74,6 @@ Audit:
         - More [menu]
           - Memory note… [item]
       - Balance [section]
-        - Apply suggested moves [button]
       - Dispatch desk [section]
         - Prepare all prompts [button]
         - More [menu]
