@@ -100,7 +100,10 @@ def build_model(records: list[dict[str, Any]], state: dict[str, Any]) -> dict[st
     t0, t1 = (min(times), max(times)) if times else (0.0, 1.0)
     if t1 <= t0:
         t1 = t0 + 1.0
-    return {"events": events, "versions": versions, "lanes": lanes, "t0": t0, "t1": t1}
+    # 5.13.0 (owner audit C4): a lane is titled with the AI's name ("Core developer"), never its id; "project" → "Project"
+    names = {aid: str(a.get("name") or aid) for aid, a in (state.get("agents") or {}).items()}
+    lane_names = {ln: ("Project" if ln == "project" else names.get(ln, ln)) for ln in lanes}
+    return {"events": events, "versions": versions, "lanes": lanes, "lane_names": lane_names, "t0": t0, "t1": t1}
 
 
 class TimelineCanvas(tk.Canvas):
