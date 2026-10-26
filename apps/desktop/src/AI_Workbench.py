@@ -4674,9 +4674,12 @@ class WorkbenchApp:
                 pass
 
     def _settings_app_section(self, card: ttk.Frame) -> None:
+        # 5.13.0 (owner audit C7): no "App Map…" here. It is the developer's audit of the UI (docs/UI_MAP.md is drawn
+        # from it): to read every page it opens them one by one, so for a user the app seemed to hang, flip tabs by
+        # itself and then show a big tree. Developers open it with Ctrl+Shift+F12.
+        self.root.bind_all("<Control-Shift-F12>", lambda _e: self.open_app_map(), add="+")
         bar = ui_actions.ActionBar(
             card,
-            primary=(("App Map…", self.open_app_map),),  # 5.11.0: a page shows at most 8 controls; the rest in More
             # 5.13.0 (B5): no More — one named menu; Mobile Companion… has one home (Settings › Project › Project tools)
             menus=(("Maintenance", (("Restore Manager…", self.open_restore_manager),
                                     ("Validation Profiles…", self.manage_validation_profiles), None,
@@ -4711,7 +4714,8 @@ class WorkbenchApp:
         self.agents_workbench("project")
 
     def open_app_map(self) -> Any:
-        """Settings › App Map…: every page, section and command of this running app, drawn (roadmap 5.5.0)."""
+        """Ctrl+Shift+F12 (developers; Settings › App Map… until 5.12.0): every page, section and command of this running
+        app, drawn (roadmap 5.5.0). It visits every page to read it, so the window flips pages while it works."""
         from aiwb.ui import map_view, ui_map
         tree = ui_map.extract(self)
         win = map_view.open_window(self.root, tree, theme=self.prefs.theme)
