@@ -102,7 +102,10 @@ def guided_answer(h: dict[str, Any], files: dict[str, str], summary: str = "done
 class Driver:
     """Drives the app like a person: counts clicks and pastes, records dialogs, boxes and callback errors."""
 
-    def __init__(self, root: tk.Tk, scenario: str, allow_windows: tuple[str, ...] = ("Create a new project",)) -> None:
+    # the app's own working windows (title prefixes): not popups, the scenario drives them
+    WORK_WINDOWS = ("Create a new project", "New Quick project", "Quick — one AI chat", "Make it a multi-AI project")
+
+    def __init__(self, root: tk.Tk, scenario: str, allow_windows: tuple[str, ...] = WORK_WINDOWS) -> None:
         self.root = root
         self.scenario = scenario
         self.allow_windows = set(allow_windows)
