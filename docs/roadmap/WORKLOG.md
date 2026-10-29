@@ -75,12 +75,12 @@ Progress:
   7414353/7f27b93/46aa5d2. Unit 855 OK. The prompt/response *pages* still exist (shell.PAGES, notebook tabs) only for
   old smokes (kept on purpose, plan step 4); Workbench classic_response link dropped d31f09f. GUI run_all 47/47,
   unit 855 OK. STEP 4 DONE.
-- [~] 5 gate smoke tests/gui/gui_quick_smoke.py b6902df PASS (menu → form → prompt → AIWB from real clipboard / JSON /
+- [x] 5 gate smoke tests/gui/gui_quick_smoke.py b6902df PASS (menu → form → prompt → AIWB from real clipboard / JSON /
   ZIP via Load ZIP… → apply, Restore, cut-off → continue, Home Quick card, Quick → Guided, files untouched); ZIP label
   "GPT ZIP · name" 3e01acf (only while the box holds the ZIP's text: PastePanel.zip_text 92952da, baeb8da). Home map
   of a Quick folder = empty map with Quick text, no template lanes (MissionCanvas.empty_text 4a3314e, refresh_mission
-  b7193b8, smoke a404b66). Screenshots docs/audit/screens/v5.14-quick/quick_01…09 (e7189d9…42be9b1). STEP 5 DONE
-  after the full run (unit + GUI).
+  b7193b8, smoke a404b66). Screenshots docs/audit/screens/v5.14-quick/quick_01…09 (e7189d9…42be9b1). Full run at
+  9fb50fa: unit 855 OK, GUI 48/48. STEP 5 DONE.
 - [ ] 6 docs/version/PR/CI/tag/Release (order as 5.13.0: version in AI_Workbench.py, aiwb/__init__.py,
   github/api_client.py · release_manifest.json + install.ps1 (v2/quick.py, ui/quick_window.py, test_quick.py,
   gui_quick_smoke.py, checklist) · docs/release/v5.14.0/ checklist · CHANGELOG · README(s) · USER_GUIDE · ROADMAP)
