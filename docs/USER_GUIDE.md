@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 5.14.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.15.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
