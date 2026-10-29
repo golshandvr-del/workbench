@@ -26,6 +26,23 @@ TITLE = "Quick — one AI chat"
 STATUS_TEXT = {"new": "New", "changed": "Changed", "same": "Unchanged"}
 
 
+def diagnose(text: str, state: Any = None) -> Any:
+    """The paste panel's live check in Quick mode: the shared preview without the multi-AI parts.
+
+    A Quick answer has no handoff, so the "no AIWB_HANDOFF manifest" warning is dropped, and an answer without files
+    says what Quick expects (charters and context requests belong to Guided projects).
+    """
+    from ..intake.preview import preview
+    p = preview(text, None)
+    p.warnings = [w for w in p.warnings if "AIWB_HANDOFF" not in w]
+    if p.kind in ("charter", "proposal", "context_request"):
+        p.ok = False
+        p.line = "Not a Quick answer ✗ · this is for a multi-AI project — Quick reads file answers only."
+    elif p.kind == "unknown":
+        p.line = "No file found yet ✗ · paste the chat's whole answer (its files), or load its ZIP."
+    return p
+
+
 class QuickWindow:
     """``QuickWindow(parent, root_folder, clipboard=, status=, on_convert=)``; ``win`` is the Toplevel."""
 
@@ -101,7 +118,7 @@ class QuickWindow:
         ttk.Label(card, text="Paste the chat's whole answer (use the Copy button of its code block), or load the ZIP "
                              "it gave you.", style="CardMuted.TLabel", wraplength=860).pack(anchor="w", pady=(2, 4))
         self.paste = PastePanel(card, on_use=self.use_answer, primary_text="Check the answer", height=8,
-                                wraplength=860, style="Card.TFrame")
+                                wraplength=860, style="Card.TFrame", diagnose=diagnose)
         self.paste.pack(fill="x")
 
     def _make_files(self, body: ttk.Frame) -> None:
