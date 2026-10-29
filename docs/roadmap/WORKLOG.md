@@ -39,6 +39,7 @@ screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.p
       docs/audit/owner-5.11/HO-0006_gpt_answer_context_request.txt) · gui_quick_smoke (Driver, block(), app.quick_form) ·
       gui_team_editor_smoke (older project = V2Project(old, name).open(); open_workbench helper) · corpus
       tests/fixtures/answers C01–C31 (charters, C26 cut-off, C31 windows copy), F01… (files).
+  S5 finding: settings = LOCALAPPDATA/AIWorkbench/settings.json; on_close() → _save_settings() stores last_workspace; WorkbenchApp.__init__ reopens it (set_workspace) → S5 = on_close(), new Tk + WorkbenchApp with the same LOCALAPPDATA. run_all.py globs gui_*smoke.py only (driver file is safe).
 - [ ] 1 scenario_driver.py (Driver: pump, click, clipboard_paste, wait_line, shot, no message boxes, callback errors)
 - [ ] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
       fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
