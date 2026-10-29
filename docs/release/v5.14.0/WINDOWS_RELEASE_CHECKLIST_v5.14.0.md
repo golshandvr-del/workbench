@@ -17,23 +17,21 @@
 `tools/e2e_github_sandbox.py` — run 2026-10-18, all PASS (see `E2E_REPORT_v5.5.0.md (unchanged GitHub code paths)`):
 preflight · sensitive file blocked · commit · idempotent commit · push · idempotent push · exact run of the pushed SHA (not the seed push) · build passed · artifact SHA-256 matched GitHub's digest · artifact content = pushed SHA · build-metadata contract · stale plan refused after a concurrent push · manual dispatch confirmed with run ID · no token in records/events/`.git/config` · branch cleanup. Paths contain spaces and Unicode.
 
-## 5.14.0 specific (one project, one screen — ROADMAP §1b B3, B4, B5 and §1c C1–C7)
+## 5.14.0 specific (Quick mode — one AI chat, replaces the classic 1.x Prompt / AI Response pages)
 
-- [x] **Update really updates (C1)**: `test_stale_bytecode.py` reproduces the 5.12 bug (same size + same mtime, old
-      `.pyc` keeps running) and checks both fixes — `install.ps1` deletes every `__pycache__`/`*.pyc` before copying
-      and runs `compileall -f`; `launch_aiwb.clear_stale_bytecode` clears caches once when the version stamp changes
-- [x] `gui_owner_path_smoke.py` — **the gate**: New Project → Charter → context request → files → answer → Accept →
-      Tests passed → Milestone accepted, only from Home, **14 clicks + 3 pastes**; screenshots
-      `docs/audit/screens/v5.13-one-screen/`
-- [x] Rail of four (Home · Agents · History · Settings); project switcher in the toolbar; Settings › Project
-- [x] Mission Map columns carry milestones/versions (`test_column_menu.py`); History is one filtered list
-      (`test_history_feed.py`); every command has one home (`test_commands.py`); guide/status say AI names, never ids
-      (`test_user_words.py`)
-- [x] C2 no blank button on the Next-step card · C3 no "Charter start prompts" in Project settings · C4 timeline lanes
-      named and readable · C5 card role in user words, Edit team… on the title row · C6 Balance button only with moves,
-      stuck alerts say what to do · C7 App Map out of Settings (Ctrl+Shift+F12)
-- [x] All 5.1.0 – 5.12.0 gates stay green (unit 840 + 47 GUI smokes)
-- [ ] NOT RUN: install 5.14.0 over 5.12.0 on real Windows and check the title says 5.14.0
+- [x] `gui_quick_smoke.py` — **the gate**: New Project ▾ › Quick — one AI chat… → form → Quick window → Copy the
+      prompt → **AIWB file blocks** pasted from the real clipboard → file list + diff → Apply → Restore last apply
+      (folder back to before) → **Strict JSON** → Apply → **GPT ZIP** via Load ZIP… → Apply → cut-off answer → Copy
+      the continue prompt → Home shows the Quick card (no template lanes on the map) → Make it a multi-AI project… →
+      files untouched, Home shows the Project Charter step; screenshots `docs/audit/screens/v5.14-quick/`
+- [x] Engine `aiwb/v2/quick.py` (`test_quick.py`, 15 tests): prompt per format, answers of the three formats + copy
+      damage + cut-off + unsafe paths, plan/diff, apply with backup, hash-guarded restore, Quick → Guided
+- [x] Quick paste check shows no multi-AI warnings ("no AIWB_HANDOFF manifest"); charters / context requests are
+      explained as "not a Quick answer"
+- [x] Settings › Classic tools (1.x) is gone: Settings › Tools = Project Profile, Run & Report; the Workbench has no
+      "Classic prompt & response…" link; `test_commands.py` registers `project.new_quick`; `docs/UI_MAP.md` regenerated
+- [x] All 5.1.0 – 5.13.0 gates stay green (unit 855 + 48 GUI smokes)
+- [ ] NOT RUN: install 5.14.0 over 5.13.0 on real Windows; a Quick round with a real chat answer (GPT / Claude)
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
