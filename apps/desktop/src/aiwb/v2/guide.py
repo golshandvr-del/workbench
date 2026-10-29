@@ -79,6 +79,8 @@ def merge_partial(partial: list[dict[str, str]], text: str, attempt_id: str = ""
         return text
     from ..intake.answer_files import extract, to_aiwb_text
     ex = extract(text)
+    if ex.truncated:
+        return text   # cut off again: rewriting would close the open block; the cut-off path merges the files
     sent = {f["path"] for f in ex.files}
     missing = [dict(f) for f in partial if f["path"] not in sent]
     if not missing:
