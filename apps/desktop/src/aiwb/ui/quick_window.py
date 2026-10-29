@@ -216,7 +216,8 @@ class QuickWindow:
         text = text if text else self.paste.text()
         self.answer = a = quick.read_answer(text)
         zip_name = getattr(self.paste, "zip_name", "")
-        if zip_name and a["files"]:  # the ZIP was turned into file blocks by the paste panel: name its real source
+        from_zip = zip_name and text == getattr(self.paste, "zip_text", "")  # not a later paste over the ZIP's text
+        if from_zip and a["files"]:  # the ZIP was turned into file blocks by the paste panel: name its real source
             a["label"] = f"GPT ZIP · {zip_name}"
         self.items = quick.plan(self.root, a["files"]) if a["files"] else []
         self.tree.delete(*self.tree.get_children())
