@@ -5762,6 +5762,15 @@ class WorkbenchApp:
         return ws
 
     def _home_steps(self) -> list[dict[str, Any]]:
+        if self.workspace is not None:
+            from aiwb.v2 import quick
+            if quick.is_quick(self.workspace):  # 5.14.0: a Quick folder's next step is its window, not the guide
+                return [{"key": "quick", "kind": "decision", "title": "Quick — one AI chat",
+                         "explain": "Describe the job, copy the prompt into your chat, paste its whole answer, check "
+                                    "the files and apply. Make it a multi-AI project later from the same window.",
+                         "agent_id": "you", "ref": "", "prompt": "", "rank": 1,
+                         "actions": [{"id": "quick_open", "label": "Open the Quick window", "needs": [],
+                                      "primary": True}]}]
         ws = self._home_ws()
         if ws is None:
             if self.workspace is not None:
@@ -5786,6 +5795,9 @@ class WorkbenchApp:
 
     def home_perform(self, key: str, action: str, inputs: dict[str, Any] | None = None) -> dict[str, Any] | None:
         """Run one Guide action for the Home card through the Workbench (its dialogs, its messages)."""
+        if key == "quick":
+            qw = self.open_quick_window()
+            return {"message": "The Quick window is open."} if qw is not None else {"error": "Open a project first."}
         ws = self._home_ws()
         if ws is None:
             return {"error": "Open or create a project first."}
