@@ -10236,13 +10236,10 @@ class WorkbenchApp:
             messagebox.showerror("Project Workbench", redact(str(exc)))
             return
 
-        def classic_response() -> None:
-            self.shell.show("response")
-
         def classic_projects() -> None:
             self.projects_window = ProjectsWindow(self.root, ctl, clipboard=self._copy_text_to_clipboard)
 
-        tools = {"response": classic_response, "inbox": self.open_response_inbox,
+        tools = {"inbox": self.open_response_inbox,  # 5.14.0: no "Classic prompt & response…" (Quick replaced it)
                  "context_request": self.open_context_request, "build_center": self.open_build_center,
                  "sync_build": self.open_sync_build, "companion": self.open_companion, "classic": classic_projects,
                  "export_bundle": lambda: self.export_project_bundle(ctl),
