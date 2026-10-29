@@ -53,9 +53,9 @@ COMMANDS: tuple[Command, ...] = (
     Command("history.copy_prompt", ("Copy prompt",), ("History",), "Copy the prompt of a past step."),
     Command("history.copy_output", ("Copy model output",), ("History",), "Copy the answer of a past step."),
     Command("history.versions", ("Project versions…",), ("History",), "The project's saved versions."),
-    # -- Classic tools (1.x) — kept until Quick mode replaces them (5.14.0); their words mean their own jobs
-    Command("classic.copy_prompt", ("Copy prompt",), ("Settings › Classic tools (1.x)",),
-            "Copy the prompt built on the 1.x Prompt page."),
+    # -- Quick — one AI chat (5.14.0, replaces the 1.x Prompt / AI Response pages) — one home: Toolbar › New Project
+    Command("project.new_quick", ("Quick — one AI chat…", "Open the Quick window"), ("Toolbar", "Home"),
+            "Start or reopen a Quick project: one chat, prompt → answer → files → apply."),
     # -- application
     # app.map ("App Map…") left Settings in 5.13.0 (C7): developers open it with Ctrl+Shift+F12, it has no button
     Command("app.restore", ("Restore Manager…",), (), "Undo applied changes."),

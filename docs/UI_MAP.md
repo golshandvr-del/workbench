@@ -17,12 +17,10 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app for developer
 | Agents | 5 | 0 | 7 | 5 | 0 |
 | History | 7 | 6 | 10 | 7 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 6 | 0 |
-| Settings | 18 | 2 | 10 | 7 | 10 |
-| Settings › Project › Project settings | 9 | 2 | 3 | 5 | 10 |
-| Settings › Classic tools (1.x) › Prompt | 0 | 0 | 20 | 7 | 0 |
-| Settings › Classic tools (1.x) › AI Response | 0 | 0 | 15 | 4 | 0 |
-| Settings › Classic tools (1.x) › Project Profile | 1 | 0 | 4 | 4 | 0 |
-| Settings › Classic tools (1.x) › Run & Report | 2 | 0 | 11 | 8 | 0 |
+| Settings | 18 | 2 | 10 | 7 | 9 |
+| Settings › Project › Project settings | 9 | 2 | 3 | 5 | 9 |
+| Settings › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
+| Settings › Tools › Run & Report | 2 | 0 | 11 | 8 | 0 |
 
 ## Balance rules
 
@@ -44,6 +42,7 @@ Audit:
 - Toolbar [area]
   - New Project [menu]
     - Guided project (recommended) [item]
+    - Quick — one AI chat… [item]
     - Add existing folder… [item]
   - Open [button]
   - Save [button]
@@ -172,7 +171,6 @@ Audit:
               - Enable / disable selected [item]
           - Files, builds and the phone [section]
             - Project tools [menu]
-              - Classic prompt & response… [link]
               - Response Inbox… [link]
               - Context request… [link]
               - Build Center… [link]
@@ -181,48 +179,7 @@ Audit:
               - Import project from the phone… [link]
               - Mobile Companion… [link]
               - Projects window (classic)… [link]
-    - Classic tools (1.x) [section]
-      - Prompt [page]
-        - Select recommended context [button]
-        - More [menu]
-          - Why these files? [item]
-          - Select all [item]
-          - Clear [item]
-        - Include project history in this prompt [option]
-        - Build prompt [button]
-        - Copy prompt [button]
-        - More [menu]
-          - Save prompt… [item]
-          - Add history to prompt [item]
-        - Add quick instruction [menu]
-          - Prioritize quality [item]
-          - Ask before risky assumptions [item]
-          - Windows-first delivery [item]
-          - Keep dependencies justified [item]
-          - Tests and evidence [item]
-          - Professional GUI [item]
-          - Preserve unrelated behavior [item]
-          - Security review [item]
-          - Update documentation [item]
-          - Handle edge cases [item]
-          - Manage custom instructions… [item]
-      - AI Response [page]
-        - Paste & detect format [button]
-        - Load response / ZIP… [button]
-        - Analyze / preview files… [button]
-        - More [menu]
-          - Import diagnostics… [item]
-          - Response Inbox… [item]
-          - Context request… [item]
-          - Import context plan / select requested files [item]
-          - Save response candidate… [item]
-          - Compare candidates / choose files… [item]
-          - Import architecture plan… [item]
-          - Save validated prompt + output to history [item]
-          - Mark Verified… (manual review) [item]
-          - Report manual runtime / test error… [item]
-          - Refresh workflow [item]
-          - Projects (multi-agent)… [item]
+    - Tools [section]
       - Project Profile [page]
         - Architecture plan… [button]
         - Static dependency graph… [button]

@@ -16,13 +16,16 @@ MAX_CHILDREN = 7
 # Toolbar: (id, label, icon, menu children)
 TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
     ("new", "New Project", "plus_circle", (("new_guided", "Guided project (recommended)"),
+                                           ("new_quick", "Quick — one AI chat…"),  # 5.14.0: replaces the 1.x pages
                                            ("new_folder", "Add existing folder…"))),
     ("open", "Open", "open", ()),
     ("save", "Save", "save", ()),
     ("run", "Run", "run", ()),
 )
 
-CLASSIC = "Classic tools (1.x)"  # Settings' section holding the 1.x pages until Quick replaces them (5.14.0)
+# 5.14.0: Quick (New Project ▾) replaced the 1.x Prompt / AI Response pages; Settings keeps the two other 1.x pages
+# (Project Profile, Run & Report) under a plain "Tools" section. The name CLASSIC is kept for callers.
+CLASSIC = "Tools"
 
 # Rail destinations: (key, label, icon, sections). 5.13.0 (owner audit B3/B4): four — one project, one screen.
 # Projects left the rail: the open project is switched in the toolbar (PROJECT_MENU); its settings are Settings › Project.
@@ -50,17 +53,14 @@ PROJECT_MENU: tuple[tuple[str, str], ...] = (
 )
 
 # The expert pages of 3.x/4.x (page key, label), each reached from the "Tools" section of the destination it belongs to.
-# 5.13.0: the 1.x pages (Prompt, AI Response, Project Profile, Run & Report) are Settings › Project › Classic tools (1.x)
-# until Quick replaces them (5.14.0); Git stays with the past (History).
+# 5.14.0: Prompt and AI Response left the app's navigation (Quick replaces them); Project Profile and Run & Report are
+# Settings › Tools; Git stays with the past (History).
 TOOLS: tuple[tuple[str, str], ...] = (
-    ("prompt", "Prompt"),
-    ("response", "AI Response"),
     ("profile", "Project Profile"),
     ("run", "Run & Report"),
     ("git", "Git / GitHub"),
 )
-TOOL_HOME: dict[str, str] = {"prompt": "settings", "response": "settings", "profile": "settings", "run": "settings",
-                             "git": "history"}
+TOOL_HOME: dict[str, str] = {"profile": "settings", "run": "settings", "git": "history"}
 
 
 def tools_of(dest: str) -> tuple[tuple[str, str], ...]:

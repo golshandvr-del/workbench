@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 5.11.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.14.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -32,10 +32,10 @@ milestone, saved state). Each place has one job (5.13.0: Home = now and next, Hi
 | **Home** | The cockpit of the active project: the **Mission Map** (one lane per AI, one circle per task in its version's column), **Map view**, task details and the **Next step** card — where you do every step (5.11.0) |
 | **Agents** | One card per AI (state, current task, load, record), the selected AI's queue, *Copy briefing*, *Memory note…*, Balance alerts and suggested moves |
 | **History** | **Timeline** of everything that happened, then **one list** with a *Show* filter: All · Prompts · Answers · Saved · Events · Versions |
-| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Maintenance ▾; **Settings › Project**: the project's settings, Project tools ▾ (bundles, Mobile Companion…) and *Classic tools (1.x)…* |
+| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Maintenance ▾; **Settings › Project**: the project's settings, Project tools ▾ (bundles, Mobile Companion…) and **Settings › Tools** (Project Profile, Run & Report; 5.14.0) |
 
-*Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Agents › Prompt and AI Response,
-History › Git / GitHub. Every command has **one** home; Home has no More menu (the step's other actions are buttons,
+*Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Settings › Tools (Project Profile, Run & Report),
+History › Git / GitHub (one-chat work: **New Project ▾ › Quick**, section 3b). Every command has **one** home; Home has no More menu (the step's other actions are buttons,
 plus *All open steps (N)*), and other More menus hold at most three items.
 
 **Mission Map tips (Home):** right-click a task circle for COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS
@@ -115,6 +115,23 @@ action, **GitHub** = optional repository step.
 
 Workbench 4.7.0 / mobile 2.0.0 tests every one of the 32 edges of this flowchart end to end, with three scripted AIs
 working in parallel (`test_algorithm_e2e.py`, `AlgorithmE2ETest`).
+
+## 3b. Quick — one AI chat (5.14.0)
+
+For a small job with one chat and no team: **New Project ▾ › Quick — one AI chat…**, type a name, *Create*. One
+window does the whole loop:
+
+1. **The job** — say what the AI should make or change, choose the answer format (*AIWB file blocks*, *Strict JSON*
+   or *GPT ZIP*) and, if needed, the files it must see. **Copy the prompt** and paste it into your chat.
+2. **The answer** — paste the chat's whole answer (the line under the box checks it as you paste) or **Load ZIP…**.
+   Damage from copying a rendered chat is repaired.
+3. **The files** — each file is *New*, *Changed* or *Unchanged*, with its diff. **Apply N files** writes them after one
+   backup; **Restore last apply** undoes it (a file you edited since is kept). If the answer was cut off, **Copy the
+   continue prompt** asks the chat for the rest; complete files can be applied already.
+
+**Make it a multi-AI project…** (same window) turns the folder into a guided project with a goal and a team; your files
+stay as they are and Home shows the Project Charter step. Home of a Quick project shows one step: *Open the Quick
+window*.
 
 ## 4. Timeline
 

@@ -26,6 +26,67 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
+## 5.14.0 — Quick mode: one AI chat (branch `feat/v5.14.0-quick`)
+
+Facts (read in code 2026-10-26): New Project ▾ = `structure5.TOOLBAR["new"]` (new_guided, new_folder) wired in
+`AI_Workbench` ~4612 `commands={...}`; reusable intake: `aiwb/intake/answer_files.extract(text)` /
+`zip_files(bytes)` → `Extracted(files, format, fixes, problems, truncated)`, `normalize.strip_copy_damage`,
+`normalize.truncation_report/continue_prompt`; answer rule `aiwb/v2/handoff.WHOLE_ANSWER_RULE`; paste UI
+`aiwb/ui/paste_box.PastePanel(on_use=, state=)`; Classic tools = Settings card `tool_cards["settings"]`
+(`_make_settings_project`, structure5.CLASSIC/TOOLS: prompt, response, profile, run).
+
+Plan (one checkpoint per change):
+1. Engine `aiwb/v2/quick.py` (pure, no Tk): state `.workbench/quick/quick.json` (rounds: task, format, prompt,
+   answer summary, applied id); `build_prompt(root, task, fmt, include=[paths])` (inventory + chosen file contents +
+   format rules + WHOLE_ANSWER_RULE); `read_answer(text|zip)` → files + fixes/problems/truncated (+ continue prompt);
+   `plan(root, files)` → per file new/changed/same + unified diff; `apply(root, plan)` → backup
+   `.workbench/quick/backups/<id>/` + atomic writes + manifest; `restore(root, id)` (hash-guarded: a file changed
+   after apply is not overwritten); `to_guided(root, goal, rows)` → V2 project in the same folder, files untouched.
+   Tests `tests/test_quick.py` (3 formats aiwb/json/zip, copy damage, truncated, unsafe paths, apply/restore, convert).
+2. UI `aiwb/ui/quick_window.py`: one window "Quick — one AI chat": task box + format → *Copy the prompt* → PastePanel
+   → preview list with diff → *Apply* → *Restore last apply*; *Make it a multi-AI project…*.
+3. New Project ▾ → "Quick — one AI chat…" (structure5 + UI_TREE + commands.py + App Map regen).
+4. Remove Classic tools (1.x Prompt / AI Response pages) from Settings; fix ia/map/tree tests; keep internal code
+   used by old smokes only where needed.
+5. Gate smoke `tests/gui/gui_quick_smoke.py`: three formats end-to-end + Restore + convert to Guided; screenshots
+   `docs/audit/screens/v5.14-quick/`.
+6. Docs/version/PR/CI/tag/Release.
+
+Progress:
+- [x] 1 engine `aiwb/v2/quick.py` d9b6816 (+ fenced files keep final newline ab6c8b0), `tests/test_quick.py` f805d19
+  (15 OK; add to bump: --module v2/quick.py --test test_quick.py). API: build_prompt(root, task, fmt, include) ·
+  read_answer(text | zip_bytes=) → {files, format, label, fixes, problems, truncated, continue_prompt} ·
+  plan(root, files) → [{path, status new/changed/same, diff, content}] · summary(items) · apply(root, items, task=) ·
+  last_apply(root) · restore(root) → {restored, kept} · to_guided(root, goal, rows) · state(root). QuickError = message.
+- [x] 2 UI `aiwb/ui/quick_window.py` 51d280a: QuickWindow(parent, root, clipboard=, status=, on_convert=) · set_task ·
+  set_format · toggle_include · copy_prompt · paste.set_text + use_answer · show_diff · apply_now · restore_now ·
+  copy_continue · ask_convert → convert_dialog{win, goal, table, ok, error}. PastePanel(diagnose=) 1623a5c; Quick
+  `diagnose` drops the AIWB_HANDOFF warning, explains non-file answers 921d3fe; fits 940x820 0358093. Throwaway check
+  /tmp/qw_try.py (prompt/answer/diff/apply/restore/cut-off/convert all OK).
+- [x] 3 New Project ▾ → "Quick — one AI chat…": structure5 3c4c776, UI_TREE 1f812e4, quick.mark/is_quick cbdf65e,
+  app `new_quick_project(name=, parent=)` → form `app.quick_form{win,name,parent,error,create}` → `_create_quick` →
+  `open_quick_window()` (`app.quick_window`), `_quick_converted` → Home 55d2617; is_guided = V2 state has a goal
+  (opening a folder creates state.json with template agents!) b750994. Live check /tmp/quick_live.py OK (menu → form →
+  apply → convert → Home card "Get the Project Charter"). Home card of a Quick folder = one step key "quick", action
+  "quick_open" → open_quick_window (`_home_steps` / `home_perform`) b39f2eb. STEP 3 DONE.
+- [x] 4 remove Classic tools from Settings: structure5 TOOLS/TOOL_HOME without prompt/response, CLASSIC = "Tools"
+  2c40fcc; UI_TREE 21a2986; ui_map MORE_EXEMPT "Settings › Tools" 6b7e6bc; commands project.new_quick 31a9af1 + test
+  1342fbb; Settings card text 56ece43; Workbench Tools without "Classic prompt & response…" f1b6760; UI_MAP regen
+  7414353/7f27b93/46aa5d2. Unit 855 OK. The prompt/response *pages* still exist (shell.PAGES, notebook tabs) only for
+  old smokes (kept on purpose, plan step 4); Workbench classic_response link dropped d31f09f. GUI run_all 47/47,
+  unit 855 OK. STEP 4 DONE.
+- [x] 5 gate smoke tests/gui/gui_quick_smoke.py b6902df PASS (menu → form → prompt → AIWB from real clipboard / JSON /
+  ZIP via Load ZIP… → apply, Restore, cut-off → continue, Home Quick card, Quick → Guided, files untouched); ZIP label
+  "GPT ZIP · name" 3e01acf (only while the box holds the ZIP's text: PastePanel.zip_text 92952da, baeb8da). Home map
+  of a Quick folder = empty map with Quick text, no template lanes (MissionCanvas.empty_text 4a3314e, refresh_mission
+  b7193b8, smoke a404b66). Screenshots docs/audit/screens/v5.14-quick/quick_01…09 (e7189d9…42be9b1). Full run at
+  9fb50fa: unit 855 OK, GUI 48/48. STEP 5 DONE.
+- [ ] 6 docs/version/PR/CI/tag/Release (order as 5.13.0: version in AI_Workbench.py, aiwb/__init__.py,
+  github/api_client.py · release_manifest.json + install.ps1 (v2/quick.py, ui/quick_window.py, test_quick.py,
+  gui_quick_smoke.py, checklist) · docs/release/v5.14.0/ checklist · CHANGELOG · README(s) · USER_GUIDE · ROADMAP)
+  - done: version 5d033d5/aad284b/777e2dc, manifest f691c7e, install.ps1 ad01b75 (check_installer_manifest PASS 217),
+    checklist 586db09 + 9c864d0. CHANGELOG 352d97a, README de7086f, USER_GUIDE 501794d/5dbef37/2ed8951 (section 3b Quick), ROADMAP (5.14.0 ✅, 5.15.0 active). PR #70 opened (head 61432a0). Windows CI fixes: test_quick wrote text (\r\n → 7 bytes) → write_bytes 6d809b0; gui_quick_smoke PASS line had → (cp1252 console UnicodeEncodeError) → encode/replace 563183b. Next: CI green → merge #70 → tag desktop-v5.14.0 → Release.
+
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
 Facts (read in code 2026-10-25): rail = `structure5.RAIL` (5 dests) + `ui/shell.py` RAIL_OF/RAIL_PAGE/PAGES/NAV_ORDER;

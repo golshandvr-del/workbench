@@ -29,6 +29,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 - Toolbar
   - New Project
     - Guided project (recommended)
+    - Quick — one AI chat…
     - Add existing folder…
   - Open
   - Save
@@ -59,9 +60,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
     - Motion
     - Application
     - Project
-    - Classic tools (1.x)
-      - Prompt
-      - AI Response
+    - Tools
       - Project Profile
       - Run & Report
 - Task menu
@@ -79,7 +78,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
 
 | Node | Meaning |
 |---|---|
-| **Toolbar › New Project** | Start a new guided project (the owner's algorithm, F1) or add a folder that already exists. |
+| **Toolbar › New Project** | Start a new guided project (the owner's algorithm, F1), a Quick project (one AI chat, 5.14.0) or add a folder that already exists. |
 | **Toolbar › Open / Save / Run** | Open a project folder · save the project state now · do the Guide's next step. |
 | **Home › Next step** | The cockpit card (5.11.0): the project's next step with its own buttons (primary + More) and, whenever the step takes an answer, the paste panel inside the page (live diagnosis, Load ZIP…, Use this answer). Clicking an AI on the Mission Map shows that AI's own prompt/answer step here. |
 | **Home › Mission Map** | Parallel timelines: one lane per AI, one circle per task in its version's column. |
