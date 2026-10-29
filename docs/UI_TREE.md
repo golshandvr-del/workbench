@@ -60,9 +60,7 @@ Only the lines between the two markers are parsed. Indentation is two spaces per
     - Motion
     - Application
     - Project
-    - Classic tools (1.x)
-      - Prompt
-      - AI Response
+    - Tools
       - Project Profile
       - Run & Report
 - Task menu
