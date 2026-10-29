@@ -136,8 +136,16 @@ class Driver:
 
     def restart(self, app: Any) -> Any:
         """Close the app the way the window's X does (on_close saves settings) and start it again in a new Tk."""
+        old = self.root
+        # the old Tk's after() timers would fire in the shared Tcl event loop once it is gone (bgerror noise)
+        with contextlib.suppress(tk.TclError):
+            for job in old.tk.splitlist(old.tk.call("after", "info")):
+                old.after_cancel(job)
         app.on_close()
-        self.pump(100)
+        with contextlib.suppress(tk.TclError):
+            for job in old.tk.splitlist(old.tk.call("after", "info")):
+                old.after_cancel(job)
+            old.destroy()
         self.root = tk.Tk()
         self.root.geometry("1366x800+0+0")
         self._seen.clear()
