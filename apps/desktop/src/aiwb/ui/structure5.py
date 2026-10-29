@@ -16,6 +16,7 @@ MAX_CHILDREN = 7
 # Toolbar: (id, label, icon, menu children)
 TOOLBAR: tuple[tuple[str, str, str, tuple[tuple[str, str], ...]], ...] = (
     ("new", "New Project", "plus_circle", (("new_guided", "Guided project (recommended)"),
+                                           ("new_quick", "Quick — one AI chat…"),  # 5.14.0: replaces the 1.x pages
                                            ("new_folder", "Add existing folder…"))),
     ("open", "Open", "open", ()),
     ("save", "Save", "save", ()),
