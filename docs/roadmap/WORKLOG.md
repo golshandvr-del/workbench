@@ -26,6 +26,35 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
+## 5.14.0 — Quick mode: one AI chat (branch `feat/v5.14.0-quick`)
+
+Facts (read in code 2026-10-26): New Project ▾ = `structure5.TOOLBAR["new"]` (new_guided, new_folder) wired in
+`AI_Workbench` ~4612 `commands={...}`; reusable intake: `aiwb/intake/answer_files.extract(text)` /
+`zip_files(bytes)` → `Extracted(files, format, fixes, problems, truncated)`, `normalize.strip_copy_damage`,
+`normalize.truncation_report/continue_prompt`; answer rule `aiwb/v2/handoff.WHOLE_ANSWER_RULE`; paste UI
+`aiwb/ui/paste_box.PastePanel(on_use=, state=)`; Classic tools = Settings card `tool_cards["settings"]`
+(`_make_settings_project`, structure5.CLASSIC/TOOLS: prompt, response, profile, run).
+
+Plan (one checkpoint per change):
+1. Engine `aiwb/v2/quick.py` (pure, no Tk): state `.workbench/quick/quick.json` (rounds: task, format, prompt,
+   answer summary, applied id); `build_prompt(root, task, fmt, include=[paths])` (inventory + chosen file contents +
+   format rules + WHOLE_ANSWER_RULE); `read_answer(text|zip)` → files + fixes/problems/truncated (+ continue prompt);
+   `plan(root, files)` → per file new/changed/same + unified diff; `apply(root, plan)` → backup
+   `.workbench/quick/backups/<id>/` + atomic writes + manifest; `restore(root, id)` (hash-guarded: a file changed
+   after apply is not overwritten); `to_guided(root, goal, rows)` → V2 project in the same folder, files untouched.
+   Tests `tests/test_quick.py` (3 formats aiwb/json/zip, copy damage, truncated, unsafe paths, apply/restore, convert).
+2. UI `aiwb/ui/quick_window.py`: one window "Quick — one AI chat": task box + format → *Copy the prompt* → PastePanel
+   → preview list with diff → *Apply* → *Restore last apply*; *Make it a multi-AI project…*.
+3. New Project ▾ → "Quick — one AI chat…" (structure5 + UI_TREE + commands.py + App Map regen).
+4. Remove Classic tools (1.x Prompt / AI Response pages) from Settings; fix ia/map/tree tests; keep internal code
+   used by old smokes only where needed.
+5. Gate smoke `tests/gui/gui_quick_smoke.py`: three formats end-to-end + Restore + convert to Guided; screenshots
+   `docs/audit/screens/v5.14-quick/`.
+6. Docs/version/PR/CI/tag/Release.
+
+Progress:
+- [ ] 1 engine
+
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
 Facts (read in code 2026-10-25): rail = `structure5.RAIL` (5 dests) + `ui/shell.py` RAIL_OF/RAIL_PAGE/PAGES/NAV_ORDER;
