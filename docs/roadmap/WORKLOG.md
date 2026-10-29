@@ -31,7 +31,14 @@ first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 Plan (one scenario = one script `apps/desktop/tests/gui/gui_scenario_sN_*_smoke.py`, picked up by run_all.py → runs in
 CI on Linux (xvfb) and Windows (installed app); shared driver `tests/gui/scenario_driver.py` (not a smoke itself);
 screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.png`):
-- [ ] 0 read existing gates to reuse: owner_path (S2), quick (S1/S4/S7), context (S8/S9), paste_box (S3), team_editor (S6)
+- [x] 0 read existing gates. Reuse: gui_owner_path_smoke (Owner: pump/click/click_menu/paste/shot("owner_"), do_step,
+      use_answer, menu_labels, walk; wizard via app.project_wizard pages[0] TEntry + goal_text + team.count_box; charter
+      fixture packages/contracts/fixtures/valid/project-charter.v1.todo.json with base_state_revision; handoff from
+      ws.wc.ctl.state()["handoffs"]; manifest fields handoff_id/task_id/task_revision/attempt_id/outcome…) ·
+      gui_context_smoke (windows_copy, clipboard_paste, use_clipboard_answer; owner's real GPT answer
+      docs/audit/owner-5.11/HO-0006_gpt_answer_context_request.txt) · gui_quick_smoke (Driver, block(), app.quick_form) ·
+      gui_team_editor_smoke (older project = V2Project(old, name).open(); open_workbench helper) · corpus
+      tests/fixtures/answers C01–C31 (charters, C26 cut-off, C31 windows copy), F01… (files).
 - [ ] 1 scenario_driver.py (Driver: pump, click, clipboard_paste, wait_line, shot, no message boxes, callback errors)
 - [ ] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
       fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
