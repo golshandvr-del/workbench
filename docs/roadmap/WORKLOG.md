@@ -53,7 +53,12 @@ Plan (one checkpoint per change):
 6. Docs/version/PR/CI/tag/Release.
 
 Progress:
-- [ ] 1 engine
+- [x] 1 engine `aiwb/v2/quick.py` d9b6816 (+ fenced files keep final newline ab6c8b0), `tests/test_quick.py` f805d19
+  (15 OK; add to bump: --module v2/quick.py --test test_quick.py). API: build_prompt(root, task, fmt, include) ·
+  read_answer(text | zip_bytes=) → {files, format, label, fixes, problems, truncated, continue_prompt} ·
+  plan(root, files) → [{path, status new/changed/same, diff, content}] · summary(items) · apply(root, items, task=) ·
+  last_apply(root) · restore(root) → {restored, kept} · to_guided(root, goal, rows) · state(root). QuickError = message.
+- [ ] 2 UI quick_window
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
