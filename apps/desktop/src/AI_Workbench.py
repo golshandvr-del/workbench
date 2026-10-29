@@ -4609,7 +4609,8 @@ class WorkbenchApp:
         language and Simple/Advanced are application-wide and live on the Settings page."""
         self.prefs = AppPrefs(self.settings_data, save=self._save_prefs)
         self.shell = AppShell(self.root, self.prefs, title=APP_NAME, version=APP_VERSION,
-                              commands={"new_guided": self.new_guided_project, "new_folder": self.add_existing_project,
+                              commands={"new_guided": self.new_guided_project, "new_quick": self.new_quick_project,
+                                        "new_folder": self.add_existing_project,
                                         "open": self.add_existing_project, "save": self.save_now,
                                         "run": self.run_next_step, "project_items": self.switcher_items,
                                         "all_projects": self.open_all_projects,
@@ -4727,6 +4728,105 @@ class WorkbenchApp:
         """Toolbar › New Project › Guided project: create the folder, then start the guided Workbench (F1)."""
         # new_project() is non-blocking (its window stays open): continue only once the folder exists (audit A3)
         self.new_project(on_created=self._start_guided_after_create)
+
+    def new_quick_project(self, name: str | None = None, parent: str | Path | None = None) -> Any:
+        """Toolbar › New Project › Quick — one AI chat… (5.14.0): name + folder, then the Quick window.
+
+        Quick replaces the classic 1.x Prompt / AI Response pages: one chat, no team, no charter. With ``name`` given
+        (tests) the form is skipped. Returns the form (a dict of its widgets) or the Quick window.
+        """
+        default_parent = Path.home() / "Documents"
+        if not default_parent.is_dir():
+            default_parent = Path.home()
+        if name is not None:
+            return self._create_quick(name, Path(parent) if parent else default_parent)
+        win = tk.Toplevel(self.root)
+        win.title("New Quick project")
+        try:
+            win.transient(self.root)
+        except tk.TclError:
+            pass
+        outer = ttk.Frame(win, padding=14)
+        outer.pack(fill="both", expand=True)
+        outer.columnconfigure(1, weight=1)
+        ttk.Label(outer, text="Quick — one AI chat", style="SectionTitle.TLabel").grid(row=0, column=0, columnspan=3,
+                                                                                    sticky="w")
+        ttk.Label(outer, text="One chat, no team: describe a job, paste the answer, check the files, apply. You can "
+                              "make it a multi-AI project later.", style="Hint.TLabel", wraplength=520,
+                  justify="left").grid(row=1, column=0, columnspan=3, sticky="w", pady=(2, 10))
+        name_var = tk.StringVar(value="")
+        parent_var = tk.StringVar(value=str(default_parent))
+        ttk.Label(outer, text="Project name").grid(row=2, column=0, sticky="w")
+        name_entry = ttk.Entry(outer, textvariable=name_var)
+        name_entry.grid(row=2, column=1, columnspan=2, sticky="ew", pady=3)
+        ttk.Label(outer, text="Create in").grid(row=3, column=0, sticky="w")
+        ttk.Entry(outer, textvariable=parent_var).grid(row=3, column=1, sticky="ew", pady=3)
+
+        def browse() -> None:
+            chosen = filedialog.askdirectory(title="Where should the project folder go?", parent=win, mustexist=True)
+            if chosen:
+                parent_var.set(chosen)
+        ttk.Button(outer, text="Browse…", command=browse).grid(row=3, column=2, padx=(6, 0))
+        err = tk.StringVar(value="")
+        ttk.Label(outer, textvariable=err, style="Danger.TLabel", wraplength=520).grid(row=4, column=0, columnspan=3,
+                                                                                    sticky="w", pady=(6, 0))
+        form: dict[str, Any] = {"win": win, "name": name_var, "parent": parent_var, "error": err}
+
+        def create() -> Any:
+            try:
+                qw = self._create_quick(name_var.get(), Path(parent_var.get().strip() or default_parent))
+            except (WorkbenchError, OSError, ValueError) as exc:
+                err.set(str(exc))
+                return None
+            win.destroy()
+            form["quick"] = qw
+            return qw
+        form["create"] = create
+        bar = ttk.Frame(outer)
+        bar.grid(row=5, column=0, columnspan=3, sticky="e", pady=(12, 0))
+        ttk.Button(bar, text="Cancel", command=win.destroy).pack(side="right")
+        ttk.Button(bar, text="Create", style="Primary.TButton", command=create).pack(side="right", padx=(0, 7))
+        name_entry.focus_set()
+        win.bind("<Return>", lambda _e: create())
+        ui_layout.place_dialog(win, 580, 260, self.root)
+        self.quick_form = form
+        return form
+
+    def _create_quick(self, name: str, parent: Path) -> Any:
+        """Create the Quick folder, remember it and open the Quick window. Raises WorkbenchError with a message."""
+        from aiwb.v2 import quick
+        created = create_project_folder(parent.expanduser(), name, "", "General engineering / simulation project",
+                                        False)
+        quick.mark(created)
+        self.set_workspace(created, focus_project=False)
+        self.refresh_project_list()
+        self.set_status(f"Created {created.name} (Quick — one AI chat). Describe the job and copy the prompt.")
+        return self.open_quick_window()
+
+    def open_quick_window(self) -> Any:
+        """The Quick window for the open project (Home's card offers it for a Quick folder)."""
+        from aiwb.ui.quick_window import QuickWindow
+        if self.workspace is None:
+            self.set_status("Open or create a project first.")
+            return None
+        old = getattr(self, "quick_window", None)
+        if old is not None:
+            try:
+                if old.win.winfo_exists() and Path(old.root) == Path(self.workspace):
+                    old.win.deiconify()
+                    old.win.lift()
+                    return old
+                old.win.destroy()
+            except tk.TclError:
+                pass
+        self.quick_window = QuickWindow(self.root, self.workspace, clipboard=self._copy_text_to_clipboard,
+                                        status=self.set_status, on_convert=self._quick_converted)
+        return self.quick_window
+
+    def _quick_converted(self, root: Path) -> None:
+        """Quick › Make it a multi-AI project: reopen the folder so Home shows the guided card (files untouched)."""
+        self.set_workspace(Path(root), focus_project=False)
+        self._start_guided_after_create(Path(root))
 
     def _start_guided_after_create(self, created: Path) -> None:
         """After New Project › Create: Home — the Mission Map with the user's named AIs and the cockpit card on the
