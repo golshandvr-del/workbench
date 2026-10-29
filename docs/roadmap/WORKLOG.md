@@ -85,7 +85,7 @@ Progress:
   github/api_client.py · release_manifest.json + install.ps1 (v2/quick.py, ui/quick_window.py, test_quick.py,
   gui_quick_smoke.py, checklist) · docs/release/v5.14.0/ checklist · CHANGELOG · README(s) · USER_GUIDE · ROADMAP)
   - done: version 5d033d5/aad284b/777e2dc, manifest f691c7e, install.ps1 ad01b75 (check_installer_manifest PASS 217),
-    checklist 586db09 + 9c864d0. Next: CHANGELOG, README, USER_GUIDE, ROADMAP, then PR → CI → merge → tag.
+    checklist 586db09 + 9c864d0. CHANGELOG 352d97a, README de7086f, USER_GUIDE 501794d/5dbef37/2ed8951 (section 3b Quick), ROADMAP (5.14.0 ✅, 5.15.0 active). Next: PR → CI → merge → tag desktop-v5.14.0 → Release.
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
