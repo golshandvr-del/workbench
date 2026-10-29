@@ -91,7 +91,7 @@ class QuickWindow:
         ttk.Label(card, text="1  The job", style="CardTitle.TLabel").pack(anchor="w")
         ttk.Label(card, text="What should the AI make or change? One or two sentences are enough.",
                   style="CardMuted.TLabel").pack(anchor="w", pady=(2, 4))
-        self.task_box = tk.Text(card, height=4, wrap="word", undo=True)
+        self.task_box = tk.Text(card, height=3, wrap="word", undo=True)
         self.task_box.pack(fill="x")
         row = ttk.Frame(card, style="Card.TFrame")
         row.pack(fill="x", pady=(6, 0))
@@ -117,7 +117,7 @@ class QuickWindow:
         ttk.Label(card, text="2  The answer", style="CardTitle.TLabel").pack(anchor="w")
         ttk.Label(card, text="Paste the chat's whole answer (use the Copy button of its code block), or load the ZIP "
                              "it gave you.", style="CardMuted.TLabel", wraplength=860).pack(anchor="w", pady=(2, 4))
-        self.paste = PastePanel(card, on_use=self.use_answer, primary_text="Check the answer", height=8,
+        self.paste = PastePanel(card, on_use=self.use_answer, primary_text="Check the answer", height=6,
                                 wraplength=860, style="Card.TFrame", diagnose=diagnose)
         self.paste.pack(fill="x")
 
@@ -130,7 +130,7 @@ class QuickWindow:
                   justify="left").pack(anchor="w", pady=(2, 4))
         pair = ttk.Frame(card, style="Card.TFrame")
         pair.pack(fill="both", expand=True)
-        self.tree = ttk.Treeview(pair, columns=("status", "lines"), height=6, selectmode="browse")
+        self.tree = ttk.Treeview(pair, columns=("status", "lines"), height=5, selectmode="browse")
         self.tree.heading("#0", text="File")
         self.tree.heading("status", text="State")
         self.tree.heading("lines", text="Lines")
@@ -139,7 +139,7 @@ class QuickWindow:
         self.tree.column("lines", width=60, anchor="e")
         self.tree.pack(side="left", fill="y")
         self.tree.bind("<<TreeviewSelect>>", lambda _e: self.show_diff())
-        self.diff = tk.Text(pair, height=12, wrap="none", font=("Consolas", 9))
+        self.diff = tk.Text(pair, height=8, wrap="none", font=("Consolas", 9))
         self.diff.pack(side="left", fill="both", expand=True, padx=(8, 0))
         self.diff.tag_configure("add", foreground="#2e7d32")
         self.diff.tag_configure("del", foreground="#c62828")
