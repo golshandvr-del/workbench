@@ -200,7 +200,10 @@ def read_answer(text: str = "", *, zip_bytes: bytes | None = None, zip_name: str
             problems.append(f"{p} came twice — the last copy is used")
             files = [x for x in files if x["path"].casefold() != p.casefold()]
         seen.add(p.casefold())
-        files.append({"path": p, "content": f.get("content", "")})
+        body = f.get("content", "")
+        if ex.format in ("aiwb", "markdown") and body and not body.endswith("\n"):
+            body += "\n"  # a fence drops the file's last newline; JSON and ZIP keep the bytes as sent
+        files.append({"path": p, "content": body})
     out: dict[str, Any] = {"files": files, "format": ex.format, "label": ex.label if ex.format else "",
                            "fixes": fixes + list(ex.fixes), "problems": problems, "truncated": bool(ex.truncated),
                            "continue_prompt": ""}
@@ -223,7 +226,7 @@ def plan(root: Path, files: list[dict[str, str]]) -> list[dict[str, Any]]:
                 old = target.read_text(encoding="utf-8")
             except (UnicodeDecodeError, OSError):
                 old = None
-            if old is not None and old == new:
+            if old is not None and (old == new or old.rstrip("\n") == new.rstrip("\n")):
                 status, diff = "same", ""
             else:
                 status = "changed"
