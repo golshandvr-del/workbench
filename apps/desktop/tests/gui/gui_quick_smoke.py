@@ -206,6 +206,8 @@ def main() -> None:
             app.home_card.refresh()
             d.pump(300)
             assert app.home_card.title_var.get() == "Quick — one AI chat", app.home_card.title_var.get()
+            app.refresh_mission(app.status_state(), force=True)
+            assert app.mission.model["empty"], "a Quick folder must not show template AI lanes on the map"
             qw.win.withdraw()
             d.shot("07_home_quick_card")
             d.click(app.home_card.button("Open the Quick window"))
