@@ -58,7 +58,12 @@ Progress:
   read_answer(text | zip_bytes=) → {files, format, label, fixes, problems, truncated, continue_prompt} ·
   plan(root, files) → [{path, status new/changed/same, diff, content}] · summary(items) · apply(root, items, task=) ·
   last_apply(root) · restore(root) → {restored, kept} · to_guided(root, goal, rows) · state(root). QuickError = message.
-- [ ] 2 UI quick_window
+- [x] 2 UI `aiwb/ui/quick_window.py` 51d280a: QuickWindow(parent, root, clipboard=, status=, on_convert=) · set_task ·
+  set_format · toggle_include · copy_prompt · paste.set_text + use_answer · show_diff · apply_now · restore_now ·
+  copy_continue · ask_convert → convert_dialog{win, goal, table, ok, error}. PastePanel(diagnose=) 1623a5c; Quick
+  `diagnose` drops the AIWB_HANDOFF warning, explains non-file answers 921d3fe; fits 940x820 0358093. Throwaway check
+  /tmp/qw_try.py (prompt/answer/diff/apply/restore/cut-off/convert all OK).
+- [ ] 3 New Project ▾ → "Quick — one AI chat…"
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
