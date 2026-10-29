@@ -5,7 +5,7 @@ with a downloadable ZIP in its usual shape (corpus F14): one top folder named af
 ``AIWB_HANDOFF.json`` next to them, plus the ``__MACOSX`` / ``.DS_Store`` noise of a Mac → the card's **Load ZIP…**
 button (only the operating system's file picker is replaced: it returns the downloaded file) → the live check says ✓
 → Use this answer → Accept → the files are on disk under the project root (the top folder is not kept), the noise is
-not written anywhere.
+not written anywhere, and a file outside the task's paths (``README.md``) is reported and not written.
 """
 from __future__ import annotations
 
@@ -20,12 +20,13 @@ from scenario_driver import (Driver, charter_to_first_prompt, digest, handoff_ma
 
 FILES = {"src/core/model.py": "class Todo:\n    title = ''\n",
          "src/core/store.py": "import json\n\n\ndef load(path):\n    return json.load(open(path))\n",
-         "README.md": "# Todo\n"}
+         }
+OUT_OF_SCOPE = {"README.md": "# Todo\n"}   # outside the task's paths (src/core/**): reported, never written
 
 
 def gpt_zip(target: Path, h: dict) -> Path:
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
-        for p, c in FILES.items():
+        for p, c in {**FILES, **OUT_OF_SCOPE}.items():
             z.writestr("todo/" + p, c)
         z.writestr("todo/AIWB_HANDOFF.json", json.dumps(handoff_manifest(h, "core done"), indent=2))
         z.writestr("__MACOSX/todo/src/core/._model.py", "x")
@@ -59,6 +60,8 @@ def main() -> None:
             ho = app.workspace_window.wc.ctl.state()["handoffs"][h["handoff_id"]]
             staged = sorted(f["path"] for f in ho.get("staged_files") or [])
             assert staged == sorted(FILES), f"staged from the ZIP: {staged}"
+            msg = card.message_var.get()
+            assert "README.md" in msg or "out_of_scope" in msg or "outside" in msg, msg
             accept = next((lbl for lbl in card.labels() if lbl.startswith("Accept")), None)
             assert accept, f"no Accept after the ZIP: {card.title_var.get()!r} {card.labels()}"
             d.step(card, accept)
@@ -66,6 +69,7 @@ def main() -> None:
                 assert (folder / p).read_text(encoding="utf-8") == c, f"{p} on disk"
             new = set(digest(folder)) - set(before)
             assert new == set(FILES), f"files written by the ZIP: {sorted(new)}"
+            assert not (folder / "README.md").exists(), "an out-of-scope file was written"
             assert not (folder / "todo").exists(), "the ZIP's top folder was kept"
             d.shot("02_zip_applied")
             assert app.shell.current == "home", f"the path left Home for {app.shell.current!r}"
