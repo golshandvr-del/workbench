@@ -55,6 +55,7 @@ screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.p
 - [x] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
       fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
       S7 real GPT ZIP · S8 context request → files → answer · S9 Windows copy with `\` line ends
+  Release prep (one file per checkpoint): APP_VERSION cd7934f, aiwb __version__ fba6b59, api_client UA 3168698, checklist docs/release/v5.15.0 899ce88, release_manifest (5.15.0 + checklist + test_guide_continue.py) e8a9cff, install.ps1 af935ff (check_installer_manifest PASS 218), CHANGELOG fde72b5. Unit 863 OK at 1abc9d2. Full GUI run with AIWB_SCREENSHOT_DIR=/tmp/shots in progress (log /tmp/gui_all.log). NEXT: copy s1..s9 shots → docs/audit/screens/v5.15-scenarios/, README(s), USER_GUIDE + new USER_GUIDE_FA, ROADMAP ✅, PR → CI → merge → tag desktop-v5.15.0.
 - [ ] 3 screenshots, full unit + GUI run
 - [ ] 4 USER_GUIDE (English) + USER_GUIDE_FA (Persian) with pictures, CHANGELOG, README, checklist (owner NOT RUN list)
 - [ ] 5 version 5.15.0, manifest/install.ps1, PR → CI → merge → tag → Release; ROADMAP ✅ (then: mobile — owner only)
