@@ -38,8 +38,9 @@ class RegistryTests(unittest.TestCase):
         for lab in ("COPY PROMPT", "Copy prompt", "Prepare prompt for this task", "Prepare the prompt"):
             self.assertEqual(commands.command_of("Home", lab), "task.copy_prompt", lab)
         self.assertEqual(commands.command_of("History", "Copy prompt"), "history.copy_prompt")
-        self.assertEqual(commands.command_of("Settings › Classic tools (1.x) › Prompt", "Copy prompt"),
-                         "classic.copy_prompt")
+        # 5.14.0: Quick replaced the 1.x Prompt page (no "classic" Copy prompt); its start and reopen are one job
+        self.assertEqual(commands.command_of("Toolbar", "Quick — one AI chat…"), "project.new_quick")
+        self.assertEqual(commands.command_of("Home", "Open the Quick window"), "project.new_quick")
         self.assertEqual(commands.command_of("Agents", "Something new…"), "label:something new")
         self.assertEqual(commands.label("task.sent"), "SEND PROMPT")
         with self.assertRaises(KeyError):
