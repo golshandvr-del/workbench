@@ -64,6 +64,13 @@ def complete_files(text: str) -> list[dict[str, str]]:
     return [{"path": f["path"], "content": f["content"]} for f in files if f.get("path")]
 
 
+def merge_files(old: list[dict[str, str]], new: list[dict[str, str]]) -> list[dict[str, str]]:
+    """``old`` then ``new`` by path; a path in ``new`` replaces the one in ``old`` (the later copy wins)."""
+    out = {f["path"]: dict(f) for f in old}
+    out.update({f["path"]: dict(f) for f in new})
+    return list(out.values())
+
+
 def merge_partial(partial: list[dict[str, str]], text: str, attempt_id: str = "") -> str:
     """5.15.0 (S4): the continue prompt says "these files arrived complete — do NOT resend them", so the rest the
     chat sends lacks them. Put the saved complete files back in front of the rest (a file the chat resends anyway
