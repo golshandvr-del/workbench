@@ -848,8 +848,16 @@ class Guide:
         from ..intake.normalize import continue_prompt, truncation_report
         if not text.strip():
             raise ModelError("the answer is empty")
-        rep = truncation_report(text)
         hint = step["ref"] if str(step.get("key", "")).startswith("handoff:") else ""
+        if step.get("key") == "continue":
+            # 5.15.0 (S4): the rest belongs to the answer that was cut off — link it to that handoff, and put the
+            # files that already arrived complete back in (the continue prompt told the chat not to resend them)
+            cont = _g(self.ctl.state()).get("continue") or {}
+            target = str(cont.get("for") or "")
+            if target.startswith("handoff:"):
+                hint = target.split(":", 1)[1]
+            text = merge_partial(cont.get("partial") or [], text, str(cont.get("attempt_id") or ""))
+        rep = truncation_report(text)
         r = self.ctl.route_answer(text, handoff_hint=hint)
         if r.text:   # 5.10.0: files from Markdown / JSON / ZIP were rewritten as AIWB blocks for staging and checks
             text = r.text
