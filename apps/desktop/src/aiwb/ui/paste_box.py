@@ -42,6 +42,7 @@ class PastePanel(ttk.Frame):
         self.on_use = on_use
         self.preview: Any = None
         self.zip_name = ""
+        self.zip_text = ""
         self._after: str | None = None
         self._ask_zip = ask_zip
         bar = ttk.Frame(self, style=kw.get("style", "TFrame"))
@@ -135,6 +136,7 @@ class PastePanel(ttk.Frame):
         text, pv = preview_zip(data, p.name)
         if text:
             self.zip_name = p.name
+            self.zip_text = text  # 5.14.0: the box text that came from the ZIP (a later paste is not the ZIP)
             self.box.delete("1.0", "end")
             self.box.insert("1.0", text)
             self.box.edit_modified(False)
