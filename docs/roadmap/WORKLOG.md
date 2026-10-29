@@ -69,11 +69,13 @@ Progress:
   (opening a folder creates state.json with template agents!) b750994. Live check /tmp/quick_live.py OK (menu → form →
   apply → convert → Home card "Get the Project Charter"). Home card of a Quick folder = one step key "quick", action
   "quick_open" → open_quick_window (`_home_steps` / `home_perform`) b39f2eb. STEP 3 DONE.
-- [~] 4 remove Classic tools from Settings: structure5 TOOLS/TOOL_HOME without prompt/response, CLASSIC = "Tools"
+- [x] 4 remove Classic tools from Settings: structure5 TOOLS/TOOL_HOME without prompt/response, CLASSIC = "Tools"
   2c40fcc; UI_TREE 21a2986; ui_map MORE_EXEMPT "Settings › Tools" 6b7e6bc; commands project.new_quick 31a9af1 + test
   1342fbb; Settings card text 56ece43; Workbench Tools without "Classic prompt & response…" f1b6760; UI_MAP regen
   7414353/7f27b93/46aa5d2. Unit 855 OK. The prompt/response *pages* still exist (shell.PAGES, notebook tabs) only for
-  old smokes; next: GUI run_all, fix smokes (single_shell expects response → settings, ia REQUIRED prompt/response).
+  old smokes (kept on purpose, plan step 4); Workbench classic_response link dropped d31f09f. GUI run_all 47/47,
+  unit 855 OK. STEP 4 DONE.
+- [ ] 5 gate smoke tests/gui/gui_quick_smoke.py + screenshots docs/audit/screens/v5.14-quick/
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
