@@ -26,7 +26,11 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
-## 5.15.0 — Gate of real scenarios (branch `feat/v5.15.0-scenarios`)
+## 5.15.0 — DONE (desktop roadmap 5.8 → 5.15 complete)
+
+PR #71 merged (main `922fb08`), CI all green incl. Windows (installed copy, 57 GUI smokes), tag `desktop-v5.15.0` → Release Desktop (Windows) success → Release published (AI_Workbench_5.15.0_Setup.bat, Windows_Payload.zip, Source.zip, SHA256SUMS, release-manifest.json). ROADMAP header updated on branch `docs/v5.15.0-released` (b20d42d). NEXT: nothing on the desktop roadmap. Mobile app (mobile-v3.x) waits for the owner's OK on real Windows (ROADMAP: "بعد از 5.15.0"); owner NOT RUN list in docs/release/v5.15.0/WINDOWS_RELEASE_CHECKLIST_v5.15.0.md.
+
+### 5.15.0 log (kept for reference)
 
 Plan (one scenario = one script `apps/desktop/tests/gui/gui_scenario_sN_*_smoke.py`, picked up by run_all.py → runs in
 CI on Linux (xvfb) and Windows (installed app); shared driver `tests/gui/scenario_driver.py` (not a smoke itself);
