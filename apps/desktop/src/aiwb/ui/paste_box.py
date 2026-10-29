@@ -35,9 +35,10 @@ class PastePanel(ttk.Frame):
     def __init__(self, master: tk.Misc, *, state: Any = None, on_use: Callable[[str], Any] | None = None,
                  primary_text: str = "Use this answer", primary_style: str = "Accent.TButton",
                  ask_zip: Callable[[], str] | None = None, height: int = 20, width: int = 90,
-                 wraplength: int = 780, **kw: Any) -> None:
+                 wraplength: int = 780, diagnose: Callable[..., Any] | None = None, **kw: Any) -> None:
         super().__init__(master, **kw)
         self._state = state
+        self._diagnose = diagnose  # 5.14.0: Quick mode passes its own (no handoff/manifest warnings)
         self.on_use = on_use
         self.preview: Any = None
         self.zip_name = ""
@@ -97,7 +98,7 @@ class PastePanel(ttk.Frame):
         """Diagnose the current text now (also called by the debounce timer)."""
         from ..intake.preview import preview
         self._after = None
-        self.preview = preview(self.text(), self.state)
+        self.preview = (self._diagnose or preview)(self.text(), self.state)
         self._show(self.preview)
         return self.preview
 
