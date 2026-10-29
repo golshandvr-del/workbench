@@ -75,7 +75,13 @@ Progress:
   7414353/7f27b93/46aa5d2. Unit 855 OK. The prompt/response *pages* still exist (shell.PAGES, notebook tabs) only for
   old smokes (kept on purpose, plan step 4); Workbench classic_response link dropped d31f09f. GUI run_all 47/47,
   unit 855 OK. STEP 4 DONE.
-- [ ] 5 gate smoke tests/gui/gui_quick_smoke.py + screenshots docs/audit/screens/v5.14-quick/
+- [~] 5 gate smoke tests/gui/gui_quick_smoke.py b6902df PASS (menu → form → prompt → AIWB from real clipboard / JSON /
+  ZIP via Load ZIP… → apply, Restore, cut-off → continue, Home Quick card, Quick → Guided, files untouched); ZIP label
+  "GPT ZIP · name" 3e01acf. AIWB_SCREENSHOT_DIR → quick_NN_*.png. Next: screenshots docs/audit/screens/v5.14-quick/
+  (one file per checkpoint), full unit + GUI run.
+- [ ] 6 docs/version/PR/CI/tag/Release (order as 5.13.0: version in AI_Workbench.py, aiwb/__init__.py,
+  github/api_client.py · release_manifest.json + install.ps1 (v2/quick.py, ui/quick_window.py, test_quick.py,
+  gui_quick_smoke.py, checklist) · docs/release/v5.14.0/ checklist · CHANGELOG · README(s) · USER_GUIDE · ROADMAP)
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
