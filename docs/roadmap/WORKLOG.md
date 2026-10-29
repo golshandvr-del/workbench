@@ -84,6 +84,8 @@ Progress:
 - [ ] 6 docs/version/PR/CI/tag/Release (order as 5.13.0: version in AI_Workbench.py, aiwb/__init__.py,
   github/api_client.py · release_manifest.json + install.ps1 (v2/quick.py, ui/quick_window.py, test_quick.py,
   gui_quick_smoke.py, checklist) · docs/release/v5.14.0/ checklist · CHANGELOG · README(s) · USER_GUIDE · ROADMAP)
+  - done: version 5d033d5/aad284b/777e2dc, manifest f691c7e, install.ps1 ad01b75 (check_installer_manifest PASS 217),
+    checklist 586db09 + 9c864d0. Next: CHANGELOG, README, USER_GUIDE, ROADMAP, then PR → CI → merge → tag.
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
