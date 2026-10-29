@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 5.11.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.14.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -115,6 +115,23 @@ action, **GitHub** = optional repository step.
 
 Workbench 4.7.0 / mobile 2.0.0 tests every one of the 32 edges of this flowchart end to end, with three scripted AIs
 working in parallel (`test_algorithm_e2e.py`, `AlgorithmE2ETest`).
+
+## 3b. Quick — one AI chat (5.14.0)
+
+For a small job with one chat and no team: **New Project ▾ › Quick — one AI chat…**, type a name, *Create*. One
+window does the whole loop:
+
+1. **The job** — say what the AI should make or change, choose the answer format (*AIWB file blocks*, *Strict JSON*
+   or *GPT ZIP*) and, if needed, the files it must see. **Copy the prompt** and paste it into your chat.
+2. **The answer** — paste the chat's whole answer (the line under the box checks it as you paste) or **Load ZIP…**.
+   Damage from copying a rendered chat is repaired.
+3. **The files** — each file is *New*, *Changed* or *Unchanged*, with its diff. **Apply N files** writes them after one
+   backup; **Restore last apply** undoes it (a file you edited since is kept). If the answer was cut off, **Copy the
+   continue prompt** asks the chat for the rest; complete files can be applied already.
+
+**Make it a multi-AI project…** (same window) turns the folder into a guided project with a goal and a team; your files
+stay as they are and Home shows the Project Charter step. Home of a Quick project shows one step: *Open the Quick
+window*.
 
 ## 4. Timeline
 
