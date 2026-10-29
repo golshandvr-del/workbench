@@ -63,7 +63,12 @@ Progress:
   copy_continue · ask_convert → convert_dialog{win, goal, table, ok, error}. PastePanel(diagnose=) 1623a5c; Quick
   `diagnose` drops the AIWB_HANDOFF warning, explains non-file answers 921d3fe; fits 940x820 0358093. Throwaway check
   /tmp/qw_try.py (prompt/answer/diff/apply/restore/cut-off/convert all OK).
-- [ ] 3 New Project ▾ → "Quick — one AI chat…"
+- [~] 3 New Project ▾ → "Quick — one AI chat…": structure5 3c4c776, UI_TREE 1f812e4, quick.mark/is_quick cbdf65e,
+  app `new_quick_project(name=, parent=)` → form `app.quick_form{win,name,parent,error,create}` → `_create_quick` →
+  `open_quick_window()` (`app.quick_window`), `_quick_converted` → Home 55d2617; is_guided = V2 state has a goal
+  (opening a folder creates state.json with template agents!) b750994. Live check /tmp/quick_live.py OK (menu → form →
+  apply → convert → Home card "Get the Project Charter"). TODO: Home card for a Quick folder → "Open the Quick window".
+- [ ] 4 remove Classic tools from Settings
 
 ## 5.13.0 — One project, one screen (B3, B4, B5) (branch `feat/v5.13.0-one-screen`)
 
