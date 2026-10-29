@@ -215,6 +215,9 @@ class QuickWindow:
         """Read the pasted answer (PastePanel's primary button) and list its files."""
         text = text if text else self.paste.text()
         self.answer = a = quick.read_answer(text)
+        zip_name = getattr(self.paste, "zip_name", "")
+        if zip_name and a["files"]:  # the ZIP was turned into file blocks by the paste panel: name its real source
+            a["label"] = f"GPT ZIP · {zip_name}"
         self.items = quick.plan(self.root, a["files"]) if a["files"] else []
         self.tree.delete(*self.tree.get_children())
         for i in self.items:
