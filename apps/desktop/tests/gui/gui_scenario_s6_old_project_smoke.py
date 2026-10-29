@@ -11,7 +11,6 @@ from __future__ import annotations
 import json
 import tkinter as tk
 import zipfile
-from pathlib import Path
 
 from gui_smoke_helpers import wait_for_project_ready
 from scenario_driver import REPO, Driver, digest, guided_answer, run, scenario_home
