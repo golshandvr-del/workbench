@@ -4690,11 +4690,11 @@ class WorkbenchApp:
         bar.grid(row=2, column=0, sticky="w")
 
     def _make_settings_project(self, body: ttk.Frame) -> None:
-        """Settings › Project and Settings › Classic tools (1.x) (5.13.0, audit B3/B4/B5).
+        """Settings › Project and Settings › Tools (5.13.0, audit B3/B4/B5; 5.14.0).
 
         Project: the open project's settings (details, the AI team's manager, account profiles, files, builds and the
-        phone) — the Workbench page, which left the rail with Projects. Classic tools: the 1.x pages (Prompt, AI
-        Response, Project Profile, Run & Report) until Quick mode replaces them (5.14.0).
+        phone) — the Workbench page, which left the rail with Projects. Tools: the two 1.x pages that stay (Project
+        Profile, Run & Report); Quick (New Project ▾) replaced the 1.x Prompt / AI Response pages in 5.14.0.
         """
         from aiwb.ui import structure5
         card = ttk.Frame(body, style="Card.TFrame", padding=(18, 14))
@@ -4956,9 +4956,9 @@ class WorkbenchApp:
                         ("Copy team summary", self.agents_copy_team),
                         ("Open task queue", lambda: self.agents_workbench("plan")))),), style="Card.TFrame")
         self.agents_desk_bar.pack(anchor="w", pady=(6, 0))
-        # 5.13.0: no Tools card here — Prompt and AI Response are Settings › Classic tools (1.x) until Quick (5.14.0)
+        # 5.13.0: no Tools card here (5.14.0: Quick — New Project ▾ — replaced the 1.x Prompt / AI Response pages)
 
-    TOOLS_HINT = {"settings": "The 1.x pages for one AI chat — kept until Quick mode replaces them.",
+    TOOLS_HINT = {"settings": "The project's profile and its run / report tools (one AI chat: New Project › Quick).",
                   "history": "Commits, pushes, branches and GitHub releases of this project."}
 
     def _make_tools_card(self, page: tk.Misc, dest: str, hint: str = "", title: str = "Tools") -> ttk.Frame:
