@@ -1,3 +1,32 @@
+## [5.14.0] - 2026-10-29
+
+### Quick mode — one AI chat (Roadmap 5.14.0, replaces the classic 1.x Prompt / AI Response pages)
+
+- **New Project ▾ › Quick — one AI chat…**: give the project a name, and one window does the whole 1.x loop:
+  1. *The job*: describe what the AI should make or change, choose the answer format (AIWB file blocks, Strict JSON
+     or GPT ZIP) and, if you like, the files it must see. *Copy the prompt* puts a short prompt on the clipboard: the
+     job, the project's file list, the chosen files and the format's rules.
+  2. *The answer*: paste the chat's whole answer (live check as you paste: "Files ✓ · 2 files"), or *Load ZIP…*.
+     Copy damage from rendered chats is repaired as in 5.12.0.
+  3. *The files*: every file as New / Changed / Unchanged with its diff. *Apply N files* writes them after one backup;
+     *Restore last apply* undoes it (a file you edited after the apply is kept, never overwritten). A cut-off answer
+     offers *Copy the continue prompt*; the files that arrived complete can be applied at once.
+- **Make it a multi-AI project…** (same window): goal + team table → the folder becomes a guided project; your files
+  stay exactly as they are and Home shows the Project Charter step.
+- **Home of a Quick project** shows one step, *Open the Quick window*, and the map says the project has one chat and no
+  lanes (no template AIs).
+- **Classic tools are gone**: Settings › Classic tools (1.x) is now Settings › Tools with Project Profile and Run &
+  Report; the Workbench's "Classic prompt & response…" link is removed. Quick is the one home for one-chat work.
+- The Quick paste check never shows multi-AI warnings (no "AIWB_HANDOFF manifest"); a charter or a context request is
+  explained as "not a Quick answer".
+
+### Tests
+
+- `gui_quick_smoke.py` (the gate: three formats from the real clipboard / Load ZIP…, Apply, Restore, cut-off →
+  continue, Home Quick card, Quick → Guided with files untouched), `test_quick.py` (15 engine tests);
+  `test_commands.py` registers `project.new_quick`; App Map regenerated. Unit 855 OK, GUI 48/48. Screenshots
+  `docs/audit/screens/v5.14-quick/`.
+
 ## [5.13.0] - 2026-10-26
 
 ### One project, one screen (Roadmap 5.13.0, owner audits of 5.11.0 — B3, B4, B5 — and of 5.12.0 — C1–C7)
