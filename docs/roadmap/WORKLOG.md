@@ -40,7 +40,8 @@ screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.p
       gui_team_editor_smoke (older project = V2Project(old, name).open(); open_workbench helper) · corpus
       tests/fixtures/answers C01–C31 (charters, C26 cut-off, C31 windows copy), F01… (files).
   S5 finding: settings = LOCALAPPDATA/AIWorkbench/settings.json; on_close() → _save_settings() stores last_workspace; WorkbenchApp.__init__ reopens it (set_workspace) → S5 = on_close(), new Tk + WorkbenchApp with the same LOCALAPPDATA. run_all.py globs gui_*smoke.py only (driver file is safe).
-- [ ] 1 scenario_driver.py (Driver: pump, click, clipboard_paste, wait_line, shot, no message boxes, callback errors)
+- [x] 1 scenario_driver.py f0ff56b..1a18b6c (Driver: start/restart(on_close)/pump/click/click_menu/paste (real clipboard)/wait_line/step/use_answer/shot/finish/say; helpers scenario_home, block, digest, windows_copy, guided_answer, new_guided_project, charter_to_first_prompt, open_handoff; allowed work windows by title prefix)
+  S1 gui_scenario_s1_quick_smoke.py 47817b2 PASS (9 clicks + 2 pastes)
 - [ ] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
       fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
       S7 real GPT ZIP · S8 context request → files → answer · S9 Windows copy with `\` line ends
