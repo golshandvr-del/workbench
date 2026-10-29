@@ -26,7 +26,13 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
-## 5.14.0 — Quick mode: one AI chat (branch `feat/v5.14.0-quick`)
+## 5.14.0 — DONE
+
+PR #70 merged (main `338ffc8`), tag `desktop-v5.14.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS,
+release-manifest.json). CI run 1 + 2 failed only on Windows (test_quick \r\n size; smoke print → on cp1252), run 3 all
+green. Unit 855 OK, GUI 48/48. NEXT: 5.15.0 (Gate of real scenarios S1–S9) on branch `feat/v5.15.0-scenarios`.
+
+### 5.14.0 log (kept for reference)
 
 Facts (read in code 2026-10-26): New Project ▾ = `structure5.TOOLBAR["new"]` (new_guided, new_folder) wired in
 `AI_Workbench` ~4612 `commands={...}`; reusable intake: `aiwb/intake/answer_files.extract(text)` /
