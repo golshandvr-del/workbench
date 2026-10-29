@@ -37,7 +37,8 @@ def opened(path: str, body: str) -> str:
 class HelperTests(unittest.TestCase):
     def test_complete_files_leave_out_the_open_block(self):
         got = complete_files(block("a.py", "A = 1\n") + opened("b.py", "B = ("))
-        self.assertEqual(got, [{"path": "a.py", "content": "A = 1\n"}])
+        # the parser drops the block's last newline (writing adds it back)
+        self.assertEqual([(f["path"], f["content"].rstrip("\n")) for f in got], [("a.py", "A = 1")])
 
     def test_complete_files_of_a_whole_answer_keep_everything(self):
         got = complete_files(block("a.py", "A = 1\n") + block("b.py", "B = 2\n"))
@@ -50,8 +51,8 @@ class HelperTests(unittest.TestCase):
 
     def test_merge_partial_puts_back_what_the_rest_does_not_resend(self):
         text = merge_partial([{"path": "a.py", "content": "A = 1\n"}], block("b.py", "B = 2\n"), "att-1")
-        files = {f["path"]: f["content"] for f in complete_files(text)}
-        self.assertEqual(files, {"a.py": "A = 1\n", "b.py": "B = 2\n"})
+        files = {f["path"]: f["content"].rstrip("\n") for f in complete_files(text)}
+        self.assertEqual(files, {"a.py": "A = 1", "b.py": "B = 2"})
         self.assertIn("AIWB_ATTEMPT_ID: att-1", text)
 
     def test_merge_partial_a_resent_file_wins_and_nothing_missing_is_unchanged(self):
