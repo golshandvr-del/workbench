@@ -107,11 +107,14 @@ class MissionCanvas(tk.Canvas):
         self.configure(background=p["field"])
         m = self.model
         if m["empty"]:
+            # 5.14.0: the owner of the canvas may set ``empty_text = (title, hint)`` (a Quick folder has no lanes)
+            title, hint = getattr(self, "empty_text", None) or (
+                "No plan yet", "Open a project and plan it with your project-manager AI in the Workbench. "
+                               "Each AI then gets its own lane here.")
             self.create_text(24 * s, 40 * s, anchor="nw", fill=p["text_dim"], font=font5("title", s),
-                             text="No plan yet", tags=("empty",))
+                             text=title, tags=("empty",))
             self.create_text(24 * s, 66 * s, anchor="nw", fill=p["text_faint"], font=font5("body", s),
-                             text="Open a project and plan it with your project-manager AI in the Workbench. "
-                                  "Each AI then gets its own lane here.", tags=("empty",))
+                             text=hint, tags=("empty",))
             self._fit_scrollregion()
             self._stop_live()
             return
