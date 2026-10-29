@@ -26,6 +26,41 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
+## 5.15.0 — Gate of real scenarios (branch `feat/v5.15.0-scenarios`)
+
+Plan (one scenario = one script `apps/desktop/tests/gui/gui_scenario_sN_*_smoke.py`, picked up by run_all.py → runs in
+CI on Linux (xvfb) and Windows (installed app); shared driver `tests/gui/scenario_driver.py` (not a smoke itself);
+screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.png`):
+- [x] 0 read existing gates. Reuse: gui_owner_path_smoke (Owner: pump/click/click_menu/paste/shot("owner_"), do_step,
+      use_answer, menu_labels, walk; wizard via app.project_wizard pages[0] TEntry + goal_text + team.count_box; charter
+      fixture packages/contracts/fixtures/valid/project-charter.v1.todo.json with base_state_revision; handoff from
+      ws.wc.ctl.state()["handoffs"]; manifest fields handoff_id/task_id/task_revision/attempt_id/outcome…) ·
+      gui_context_smoke (windows_copy, clipboard_paste, use_clipboard_answer; owner's real GPT answer
+      docs/audit/owner-5.11/HO-0006_gpt_answer_context_request.txt) · gui_quick_smoke (Driver, block(), app.quick_form) ·
+      gui_team_editor_smoke (older project = V2Project(old, name).open(); open_workbench helper) · corpus
+      tests/fixtures/answers C01–C31 (charters, C26 cut-off, C31 windows copy), F01… (files).
+  S5 finding: settings = LOCALAPPDATA/AIWorkbench/settings.json; on_close() → _save_settings() stores last_workspace; WorkbenchApp.__init__ reopens it (set_workspace) → S5 = on_close(), new Tk + WorkbenchApp with the same LOCALAPPDATA. run_all.py globs gui_*smoke.py only (driver file is safe).
+- [x] 1 scenario_driver.py f0ff56b..1a18b6c (Driver: start/restart(on_close)/pump/click/click_menu/paste (real clipboard)/wait_line/step/use_answer/shot/finish/say; helpers scenario_home, block, digest, windows_copy, guided_answer, new_guided_project, charter_to_first_prompt, open_handoff; allowed work windows by title prefix)
+  S1 gui_scenario_s1_quick_smoke.py 47817b2 PASS (9 clicks + 2 pastes)
+  S2 gui_scenario_s2_guided_smoke.py 7a18700 PASS (12 clicks + 2 pastes)
+  S4 BUG FOUND (probe /tmp/s4probe.py via tests/answer_corpus.Scenario): guided cut-off → continue prompt says 'a.py complete, do NOT resend' → pasting the rest stages ONLY b.py, a.py is LOST. Also Guide._paste on step 'continue' passes hint='' (links only if the answer carries AIWB_ATTEMPT_ID). Fix plan: guide.py — store the complete blocks of the cut-off answer in guide.continue ('partial' canonical text + 'handoff' ref), on continue paste use cont handoff as hint and add the stored blocks for paths the new answer does not resend; unit test in test_guide*; then S4 smoke.
+  S4 FIX DONE ed973a3..7cb8c83 (guide.py: complete_files, merge_files, merge_partial; cut-off saves guide.continue.partial + attempt_id; paste on 'continue' → hint = cont['for'] handoff + merge_partial) — probe: a.py + b.py staged. Unit test tests/test_guide_continue.py (8 tests) e735314..2980891 OK; full unit 863 OK. S4 gui_scenario_s4_continue_smoke.py 7e86ce9 PASS (12 clicks + 3 pastes; the rest has no attempt id, linked via guide.continue.for).
+  S5 gui_scenario_s5_reopen_smoke.py 12494ea PASS (10 clicks + 2 pastes); driver.restart cancels the old Tk's after() jobs + destroys it e763322 (stderr had bgerror noise).
+  S6 findings: real 5.7.0 code via `git worktree add /home/user/aiwb570 desktop-v5.7.0` (5.7.0 RouteResult has reference_id, not ref). 5.7.0 ProjectsController(root) → route_answer(charter) → accept_proposal → start_task(TASK-0001) + mark_copied = half-done project: files .workbench/inbox/attempts.json, .workbench/v2/{state.json,events.jsonl}, no absolute paths inside; today's code opens it untouched (notes [], same agents/tasks, rev 8→8), Guide step 1 = handoff:HO-0001 'Send the copied prompt…' [sent, copy, paste, abandon]. `.workbench/` is gitignored → commit the project as ZIP tests/fixtures/projects/v5.7.0_todo.zip + builder build_v570_project.py; S6 smoke: unzip → app.set_workspace → Home → paste the answer → Accept → file on disk.
+  S6 gui_scenario_s6_old_project_smoke.py 5c86fe9/f15d018 PASS (2 clicks + 1 paste); fixture build_v570_project.py 5a6ff7b + v5.7.0_todo.zip 3de0ab7 (worktree /home/user/aiwb570 = desktop-v5.7.0).
+  S7 gui_scenario_s7_gpt_zip_smoke.py 5b93e9b..24f3d08 PASS (11 clicks + 1 paste; Load ZIP… = real button, only paste_box.filedialog.askopenfilename replaced; top folder stripped thanks to AIWB_HANDOFF.json; finding: an out-of-scope file in the ZIP (README.md) → card 'Problems found…' [troubleshoot, Accept anyway…, Reject…] — correct, so S7 keeps in-scope files only).
+  S8 gui_scenario_s8_context_smoke.py 0bc95b7 PASS (13 clicks + 3 pastes; owner's real GPT HO-0006 answer, clean copy; folder expanded, .env refused; delivery in a five-backtick block).
+  S9 gui_scenario_s9_windows_copy_smoke.py 90f745f PASS (16 clicks + 3 pastes; rendered Windows copy = line-end \\ + escaped _ outside code + CRLF: guided charter → accepted, task answer → file byte for byte, Quick → Apply 2 files).
+ S3 gui_scenario_s3_broken_smoke.py ad6b4f5 PASS (11 clicks + 3 pastes; fix prompt = charter_fix_prompt via card COPY_RESULT 'paste'; auto-fix msg 'auto-fix')
+- [x] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
+      fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
+      S7 real GPT ZIP · S8 context request → files → answer · S9 Windows copy with `\` line ends
+  Release prep (one file per checkpoint): APP_VERSION cd7934f, aiwb __version__ fba6b59, api_client UA 3168698, checklist docs/release/v5.15.0 899ce88, release_manifest (5.15.0 + checklist + test_guide_continue.py) e8a9cff, install.ps1 af935ff (check_installer_manifest PASS 218), CHANGELOG fde72b5. Unit 863 OK at 1abc9d2. Full GUI run with AIWB_SCREENSHOT_DIR=/tmp/shots in progress (log /tmp/gui_all.log). NEXT: copy s1..s9 shots → docs/audit/screens/v5.15-scenarios/, README(s), USER_GUIDE + new USER_GUIDE_FA, ROADMAP ✅, PR → CI → merge → tag desktop-v5.15.0.
+- [x] 3 screenshots, full unit + GUI run: unit 863 OK, GUI run_all 57/57 PASS (incl. S1–S9); 28 shots docs/audit/screens/v5.15-scenarios/s1_01…s9_03 (6906bee…4e8ce4d, one per checkpoint). README 635b73f.
+- [x] 4 USER_GUIDE (English) + USER_GUIDE_FA (Persian) with pictures, CHANGELOG, README, checklist (owner NOT RUN list): USER_GUIDE title 0c7d49d, §3c 84d524f, NOT RUN 8d5eb25; USER_GUIDE_FA 74c6410 (new, RTL, 7 pictures); CHANGELOG fde72b5; README 635b73f; checklist 899ce88; ROADMAP row 5.15.0 ✅ 0992c12 (header 'Desktop منتشرشده' still 5.14.0 → change after the tag).
+- [ ] 5 version 5.15.0, manifest/install.ps1, PR → CI → merge → tag → Release; ROADMAP ✅ (then: mobile — owner only)
+  PR #71 opened (head 0862cce). Next: CI green → merge #71 (API) → tag desktop-v5.15.0 on the merge commit → release-desktop.yml → check Release assets → ROADMAP header 'Desktop منتشرشده' = 5.15.0 on main.
+
 ## 5.14.0 — DONE
 
 PR #70 merged (main `338ffc8`), tag `desktop-v5.14.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS,

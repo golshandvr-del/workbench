@@ -54,6 +54,42 @@ def _g(state: dict[str, Any]) -> dict[str, Any]:
     return state["settings"].get("guide") or {}
 
 
+def complete_files(text: str) -> list[dict[str, str]]:
+    """5.15.0 (S4): the files of a cut-off answer that arrived complete (the open last block is left out)."""
+    from ..intake.answer_files import extract
+    ex = extract(text)
+    files = list(ex.files)
+    if ex.truncated and files:
+        files = files[:-1]
+    return [{"path": f["path"], "content": f["content"]} for f in files if f.get("path")]
+
+
+def merge_files(old: list[dict[str, str]], new: list[dict[str, str]]) -> list[dict[str, str]]:
+    """``old`` then ``new`` by path; a path in ``new`` replaces the one in ``old`` (the later copy wins)."""
+    out = {f["path"]: dict(f) for f in old}
+    out.update({f["path"]: dict(f) for f in new})
+    return list(out.values())
+
+
+def merge_partial(partial: list[dict[str, str]], text: str, attempt_id: str = "") -> str:
+    """5.15.0 (S4): the continue prompt says "these files arrived complete — do NOT resend them", so the rest the
+    chat sends lacks them. Put the saved complete files back in front of the rest (a file the chat resends anyway
+    wins) so the delivery holds every file. Returns ``text`` unchanged when nothing is missing."""
+    if not partial:
+        return text
+    from ..intake.answer_files import extract, to_aiwb_text
+    ex = extract(text)
+    if ex.truncated:
+        return text   # cut off again: rewriting would close the open block; the cut-off path merges the files
+    sent = {f["path"] for f in ex.files}
+    missing = [dict(f) for f in partial if f["path"] not in sent]
+    if not missing:
+        return text
+    ex.files = missing + list(ex.files)
+    ex.attempt_id = ex.attempt_id or attempt_id
+    return to_aiwb_text(ex, original=text)
+
+
 def _open_handoff(state: dict[str, Any], task_id: str) -> dict[str, Any] | None:
     hs = [h for h in state["handoffs"].values() if h["task_id"] == task_id and h["status"] in
           ("prepared", "prompt_exported", "response_received", "parsed", "reconciled", "stale", "reconciliation_required")]
@@ -814,8 +850,16 @@ class Guide:
         from ..intake.normalize import continue_prompt, truncation_report
         if not text.strip():
             raise ModelError("the answer is empty")
-        rep = truncation_report(text)
         hint = step["ref"] if str(step.get("key", "")).startswith("handoff:") else ""
+        if step.get("key") == "continue":
+            # 5.15.0 (S4): the rest belongs to the answer that was cut off — link it to that handoff, and put the
+            # files that already arrived complete back in (the continue prompt told the chat not to resend them)
+            cont = _g(self.ctl.state()).get("continue") or {}
+            target = str(cont.get("for") or "")
+            if target.startswith("handoff:"):
+                hint = target.split(":", 1)[1]
+            text = merge_partial(cont.get("partial") or [], text, str(cont.get("attempt_id") or ""))
+        rep = truncation_report(text)
         r = self.ctl.route_answer(text, handoff_hint=hint)
         if r.text:   # 5.10.0: files from Markdown / JSON / ZIP were rewritten as AIWB blocks for staging and checks
             text = r.text
@@ -860,7 +904,14 @@ class Guide:
             if step["key"].startswith("handoff:"):
                 att = (self.p.handoffs.get(step["ref"]) or {}).get("attempt_id", "")
             prompt = continue_prompt(rep, attempt_id=att)
-            self._set_guide(**{"continue": {"prompt": prompt, "agent_id": step["agent_id"], "for": step["key"],
-                                            "at": now_utc()}})
+            prev = _g(self.ctl.state()).get("continue") or {}
+            # 5.15.0 (S4): keep the files that arrived complete — the prompt tells the chat not to resend them
+            # (a second cut-off keeps what the first one already saved)
+            partial = merge_files(prev.get("partial") or [], complete_files(text)) if step["key"] == "continue" \
+                else complete_files(text)
+            target = prev.get("for", step["key"]) if step["key"] == "continue" else step["key"]
+            self._set_guide(**{"continue": {"prompt": prompt, "agent_id": step["agent_id"], "for": target,
+                                            "at": now_utc(), "partial": partial, "attempt_id": att
+                                            or prev.get("attempt_id", "")}})
             out.update(message="The answer was cut off. A continue prompt is ready.", prompt=prompt, kind="truncated")
         return out

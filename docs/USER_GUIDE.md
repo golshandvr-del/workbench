@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 5.14.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.15.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -133,6 +133,31 @@ window does the whole loop:
 stay as they are and Home shows the Project Charter step. Home of a Quick project shows one step: *Open the Quick
 window*.
 
+## 3c. Everyday situations — what to do (5.15.0)
+
+Each of these is checked before every release by driving the real app with real clicks and the real clipboard
+(scenarios S1–S9).
+
+| Situation | What you do | What the app does |
+|---|---|---|
+| One chat, a few files (S1) | Quick window → *Copy the prompt* → paste the answer → *Apply N files* | Shows each file New/Changed with its diff; *Restore last apply* undoes it |
+| A team of AIs (S2) | New Project ▾ → wizard (your own AI names) → follow Home's **Next step** | Charter → tasks → files on disk → *Tests/build passed* → *Accept the milestone* |
+| The chat's answer is broken (S3) | Paste it as it is | Small damage is fixed automatically (listed); otherwise a **fix prompt** for the same chat is copied for you |
+| The answer stops in the middle (S4) | *Copy the continue prompt* → send it in the same chat → paste the rest | Joins both parts; the files that were already complete are kept |
+| You close the app mid-work (S5) | Just open it again | Same project, same step; the answer you paste later still lands |
+| An older project (S6) | Open its folder | Opened untouched; the work goes on from the waiting step |
+| ChatGPT gives a ZIP (S7) | *Load ZIP…* on the paste box | The top folder and Mac junk files are dropped; only the task's files are written |
+| The chat asks for files first (S8) | *Copy the files for the chat* → send → paste its answer | Folders are expanded, secrets such as `.env` are never copied |
+| Every line ends with `\` (S9) | Paste it anyway | A copy of the *rendered* chat on Windows is repaired; code comes out byte for byte |
+
+![Home: the chat's charter was broken — the fix prompt is on the clipboard](audit/screens/v5.15-scenarios/s3_01_fix_prompt.png)
+
+![Home: a cut-off answer — copy the continue prompt](audit/screens/v5.15-scenarios/s4_01_cut_off.png)
+
+![Home: the chat asked for four files](audit/screens/v5.15-scenarios/s8_01_asked_for_files.png)
+
+![Home: a Windows copy (line-end \\) was repaired and the file is on disk](audit/screens/v5.15-scenarios/s9_02_task_windows_copy_applied.png)
+
 ## 4. Timeline
 
 **History › Timeline**: one lane per AI (by its name) plus "Project"; the dates of the shown span are under the axis.
@@ -183,6 +208,7 @@ These checks need hardware or accounts only the product owner has; they are list
 
 - Physical Windows at 100 / 125 / 150 / 200 % DPI.
 - A complete project with real ChatGPT / Gemini / Claude chats (three AIs in parallel).
+- Scenarios S1–S9 (section 3c) by hand with real chats; installing 5.15.0 over 5.14.0 on a real Windows PC.
 - A real phone: standalone mode, project files, GitHub with a real token.
 
 ## 9. Privacy

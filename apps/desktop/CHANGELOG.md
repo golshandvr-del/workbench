@@ -1,3 +1,38 @@
+## [5.15.0] - 2026-10-29
+
+### Gate of real scenarios S1–S9 (Roadmap 5.15.0)
+
+The app is now checked the way a person uses it: real buttons, real menus and the real clipboard, nine scenarios from
+an empty profile. A scenario fails on any unexpected window, error box or UI callback error, and reports how many
+clicks and pastes the path took.
+
+- **S1** Quick, one AI chat, three files → Apply 3 files → a second round → Restore last apply.
+- **S2** Guided project with three AIs named by the user → charter → task → file on disk → first milestone accepted,
+  without leaving Home.
+- **S3** Broken answers: a charter the app cannot repair → fix prompt copied, nothing imported; a sloppy charter
+  (comments, trailing commas, smart quotes, bold markers) → fixed automatically; Markdown files → converted.
+- **S4** A cut-off answer → Continue → the rest → every file lands.
+- **S5** Close the app in the middle of the work and open it again → same project, same step, the answer still lands.
+- **S6** A half-done project made by AI Workbench 5.7.0 opens untouched and the work goes on.
+- **S7** ChatGPT gives a ZIP (one top folder, `AIWB_HANDOFF.json`, Mac junk files) → Load ZIP… → files on disk.
+- **S8** The chat first asks for files (the owner's real GPT context request) → files copied → the delivery lands.
+- **S9** Answers copied from the rendered chat on Windows (`\` at the end of every line, escaped `_`, CRLF) → the
+  charter, a task answer and a Quick answer all land byte for byte.
+
+### Fixed
+
+- **Cut-off answer → Continue lost files (found by S4).** The continue prompt tells the chat not to resend the files
+  that already arrived complete, but pasting the rest then staged only the new files, so the complete ones were lost.
+  The cut-off answer's complete files are now kept with the Continue step (`guide.continue.partial`); pasting the rest
+  links it to the same handoff (even without `AIWB_ATTEMPT_ID`) and puts those files back.
+
+### Tests
+
+- Shared driver `tests/gui/scenario_driver.py` and nine scripts `tests/gui/gui_scenario_s1…s9_*_smoke.py` (run by
+  `run_all.py` on Linux and against the installed copy on Windows); fixture `tests/fixtures/projects/v5.7.0_todo.zip`
+  written by the real 5.7.0 code (`build_v570_project.py`); `test_guide_continue.py` (8 tests). Unit 863 OK.
+  Screenshots `docs/audit/screens/v5.15-scenarios/`.
+
 ## [5.14.0] - 2026-10-29
 
 ### Quick mode — one AI chat (Roadmap 5.14.0, replaces the classic 1.x Prompt / AI Response pages)
