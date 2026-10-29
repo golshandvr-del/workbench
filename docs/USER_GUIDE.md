@@ -208,6 +208,7 @@ These checks need hardware or accounts only the product owner has; they are list
 
 - Physical Windows at 100 / 125 / 150 / 200 % DPI.
 - A complete project with real ChatGPT / Gemini / Claude chats (three AIs in parallel).
+- Scenarios S1–S9 (section 3c) by hand with real chats; installing 5.15.0 over 5.14.0 on a real Windows PC.
 - A real phone: standalone mode, project files, GitHub with a real token.
 
 ## 9. Privacy
