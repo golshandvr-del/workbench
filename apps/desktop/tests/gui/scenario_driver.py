@@ -161,7 +161,7 @@ class Driver:
     def _poll(self) -> None:
         try:
             for t in self.tops():
-                if str(t) in self._seen or not t.winfo_ismapped() or t.title() in self.allow_windows:
+                if str(t) in self._seen or not t.winfo_ismapped() or t.title().startswith(tuple(self.allow_windows)):
                     continue
                 self._seen.add(str(t))
                 self.dialogs.append(t.title())
