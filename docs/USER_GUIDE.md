@@ -32,7 +32,7 @@ milestone, saved state). Each place has one job (5.13.0: Home = now and next, Hi
 | **Home** | The cockpit of the active project: the **Mission Map** (one lane per AI, one circle per task in its version's column), **Map view**, task details and the **Next step** card — where you do every step (5.11.0) |
 | **Agents** | One card per AI (state, current task, load, record), the selected AI's queue, *Copy briefing*, *Memory note…*, Balance alerts and suggested moves |
 | **History** | **Timeline** of everything that happened, then **one list** with a *Show* filter: All · Prompts · Answers · Saved · Events · Versions |
-| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Maintenance ▾; **Settings › Project**: the project's settings, Project tools ▾ (bundles, Mobile Companion…) and *Classic tools (1.x)…* |
+| **Settings** | Light/Dark, Simple/Advanced, Reduce motion, Maintenance ▾; **Settings › Project**: the project's settings, Project tools ▾ (bundles, Mobile Companion…) and **Settings › Tools** (Project Profile, Run & Report; 5.14.0) |
 
 *Simple* mode shows only the guided pages. *Advanced* adds each page's **Tools**: Agents › Prompt and AI Response,
 History › Git / GitHub. Every command has **one** home; Home has no More menu (the step's other actions are buttons,
