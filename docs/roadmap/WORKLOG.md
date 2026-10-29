@@ -59,6 +59,7 @@ screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.p
 - [x] 3 screenshots, full unit + GUI run: unit 863 OK, GUI run_all 57/57 PASS (incl. S1–S9); 28 shots docs/audit/screens/v5.15-scenarios/s1_01…s9_03 (6906bee…4e8ce4d, one per checkpoint). README 635b73f.
 - [x] 4 USER_GUIDE (English) + USER_GUIDE_FA (Persian) with pictures, CHANGELOG, README, checklist (owner NOT RUN list): USER_GUIDE title 0c7d49d, §3c 84d524f, NOT RUN 8d5eb25; USER_GUIDE_FA 74c6410 (new, RTL, 7 pictures); CHANGELOG fde72b5; README 635b73f; checklist 899ce88; ROADMAP row 5.15.0 ✅ 0992c12 (header 'Desktop منتشرشده' still 5.14.0 → change after the tag).
 - [ ] 5 version 5.15.0, manifest/install.ps1, PR → CI → merge → tag → Release; ROADMAP ✅ (then: mobile — owner only)
+  PR #71 opened (head 0862cce). Next: CI green → merge #71 (API) → tag desktop-v5.15.0 on the merge commit → release-desktop.yml → check Release assets → ROADMAP header 'Desktop منتشرشده' = 5.15.0 on main.
 
 ## 5.14.0 — DONE
 
