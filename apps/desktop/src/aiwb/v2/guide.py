@@ -887,7 +887,14 @@ class Guide:
             if step["key"].startswith("handoff:"):
                 att = (self.p.handoffs.get(step["ref"]) or {}).get("attempt_id", "")
             prompt = continue_prompt(rep, attempt_id=att)
-            self._set_guide(**{"continue": {"prompt": prompt, "agent_id": step["agent_id"], "for": step["key"],
-                                            "at": now_utc()}})
+            prev = _g(self.ctl.state()).get("continue") or {}
+            # 5.15.0 (S4): keep the files that arrived complete — the prompt tells the chat not to resend them
+            # (a second cut-off keeps what the first one already saved)
+            partial = merge_files(prev.get("partial") or [], complete_files(text)) if step["key"] == "continue" \
+                else complete_files(text)
+            target = prev.get("for", step["key"]) if step["key"] == "continue" else step["key"]
+            self._set_guide(**{"continue": {"prompt": prompt, "agent_id": step["agent_id"], "for": target,
+                                            "at": now_utc(), "partial": partial, "attempt_id": att
+                                            or prev.get("attempt_id", "")}})
             out.update(message="The answer was cut off. A continue prompt is ready.", prompt=prompt, kind="truncated")
         return out
