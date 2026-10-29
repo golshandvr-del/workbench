@@ -66,7 +66,7 @@ class PromptTests(Base):
 
     def test_inventory_and_included_files(self):
         (self.root / "src").mkdir()
-        (self.root / "src/a.py").write_text("A = 1\n", encoding="utf-8")
+        (self.root / "src/a.py").write_bytes(b"A = 1\n")  # bytes: Windows text mode would write \r\n (7 bytes)
         (self.root / ".git").mkdir()
         (self.root / ".git/config").write_text("x", encoding="utf-8")
         p = quick.build_prompt(self.root, "Fix A", include=["src/a.py", "../etc/passwd", "missing.py"])
