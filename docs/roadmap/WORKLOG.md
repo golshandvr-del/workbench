@@ -26,6 +26,20 @@ only on Windows: owner_path's final print hit cp1252 → fixed 2af2242; all smok
 PR #68 merged (main `dd1864b`), tag `desktop-v5.12.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS). CI green on
 first run (Linux 3.10/3.13 + Windows). Unit 802 OK, GUI 47/47.
 
+## 5.15.0 — Gate of real scenarios (branch `feat/v5.15.0-scenarios`)
+
+Plan (one scenario = one script `apps/desktop/tests/gui/gui_scenario_sN_*_smoke.py`, picked up by run_all.py → runs in
+CI on Linux (xvfb) and Windows (installed app); shared driver `tests/gui/scenario_driver.py` (not a smoke itself);
+screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.png`):
+- [ ] 0 read existing gates to reuse: owner_path (S2), quick (S1/S4/S7), context (S8/S9), paste_box (S3), team_editor (S6)
+- [ ] 1 scenario_driver.py (Driver: pump, click, clipboard_paste, wait_line, shot, no message boxes, callback errors)
+- [ ] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
+      fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
+      S7 real GPT ZIP · S8 context request → files → answer · S9 Windows copy with `\` line ends
+- [ ] 3 screenshots, full unit + GUI run
+- [ ] 4 USER_GUIDE (English) + USER_GUIDE_FA (Persian) with pictures, CHANGELOG, README, checklist (owner NOT RUN list)
+- [ ] 5 version 5.15.0, manifest/install.ps1, PR → CI → merge → tag → Release; ROADMAP ✅ (then: mobile — owner only)
+
 ## 5.14.0 — DONE
 
 PR #70 merged (main `338ffc8`), tag `desktop-v5.14.0` → Release published (Setup.bat, Payload, Source, SHA256SUMS,
