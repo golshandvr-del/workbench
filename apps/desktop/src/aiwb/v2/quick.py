@@ -99,6 +99,22 @@ def state(root: Path) -> dict[str, Any]:
     return _load(root)
 
 
+def mark(root: Path) -> dict[str, Any]:
+    """Make ``root`` a Quick folder (New Project › Quick): writes ``.workbench/quick/quick.json`` once."""
+    data = _load(root)
+    data.setdefault("created", _now())
+    _save(root, data)
+    return data
+
+
+def is_quick(root: Path) -> bool:
+    """True for a Quick folder that is not (yet) a multi-AI project — Home then offers the Quick window."""
+    root = Path(root)
+    if (root / ".workbench" / "v2" / "state.json").is_file():
+        return False
+    return (_dir(root) / "quick.json").is_file()
+
+
 # --------------------------------------------------------------------------- the prompt
 
 def inventory(root: Path) -> list[tuple[str, int]]:
