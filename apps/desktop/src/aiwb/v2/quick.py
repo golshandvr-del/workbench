@@ -107,12 +107,21 @@ def mark(root: Path) -> dict[str, Any]:
     return data
 
 
+def is_guided(root: Path) -> bool:
+    """True when the folder is a started multi-AI project (its V2 state has a goal).
+
+    Opening any folder creates ``.workbench/v2/state.json`` with template agents, so the file alone says nothing.
+    """
+    try:
+        st = json.loads((Path(root) / ".workbench" / "v2" / "state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return bool(str(((st or {}).get("settings") or {}).get("goal") or "").strip())
+
+
 def is_quick(root: Path) -> bool:
     """True for a Quick folder that is not (yet) a multi-AI project — Home then offers the Quick window."""
-    root = Path(root)
-    if (root / ".workbench" / "v2" / "state.json").is_file():
-        return False
-    return (_dir(root) / "quick.json").is_file()
+    return (_dir(root) / "quick.json").is_file() and not is_guided(root)
 
 
 # --------------------------------------------------------------------------- the prompt
@@ -362,7 +371,7 @@ def to_guided(root: Path, goal: str, rows: list[dict[str, Any]], answer_format: 
     root = Path(root).resolve()
     data = _load(root)
     goal = (goal or "").strip() or (data["rounds"][-1]["task"] if data["rounds"] else "")
-    if (root / ".workbench" / "v2" / "state.json").is_file():
+    if is_guided(root):
         raise QuickError("This folder is already a multi-AI project.")
     project = V2Project(root, root.name)
     out = team_setup.apply_wizard(project, {"goal": goal, "name": root.name, "platform": "", "constraints": ""},
