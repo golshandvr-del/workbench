@@ -54,6 +54,33 @@ def _g(state: dict[str, Any]) -> dict[str, Any]:
     return state["settings"].get("guide") or {}
 
 
+def complete_files(text: str) -> list[dict[str, str]]:
+    """5.15.0 (S4): the files of a cut-off answer that arrived complete (the open last block is left out)."""
+    from ..intake.answer_files import extract
+    ex = extract(text)
+    files = list(ex.files)
+    if ex.truncated and files:
+        files = files[:-1]
+    return [{"path": f["path"], "content": f["content"]} for f in files if f.get("path")]
+
+
+def merge_partial(partial: list[dict[str, str]], text: str, attempt_id: str = "") -> str:
+    """5.15.0 (S4): the continue prompt says "these files arrived complete — do NOT resend them", so the rest the
+    chat sends lacks them. Put the saved complete files back in front of the rest (a file the chat resends anyway
+    wins) so the delivery holds every file. Returns ``text`` unchanged when nothing is missing."""
+    if not partial:
+        return text
+    from ..intake.answer_files import extract, to_aiwb_text
+    ex = extract(text)
+    sent = {f["path"] for f in ex.files}
+    missing = [dict(f) for f in partial if f["path"] not in sent]
+    if not missing:
+        return text
+    ex.files = missing + list(ex.files)
+    ex.attempt_id = ex.attempt_id or attempt_id
+    return to_aiwb_text(ex, original=text)
+
+
 def _open_handoff(state: dict[str, Any], task_id: str) -> dict[str, Any] | None:
     hs = [h for h in state["handoffs"].values() if h["task_id"] == task_id and h["status"] in
           ("prepared", "prompt_exported", "response_received", "parsed", "reconciled", "stale", "reconciliation_required")]
