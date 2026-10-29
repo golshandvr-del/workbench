@@ -50,8 +50,9 @@ screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.p
   S6 gui_scenario_s6_old_project_smoke.py 5c86fe9/f15d018 PASS (2 clicks + 1 paste); fixture build_v570_project.py 5a6ff7b + v5.7.0_todo.zip 3de0ab7 (worktree /home/user/aiwb570 = desktop-v5.7.0).
   S7 gui_scenario_s7_gpt_zip_smoke.py 5b93e9b..24f3d08 PASS (11 clicks + 1 paste; Load ZIP… = real button, only paste_box.filedialog.askopenfilename replaced; top folder stripped thanks to AIWB_HANDOFF.json; finding: an out-of-scope file in the ZIP (README.md) → card 'Problems found…' [troubleshoot, Accept anyway…, Reject…] — correct, so S7 keeps in-scope files only).
   S8 gui_scenario_s8_context_smoke.py 0bc95b7 PASS (13 clicks + 3 pastes; owner's real GPT HO-0006 answer, clean copy; folder expanded, .env refused; delivery in a five-backtick block).
-  S3 gui_scenario_s3_broken_smoke.py ad6b4f5 PASS (11 clicks + 3 pastes; fix prompt = charter_fix_prompt via card COPY_RESULT 'paste'; auto-fix msg 'auto-fix')
-- [ ] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
+  S9 gui_scenario_s9_windows_copy_smoke.py 90f745f PASS (16 clicks + 3 pastes; rendered Windows copy = line-end \\ + escaped _ outside code + CRLF: guided charter → accepted, task answer → file byte for byte, Quick → Apply 2 files).
+ S3 gui_scenario_s3_broken_smoke.py ad6b4f5 PASS (11 clicks + 3 pastes; fix prompt = charter_fix_prompt via card COPY_RESULT 'paste'; auto-fix msg 'auto-fix')
+- [x] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
       fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
       S7 real GPT ZIP · S8 context request → files → answer · S9 Windows copy with `\` line ends
 - [ ] 3 screenshots, full unit + GUI run
