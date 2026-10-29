@@ -41,13 +41,12 @@ def canonical_section(key: str) -> str:
 
 # Existing tools reachable from the workspace (no second implementation, spec §18 stage 3)
 TOOLS = {
-    "files": ("response", "inbox", "context_request"),
+    "files": ("inbox", "context_request"),  # 5.14.0: "Classic prompt & response…" removed (Quick replaced it)
     "versions": ("build_center", "sync_build"),
     "settings": ("export_bundle", "import_bundle", "companion", "classic"),
 }
 TOOLS["project"] = TOOLS["files"] + TOOLS["versions"] + TOOLS["settings"]  # 5.11.0: one Tools menu
 TOOL_LABELS = {
-    "response": ("Classic prompt & response…", "پرامپت و پاسخ کلاسیک…"),
     "inbox": ("Response Inbox…", "صندوق پاسخ‌ها…"),
     "context_request": ("Context request…", "درخواست زمینه…"),
     "build_center": ("Build Center…", "مرکز Build…"),
