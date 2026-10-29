@@ -40,15 +40,16 @@ RULES = {
     "page_max_visible": 8,        # a page shows at most 8 buttons/menus/options at once (3.3.0: 10; 5.11.0 gate: 8)
     "menu_max_items": 12,         # a More menu holds at most 12 commands
     "weight_ratio_max": 4.0,      # heaviest rail destination ≤ 4 × the lightest (5.13.0: its own commands; the expert
-                                  # sub-pages under Tools / Classic tools are held to the page rules on their own)
+                                  # sub-pages under Tools are held to the page rules on their own)
     "more_max_items": 3,          # 5.13.0 (B5): a "More" menu holds at most 3 commands — move, group or delete the rest
     "home_more": 0,               # 5.13.0 (B5): Home has no "More" at all
 }
 # Labels that may appear in several places because they mean "this place's" variant of a generic verb.
 # 5.13.0: words that mean different jobs in different places ("Copy prompt") are told apart in aiwb.ui.commands.
 GENERIC = {"More", "Refresh", "Clear", "Search", "Browse…"}
-# 5.13.0: the 1.x pages keep their own menus until Quick mode replaces them (5.14.0); the More rule skips them.
-MORE_EXEMPT = ("Settings › Classic tools (1.x)",)
+# The two 1.x pages left in Settings › Tools (Project Profile, Run & Report) keep their own menus; the More rule skips
+# them (5.14.0: Quick replaced the 1.x Prompt / AI Response pages, "Classic tools (1.x)" became "Tools").
+MORE_EXEMPT = ("Settings › Tools",)
 
 TITLE_STYLES = ("SectionTitle", "CardTitle")
 
