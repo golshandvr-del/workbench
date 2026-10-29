@@ -236,9 +236,12 @@ def main() -> None:
             d.shot("09_guided_home")
             assert not d.errors, d.errors[0]
             assert not boxes, boxes
-            print(f"5.14.0 Quick smoke: menu → form → prompt → AIWB (clipboard) / JSON / ZIP → apply, Restore, cut-off "
-                  f"→ continue, Home Quick card, Quick → Guided ({out['workers']} AIs, files untouched); "
-                  f"{len(d.clicks)} clicks: PASS")
+            msg = (f"5.14.0 Quick smoke: menu → form → prompt → AIWB (clipboard) / JSON / ZIP → apply, Restore, cut-off "
+                   f"→ continue, Home Quick card, Quick → Guided ({out['workers']} AIs, files untouched); "
+                   f"{len(d.clicks)} clicks: PASS")
+            # a Windows console (cp1252) cannot print →: replace what it cannot encode instead of failing a passed smoke
+            enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+            print(msg.encode(enc, "replace").decode(enc, "replace"))
         finally:
             try:
                 root.destroy()
