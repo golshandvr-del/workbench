@@ -5403,6 +5403,14 @@ class WorkbenchApp:
         if not force and rev == self._mission_rev and self._mission_rev is not None:
             return self.mission.model
         self._mission_rev = rev
+        self.mission.empty_text = None
+        if state is not None and self.workspace is not None:
+            from aiwb.v2 import quick
+            if quick.is_quick(self.workspace):  # 5.14.0: a Quick folder has no team — no template lanes on the map
+                state = None
+                self.mission.empty_text = ("Quick — one AI chat",
+                                           "This project uses one chat and no team, so it has no lanes. Open the Quick "
+                                           "window below; make it a multi-AI project there to get a lane per AI.")
         model = self.mission.set_state(state)
         geo = self.mission.geo
         want = int(geo.get("height", 0)) + 8 if not model["empty"] else 120
