@@ -44,6 +44,7 @@ screenshots `AIWB_SCREENSHOT_DIR` → `docs/audit/screens/v5.15-scenarios/sN_*.p
   S1 gui_scenario_s1_quick_smoke.py 47817b2 PASS (9 clicks + 2 pastes)
   S2 gui_scenario_s2_guided_smoke.py 7a18700 PASS (12 clicks + 2 pastes)
   S4 BUG FOUND (probe /tmp/s4probe.py via tests/answer_corpus.Scenario): guided cut-off → continue prompt says 'a.py complete, do NOT resend' → pasting the rest stages ONLY b.py, a.py is LOST. Also Guide._paste on step 'continue' passes hint='' (links only if the answer carries AIWB_ATTEMPT_ID). Fix plan: guide.py — store the complete blocks of the cut-off answer in guide.continue ('partial' canonical text + 'handoff' ref), on continue paste use cont handoff as hint and add the stored blocks for paths the new answer does not resend; unit test in test_guide*; then S4 smoke.
+  S4 FIX DONE ed973a3..7cb8c83 (guide.py: complete_files, merge_files, merge_partial; cut-off saves guide.continue.partial + attempt_id; paste on 'continue' → hint = cont['for'] handoff + merge_partial) — probe: a.py + b.py staged. Next: unit test tests/test_guide_continue.py, then S4 smoke.
   S3 gui_scenario_s3_broken_smoke.py ad6b4f5 PASS (11 clicks + 3 pastes; fix prompt = charter_fix_prompt via card COPY_RESULT 'paste'; auto-fix msg 'auto-fix')
 - [ ] 2 S1 Quick, one AI, 3 files · S2 Guided 3 named AIs → first milestone accepted · S3 broken GPT answer → auto-fix /
       fix prompt · S4 cut-off → Continue (guided) · S5 close + reopen mid-work · S6 project made by 5.7.0 opens ·
