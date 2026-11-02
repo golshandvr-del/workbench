@@ -39,3 +39,8 @@ immediately, so a new session can continue without repeating work.
   transaction() = read+migrate(deepcopy)+dumps(before)+deepcopy(work)+dumps(after)+write. FIX: cache the
   migrated state keyed by (mtime_ns,size); return pickle copy; compare by revision-free hash once.
 - Helper: `cpush "msg" files...` (in /usr/local/bin, recreate after reset: add+commit+push, verifies push).
+- (session 2) CONFIRMED root cause 5: guide.py:389 task step "waits for a decision" action `decide` needs
+  `choice`+`rationale`; GUI asks them with `simpledialog.askstring` labelled only "Your decision"
+  (workspace/shell.py:331 INPUT_PROMPTS, AI_Workbench.py `_mission_input` ~5590). The question/options are in
+  step["explain"] (task blocked_reason / decision options) but never shown in the dialog. Decision entities have
+  `options` + `recommendation` -> radio buttons possible.
