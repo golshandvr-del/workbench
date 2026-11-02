@@ -153,6 +153,9 @@ class AppShell:
         if not self.page_visible(key):
             self.prefs.set_mode("advanced")  # explicit navigation to an expert page reveals it
         changed = key != self.current
+        if changed:  # roadmap 5.16.0 (R4): a floating menu never outlives the page it was opened on
+            from .menu5 import close_all
+            close_all()
         self.current = key
         self.notebook.select(self.pages[key])
         self._mark(key)
