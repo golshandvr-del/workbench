@@ -185,3 +185,6 @@ immediately, so a new session can continue without repeating work.
 - (session 5) After 5.18 code: unit 902 OK (10 skipped). Running GUI run_all next.
 - (session 5) After 5.18 code: GUI 58/59 (only pre-existing sandbox-only S5 "can't delete Tcl command"). Bench
   /tmp/bench/pm.py = Home path probe (paste half-right proposal; paste useless proposal -> fix prompt).
+- (session 5) Home probe: half-right proposal (decisions + file_change_proposals, ops []) -> card "Review the plan
+  PROP-0002 (1 change)" ['Accept all valid changes','Reject the plan','Ask for changes…'], msg "Read from the answer:
+  ...; not used: 1 proposed file change(s)". A review card has NO paste panel -> in smoke paste useless answer FIRST.
