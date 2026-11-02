@@ -20,6 +20,9 @@ CARD_HINT = ("A small AI behind any OpenAI-compatible API (OpenRouter, Groq, Goo
              "When set up, Home shows \"Explain this step\" and, when an answer cannot be used, \"Fix with helper AI\". "
              "Nothing is sent unless you click one of them. Not set up: Workbench works exactly as before.")
 POLL_MS = 80
+SHOW_LABEL = "Show settings"
+HIDE_LABEL = "Hide settings"
+SAVE_LABEL = "Save helper"   # not "Save": that word is the Toolbar's project save
 
 
 class MainThreadQueue:
@@ -71,8 +74,24 @@ def build_helper_card(parent: tk.Misc, service: helper_ai.HelperService, *, on_c
     ttk.Label(parent, text=CARD_TITLE, style="CardTitle.TLabel").pack(anchor="w")
     ttk.Label(parent, text=CARD_HINT, style="CardHint.TLabel", wraplength=640, justify="left").pack(anchor="w",
                                                                                                    pady=(2, 8))
-    form = ttk.Frame(parent, style="Card.TFrame")
-    form.pack(fill="x")
+    # Collapsed by default (Settings shows at most 8 controls at once): one button opens the form.
+    body = ttk.Frame(parent, style="Card.TFrame")
+    w["body"] = body
+
+    def toggle() -> bool:
+        if body.winfo_manager():
+            body.pack_forget()
+            w["toggle"].configure(text=SHOW_LABEL)
+            return False
+        body.pack(fill="x", before=w["status_label"])
+        w["toggle"].configure(text=HIDE_LABEL)
+        return True
+
+    w["do_toggle"] = toggle
+    w["toggle"] = ttk.Button(parent, text=SHOW_LABEL, command=toggle)
+    w["toggle"].pack(anchor="w")
+    form = ttk.Frame(body, style="Card.TFrame")
+    form.pack(fill="x", pady=(8, 0))
     form.columnconfigure(1, weight=1)
     c = service.config
     url_var = tk.StringVar(value=str(c.get("base_url", "")))
@@ -101,10 +120,11 @@ def build_helper_card(parent: tk.Misc, service: helper_ai.HelperService, *, on_c
     w["key_hint"] = ttk.Label(form, style="CardHint.TLabel")
     w["key_hint"].grid(row=3, column=2, sticky="w", padx=(8, 0))
     status_var = tk.StringVar(value=service.summary())
-    bar = ttk.Frame(parent, style="Card.TFrame")
+    bar = ttk.Frame(body, style="Card.TFrame")
     bar.pack(anchor="w", pady=(8, 0))
-    ttk.Label(parent, textvariable=status_var, style="CardHint.TLabel", wraplength=640, justify="left").pack(
-        anchor="w", pady=(6, 0))
+    w["status_label"] = ttk.Label(parent, textvariable=status_var, style="CardHint.TLabel", wraplength=640,
+                                  justify="left")
+    w["status_label"].pack(anchor="w", pady=(6, 0))
 
     def key_hint() -> None:
         w["key_hint"].configure(text="saved — leave empty to keep it" if service.has_key else "optional for local servers")
@@ -156,7 +176,7 @@ def build_helper_card(parent: tk.Misc, service: helper_ai.HelperService, *, on_c
         status_var.set("Removed. " + service.summary())
         changed()
 
-    w["save"] = ttk.Button(bar, text="Save", style="Primary.TButton", command=save)
+    w["save"] = ttk.Button(bar, text=SAVE_LABEL, style="Primary.TButton", command=save)
     w["save"].pack(side="left")
     w["test"] = ttk.Button(bar, text="Test", command=test)
     w["test"].pack(side="left", padx=(6, 0))
