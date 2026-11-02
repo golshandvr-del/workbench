@@ -384,19 +384,24 @@ class WorkspaceWindow:
         if inputs is None and action == "design":
             return self._start_form(key, action, act["label"])  # 5.9.0: one window, not five questions (A8)
         if inputs is None:
-            for need in act["needs"]:
-                if need == "text":
-                    inp["text"] = self._ask_text(act["label"])
-                    if not inp["text"].strip():
-                        return None
-                else:
-                    v = simpledialog.askstring(act["label"], self.INPUT_PROMPTS.get(need, need), parent=self.win)
-                    if v is None:
-                        if "(optional" in self.INPUT_PROMPTS.get(need, ""):
-                            v = ""
-                        else:
-                            return None
-                    inp[need] = v
+            if "text" in act["needs"]:
+                inp["text"] = self._ask_text(act["label"])
+                if not inp["text"].strip():
+                    return None
+            # 5.17.0 (R5): every other input in ONE clear window — the question, options, recommendation
+            from ..ui.action_form import ask_form
+            from ..v2.choices import form_spec
+            from ..v2.guide import OPTIONAL_INPUTS
+            try:
+                state = self.wc.ctl.state()
+            except Exception:  # noqa: BLE001 - the form works without a state (options from the step)
+                state = None
+            spec = form_spec(step, act, state, OPTIONAL_INPUTS)
+            got = ask_form(self.win, spec)
+            if got is None:
+                self.status_var.set("Cancelled — nothing changed.")
+                return None
+            inp.update(got)
         out = self._guard(lambda: self.wc.guide_perform(key, action, **inp))
         if out is None:
             return None
