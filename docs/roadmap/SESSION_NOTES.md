@@ -154,3 +154,9 @@ immediately, so a new session can continue without repeating work.
   any instruction containing "AIWB_MANAGER_PROPOSAL" by one task-delivery rule; works for old projects, no migration);
   b69fe60 handoff.build_prompt uses it; e1fb741 agent_hub.briefing uses it. NEXT: verify; R6 proposals translation.
 - (session 5) After R1: unit 890 OK. NEXT R6 recon: v2/proposals.py ("the proposal has no operations").
+- (session 5) R6 recon: proposals.ProposalService.import_data (~75) raises "the proposal has no operations" when
+  ops missing/empty (except roadmap_remaining False); base_state_revision required int. controller.route (~488):
+  PROPOSAL_RE -> proposals.import_text -> RouteResult("proposal"); ModelError -> RouteResult("rejected", msg+"raw
+  answer kept in Inbox"). Charter has fix-prompt path (charter_rejected). OPERATIONS tuple proposals.py:26.
+  PLAN: new pure v2/rescue.py translate(data,state)->(ops,fixes,leftover); import_data uses it when ops empty;
+  dup decisions (title == accepted decision) marked invalid; build_prompt section 4 "FINAL — do not decide again".
