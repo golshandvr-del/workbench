@@ -17,7 +17,7 @@ Picture: [`design/ui_map.png`](design/ui_map.png) (also in the app for developer
 | Agents | 5 | 0 | 7 | 5 | 0 |
 | History | 7 | 6 | 10 | 7 | 0 |
 | History › Tools › Git / GitHub | 2 | 3 | 24 | 6 | 0 |
-| Settings | 18 | 2 | 10 | 7 | 9 |
+| Settings | 19 | 2 | 11 | 8 | 9 |
 | Settings › Project › Project settings | 9 | 2 | 3 | 5 | 9 |
 | Settings › Tools › Project Profile | 1 | 0 | 4 | 4 | 0 |
 | Settings › Tools › Run & Report | 2 | 0 | 11 | 8 | 0 |
@@ -202,6 +202,8 @@ Audit:
           - Refresh report [item]
           - Save report… [item]
         - Copy report [button]
+    - Helper AI [section]
+      - Show settings [button]
 - Status bar [area]
   - Agents running [item]
   - Milestone [item]
