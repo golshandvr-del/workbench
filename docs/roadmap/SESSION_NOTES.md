@@ -67,3 +67,7 @@ immediately, so a new session can continue without repeating work.
   commit 13bddfd `Raster.to_png_9slice(w,h,mx,my)` + `_row_bytes` + `_png`. Menu first-open profile: 706 ms,
   almost all in raster `panel` sprite (pure python SDF on full w×h). NEXT: assets.py panel -> draw small
   (2k+1)² source, 9-slice to w×h; then menu close hooks; then poll skip; then gate tests + release 5.16.0.
+- (session 3) DONE commit ebab33f: assets.py `panel` sprite drawn as small (2k+1)² source, k=ceil(1.5*shadow+rad)+3,
+  then `to_png_9slice`. Verified pixel-identical to old (maxdiff 0 on 5 sizes/scales). 260x300 menu panel @1.5:
+  1885 ms -> 116 ms; @1.0: 37 ms. Bench script /tmp/bench/p9.py (lost on reset; trivial to rewrite).
+  NEXT: tests/test_raster_9slice.py, then menu close hooks.
