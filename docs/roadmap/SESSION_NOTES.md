@@ -180,3 +180,5 @@ immediately, so a new session can continue without repeating work.
   manager_update_prompt FINAL list; tests/test_rescue.py; gate fixture; full tests; release 5.18.0.
 - (session 5) DONE c6d8044 handoff section 4 "FINAL — do not decide again: Dn ..."; 4c7369d manager_update_prompt
   rules (decisions FINAL, operations required / roadmap_remaining false, no files). NEXT: tests/test_rescue.py.
+- (session 5) DONE 845524c tests/test_rescue.py (12 tests) all pass first run. NEXT: full unit + GUI run; GUI gate
+  smoke gui_v518_pm_path_smoke.py (paste half-right proposal on Home -> proposal step; nothing usable -> fix prompt).
