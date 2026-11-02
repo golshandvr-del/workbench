@@ -81,3 +81,8 @@ immediately, so a new session can continue without repeating work.
   tests/gui/run_all.py`, ~4 min): 56/57 pass. The one failure gui_scenario_s5_reopen_smoke ("can't delete Tcl
   command" in root.destroy during d.restart) ALSO fails on baseline 0005f3a in this sandbox (Py 3.13 Linux Tk)
   -> pre-existing/environmental, not a 5.16 regression. Investigate briefly; don't block on it.
+- (session 3) S5 confirmed sandbox-only: CI run 40886642404 (5.15.0 merge) passed Linux Py3.10+3.13 GUI smokes
+  and Windows. CI only runs desktop jobs when a push touches apps/desktop/ or tools/ (docs-only pushes skip);
+  `cancel-in-progress` cancels older runs on main. Check CI via
+  `curl -H "Authorization: token $T" https://api.github.com/repos/golshandvr-del/workbench/actions/runs?per_page=8`.
+  NEXT: tests/gui/gui_v516_light_smoke.py (idle frames 0, menu closes on show()/Unmap/click, poll skip).
