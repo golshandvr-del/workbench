@@ -164,15 +164,24 @@ def sprite_png(name: str, theme: str = "midnight", scale: float = 1.0, **kw: Any
         rad = float(kw.get("r", g["radius_bubble"])) * s
         role, border = kw.get("role", "raised"), kw.get("border", "")
         shadow = int(kw.get("shadow", 0) * s)
-        im = Raster(w + 2 * shadow, h + 2 * shadow)
+        full_w, full_h = w + 2 * shadow, h + 2 * shadow
+        # roadmap 5.16.0 (R4): corners reach at most 1.5·shadow + radius from the image edge, so a small
+        # (2k+1)-pixel source is drawn and its straight middle row/column is repeated (9-slice) — identical pixels,
+        # but the cost no longer grows with the panel size (a menu's first open: ~700 ms → a few ms).
+        k = int(math.ceil(1.5 * shadow + rad)) + 3
+        sw, sh = min(full_w, 2 * k + 1), min(full_h, 2 * k + 1)
+        iw, ih = sw - 2 * shadow, sh - 2 * shadow
+        im = Raster(sw, sh)
         if shadow:
             for i in range(shadow, 0, -1):
-                im.round_rect(shadow - i, shadow - i + i * 0.5, w + shadow + i, h + shadow + i, rad + i, p["shadow"],
-                              0.05)
-        im.round_rect(shadow, shadow, w + shadow, h + shadow, rad, p[role])
+                im.round_rect(shadow - i, shadow - i + i * 0.5, iw + shadow + i, ih + shadow + i, rad + i,
+                              p["shadow"], 0.05)
+        im.round_rect(shadow, shadow, iw + shadow, ih + shadow, rad, p[role])
         if border:
-            im.round_rect_outline(shadow, shadow, w + shadow, h + shadow, rad, max(1.0, s), p[border])
-        return im.to_png(), im.w, im.h
+            im.round_rect_outline(shadow, shadow, iw + shadow, ih + shadow, rad, max(1.0, s), p[border])
+        if (sw, sh) == (full_w, full_h):
+            return im.to_png(), full_w, full_h
+        return im.to_png_9slice(full_w, full_h, sw // 2, sh // 2), full_w, full_h
     if name == "branch":  # curved connector from (0, y0) to (w, y1), drawn inside a w×h box
         w, h = int(kw["w"]), int(kw["h"])
         y0, y1 = float(kw["y0"]), float(kw["y1"])
