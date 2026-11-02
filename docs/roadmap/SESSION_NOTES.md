@@ -252,3 +252,4 @@ immediately, so a new session can continue without repeating work.
 - (session 6) DONE step 6b e74a7af: Settings row 7 helper card (self.helper_widgets, _helper_changed refreshes
   home_card); NextStepCard gets helper=getattr(self,"helper_service",None), lang=prefs.lang. NEXT: verify creation
   order (home card after helper_service), unit + GUI tests, then GUI smoke gui_v519_helper_smoke.py.
+- (session 6) Order verified: helper_service (4367) < _make_ui (4408) -> _make_home_page (4635) -> settings (4649).
