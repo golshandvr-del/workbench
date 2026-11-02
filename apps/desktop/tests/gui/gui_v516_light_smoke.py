@@ -26,7 +26,7 @@ def open_menu(d: Driver, app, tid: str) -> menu5.FloatingMenu:
 
 def main() -> None:
     with scenario_home("v516"):
-        d = Driver(tk.Tk(), "v516")
+        d = Driver(tk.Tk(), "v516", allow_windows=Driver.WORK_WINDOWS + (menu5.MENU_TITLE,))
         app = d.start()
         card = new_guided_project(d, app, "Calc", "A small HTML calculator", ["Developer 1", "Developer 2"])
         h = charter_to_first_prompt(d, app, card)
