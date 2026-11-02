@@ -146,3 +146,7 @@ immediately, so a new session can continue without repeating work.
   proposals R6). Recon: v2/proposals.py, v2/controller.py, role instructions for PM (grep "only as AIWB_MANAGER_PROPOSAL").
 - (session 5) Sandbox reset; re-cloned, cpush+xvfb reinstalled (token also exported as GH_T in ~/.bashrc). VERIFIED:
   release run 41535013005 desktop-v5.17.0 success, assets published. Starting 5.18.0 (R1 PM contradiction, R6).
+- (session 5) 5.18 recon R1: v2/agents.py TEMPLATES["agent-project-manager"].instructions[3] = "Return changes only as an
+  AIWB_MANAGER_PROPOSAL block based on the given state_revision." ; handoff.build_prompt (~321) section "1. Your role"
+  copies agent["instructions"] verbatim, section "9. Expected delivery" wants files + AIWB_HANDOFF -> contradiction.
+  Plan: build_prompt drops/rewrites proposal-only lines (works for existing projects without state migration).
