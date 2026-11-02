@@ -197,13 +197,28 @@ class AppShell:
         return [k for k in NAV_ORDER + ("settings",) if k in self.pages and self.page_visible(k)]
 
     # -- status bar
-    def refresh_status(self) -> dict[str, Any]:
-        state = None
-        if self.facts_fn is not None:
-            try:
-                state = self.facts_fn()
-            except Exception:  # noqa: BLE001 - a broken project state must not break the status bar
-                state = None
+    def _poll_once(self) -> bool:
+        """One status poll (roadmap 5.16.0, R2): when the facts source returns the very same state object as last
+        time (its file did not change), nothing is redrawn and no listener runs. Returns True if it refreshed."""
+        state = self._read_facts()
+        if state is not None and state is getattr(self, "_polled_state", None):
+            self.polls_skipped = getattr(self, "polls_skipped", 0) + 1
+            return False
+        self.refresh_status(state=state)
+        return True
+
+    def _read_facts(self) -> dict[str, Any] | None:
+        if self.facts_fn is None:
+            return None
+        try:
+            return self.facts_fn()
+        except Exception:  # noqa: BLE001 - a broken project state must not break the status bar
+            return None
+
+    def refresh_status(self, state: Any = ...) -> dict[str, Any]:
+        if state is ...:
+            state = self._read_facts()
+        self._polled_state = state
         facts = self._status5.summary(state)
         self._count_facts(facts)
         for fn in list(self.status_listeners):  # e.g. the Mission Map redraws when the state revision changes
@@ -231,7 +246,7 @@ class AppShell:
         try:
             if not self.root.winfo_exists():
                 return
-            self.refresh_status()
+            self._poll_once()
             self.root.after(STATUS_POLL_MS, self._poll_status)
         except tk.TclError:
             pass
