@@ -352,7 +352,8 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
                          f"- Scope exclude: {', '.join(t['scope']['exclude']) or '(none)'}",
                          f"- Deliverables: {', '.join(t['deliverables']) or '(see objective)'}"])
     lines += _section("4. Accepted decisions (binding)",
-                      [f"- {d['decision_id']} {d['title']}: {d['decision']}" for d in decisions]
+                      [f"- FINAL — do not decide again: {d['decision_id']} {d['title']}: {d['decision']}"
+                       for d in decisions]  # 5.18.0: decided once, never re-decided
                       + [f"- REJECTED {d['decision_id']} {d['title']}: {d['rationale']} — do not propose it again"
                          for d in rejected])
     lines += _section("5. Prerequisites and their outputs", dep_lines)
