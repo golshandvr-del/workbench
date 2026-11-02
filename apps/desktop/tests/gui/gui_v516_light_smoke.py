@@ -73,6 +73,8 @@ def main() -> None:
 
         m, _ = open_menu(d, app, tid)
         d.root.iconify(); d.pump(500)
+        if d.root.state() != "iconic":  # no window manager (Xvfb): iconify is a no-op, deliver the event itself
+            d.root.event_generate("<Unmap>"); d.pump(200)
         assert m.closed, "minimising the main window left the menu open"
         d.root.deiconify(); d.pump(400)
 
