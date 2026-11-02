@@ -63,3 +63,7 @@ immediately, so a new session can continue without repeating work.
   loops. Verified: idle frames/s 42 -> 0.0; gui_v5_motion_smoke passes. Run GUI smokes with
   `PYTHONPATH=src:tests/gui xvfb-run -a python3 tests/gui/<file>.py` (or `xvfb-run -a python3 tests/gui/run_all.py`).
   NEXT: menu closing (shell.show/Configure/Unmap/click) + panel pre-render; then poll skip.
+- (session 3) Sandbox reset again; last unpushed edit of session 2 (raster 9-slice) was lost and redone:
+  commit 13bddfd `Raster.to_png_9slice(w,h,mx,my)` + `_row_bytes` + `_png`. Menu first-open profile: 706 ms,
+  almost all in raster `panel` sprite (pure python SDF on full w×h). NEXT: assets.py panel -> draw small
+  (2k+1)² source, 9-slice to w×h; then menu close hooks; then poll skip; then gate tests + release 5.16.0.
