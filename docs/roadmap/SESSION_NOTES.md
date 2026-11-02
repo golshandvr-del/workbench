@@ -231,3 +231,5 @@ immediately, so a new session can continue without repeating work.
   save, store, opener) .configured/.config/.summary()/.configure(base,model,api_key None|""|text,timeout)/.clear()/
   .api_key()/.complete/.test/.fix_answer/.explain_step; strip_outer_fence; run_async(fn, done(result,error),
   schedule). settings key "helper_ai" {base_url, model, timeout, credential_ref}. NEXT step 3 tests/test_helper_ai.py.
+- (session 6) DONE step 3 89ee218 tests/test_helper_ai.py: 15 tests OK (fake ThreadingHTTPServer). NEXT step 4
+  aiwb/ui/helper_card.py (Settings card + thread-safe scheduler), step 5 NextStepCard helper buttons.
