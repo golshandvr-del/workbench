@@ -4364,7 +4364,7 @@ class WorkbenchApp:
         )
         # 5.19.0: the optional helper AI (address/model in settings.json, its key in Windows Credential Manager)
         from aiwb.helper_ai import HelperService
-        self.helper_service = HelperService(self.settings_data, save=self._save_settings,
+        self.helper_service = HelperService(lambda: self.settings_data, save=self._save_settings,
                                             store=create_default_credential_store())
         self.github_repository_cache: list[GitHubRepository] = []
         self.github_repository_cache_account_id: str | None = None
