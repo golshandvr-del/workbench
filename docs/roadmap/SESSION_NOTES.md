@@ -174,3 +174,7 @@ immediately, so a new session can continue without repeating work.
   current revision when rescued; propose_decision duplicate of accepted -> invalid "already decided (Dn, final)".
   NEXT: controller.route catch NoOperations -> RouteResult("proposal_fix", record={"fix_prompt"}); guide.py ~885 &
   shell.do_import treat like charter_rejected (out["prompt"]).
+- (session 5) DONE 54f5176 controller: NoOperations -> RouteResult("proposal_fix", record {fix_prompt,...});
+  proposal msg appends "Read from the answer: <auto_fixes>". 5d4a88d guide._paste: proposal_fix -> out["prompt"] (card
+  copies it, COPY_RESULT has "paste"). 8414122 shell.do_import keeps fix prompt. NEXT: handoff section 4 FINAL label +
+  manager_update_prompt FINAL list; tests/test_rescue.py; gate fixture; full tests; release 5.18.0.
