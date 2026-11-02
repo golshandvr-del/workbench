@@ -233,3 +233,11 @@ immediately, so a new session can continue without repeating work.
   schedule). settings key "helper_ai" {base_url, model, timeout, credential_ref}. NEXT step 3 tests/test_helper_ai.py.
 - (session 6) DONE step 3 89ee218 tests/test_helper_ai.py: 15 tests OK (fake ThreadingHTTPServer). NEXT step 4
   aiwb/ui/helper_card.py (Settings card + thread-safe scheduler), step 5 NextStepCard helper buttons.
+- (session 6) DONE step 4 2415a8e aiwb/ui/helper_card.py: build_helper_card(parent, service, on_change, runner) ->
+  widgets {url_var, model_var, key_var, timeout_var, status_var, do_save, do_test, do_remove, preset, test, remove,
+  runner}; MainThreadQueue(widget).run(fn, done) (thread + queue polled by after(80) only while pending). Probe
+  /tmp/hc.py OK (save -> key in store, test -> "✓ ... OK" with Bearer, remove -> settings {}). NEXT step 5:
+  NextStepCard(helper=HelperService|None, runner=MainThreadQueue|None, lang=callable) buttons in bar:
+  "Explain this step" (configured + a step), "Fix with helper AI" (configured + last paste failed: error or kind in
+  rejected/inbox_only/proposal_fix/charter_rejected; text remembered before perform) -> fixed text into paste box,
+  never auto-applied.
