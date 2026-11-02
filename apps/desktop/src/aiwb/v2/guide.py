@@ -882,7 +882,7 @@ class Guide:
             if r.kind == "truncated" and not rep.truncated:
                 rep = truncation_report(text)
         out: dict[str, Any] = {"message": r.message, "kind": r.kind}
-        if r.kind == "charter_rejected":
+        if r.kind in ("charter_rejected", "proposal_fix"):   # 5.18.0: a half-right proposal gets a short fix prompt
             out["prompt"] = r.record.get("fix_prompt", "")
             if r.record.get("cut_off"):   # 5.10.0: like a cut-off file answer — the continue step, with this prompt
                 self._set_guide(**{"continue": {"prompt": out["prompt"], "agent_id": step["agent_id"],
@@ -893,7 +893,7 @@ class Guide:
             self._set_guide(**{"continue": None})   # 5.12.0: the card now shows the files step for that handoff
             out["handoff_id"] = r.reference_id if r.reference_id in self.ctl.state()["handoffs"] else ""
             return out
-        if r.kind in ("proposal", "handoff", "charter_rejected"):
+        if r.kind in ("proposal", "handoff", "charter_rejected", "proposal_fix"):
             self._set_guide(**{"continue": None})
             if step["key"] in ("manager_update", "charter"):
                 self._set_guide(seen=True)
