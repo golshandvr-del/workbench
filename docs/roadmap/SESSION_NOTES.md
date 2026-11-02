@@ -178,3 +178,5 @@ immediately, so a new session can continue without repeating work.
   proposal msg appends "Read from the answer: <auto_fixes>". 5d4a88d guide._paste: proposal_fix -> out["prompt"] (card
   copies it, COPY_RESULT has "paste"). 8414122 shell.do_import keeps fix prompt. NEXT: handoff section 4 FINAL label +
   manager_update_prompt FINAL list; tests/test_rescue.py; gate fixture; full tests; release 5.18.0.
+- (session 5) DONE c6d8044 handoff section 4 "FINAL — do not decide again: Dn ..."; 4c7369d manager_update_prompt
+  rules (decisions FINAL, operations required / roadmap_remaining false, no files). NEXT: tests/test_rescue.py.
