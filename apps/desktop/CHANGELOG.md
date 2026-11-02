@@ -1,3 +1,32 @@
+## [5.18.0] - 2026-11-02
+
+### The short project-manager path (Roadmap 5.18.0 — owner's friends' feedback: "the project manager step takes
+forever", "it keeps saying *the proposal has no operations*")
+
+- **One answer format per prompt.** The project manager's role said "return changes only as an
+  AIWB_MANAGER_PROPOSAL block", while the task prompt's own "Expected delivery" asked for files + AIWB_HANDOFF — so a
+  documentation task given to the manager came back as a proposal with no files, round after round. In a task prompt
+  and in an AI's briefing that line is now replaced by one clear rule: deliver what "Expected delivery" asks, never a
+  proposal here. Projects created before 5.18.0 are fixed too (no migration needed).
+- **Half-right proposals are used, not refused.** A manager proposal with `operations: []` but with the keys models
+  invent — `decisions`, `task_assessment` / `task_change_proposals` (new acceptance criteria), `follow_up_tasks`,
+  `risks` — is translated into real changes (proposed decision with the manager's options and recommendation, task
+  update, new task, risk) that you review as usual. Nothing is invented; what could not be used (for example
+  proposed file contents) is named in the message.
+- **No dead end.** When nothing in the answer can be used, the answer stays in the Inbox and a **short correction
+  prompt** (about 15 lines: only what is missing, plus the final decisions) is copied for the same chat — not the
+  whole prompt again. Home and the Workbench keep your place.
+- **A decision is decided once.** Accepted decisions appear in every later task prompt and Manager update as
+  "FINAL — do not decide again", and a proposal that repeats one is set aside automatically as "already decided".
+
+### Tests
+
+- `test_rescue.py` (12: one format per prompt for every role and for old projects, translation of the invented keys,
+  final decisions never proposed again, files/assessments alone are not operations, short fix prompt, import through
+  the real service). GUI gate `tests/gui/gui_v518_pm_path_smoke.py` (real Home path: the first task prompt has one
+  format · a useless proposal → short fix prompt copied, card unchanged · a half-right proposal → "Review the plan").
+  Unit 902 OK.
+
 ## [5.17.0] - 2026-11-02
 
 ### Clear forms (Roadmap 5.17.0 — owner's friends' feedback: "the 'Your decision' box is tiny and doesn't say what to decide")
