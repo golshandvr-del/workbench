@@ -105,10 +105,11 @@ class GuideAttachesChoicesTest(unittest.TestCase):
     def test_decision_step_carries_choices(self) -> None:
         import tempfile
 
-        from aiwb.v2.controller import V2Controller
+        import AI_Workbench as wb
+        from aiwb.v2.controller import ProjectsController
         from aiwb.v2.guide import Guide
         with tempfile.TemporaryDirectory() as d:
-            ctl = V2Controller.open(Path(d))
+            ctl = ProjectsController(Path(d), make_pipeline=wb.make_inbox_pipeline)
             ctl.project.decisions.propose("Storage", "Where to keep history?", options=["localStorage", "none"],
                                           recommendation="none")
             step = next(s for s in Guide(ctl).steps() if s["key"].startswith("decision:"))
