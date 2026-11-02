@@ -5562,10 +5562,37 @@ class WorkbenchApp:
                 "tag": ("Record the release", "Tag (optional, default v<version>):"),
                 "run_id": ("Record the release", "Build/CI run id or link:")}
         inputs: dict[str, str] = {}
+        hook = getattr(self, "mission_input_hook", None)
+        if hook is None and row.get("needs"):
+            # 5.17.0 (R5): all inputs of the row in one window (no chain of one-line boxes)
+            from aiwb.ui.action_form import ask_form
+            from aiwb.v2.choices import form_spec
+            from aiwb.v2.guide import OPTIONAL_INPUTS
+            step: dict[str, Any] = {"key": str(row.get("step") or row["id"]), "title": row["label"],
+                                    "explain": str(row.get("hint", ""))}
+            act: dict[str, Any] = {"id": row["id"], "label": row["label"], "needs": list(row["needs"])}
+            state = None
+            if row.get("step"):
+                try:
+                    step = Guide(ctl).find(row["step"])
+                    act = next(a for a in step["actions"] if a["id"] == row["action"])
+                    state = ctl.state()
+                except Exception:  # noqa: BLE001 - the step closed meanwhile: the row's own form
+                    pass
+            spec = form_spec(step, act, state, OPTIONAL_INPUTS)
+            for f in spec["fields"]:
+                if f["need"] in asks and not row.get("step"):
+                    f["label"] = asks[f["need"]][1].rstrip(":")
+            got = ask_form(self.root, spec)
+            if got is None:
+                self.set_status("Cancelled — nothing changed.")
+                return None
+            inputs = {k: str(v).strip() for k, v in got.items()}
         for need in row.get("needs", []):
+            if need in inputs:
+                continue
             title, prompt = asks.get(need, (row["label"], need))
-            hook = getattr(self, "mission_input_hook", None)
-            v = hook(need, prompt) if hook is not None else simpledialog.askstring(title, prompt, parent=self.root)
+            v = hook(need, prompt) if hook is not None else None
             if v is None or (not v.strip() and need not in ("tag",)):
                 self.set_status("Cancelled — nothing changed.")
                 return None
