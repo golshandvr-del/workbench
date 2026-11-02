@@ -183,3 +183,5 @@ immediately, so a new session can continue without repeating work.
 - (session 5) DONE 845524c tests/test_rescue.py (12 tests) all pass first run. NEXT: full unit + GUI run; GUI gate
   smoke gui_v518_pm_path_smoke.py (paste half-right proposal on Home -> proposal step; nothing usable -> fix prompt).
 - (session 5) After 5.18 code: unit 902 OK (10 skipped). Running GUI run_all next.
+- (session 5) After 5.18 code: GUI 58/59 (only pre-existing sandbox-only S5 "can't delete Tcl command"). Bench
+  /tmp/bench/pm.py = Home path probe (paste half-right proposal; paste useless proposal -> fix prompt).
