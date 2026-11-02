@@ -101,3 +101,12 @@ immediately, so a new session can continue without repeating work.
   step inputs asked with simpledialog.askstring in 3 places: (1) AI_Workbench.mission_menu_pick ->
   _mission_input(need,label) (~5597; test hook `mission_input_hook`); (2) AI_Workbench.mission_column_pick (~5560);
   (3) workspace/shell.py guide_action (~387, INPUT_PROMPTS ~327). Home card ui/next_card.py: check. guide.py `_a(id,label,*needs)`.
+- (session 4) 5.17.0 facts: decisions live in state["decisions"][Dn] {title, problem, options[], recommendation,
+  status proposed|accepted|rejected, affected_task_ids} (v2/ledger.py DecisionLedger.propose/resolve). Guide steps:
+  `decision:Dn` actions decide(choice,rationale)/reject_decision(rationale); `task:Tn` needs_decision (no proposed
+  decision for it) -> decide(choice,rationale) + manager_prompt; question text = t.blocked_reason, which handoff.py:311
+  sets from "; ".join(h.unresolved_items or h.decision_requests). Guide._perform requires non-optional needs;
+  OPTIONAL_INPUTS = note reason rationale run_id commit_sha tag idea + brief optional. Ask sites: workspace/shell.py
+  guide_action (INPUT_PROMPTS, askstring), AI_Workbench._mission_input + mission_column_pick (askstring; hook
+  mission_input_hook(need,label)). PLAN: v2/choices.py (pure form spec) -> Guide.steps attaches question/choices ->
+  ui/action_form.py (one window, radios, "Other answer…", Enter/Esc) -> wire 3 sites -> tests -> release.
