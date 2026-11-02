@@ -1001,7 +1001,7 @@ class WorkspaceWindow:
         raw = text if text is not None else self._ask_text("Paste the model's answer")  # 5.13.0: no answer box here
         r = self.wc.ctl.route_answer(raw)
         self.status_var.set(r.message)
-        if r.kind == "charter_rejected":
+        if r.kind in ("charter_rejected", "proposal_fix"):   # 5.18.0: a short fix prompt, never a dead end
             self.last_prompt, self.last_handoff_id = r.record.get("fix_prompt", ""), ""
             self.show("tasks")
             return r
