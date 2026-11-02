@@ -4882,30 +4882,33 @@ class WorkbenchApp:
         return out
 
     def status_state(self) -> dict[str, Any] | None:
-        """V2 state of the open project for the status bar (read only; never creates or writes files)."""
+        """V2 state of the open project for the status bar (read only; never creates or writes files).
+
+        roadmap 5.16.0 (R2): state.json is read again only when the file changed (stat signature); an unchanged
+        file returns the very same dict object, so the status poll can skip the whole refresh."""
         if self.workspace is None:
             return None
-        ws = getattr(self, "workspace_window", None)
-        if ws is not None and getattr(ws, "_project_root", None) == str(self.workspace):
-            return ws.wc.ctl.state()
         path = Path(self.workspace) / ".workbench" / "v2" / "state.json"
         if not path.is_file():
             # a project is open but not planned yet: an empty state, so the status bar never says "No project open"
             return {"agents": {}, "tasks": {}, "handoffs": {}, "milestones": {}, "versions": {}, "settings": {}}
-        # roadmap 5.16.0 (R2): the status poll re-reads state.json only when the file changed (stat signature);
-        # an unchanged file returns the very same dict, so the shell can skip the whole refresh.
+        ws = getattr(self, "workspace_window", None)
+        live = ws is not None and getattr(ws, "_project_root", None) == str(self.workspace)
         try:
             st = path.stat()
-            sig = (str(path), st.st_mtime_ns, st.st_size)
+            sig = (str(path), st.st_mtime_ns, st.st_size, live)
         except OSError:
             return None
         cached = getattr(self, "_status_cache", None)
         if cached is not None and cached[0] == sig:
             return cached[1]
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            return None
+        if live:
+            data: Any = ws.wc.ctl.state()
+        else:
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                return None
         data = data if isinstance(data, dict) else None
         self._status_cache = (sig, data)
         return data
