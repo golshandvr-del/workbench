@@ -87,10 +87,12 @@ def parse_options(text: str) -> tuple[list[str], str]:
         if "?" not in sentence or not re.search(r"\bor\b", sentence, re.I):
             continue
         q = sentence.strip().rstrip("?")
+        q = re.sub(r"^(?:which|what)\b[^:]*:\s*", "", q, flags=re.I)
         q = re.sub(r"^(?:should|shall|do|does|will|would|can|could|is|are)\b.*?\b(?:use|be|choose|pick|go with|"
-                   r"have|support|keep|make it)\s+", "", q, flags=re.I)
+                   r"have|support|keep|make it|show|display|include|add|allow|store|save)\s+", "", q, flags=re.I)
         opts = _uniq(re.split(r"\s*,\s*|\s+or\s+", q, flags=re.I))
-        if 2 <= len(opts) <= 4 and all(len(o) <= 60 for o in opts):
+        lead = re.compile(r"^(?:should|shall|do|does|will|would|can|could|is|are|which|what|how|why|when|where)\b", re.I)
+        if 2 <= len(opts) <= 4 and all(len(o) <= 60 and not lead.match(o) for o in opts):
             return opts, recommended
     return [], recommended
 
