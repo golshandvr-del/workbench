@@ -199,3 +199,7 @@ immediately, so a new session can continue without repeating work.
   NEXT: CHANGELOG entry, ROADMAP ✅ (active 5.19.0), tag desktop-v5.18.0, verify CI + release run.
 - (session 6) 5.18.0: f01c00f CHANGELOG, d15edf3 ROADMAP ✅ (active 5.19.0). NEXT: tag desktop-v5.18.0, verify CI +
   release run, then start 5.19.0 (optional helper AI, OpenAI-compatible API; gate = local fake HTTP server tests).
+- (session 6) Tag desktop-v5.18.0 pushed (36d97a8); Release run 41546262347 in progress (verify later).
+  5.19.0 recon: secrets -> aiwb/github/credential_store.py (CredentialStore protocol set/get/delete_secret(ref),
+  MemoryCredentialStore for tests, WindowsCredentialStore, create_default_credential_store()). App prefs ->
+  aiwb/ui/prefs.py AppPrefs (settings.json keys ui_theme/ui_lang/ui_mode/ui_reduce_motion, save callback).
