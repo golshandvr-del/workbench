@@ -130,3 +130,8 @@ immediately, so a new session can continue without repeating work.
   make_pipeline=wb.make_inbox_pipeline) (NOT V2Controller). NEXT: full unit run, GUI smokes, gui_v517_forms_smoke.py.
 - (session 4) After 5.17 wiring: unit 890 OK (10 skipped); GUI 57/58 (only pre-existing sandbox-only S5 fails).
   run_all takes ~4.5 min -> use timeout 580 + Bash timeout 600000. NEXT: tests/gui/gui_v517_forms_smoke.py.
+- (session 4) Real path verified (/tmp/bench/dec.py): charter_to_first_prompt -> paste handoff outcome
+  needs_decision + decision_requests ["Should the calculator use vanilla JS or React?"] -> card "Accept the delivery"
+  -> card "TASK-0001 ... waits for a decision" buttons ['Decide and continue…','Ask the project manager'];
+  step choices options ['vanilla JS','React']. ask_form is modal (wait_window) -> smoke must schedule root.after()
+  to drive the form; Driver allow_windows needs action_form.FORM_TITLE_PREFIX ("AI Workbench · ").
