@@ -264,7 +264,8 @@ def briefing(state: dict[str, Any], agent_id: str, *, project_name: str = "") ->
              "You have no access to earlier chats. This sheet introduces you; your first task prompt follows in "
              "the next message. Answer this sheet with one line: READY.", "", "## Your role",
              f"- Purpose: {a.get('purpose') or '(not set)'}"]
-    lines += [f"- {i}" for i in a.get("instructions", [])]
+    from .agents import task_instructions  # 5.18.0 (R1): the briefing never asks for the proposal block
+    lines += [f"- {i}" for i in task_instructions(a)]
     lines += note_lines(state, agent_id)
     lines += ["", "## Your team"]
     lines += [f"- {x['name']} ({x['agent_id']}, {x['role'].replace('_', ' ')})" for x in team] or ["- (you work alone)"]
