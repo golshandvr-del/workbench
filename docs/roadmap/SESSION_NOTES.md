@@ -140,3 +140,7 @@ immediately, so a new session can continue without repeating work.
   window, React+reason recorded, askstring patched to fail). 4d0c98e: no pre-selection without recommendation.
   NEXT: release 5.17.0 (bump in /tmp/rel worktree with --test test_choices.py + new modules v2/choices.py,
   ui/action_form.py; copy one file per checkpoint; checklist; CHANGELOG; ROADMAP ✅; tag).
+- (session 4) 5.17.0 RELEASE: c6e89ed..aa3c8b3 bump (APP_VERSION, __version__, UA, manifest +choices.py
+  +action_form.py +test_choices.py, install.ps1), 7668a0b checklist, 8ebe3e9 CHANGELOG, c3c1a8f ROADMAP ✅ (active
+  5.18.0). Tag desktop-v5.17.0 pushed. NEXT: verify release run; start 5.18.0 (PM prompt contradiction R1, half-right
+  proposals R6). Recon: v2/proposals.py, v2/controller.py, role instructions for PM (grep "only as AIWB_MANAGER_PROPOSAL").
