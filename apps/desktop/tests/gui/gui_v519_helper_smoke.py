@@ -42,12 +42,17 @@ def main() -> None:
             # 1) not set up
             assert card.helper_labels() == [], card.helper_labels()
             assert "Not set up" in w["status_var"].get() and w["test"].instate(["disabled"]), w["status_var"].get()
+            assert not w["body"].winfo_manager(), "the helper card should start collapsed"
             h = charter_to_first_prompt(d, app, card)
 
-            # 2) set up (no key) → Save → Test
+            # 2) set up (no key) → Show settings → Save helper → Test
+            app.shell.show("settings")
+            d.pump(200)
+            d.click(w["toggle"], "Show settings")
+            assert w["body"].winfo_manager() and w["save"].winfo_ismapped(), "Show settings did not open the form"
             w["url_var"].set(srv.url)
             w["model_var"].set("small-model")
-            d.click(w["save"], "Save")
+            d.click(w["save"], "Save helper")
             assert w["status_var"].get().startswith("Saved."), w["status_var"].get()
             assert app.settings_data.get("helper_ai", {}).get("model") == "small-model", app.settings_data
             srv.reply = "OK"
@@ -85,7 +90,11 @@ def main() -> None:
             assert card.model.get("key") != h["handoff_id"] or "✓" in card.message_var.get(), card.title_var.get()
 
             # 4) remove → buttons gone
+            app.shell.show("settings")
+            d.pump(200)
             d.click(w["remove"], "Remove")
+            d.pump(200)
+            app.shell.show("home")
             d.pump(200)
             assert card.helper_labels() == [], card.helper_labels()
             assert "helper_ai" not in app.settings_data, app.settings_data
