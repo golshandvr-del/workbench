@@ -225,3 +225,9 @@ immediately, so a new session can continue without repeating work.
   5 NextStepCard helper= (Explain / Fix buttons, hidden when not configured); 6 AI_Workbench wiring; 7 GUI smoke.
 - (session 6) DONE step 1 e8970a9: credential_store.REF_TARGETS {"github-api","helper-ai"}; _validate_ref accepts
   both; 24 credential tests OK. NEXT step 2: aiwb/helper_ai.py.
+- (session 6) DONE step 2 d8cb5bc aiwb/helper_ai.py: HelperAIError; normalize_base_url; chat(base,model,messages,
+  api_key,timeout,opener) urllib POST {base}/chat/completions (401/403/404/429/timeout/unreachable/bad JSON -> one
+  sentence, key redacted); FORMAT_GUIDE/expected_for(step_key)/fix_messages/explain_messages; HelperService(settings,
+  save, store, opener) .configured/.config/.summary()/.configure(base,model,api_key None|""|text,timeout)/.clear()/
+  .api_key()/.complete/.test/.fix_answer/.explain_step; strip_outer_fence; run_async(fn, done(result,error),
+  schedule). settings key "helper_ai" {base_url, model, timeout, credential_ref}. NEXT step 3 tests/test_helper_ai.py.
