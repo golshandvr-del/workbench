@@ -256,3 +256,5 @@ immediately, so a new session can continue without repeating work.
 - (session 6) After 5.19 wiring: unit 917 OK (10 skipped). Running GUI run_all (bg, /tmp/gui_all.log). NEXT: GUI gate
   tests/gui/gui_v519_helper_smoke.py (no settings -> no helper buttons, Settings card present; set up with fake
   server -> Explain on Home; bad answer -> Fix button -> fixed text in paste box -> Use this answer works).
+- (session 7) Sandbox reset. Restored: clone -> /home/user/webapp, cpush, xvfb. Release desktop-v5.18.0 VERIFIED (5 assets).
+  CI c491486 success. gui_v519_helper_smoke.py was NOT committed (lost) -> rewrite it. Then 5.19 release.
