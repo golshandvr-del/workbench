@@ -27,8 +27,13 @@ class CredentialStore(Protocol):
     def delete_secret(self, credential_ref: str) -> None: ...
 
 
+# 5.19.0: the optional helper AI's API key lives in the same Windows Credential Manager, under its own prefix.
+REF_TARGETS = {"github-api": "AIWorkbench/GitHub/API/", "helper-ai": "AIWorkbench/HelperAI/"}
+
+
 def _validate_ref(credential_ref: str) -> str:
-    if not isinstance(credential_ref, str) or not credential_ref.startswith("github-api:"):
+    kind = credential_ref.partition(":")[0] if isinstance(credential_ref, str) else ""
+    if kind not in REF_TARGETS or not credential_ref.startswith(kind + ":"):
         raise CredentialStoreError("Invalid credential reference.")
     suffix = credential_ref.partition(":")[2]
     try:
@@ -37,7 +42,7 @@ def _validate_ref(credential_ref: str) -> str:
         raise CredentialStoreError("Invalid credential reference.") from exc
     if str(parsed) != suffix:
         raise CredentialStoreError("Invalid credential reference.")
-    return "AIWorkbench/GitHub/API/" + str(parsed)
+    return REF_TARGETS[kind] + str(parsed)
 
 
 class MemoryCredentialStore:
