@@ -266,3 +266,6 @@ immediately, so a new session can continue without repeating work.
 - (session 7) GUI run_all 58/61: S5 (known sandbox-only), NEW gui_v5_polish_smoke ('Settings: 10 controls at once (max 8)',
   'command with two homes: save (Settings, Toolbar)') + gui_v5_map_smoke ('- Status bar [area]') -> caused by helper card
   in Settings. Fixing (likely: card collapsed by default / buttons not counted as commands / rename Save).
+- (session 7) 9e09efc helper_card: collapsed by default (toggle "Show settings"/"Hide settings", w["do_toggle"], w["body"]),
+  Save button label "Save helper" (two-homes rule). NEXT: regenerate docs/UI_MAP.md (tools/ui_map.py), smoke opens card,
+  rerun polish/map/v519 smokes.
