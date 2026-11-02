@@ -183,11 +183,18 @@ def explain_messages(step: dict[str, Any], lang: str = "en") -> list[dict[str, s
 
 # --------------------------------------------------------------------------------------------------------- service
 class HelperService:
-    """Settings (``settings[SETTINGS_KEY]``) + key (credential store) + calls. ``save()`` persists settings."""
+    """Settings (``settings[SETTINGS_KEY]``) + key (credential store) + calls. ``save()`` persists settings.
 
-    def __init__(self, settings: dict[str, Any], save: Callable[[], Any] | None = None, store: Any = None, *,
-                 opener: Callable[..., Any] | None = None) -> None:
-        self.settings, self._save, self.store, self._opener = settings, save, store, opener
+    ``settings`` may be the dict itself or a callable returning the *current* dict (the app replaces its settings dict
+    on every save, so it passes ``lambda: self.settings_data``)."""
+
+    def __init__(self, settings: dict[str, Any] | Callable[[], dict[str, Any]], save: Callable[[], Any] | None = None,
+                 store: Any = None, *, opener: Callable[..., Any] | None = None) -> None:
+        self._settings, self._save, self.store, self._opener = settings, save, store, opener
+
+    @property
+    def settings(self) -> dict[str, Any]:
+        return self._settings() if callable(self._settings) else self._settings
 
     # -- settings
     @property
