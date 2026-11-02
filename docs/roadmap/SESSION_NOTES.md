@@ -258,3 +258,6 @@ immediately, so a new session can continue without repeating work.
   server -> Explain on Home; bad answer -> Fix button -> fixed text in paste box -> Use this answer works).
 - (session 7) Sandbox reset. Restored: clone -> /home/user/webapp, cpush, xvfb. Release desktop-v5.18.0 VERIFIED (5 assets).
   CI c491486 success. gui_v519_helper_smoke.py was NOT committed (lost) -> rewrite it. Then 5.19 release.
+- (session 7) Probe /tmp/probe.py OK: no helper btns before setup; app.helper_widgets["save"] with fake url+model (no key)
+  -> card.helper_labels()==['Explain this step']; bad answer -> kind inbox_only, card.failed set, labels + 'Fix with helper AI'.
+  Writing tests/gui/gui_v519_helper_smoke.py (srv.reply = guided_answer(h, files) for the fix).
