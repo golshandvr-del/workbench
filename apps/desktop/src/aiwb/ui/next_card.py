@@ -30,6 +30,10 @@ STEPS_LABEL = "All open steps"
 # actions whose result prompt is copied at once (the user's next move is to paste it into a chat)
 COPY_RESULT = ("paste", "request_changes", "troubleshoot", "repair", "review_prompt", "manager_prompt", "escalate",
                "copy_context")  # 5.12.0: the files the AI asked for go to the clipboard at once
+# 5.19.0: after these results of "Use this answer" the optional helper AI can rewrite the answer into the right format
+FIX_KINDS = ("rejected", "inbox_only", "proposal_fix", "charter_rejected")
+EXPLAIN_LABEL = "Explain this step"
+FIX_LABEL = "Fix with helper AI"
 
 
 def names_of(state: dict[str, Any] | None) -> dict[str, str]:
@@ -105,10 +109,14 @@ class NextStepCard(ttk.Frame):
     def __init__(self, master: tk.Misc, *, steps: Callable[[], list[dict[str, Any]]],
                  state: Callable[[], dict[str, Any] | None], perform: Callable[[str, str, dict[str, Any] | None], Any],
                  clipboard: Callable[[str], None], status: Callable[[str], None], wraplength: int = 820,
-                 **kw: Any) -> None:
+                 helper: Any = None, runner: Any = None, lang: Callable[[], str] | None = None, **kw: Any) -> None:
         super().__init__(master, style="Card.TFrame", padding=(12, 8), **kw)
         self._steps, self._state, self._perform = steps, state, perform
         self._clipboard, self._status = clipboard, status
+        # 5.19.0: the optional helper AI (aiwb.helper_ai.HelperService); its buttons show only when it is set up
+        self.helper, self._runner, self._lang = helper, runner, lang
+        self.failed: dict[str, str] | None = None   # the last answer "Use this answer" could not use
+        self.helper_busy = False
         self.focus_agent = ""
         self.focus_key = ""
         self.model: dict[str, Any] = card_model([], {})
@@ -145,6 +153,9 @@ class NextStepCard(ttk.Frame):
         self.paste = PastePanel(self, state=self._state, on_use=self.use_answer, height=6, wraplength=wraplength,
                                 style="Card.TFrame")
         self.paste_hint = "Paste the whole answer of the chat below (or load the ZIP it gave you)."
+        self.helper_bar = ttk.Frame(self, style="Card.TFrame")
+        self.explain_btn = ttk.Button(self.helper_bar, text=EXPLAIN_LABEL, command=self.explain_step)
+        self.fix_btn = ttk.Button(self.helper_bar, text=FIX_LABEL, command=self.fix_answer)
 
     # ------------------------------------------------------------------ drawing
     def refresh(self) -> dict[str, Any]:
@@ -197,7 +208,86 @@ class NextStepCard(ttk.Frame):
                 self.paste.clear()
         else:
             self.paste.pack_forget()
+        if old_key != m["key"]:
+            self.failed = None
+        self._helper_buttons()
         return m
+
+    # ------------------------------------------------------------------ helper AI (5.19.0, optional)
+    @property
+    def helper_ready(self) -> bool:
+        try:
+            return bool(self.helper is not None and self.helper.configured)
+        except Exception:  # noqa: BLE001 - a broken setting never breaks Home
+            return False
+
+    def _helper_buttons(self) -> None:
+        m = self.model
+        self.explain_btn.pack_forget()
+        self.fix_btn.pack_forget()
+        if not self.helper_ready or not m.get("key"):
+            self.helper_bar.pack_forget()
+            return
+        self.explain_btn.pack(side="left")
+        if self.failed and self.failed.get("key") == m["key"] and m.get("paste") is not None:
+            self.fix_btn.pack(side="left", padx=(6, 0))
+        for b in (self.explain_btn, self.fix_btn):
+            b.state(["disabled"] if self.helper_busy else ["!disabled"])
+        if not self.helper_bar.winfo_manager():
+            self.helper_bar.pack(anchor="w", pady=(6, 0), before=self.paste if self.paste.winfo_manager() else None)
+
+    def helper_labels(self) -> list[str]:
+        return [b.cget("text") for b in (self.explain_btn, self.fix_btn) if b.winfo_manager()]
+
+    def _run_helper(self, fn: Callable[[], Any], done: Callable[[Any, str], None], busy_msg: str) -> bool:
+        if not self.helper_ready or self.helper_busy:
+            return False
+        if self._runner is None:
+            from .helper_card import MainThreadQueue
+            self._runner = MainThreadQueue(self)
+        self.helper_busy = True
+        self.message_var.set(busy_msg)
+        self._helper_buttons()
+
+        def finish(result: Any, error: str) -> None:
+            self.helper_busy = False
+            done(result, error)
+            self._helper_buttons()
+        self._runner.run(fn, finish)
+        return True
+
+    def explain_step(self) -> bool:
+        """Ask the helper AI to explain the step on the card in one or two sentences (only on this click)."""
+        m = self.model
+        step = {"title": m.get("title", ""), "explain": m.get("explain", ""),
+                "actions": [a["text"] for a in ([m["primary"]] if m.get("primary") else []) + list(m.get("more", []))]}
+        lang = self._lang() if self._lang else "en"
+
+        def done(result: Any, error: str) -> None:
+            self.message_var.set(f"Helper AI: {error}" if error else f"Helper AI: {result}")
+        return self._run_helper(lambda: self.helper.explain_step(step, lang), done, "Asking the helper AI…")
+
+    def fix_answer(self) -> bool:
+        """Ask the helper AI to rewrite the answer that could not be used; the result goes into the paste box (never
+        applied by itself — the user checks it and presses "Use this answer")."""
+        f = self.failed
+        if not f:
+            return False
+        from ..helper_ai import expected_for
+
+        def done(result: Any, error: str) -> None:
+            if error:
+                self.message_var.set(f"Helper AI: {error}")
+                return
+            if self.model.get("key") == f["key"] and self.paste.winfo_manager():
+                self.paste.set_text(str(result))
+                self.message_var.set("The helper AI rewrote the answer into Workbench's format. Check it in the box, "
+                                     "then press \"Use this answer\".")
+            else:
+                self.message_var.set("The helper AI answered, but the step has changed — nothing was put in the box.")
+            self._status(self.message_var.get())
+        return self._run_helper(lambda: self.helper.fix_answer(f["text"], f["problem"], expected_for(f["key"])),
+                                done, "The helper AI is rewriting the answer…")
 
     def show_step(self, agent_id: str, step_key: str) -> dict[str, Any]:
         """All open steps › one step: the card shows that step (the first open step = the project's next step)."""
@@ -250,6 +340,10 @@ class NextStepCard(ttk.Frame):
         out = self._perform(m["key"], m["paste"]["id"], {"text": text})
         if isinstance(out, dict) and not out.get("error"):
             self.paste.clear()
+        # 5.19.0: remember an answer that could not be used — "Fix with helper AI" can rewrite it
+        bad = isinstance(out, dict) and (out.get("error") or out.get("kind") in FIX_KINDS)
+        self.failed = {"key": m["key"], "text": text, "problem": str(out.get("error") or out.get("message") or "")} \
+            if bad else None
         return self._done(out, m["paste"]["id"])
 
     def _done(self, out: Any, action_id: str) -> Any:
