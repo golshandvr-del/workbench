@@ -339,7 +339,8 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
              f"# AI Workbench handoff {h['handoff_id']} — you are {agent['name']} ({agent['agent_id']}, role {agent['role']})",
              "You have NO access to earlier chats. Everything you may rely on is below. Do not assume anything else."]
     from .agent_hub import note_lines  # roadmap 5.6.0: the owner's memory note of this AI rides along
-    lines += _section("1. Your role", [f"- Purpose: {agent['purpose']}"] + [f"- {i}" for i in agent["instructions"]]
+    from .agents import task_instructions  # 5.18.0 (R1): one delivery format per prompt
+    lines += _section("1. Your role", [f"- Purpose: {agent['purpose']}"] + [f"- {i}" for i in task_instructions(agent)]
                       + note_lines(s, agent["agent_id"]))
     lines += _section("2. Mission", [f"- Task {t['task_id']} revision {t['task_revision']}: {t['title']}",
                                      f"- Objective: {t['objective']}",
