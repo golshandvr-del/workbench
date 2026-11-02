@@ -96,3 +96,8 @@ immediately, so a new session can continue without repeating work.
   install.ps1, checklist docs/release/v5.16.0), e30fc8d CHANGELOG, 1b71f73 ROADMAP ✅ (active 5.17.0).
   Tag desktop-v5.16.0 pushed -> release-desktop.yml. Release recipe that worked: run bump in a worktree
   (/tmp/rel) then copy ONE file per checkpoint. NEXT: verify release run; start 5.17.0 (action_form.py).
+- (session 4) Sandbox reset; re-cloned, cpush+xvfb reinstalled. VERIFIED: release run 41531157062 desktop-v5.16.0
+  success, assets Setup.bat/Payload/Source/SHA256/manifest published. 5.17.0 recon (redone, was lost unpushed):
+  step inputs asked with simpledialog.askstring in 3 places: (1) AI_Workbench.mission_menu_pick ->
+  _mission_input(need,label) (~5597; test hook `mission_input_hook`); (2) AI_Workbench.mission_column_pick (~5560);
+  (3) workspace/shell.py guide_action (~387, INPUT_PROMPTS ~327). Home card ui/next_card.py: check. guide.py `_a(id,label,*needs)`.
