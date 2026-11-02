@@ -71,3 +71,9 @@ immediately, so a new session can continue without repeating work.
   then `to_png_9slice`. Verified pixel-identical to old (maxdiff 0 on 5 sizes/scales). 260x300 menu panel @1.5:
   1885 ms -> 116 ms; @1.0: 37 ms. Bench script /tmp/bench/p9.py (lost on reset; trivial to rewrite).
   NEXT: tests/test_raster_9slice.py, then menu close hooks.
+- (session 3) DONE 5.16.0 step 3+4 (all pushed): 074f140 test_raster_9slice.py (3 tests OK);
+  5ce70a5 menu5.py `_OPEN` registry + `close_all()` + `install_auto_close(root)` (root <Configure> geometry change,
+  root <Unmap>, bind_all <Button-1> outside menu -> close); 885bfb0 shell.show() closes menus on page change;
+  cc2a9c7 AI_Workbench.status_state caches parsed state.json by (path,mtime_ns,size) -> same dict object;
+  e4dd41f shell `_poll_once()` skips refresh+listeners when facts_fn returns the identical object
+  (`polls_skipped` counter). NEXT: full unit tests + GUI smokes, then test_menu_close (GUI), CHANGELOG, bump, tag.
