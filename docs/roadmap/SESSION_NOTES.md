@@ -53,3 +53,9 @@ immediately, so a new session can continue without repeating work.
   push tag `desktop-vX.Y.Z` -> .github/workflows/release-desktop.yml builds+publishes on Windows.
 - PLAN (new roadmap 5.16 -> 5.20): 5.16 speed+menu, 5.17 clear input forms (decision dialog), 5.18 short PM
   path, 5.19 optional helper AI API, 5.20 gate (friend's calculator log fixture + perf budgets) + release.
+- (session 2) DONE: old roadmap archived (docs/roadmap/archive/ROADMAP_v5.8-v5.15_Repair_FA.md); new ROADMAP.md
+  5.16 -> 5.20 written (commit fab4d21).
+- (session 2) DONE 5.16.0 step 1 (commit 21a2704): store.py pickle cache keyed by (mtime_ns,size,ino);
+  migrate_state(copy_input=False); transaction compares dicts. 863 tests OK. Bench 544 KB: load 20->3.5 ms,
+  Guide.steps 20->2.5 ms, tx write 64->38 ms, no-op tx 5.8 ms. NEXT: test_store_cache.py, then animations,
+  menu, poll.
