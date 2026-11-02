@@ -22,6 +22,60 @@ PAD = 6
 SHADOW = 10
 HINT_H = 26
 
+# roadmap 5.16.0 (R4): every open menu is registered here so the app can close it on events the borderless,
+# topmost window never sees itself (page switch, click elsewhere, main window moved / resized / minimised).
+_OPEN: list["FloatingMenu"] = []
+
+
+def open_menus() -> list["FloatingMenu"]:
+    return [m for m in _OPEN if not m.closed]
+
+
+def close_all() -> int:
+    """Close every open floating menu; returns how many were open."""
+    menus = open_menus()
+    for m in menus:
+        m.close()
+    _OPEN[:] = []
+    return len(menus)
+
+
+def install_auto_close(root: tk.Misc) -> None:
+    """Bind (once per root) the app-wide events that must close an open menu."""
+    if getattr(root, "_aiwb_menu_auto_close", False):
+        return
+    root._aiwb_menu_auto_close = True  # type: ignore[attr-defined]
+
+    def geometry(_e: Any = None) -> str:
+        try:
+            return f"{root.winfo_rootx()},{root.winfo_rooty()},{root.winfo_width()},{root.winfo_height()}"
+        except tk.TclError:
+            return ""
+
+    def on_configure(e: Any) -> None:
+        if e.widget is not root or not _OPEN:
+            return
+        now = geometry()
+        for m in open_menus():
+            if m.root_geometry and now != m.root_geometry:
+                m.close()
+
+    def on_click(e: Any) -> None:
+        if not _OPEN:
+            return
+        try:
+            top = e.widget.winfo_toplevel()
+        except (AttributeError, KeyError, tk.TclError):
+            top = None
+        for m in open_menus():
+            if top is not m.top:
+                m.close()
+
+    root.bind("<Configure>", on_configure, add="+")
+    root.bind("<Unmap>", lambda e: close_all() if e.widget is root else None, add="+")
+    root.bind_all("<Button-1>", on_click, add="+")
+    root._aiwb_menu_geometry = geometry  # type: ignore[attr-defined]
+
 
 class FloatingMenu:
     """One open menu at a time per owner widget; ``close()`` is safe to call twice."""
@@ -32,6 +86,7 @@ class FloatingMenu:
         self.title = title
         self.index = task_menu.first_enabled(rows)
         self.closed = False
+        self.root_geometry = ""
         s = assets.scale
         p = palette5(assets.theme)
         self.s, self.p = s, p
@@ -128,6 +183,10 @@ class FloatingMenu:
         x = min(max(0, x_root + int(8 * self.s) - self.ox), sw - tw)
         y = min(max(0, y_root - int(10 * self.s) - self.oy), shh - th)
         self.x, self.y = x, y
+        root = self.owner.winfo_toplevel()
+        install_auto_close(root)
+        self.root_geometry = getattr(root, "_aiwb_menu_geometry", lambda: "")()
+        _OPEN[:] = open_menus() + [self]
         lift = int(6 * self.s)
         self.top.geometry(f"+{x}+{y + lift}")
         self.top.deiconify()
@@ -205,6 +264,8 @@ class FloatingMenu:
         if self.closed:
             return
         self.closed = True
+        if self in _OPEN:
+            _OPEN.remove(self)
         if self.motion is not None:
             self.motion.stop("menu:open")
         try:
