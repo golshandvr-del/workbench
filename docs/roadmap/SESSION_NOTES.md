@@ -246,3 +246,6 @@ immediately, so a new session can continue without repeating work.
   helper_bar (explain_btn, fix_btn) via _helper_buttons() at end of refresh; helper_labels(); explain_step(),
   fix_answer() (result -> paste.set_text, never applied). NEXT step 6 AI_Workbench wiring: self.helper_service after
   github_account_service (~4359); settings card row 7 in _make_settings_project; home card helper=/lang=.
+- (session 6) DONE step 6a: 1057900+ba2b245 WorkbenchApp.helper_service = HelperService(lambda: self.settings_data,
+  save=self._save_settings, store=create_default_credential_store()); 452c942 HelperService accepts settings getter.
+  NEXT 6b: settings card row 7 (_make_settings_project) + home card helper=/lang=/on_change refresh.
