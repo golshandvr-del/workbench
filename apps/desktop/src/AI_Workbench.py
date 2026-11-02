@@ -5634,9 +5634,12 @@ class WorkbenchApp:
             except Exception:  # noqa: BLE001 - the diagnosis works without a state
                 state = None
             return ask_answer(self.root, label, state=state) or None
-        prompts = {"reason": "Why? (recorded in the project history)", "run_id": "Test/CI run id or link (optional)",
-                   "note": "Note"}
-        return simpledialog.askstring(label, prompts.get(need, need.replace("_", " ").capitalize()), parent=self.root)
+        # 5.17.0 (R5): never a bare askstring for a step input — the same one-window form, with one field
+        from aiwb.ui.action_form import ask_form
+        from aiwb.v2.choices import form_spec
+        from aiwb.v2.guide import OPTIONAL_INPUTS
+        got = ask_form(self.root, form_spec({"title": label}, {"label": label, "needs": [need]}, None, OPTIONAL_INPUTS))
+        return None if got is None else got.get(need, "")
 
     def mission_menu_pick(self, task_id: str, row: dict[str, Any]) -> dict[str, Any] | None:
         """Run the Guide action behind a menu row; COPY PROMPT also prepares the prompt of a ready task."""
