@@ -448,7 +448,18 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                          agent=MANAGER, prompt=continue_project_prompt(upd, st), rank=90))
     out += github_steps(ctl, st)  # optional blue nodes never hide the manager update (roadmap 4.5.0)
     out.sort(key=lambda s: (s["rank"], s["key"]))
-    return _in_user_words(st, out)
+    return _in_user_words(st, _with_choices(st, out))
+
+
+def _with_choices(st: dict[str, Any], out: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """5.17.0 (R5): a step that asks for a ``choice`` carries the full question, the options and the recommendation,
+    so the form shows them (``choices`` = ``{"question", "options", "recommended"}``)."""
+    from .choices import decision_choices
+    for s in out:
+        if any("choice" in a["needs"] for a in s["actions"]):
+            s["choices"] = decision_choices(s, st)
+            s["question"] = s["choices"]["question"]
+    return out
 
 
 def _in_user_words(st: dict[str, Any], out: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -471,6 +482,11 @@ def _in_user_words(st: dict[str, Any], out: list[dict[str, Any]]) -> list[dict[s
     for s in out:
         s["title"], s["explain"] = h(s["title"]), h(s["explain"])
         s["actions"] = [{**a, "label": h(a["label"])} for a in s["actions"]]
+        if s.get("choices"):
+            ch = s["choices"]
+            s["choices"] = {**ch, "question": h(ch["question"]), "options": [h(o) for o in ch["options"]],
+                            "recommended": h(ch["recommended"])}
+            s["question"] = s["choices"]["question"]
     return out
 
 
