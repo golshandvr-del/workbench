@@ -77,3 +77,7 @@ immediately, so a new session can continue without repeating work.
   cc2a9c7 AI_Workbench.status_state caches parsed state.json by (path,mtime_ns,size) -> same dict object;
   e4dd41f shell `_poll_once()` skips refresh+listeners when facts_fn returns the identical object
   (`polls_skipped` counter). NEXT: full unit tests + GUI smokes, then test_menu_close (GUI), CHANGELOG, bump, tag.
+- (session 3) Verified after 5.16 steps: unit tests 876 OK (10 skipped). GUI smokes (`xvfb-run -a python3
+  tests/gui/run_all.py`, ~4 min): 56/57 pass. The one failure gui_scenario_s5_reopen_smoke ("can't delete Tcl
+  command" in root.destroy during d.restart) ALSO fails on baseline 0005f3a in this sandbox (Py 3.13 Linux Tk)
+  -> pre-existing/environmental, not a 5.16 regression. Investigate briefly; don't block on it.
