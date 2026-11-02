@@ -249,3 +249,6 @@ immediately, so a new session can continue without repeating work.
 - (session 6) DONE step 6a: 1057900+ba2b245 WorkbenchApp.helper_service = HelperService(lambda: self.settings_data,
   save=self._save_settings, store=create_default_credential_store()); 452c942 HelperService accepts settings getter.
   NEXT 6b: settings card row 7 (_make_settings_project) + home card helper=/lang=/on_change refresh.
+- (session 6) DONE step 6b e74a7af: Settings row 7 helper card (self.helper_widgets, _helper_changed refreshes
+  home_card); NextStepCard gets helper=getattr(self,"helper_service",None), lang=prefs.lang. NEXT: verify creation
+  order (home card after helper_service), unit + GUI tests, then GUI smoke gui_v519_helper_smoke.py.
