@@ -135,3 +135,8 @@ immediately, so a new session can continue without repeating work.
   -> card "TASK-0001 ... waits for a decision" buttons ['Decide and continue…','Ask the project manager'];
   step choices options ['vanilla JS','React']. ask_form is modal (wait_window) -> smoke must schedule root.after()
   to drive the form; Driver allow_windows needs action_form.FORM_TITLE_PREFIX ("AI Workbench · ").
+- (session 4) DONE 5.17.0 gate: 68b4806 tests/gui/gui_v517_forms_smoke.py PASSES (one window "AI Workbench ·
+  Decide and continue", full question, options vanilla JS/React + Other answer, Esc no change, empty OK keeps
+  window, React+reason recorded, askstring patched to fail). 4d0c98e: no pre-selection without recommendation.
+  NEXT: release 5.17.0 (bump in /tmp/rel worktree with --test test_choices.py + new modules v2/choices.py,
+  ui/action_form.py; copy one file per checkpoint; checklist; CHANGELOG; ROADMAP ✅; tag).
