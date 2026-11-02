@@ -25,6 +25,7 @@ HINT_H = 26
 # roadmap 5.16.0 (R4): every open menu is registered here so the app can close it on events the borderless,
 # topmost window never sees itself (page switch, click elsewhere, main window moved / resized / minimised).
 _OPEN: list["FloatingMenu"] = []
+MENU_TITLE = "AI Workbench menu"
 
 
 def open_menus() -> list["FloatingMenu"]:
@@ -95,7 +96,10 @@ class FloatingMenu:
         self.h = int(2 * PAD * s + self.head + ROW_H * s * len(rows) + HINT_H * s)
         self.top = tk.Toplevel(owner)
         self.top.withdraw()
+        self.top.title(MENU_TITLE)  # never shown (borderless); lets tools tell a menu from a dialog
         self.top.overrideredirect(True)
+        # 5.16.0: a menu window destroyed by anyone else (owner closed, app quit) counts as closed
+        self.top.bind("<Destroy>", lambda e: self._destroyed() if e.widget is self.top else None, add="+")
         try:
             self.top.attributes("-topmost", True)
         except tk.TclError:
@@ -259,6 +263,11 @@ class FloatingMenu:
             f = None
         if f is None:
             self.close()
+
+    def _destroyed(self) -> None:
+        self.closed = True
+        if self in _OPEN:
+            _OPEN.remove(self)
 
     def close(self) -> None:
         if self.closed:
