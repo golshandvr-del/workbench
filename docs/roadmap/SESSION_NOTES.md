@@ -194,3 +194,6 @@ immediately, so a new session can continue without repeating work.
 - (session 6) Sandbox reset again; re-cloned, cpush+xvfb reinstalled. Remote HEAD = f4053cd (all session-5 work is
   pushed). CI on f4053cd FAILED only because rescue.py + test_rescue.py are not in release_manifest.json (expected;
   the 5.18.0 bump with --module v2/rescue.py --test test_rescue.py fixes it). NEXT: release 5.18.0.
+- (session 6) 5.18.0 RELEASE in progress: bump 48b004c..28cb68c (AI_Workbench, __init__, api_client, manifest,
+  install.ps1), 68fb2c9 checklist. Manifest check PASS (225 files). CHANGELOG is apps/desktop/CHANGELOG.md.
+  NEXT: CHANGELOG entry, ROADMAP ✅ (active 5.19.0), tag desktop-v5.18.0, verify CI + release run.
