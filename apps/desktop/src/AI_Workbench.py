@@ -5627,7 +5627,25 @@ class WorkbenchApp:
             card.paste.box.focus_set()
             self.set_status(f"{task_id}: paste the whole answer into the Next-step card below the map.")
             return {"message": "paste on Home", "step": row["step"]}
+        form_needs = [n for n in row.get("needs", []) if n != "text"]
+        if form_needs and getattr(self, "mission_input_hook", None) is None:
+            # 5.17.0 (R5): one clear window with the question, the options and the recommendation
+            from aiwb.ui.action_form import ask_form
+            from aiwb.v2.choices import form_spec
+            try:
+                step = Guide(ctl).find(row["step"])
+                act = next(a for a in step["actions"] if a["id"] == row["action"])
+                state = ctl.state()
+            except Exception:  # noqa: BLE001 - a step that closed meanwhile: a form from the row alone
+                step, act, state = {"key": row["step"], "title": row.get("hint", "")}, row, None
+            got = ask_form(self.root, form_spec(step, {**act, "needs": form_needs}, state, OPTIONAL_INPUTS))
+            if got is None:
+                self.set_status("Cancelled — nothing changed.")
+                return None
+            inputs.update(got)
         for need in row.get("needs", []):
+            if need in inputs:
+                continue
             v = self._mission_input(need, row["hint"])
             if v is None or (not v.strip() and need not in OPTIONAL_INPUTS):
                 self.set_status("Cancelled — nothing changed.")
