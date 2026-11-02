@@ -33,7 +33,7 @@ MODES = ("simple", "advanced")
 
 @dataclass
 class RouteResult:
-    kind: str                       # proposal | charter_rejected | handoff | context_request | inbox_only | rejected
+    kind: str                       # proposal | proposal_fix | charter_rejected | handoff | context_request | inbox_only | rejected
     #                                 | truncated (5.10.0: files found but the answer was cut off)
     response_id: str = ""
     message: str = ""
@@ -487,8 +487,18 @@ class ProjectsController:
                     msg += f" {len(out['warnings'])} warning(s) to check."
                 return RouteResult("proposal", rid, msg, p["proposal_id"], p)
             if PROPOSAL_RE.search(text):
-                p = self.project.proposals.import_text(text, response_id=rid)
+                from .proposals import NoOperations
+                try:
+                    p = self.project.proposals.import_text(text, response_id=rid)
+                except NoOperations as exc:
+                    # 5.18.0 (R6): no dead end — a short correction prompt for the same chat, never the whole prompt
+                    return RouteResult("proposal_fix", rid, f"Nothing to apply: {exc}. A short correction prompt is "
+                                       "ready to copy into the same chat (the answer is kept in the Inbox).", "",
+                                       {"fix_prompt": exc.fix_prompt, **exc.translation})
                 msg = f"Manager proposal {p['proposal_id']} with {len(p['operations'])} change(s) is ready for review."
+                if p.get("auto_fixes"):
+                    msg += " Read from the answer: " + "; ".join(p["auto_fixes"][:3]) + (
+                        " …" if len(p["auto_fixes"]) > 3 else "") + "."
                 if p.get("stale"):
                     msg += " It was written for an older project state: review carefully."
                 return RouteResult("proposal", rid, msg, p["proposal_id"], p)
