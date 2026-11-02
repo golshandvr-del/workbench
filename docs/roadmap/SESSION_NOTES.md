@@ -160,3 +160,7 @@ immediately, so a new session can continue without repeating work.
   answer kept in Inbox"). Charter has fix-prompt path (charter_rejected). OPERATIONS tuple proposals.py:26.
   PLAN: new pure v2/rescue.py translate(data,state)->(ops,fixes,leftover); import_data uses it when ops empty;
   dup decisions (title == accepted decision) marked invalid; build_prompt section 4 "FINAL — do not decide again".
+- (session 5) normalize_task editable: title objective task_type owner_agent_id reviewer_agent_ids depends_on scope
+  acceptance_criteria acceptance_policy deliverables context_refs priority(low|medium|high|critical)
+  risk_level(low|medium|high). _apply: propose_decision -> state decision status proposed; update_task raw.changes.
+  Friend's raw log NOT in repo -> 5.18 fixtures are reconstructed from the shapes recorded above (honest label).
