@@ -126,3 +126,5 @@ immediately, so a new session can continue without repeating work.
   2c3fb9a mission_menu_pick form (unless mission_input_hook set); 753a8f9 mission_column_pick form; 1ed3b0b
   _mission_input fallback form. NEXT: fix tests that patched simpledialog for step inputs; tests/test_choices.py;
   GUI smoke gui_v517_forms_smoke.py.
+- (session 4) DONE 58a8b1c+fa65945 tests/test_choices.py (14 OK). Test projects: ProjectsController(Path(d),
+  make_pipeline=wb.make_inbox_pipeline) (NOT V2Controller). NEXT: full unit run, GUI smokes, gui_v517_forms_smoke.py.
