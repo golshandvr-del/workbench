@@ -92,3 +92,7 @@ immediately, so a new session can continue without repeating work.
   iconify is a no-op -> smoke generates <Unmap> itself. Scenario Driver closes unknown Toplevels -> pass
   allow_windows=WORK_WINDOWS+(menu5.MENU_TITLE,). NEXT: full unit+GUI run, then release 5.16.0
   (CHANGELOG, bump_desktop_release.py 5.16.0, ROADMAP ✅, tag desktop-v5.16.0).
+- (session 3) 5.16.0 RELEASE: bump commits bbcb377..9ff8166 (APP_VERSION, __version__, UA, manifest +2 tests,
+  install.ps1, checklist docs/release/v5.16.0), e30fc8d CHANGELOG, 1b71f73 ROADMAP ✅ (active 5.17.0).
+  Tag desktop-v5.16.0 pushed -> release-desktop.yml. Release recipe that worked: run bump in a worktree
+  (/tmp/rel) then copy ONE file per checkpoint. NEXT: verify release run; start 5.17.0 (action_form.py).
