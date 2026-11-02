@@ -20,6 +20,9 @@ from .tokens5 import MOTION, font5, palette5
 
 STATE_SPRITE = {"done": "task_done", "active": "task_active", "blocked": "task_blocked",
                 "attention": "task_attention", "idle": "task_idle"}
+# roadmap 5.16.0 (R3): live loops play for a few seconds after the map changes, then the picture stands still —
+# an idle app draws nothing (before: ~42 frames/s for as long as any task was active).
+LIVE_MS = 6000
 STATE_TEXT = {"done": "Done", "active": "In progress", "blocked": "Blocked", "attention": "Needs a decision",
               "idle": "Waiting"}
 
@@ -47,7 +50,9 @@ class MissionCanvas(tk.Canvas):
         self._halo: int | None = None
         self._tip: list[int] = []
         self._drag: tuple[int, int] | None = None
+        self._live_timer: str | None = None
         self.bind("<Configure>", lambda _e: self._fit_scrollregion())
+        self.bind("<Unmap>", lambda _e: self._stop_live())   # 5.16.0: hidden page / minimised window → no frames
         self.bind("<Motion>", self._motion)
         self.bind("<Leave>", lambda _e: self._unhover())
         self.bind("<ButtonPress-1>", self._press)
@@ -201,10 +206,27 @@ class MissionCanvas(tk.Canvas):
                           on_done=lambda: self.delete("grow_mask"), alive=self.winfo_exists)
 
     def _stop_live(self) -> None:
+        if self._live_timer is not None:
+            try:
+                self.after_cancel(self._live_timer)
+            except tk.TclError:
+                pass
+            self._live_timer = None
         if self.motion is not None:
             self.motion.stop("mission:pulse")
             self.motion.stop("mission:particles")
         self.delete("particle")
+
+    def _settle(self) -> None:
+        """End of the live period (5.16.0): stop the loops and show active circles in their still sprite."""
+        self._live_timer = None
+        self._stop_live()
+        try:
+            for cid, tid in self.node_items.items():
+                if (self.node(tid) or {}).get("state") == "active" and tid != self.selected and cid != self._halo:
+                    self.itemconfigure(cid, image=self.assets.sprite(STATE_SPRITE["active"]))
+        except tk.TclError:
+            pass
 
     def _start_live(self) -> None:
         """Active circles breathe and light particles travel along live branches (1.6 s loops)."""
@@ -239,6 +261,11 @@ class MissionCanvas(tk.Canvas):
                     x, y = pts[min(len(pts) - 1, int(t * (len(pts) - 1)))]
                     self.coords(did, x, y)
             self.motion.loop("mission:particles", MOTION["pulse_ms"], travel, alive=self.winfo_exists)
+        if active or self._particles:
+            try:
+                self._live_timer = self.after(LIVE_MS, self._settle)
+            except tk.TclError:
+                self._live_timer = None
 
     def _fit_scrollregion(self) -> None:
         bbox = self.bbox("all") or (0, 0, 1, 1)
