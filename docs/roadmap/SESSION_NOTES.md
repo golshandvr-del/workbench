@@ -144,3 +144,5 @@ immediately, so a new session can continue without repeating work.
   +action_form.py +test_choices.py, install.ps1), 7668a0b checklist, 8ebe3e9 CHANGELOG, c3c1a8f ROADMAP ✅ (active
   5.18.0). Tag desktop-v5.17.0 pushed. NEXT: verify release run; start 5.18.0 (PM prompt contradiction R1, half-right
   proposals R6). Recon: v2/proposals.py, v2/controller.py, role instructions for PM (grep "only as AIWB_MANAGER_PROPOSAL").
+- (session 5) Sandbox reset; re-cloned, cpush+xvfb reinstalled (token also exported as GH_T in ~/.bashrc). VERIFIED:
+  release run 41535013005 desktop-v5.17.0 success, assets published. Starting 5.18.0 (R1 PM contradiction, R6).
