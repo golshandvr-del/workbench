@@ -56,6 +56,28 @@ TEMPLATES: dict[str, dict[str, Any]] = {
 }
 BASE_TEMPLATE_IDS = tuple(TEMPLATES)  # the four base roles of 1.17.1
 
+# 5.18.0 (R1): an instruction that demands the manager-proposal block contradicted the task prompt's own
+# "Expected delivery" (files + AIWB_HANDOFF) — the model answered with a proposal and no files, round after round.
+PROPOSAL_ONLY_MARK = "AIWB_MANAGER_PROPOSAL"
+TASK_DELIVERY_RULE = ("In this task prompt deliver exactly what its 'Expected delivery' section asks (files and the "
+                      "AIWB_HANDOFF block) — never an AIWB_MANAGER_PROPOSAL block here; proposals belong only to the "
+                      "separate Manager update prompt.")
+
+
+def task_instructions(agent: dict[str, Any]) -> list[str]:
+    """The agent's instructions as they go into a task (handoff) prompt or a briefing: every line that asks for the
+    manager-proposal block is replaced by ONE clear delivery rule, so the prompt never asks for two formats (also for
+    projects created before 5.18.0, whose stored instructions still carry the old line)."""
+    out: list[str] = []
+    for line in agent.get("instructions") or []:
+        text = str(line)
+        if PROPOSAL_ONLY_MARK in text:
+            if TASK_DELIVERY_RULE not in out:
+                out.append(TASK_DELIVERY_RULE)
+            continue
+        out.append(text)
+    return out
+
 
 class AgentRegistry:
     def __init__(self, store: ProjectStore) -> None:
