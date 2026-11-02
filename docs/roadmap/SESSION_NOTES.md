@@ -223,3 +223,5 @@ immediately, so a new session can continue without repeating work.
   1 credential_store._validate_ref also accepts "helper-ai:<uuid>" -> "AIWorkbench/HelperAI/<uuid>";
   2 aiwb/helper_ai.py; 3 tests/test_helper_ai.py (local fake HTTP server); 4 aiwb/ui/helper_card.py (Settings card);
   5 NextStepCard helper= (Explain / Fix buttons, hidden when not configured); 6 AI_Workbench wiring; 7 GUI smoke.
+- (session 6) DONE step 1 e8970a9: credential_store.REF_TARGETS {"github-api","helper-ai"}; _validate_ref accepts
+  both; 24 credential tests OK. NEXT step 2: aiwb/helper_ai.py.
