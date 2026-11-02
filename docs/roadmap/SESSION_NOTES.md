@@ -116,3 +116,8 @@ immediately, so a new session can continue without repeating work.
   optional)->{title,step_title,question,fields[{need,label,kind choice|yesno|note|entry,options,recommended,optional,
   default}]}; initial_values(spec); validate(spec,values)->(inputs,err). OTHER="__other__". NEXT: Guide.steps adds
   step["choices"]; ui/action_form.py; wire sites; tests/test_choices.py.
+- (session 4) DONE d3b3625 guide.py `_with_choices`: steps with a `choice` need get step["choices"]+step["question"]
+  (names humanized too). DONE 9317f54 ui/action_form.py: ActionForm(parent, spec, modal, on_done) title
+  "AI Workbench · <label>", radios (+" (recommended)", "Other answer…" + entry), values()/choose()/write()/
+  option_texts()/ok()/cancel(); ask_form(parent, spec) modal, `TEST_HOOK(spec)` module attr. Verified under xvfb.
+  NEXT: wire workspace/shell.py guide_action, AI_Workbench._mission_input/mission_menu_pick, mission_column_pick.
