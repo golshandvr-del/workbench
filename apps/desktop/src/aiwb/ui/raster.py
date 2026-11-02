@@ -211,28 +211,54 @@ class Raster:
         return self
 
     # -- output ------------------------------------------------------------------------------------
-    def to_png(self) -> bytes:
-        rows = bytearray()
+    def _row_bytes(self, y: int) -> bytes:
+        """One image row as straight (non-premultiplied) RGBA8 bytes."""
+        row = bytearray()
         p = self.px
-        for y in range(self.h):
-            rows.append(0)
-            base = y * self.w * 4
-            for x in range(self.w):
-                i = base + x * 4
-                a = p[i + 3]
-                if a <= 0.0:
-                    rows += b"\x00\x00\x00\x00"
-                    continue
-                inv = 1.0 / a
-                rows.append(int(_clamp(p[i] * inv) * 255 + 0.5))
-                rows.append(int(_clamp(p[i + 1] * inv) * 255 + 0.5))
-                rows.append(int(_clamp(p[i + 2] * inv) * 255 + 0.5))
-                rows.append(int(_clamp(a) * 255 + 0.5))
+        base = y * self.w * 4
+        for x in range(self.w):
+            i = base + x * 4
+            a = p[i + 3]
+            if a <= 0.0:
+                row += b"\x00\x00\x00\x00"
+                continue
+            inv = 1.0 / a
+            row.append(int(_clamp(p[i] * inv) * 255 + 0.5))
+            row.append(int(_clamp(p[i + 1] * inv) * 255 + 0.5))
+            row.append(int(_clamp(p[i + 2] * inv) * 255 + 0.5))
+            row.append(int(_clamp(a) * 255 + 0.5))
+        return bytes(row)
 
+    @staticmethod
+    def _png(w: int, h: int, rows: Iterable[bytes]) -> bytes:
         def chunk(tag: bytes, data: bytes) -> bytes:
             return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
-        return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", self.w, self.h, 8, 6, 0, 0, 0))
-                + chunk(b"IDAT", zlib.compress(bytes(rows), 6)) + chunk(b"IEND", b""))
+        raw = b"".join(b"\x00" + r for r in rows)
+        return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 6, 0, 0, 0))
+                + chunk(b"IDAT", zlib.compress(raw, 6)) + chunk(b"IEND", b""))
+
+    def to_png(self) -> bytes:
+        return self._png(self.w, self.h, (self._row_bytes(y) for y in range(self.h)))
+
+    def to_png_9slice(self, w: int, h: int, mx: int, my: int) -> bytes:
+        """PNG of size ``w``×``h`` made by repeating column ``mx`` and row ``my`` of this image (roadmap 5.16.0).
+
+        Exact for shapes whose middle column/row lie on straight edges (rounded panels): the big image is built from
+        byte slices, so its cost no longer depends on its size (a menu panel: ~600 ms → a few ms)."""
+        if w < self.w or h < self.h or not (0 <= mx < self.w and 0 <= my < self.h):
+            raise ValueError("9-slice target must be at least the source size, middle inside the source")
+        extra_x, extra_y = w - self.w, h - self.h
+        cache: dict[int, bytes] = {}
+
+        def row(sy: int) -> bytes:
+            r = cache.get(sy)
+            if r is None:
+                b = self._row_bytes(sy)
+                r = b[: (mx + 1) * 4] + b[mx * 4:(mx + 1) * 4] * extra_x + b[(mx + 1) * 4:]
+                cache[sy] = r
+            return r
+        rows = [row(y) for y in range(my + 1)] + [row(my)] * extra_y + [row(y) for y in range(my + 1, self.h)]
+        return self._png(w, h, rows)
 
     def to_base64(self) -> str:
         return base64.b64encode(self.to_png()).decode("ascii")
