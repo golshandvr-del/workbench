@@ -186,11 +186,12 @@ def form_spec(step: dict[str, Any], action: dict[str, Any], state: dict[str, Any
 
 
 def initial_values(spec: dict[str, Any]) -> dict[str, str]:
-    """What the form shows before the user touches it: the recommended option is pre-selected."""
+    """What the form shows before the user touches it: the recommended option is pre-selected; without a
+    recommendation nothing is (a decision is never made for the user by an accidental Enter)."""
     out: dict[str, str] = {}
     for f in spec["fields"]:
         if f["kind"] in ("choice", "yesno"):
-            out[f["need"]] = f.get("recommended") or (f["options"][0] if f.get("options") else "")
+            out[f["need"]] = f.get("recommended") or ""
         else:
             out[f["need"]] = f.get("default", "")
     return out
