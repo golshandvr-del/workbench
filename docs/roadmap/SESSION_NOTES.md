@@ -216,3 +216,10 @@ immediately, so a new session can continue without repeating work.
   "AIWorkbench/HelperAI/<uuid>"; Settings card "Helper AI (optional)"; NextStepCard optional helper=
   buttons "Fix with helper AI" (after a failed paste) + "Explain this step", hidden when not configured; work in a
   thread, result via after(); fixed text goes through the normal use_answer path.
+- (session 6) Settings page grid rows in settings_scroll.body: 0..4 build_settings_page cards, 5 "Project" card
+  (_make_settings_project ~4692), 6 classic tools holder -> helper card goes to row 7. App root class WorkbenchApp
+  (AI_Workbench.py:4320); github_account_service built ~4359 with create_default_credential_store().
+  PLAN files (release bump needs: --module helper_ai.py --module ui/helper_card.py --test test_helper_ai.py):
+  1 credential_store._validate_ref also accepts "helper-ai:<uuid>" -> "AIWorkbench/HelperAI/<uuid>";
+  2 aiwb/helper_ai.py; 3 tests/test_helper_ai.py (local fake HTTP server); 4 aiwb/ui/helper_card.py (Settings card);
+  5 NextStepCard helper= (Explain / Fix buttons, hidden when not configured); 6 AI_Workbench wiring; 7 GUI smoke.
