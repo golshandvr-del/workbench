@@ -121,3 +121,8 @@ immediately, so a new session can continue without repeating work.
   "AI Workbench · <label>", radios (+" (recommended)", "Other answer…" + entry), values()/choose()/write()/
   option_texts()/ok()/cancel(); ask_form(parent, spec) modal, `TEST_HOOK(spec)` module attr. Verified under xvfb.
   NEXT: wire workspace/shell.py guide_action, AI_Workbench._mission_input/mission_menu_pick, mission_column_pick.
+- (session 4) DONE wiring (all pushed): 351aa02 workspace/shell.py guide_action -> text via paste box, all other
+  needs via ask_form(form_spec(step,act,state,OPTIONAL_INPUTS)) (Home card uses ws.guide_action too);
+  2c3fb9a mission_menu_pick form (unless mission_input_hook set); 753a8f9 mission_column_pick form; 1ed3b0b
+  _mission_input fallback form. NEXT: fix tests that patched simpledialog for step inputs; tests/test_choices.py;
+  GUI smoke gui_v517_forms_smoke.py.
