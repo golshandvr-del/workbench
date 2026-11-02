@@ -153,3 +153,4 @@ immediately, so a new session can continue without repeating work.
 - (session 5) DONE R1 code: 4a7ef5d agents.py PROPOSAL_ONLY_MARK/TASK_DELIVERY_RULE/task_instructions(agent) (replaces
   any instruction containing "AIWB_MANAGER_PROPOSAL" by one task-delivery rule; works for old projects, no migration);
   b69fe60 handoff.build_prompt uses it; e1fb741 agent_hub.briefing uses it. NEXT: verify; R6 proposals translation.
+- (session 5) After R1: unit 890 OK. NEXT R6 recon: v2/proposals.py ("the proposal has no operations").
