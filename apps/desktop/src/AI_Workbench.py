@@ -4713,6 +4713,21 @@ class WorkbenchApp:
         holder = ttk.Frame(body)
         holder.grid(row=6, column=0, sticky="ew", pady=(0, 10))
         self.tool_cards["settings"] = self._make_tools_card(holder, "settings", title=structure5.CLASSIC)
+        # 5.19.0: Settings › Helper AI (optional)
+        from aiwb.ui.helper_card import build_helper_card
+        helper = ttk.Frame(body, style="Card.TFrame", padding=(18, 14))
+        helper.grid(row=7, column=0, sticky="ew", pady=(0, 10))
+        helper._aiwb_section = "Helper AI"  # type: ignore[attr-defined]
+        self.helper_widgets = build_helper_card(helper, self.helper_service, on_change=self._helper_changed)
+
+    def _helper_changed(self) -> None:
+        """5.19.0: the helper AI was set up or removed — Home shows or hides its buttons."""
+        card = getattr(self, "home_card", None)
+        if card is not None:
+            try:
+                card.refresh()
+            except Exception:  # noqa: BLE001
+                pass
 
     def open_project_settings(self) -> None:
         """Settings › Project › Project settings…: the open project's details, team manager, accounts and tools."""
@@ -5820,7 +5835,9 @@ class WorkbenchApp:
         """
         from aiwb.ui.next_card import NextStepCard
         self.home_card = NextStepCard(body, steps=self._home_steps, state=self._home_state, perform=self.home_perform,
-                                      clipboard=self._copy_text_to_clipboard, status=self.set_status)
+                                      clipboard=self._copy_text_to_clipboard, status=self.set_status,
+                                      helper=getattr(self, "helper_service", None),   # 5.19.0 (optional)
+                                      lang=lambda: getattr(getattr(self, "prefs", None), "lang", "en"))
         self.home_card._aiwb_section = "Next step"  # type: ignore[attr-defined]
         self.home_card.pack(fill="x", pady=(0, 9))
         self.home_next_var = self.home_card.title_var   # 3.5.0 name kept for the smokes
