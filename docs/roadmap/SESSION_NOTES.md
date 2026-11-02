@@ -263,3 +263,6 @@ immediately, so a new session can continue without repeating work.
   Writing tests/gui/gui_v519_helper_smoke.py (srv.reply = guided_answer(h, files) for the fix).
 - (session 7) DONE cb150cb tests/gui/gui_v519_helper_smoke.py PASS (Save/Test/Explain/Fix->box->accepted/Remove).
   NEXT: full GUI run_all (bg /tmp/gui_all.log) + unit, then 5.19.0 release (bump tool in tools/, manifest new files).
+- (session 7) GUI run_all 58/61: S5 (known sandbox-only), NEW gui_v5_polish_smoke ('Settings: 10 controls at once (max 8)',
+  'command with two homes: save (Settings, Toolbar)') + gui_v5_map_smoke ('- Status bar [area]') -> caused by helper card
+  in Settings. Fixing (likely: card collapsed by default / buttons not counted as commands / rename Save).
