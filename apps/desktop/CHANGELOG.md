@@ -1,3 +1,25 @@
+## [5.17.0] - 2026-11-02
+
+### Clear forms (Roadmap 5.17.0 — owner's friends' feedback: "the 'Your decision' box is tiny and doesn't say what to decide")
+
+- **One window for a step's inputs.** "Decide and continue…", "Decide…", "Reject…", "Cancel the task…", the
+  Mission Map menus and every other step that needs an input used to open a chain of one-line `askstring` boxes
+  ("Your decision", then "Why?") that showed neither the question nor the options. Now one window shows the step,
+  the **full question** the AI asked, and every input together.
+- **Options you can click.** A decision shows its options as radio buttons — read from the decision record, from the
+  AI's `decision_requests` in its last answer, or from the question itself ("Options: A; B", bullets, "(a) … (b) …",
+  "A or B?"). The project manager's recommendation is marked "(recommended)" and pre-selected; without a
+  recommendation nothing is pre-selected, so an accidental Enter never decides for you. "Other answer…" takes any
+  text. Passed/failed are two radio buttons; the reason is optional and pre-filled.
+- **Keyboard.** Enter = OK, Esc = Cancel (nothing changes). A missing answer is named in the window, which stays open.
+
+### Tests
+
+- `test_choices.py` (14: options parsing, never inventing options, decision/task choices, form spec, Guide steps
+  carry the choices), GUI gate `tests/gui/gui_v517_forms_smoke.py` (real Home path: an AI asks "vanilla JS or React?"
+  → one window with the question and both options → Esc changes nothing → empty OK keeps the window → React and its
+  reason are recorded; `askstring` patched to fail). Unit 890 OK.
+
 ## [5.16.0] - 2026-11-02
 
 ### Light and smooth (Roadmap 5.16.0 — owner's friends' feedback on 5.15.0: "why is the app so slow?", "why is the
