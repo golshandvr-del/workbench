@@ -241,3 +241,8 @@ immediately, so a new session can continue without repeating work.
   "Explain this step" (configured + a step), "Fix with helper AI" (configured + last paste failed: error or kind in
   rejected/inbox_only/proposal_fix/charter_rejected; text remembered before perform) -> fixed text into paste box,
   never auto-applied.
+- (session 6) DONE step 5 319cd00 next_card.py: FIX_KINDS/EXPLAIN_LABEL/FIX_LABEL; NextStepCard(helper=, runner=,
+  lang=); .failed {key,text,problem} set by use_answer when error or kind in FIX_KINDS (reset on step change);
+  helper_bar (explain_btn, fix_btn) via _helper_buttons() at end of refresh; helper_labels(); explain_step(),
+  fix_answer() (result -> paste.set_text, never applied). NEXT step 6 AI_Workbench wiring: self.helper_service after
+  github_account_service (~4359); settings card row 7 in _make_settings_project; home card helper=/lang=.
