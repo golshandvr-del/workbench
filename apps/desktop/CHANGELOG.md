@@ -1,3 +1,29 @@
+## [5.16.0] - 2026-11-02
+
+### Light and smooth (Roadmap 5.16.0 — owner's friends' feedback on 5.15.0: "why is the app so slow?", "why is the
+right-click menu slow and still on screen after I change tab?")
+
+- **State cache.** Every read of the project state used to parse the whole `state.json`, migrate it (a full deep
+  copy) and copy it again — about 20 ms on a real 600 KB project, several times per click. The migrated state is now
+  kept per file (stat signature: modification time, size, inode) and handed out as an independent copy in ~3 ms; a
+  file changed by another process is read again. A write transaction compares the state once instead of serialising
+  it twice: 64 → 38 ms.
+- **Animations stop when nothing happens.** The Mission Map's breathing circles and travelling particles played at
+  ~42 frames per second for as long as any task was active, even with the window hidden. They now play for 6 seconds
+  after a change and then stand still; a hidden map draws nothing. An idle app: 0 frames per second.
+- **Fast menu.** The first right-click drew the menu's rounded, shadowed surface pixel by pixel in Python (~700 ms).
+  It is now drawn small and stretched along its straight middle (9-slice) — the same pixels, ~110 ms the first time,
+  ~20 ms after.
+- **The menu always closes.** A floating menu now closes when you switch page, click anywhere else, or move, resize
+  or minimise the main window (before: only Esc, a pick, or a focus change Windows did not always report).
+- **Quiet status bar.** The status poll (every 2.5 s) reads nothing and redraws nothing while `state.json` is unchanged.
+
+### Tests
+
+- `test_store_cache.py` (10: independent copies, external change re-read, read budget), `test_raster_9slice.py`
+  (3: pixel-identical to the full drawing, cost budget), GUI gate `tests/gui/gui_v516_light_smoke.py` (idle frames,
+  poll skip, menu closing on page switch / click / move / minimise, nothing written). Unit 876 OK.
+
 ## [5.15.0] - 2026-10-29
 
 ### Gate of real scenarios S1–S9 (Roadmap 5.15.0)
