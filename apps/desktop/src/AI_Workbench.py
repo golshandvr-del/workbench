@@ -4892,11 +4892,23 @@ class WorkbenchApp:
         if not path.is_file():
             # a project is open but not planned yet: an empty state, so the status bar never says "No project open"
             return {"agents": {}, "tasks": {}, "handoffs": {}, "milestones": {}, "versions": {}, "settings": {}}
+        # roadmap 5.16.0 (R2): the status poll re-reads state.json only when the file changed (stat signature);
+        # an unchanged file returns the very same dict, so the shell can skip the whole refresh.
+        try:
+            st = path.stat()
+            sig = (str(path), st.st_mtime_ns, st.st_size)
+        except OSError:
+            return None
+        cached = getattr(self, "_status_cache", None)
+        if cached is not None and cached[0] == sig:
+            return cached[1]
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
-        return data if isinstance(data, dict) else None
+        data = data if isinstance(data, dict) else None
+        self._status_cache = (sig, data)
+        return data
 
     def _make_agents_page(self) -> None:
         """Rail › Agents: Team · Dispatch desk · Tools (the expert pages of 3.x/4.x), as in docs/UI_TREE.md."""
