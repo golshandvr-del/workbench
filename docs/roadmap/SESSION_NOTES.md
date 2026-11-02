@@ -86,3 +86,9 @@ immediately, so a new session can continue without repeating work.
   `cancel-in-progress` cancels older runs on main. Check CI via
   `curl -H "Authorization: token $T" https://api.github.com/repos/golshandvr-del/workbench/actions/runs?per_page=8`.
   NEXT: tests/gui/gui_v516_light_smoke.py (idle frames 0, menu closes on show()/Unmap/click, poll skip).
+- (session 3) DONE 5.16.0 gate: tests/gui/gui_v516_light_smoke.py PASSES (idle 0 fps after LIVE_MS, poll skip,
+  menu 113/19 ms, closes on page switch/click/move/minimise). Fixes made for it: 0f595d8 status_state cache also
+  for open Workbench; 6dab1cb menu5 MENU_TITLE="AI Workbench menu" + <Destroy> -> closed. Xvfb has no WM:
+  iconify is a no-op -> smoke generates <Unmap> itself. Scenario Driver closes unknown Toplevels -> pass
+  allow_windows=WORK_WINDOWS+(menu5.MENU_TITLE,). NEXT: full unit+GUI run, then release 5.16.0
+  (CHANGELOG, bump_desktop_release.py 5.16.0, ROADMAP ✅, tag desktop-v5.16.0).
