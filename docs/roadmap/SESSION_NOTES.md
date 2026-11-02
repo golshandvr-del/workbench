@@ -150,3 +150,6 @@ immediately, so a new session can continue without repeating work.
   AIWB_MANAGER_PROPOSAL block based on the given state_revision." ; handoff.build_prompt (~321) section "1. Your role"
   copies agent["instructions"] verbatim, section "9. Expected delivery" wants files + AIWB_HANDOFF -> contradiction.
   Plan: build_prompt drops/rewrites proposal-only lines (works for existing projects without state migration).
+- (session 5) DONE R1 code: 4a7ef5d agents.py PROPOSAL_ONLY_MARK/TASK_DELIVERY_RULE/task_instructions(agent) (replaces
+  any instruction containing "AIWB_MANAGER_PROPOSAL" by one task-delivery rule; works for old projects, no migration);
+  b69fe60 handoff.build_prompt uses it; e1fb741 agent_hub.briefing uses it. NEXT: verify; R6 proposals translation.
