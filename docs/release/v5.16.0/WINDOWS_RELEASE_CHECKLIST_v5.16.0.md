@@ -1,4 +1,4 @@
-# Windows Release Checklist — AI Workbench 5.16.0 (gate of real scenarios S1–S9)
+# Windows Release Checklist — AI Workbench 5.16.0 (light and smooth: state cache, bounded animation, fast closable menu)
 
 ## Automated in GitHub Actions (`ci.yml` / `release-desktop.yml`, `windows-latest`)
 
@@ -17,32 +17,20 @@
 `tools/e2e_github_sandbox.py` — run 2026-10-18, all PASS (see `E2E_REPORT_v5.5.0.md (unchanged GitHub code paths)`):
 preflight · sensitive file blocked · commit · idempotent commit · push · idempotent push · exact run of the pushed SHA (not the seed push) · build passed · artifact SHA-256 matched GitHub's digest · artifact content = pushed SHA · build-metadata contract · stale plan refused after a concurrent push · manual dispatch confirmed with run ID · no token in records/events/`.git/config` · branch cleanup. Paths contain spaces and Unicode.
 
-## 5.16.0 specific (gate of real scenarios — the app driven like a person, REAL widgets and the real clipboard)
+## 5.16.0 specific (light and smooth — roadmap R2 R3 R4)
 
-Shared driver `apps/desktop/tests/gui/scenario_driver.py` (counts clicks and pastes; any unexpected window, error box
-or callback error fails the scenario). One script per scenario, run by `run_all.py` on Linux (xvfb) and against the
-installed copy on Windows; screenshots `docs/audit/screens/v5.15-scenarios/`.
-
-- [x] S1 `gui_scenario_s1_quick_smoke.py` — Quick, one AI chat, three files → Apply 3 files → round 2 → Restore
-- [x] S2 `gui_scenario_s2_guided_smoke.py` — guided project, three AIs named by the user → charter → task → file on
-      disk → Tests/build passed → first milestone accepted, never leaving Home
-- [x] S3 `gui_scenario_s3_broken_smoke.py` — broken charter → fix prompt copied, nothing imported; sloppy charter
-      (comments, trailing commas, smart quotes, bold markers) → auto-fixed; Markdown files → converted → on disk
-- [x] S4 `gui_scenario_s4_continue_smoke.py` — cut-off answer → Copy the continue prompt → the rest → **both** files
-      on disk (bug found and fixed: the files that arrived complete before the cut were lost; `guide.merge_partial`,
-      `test_guide_continue.py`, 8 tests)
-- [x] S5 `gui_scenario_s5_reopen_smoke.py` — close the app mid-work, open it again → same project, same step, same
-      attempt → the answer lands
-- [x] S6 `gui_scenario_s6_old_project_smoke.py` — a half-done project written by the REAL 5.7.0 code
-      (`tests/fixtures/projects/v5.7.0_todo.zip`, `build_v570_project.py`) opens untouched and the work goes on
-- [x] S7 `gui_scenario_s7_gpt_zip_smoke.py` — a ChatGPT ZIP (top folder, `AIWB_HANDOFF.json`, Mac noise) through the
-      real Load ZIP… button → files on disk
-- [x] S8 `gui_scenario_s8_context_smoke.py` — the owner's real GPT context request → files copied (folder expanded,
-      `.env` refused) → delivery → on disk
-- [x] S9 `gui_scenario_s9_windows_copy_smoke.py` — answers copied from the rendered Windows chat (line-end `\`,
-      escaped `_`, CRLF): charter, task answer and Quick answer all land byte for byte
-- [x] All 5.1.0 – 5.14.0 gates stay green (unit 863 + all GUI smokes)
-- [ ] NOT RUN: install 5.16.0 over 5.14.0 on real Windows; S1–S9 by hand with real chats (GPT / Claude / Gemini)
+- [x] State cache (`v2/store.py`): migrated state kept per file stat signature (mtime_ns, size, inode) as pickle
+      bytes; every `load()` is an independent copy; a file changed by another process is re-read. 600 KB project:
+      load 20 → 3.5 ms, `Guide.steps` 20 → 2.5 ms, write transaction 64 → 38 ms (`test_store_cache.py`, 10 tests)
+- [x] Mission Map live loops (`mission:pulse`, `mission:particles`) play 6 s after a change, then stand still; they stop
+      when the map is hidden. Idle app: 42 → 0 frames/s (`gui_v516_light_smoke.py`)
+- [x] Menu panel sprite drawn small and 9-sliced: pixel-identical (`test_raster_9slice.py`), menu first open
+      ~700 ms → ~110 ms (Linux xvfb), later opens ~20 ms
+- [x] Floating menus close on page switch, a click anywhere else, main window moved/resized/minimised
+      (`menu5.close_all`, `install_auto_close`; `gui_v516_light_smoke.py`)
+- [x] Status poll: `state.json` unchanged → no read, no redraw, no listener (`AppShell._poll_once`, `status_state` cache)
+- [x] All 5.1.0 – 5.15.0 gates stay green (unit 876 + all GUI smokes incl. S1–S9)
+- [ ] NOT RUN: install 5.16.0 over 5.15.0 on real Windows; right-click menu feel and idle CPU checked by hand
 
 ## Manual checks on a real user machine — NOT RUN until ticked
 
@@ -52,4 +40,4 @@ installed copy on Windows; screenshots `docs/audit/screens/v5.15-scenarios/`.
 - [ ] Close and reopen the Sync & Build window during CI: the app offers to resume
 - [ ] SmartScreen / antivirus behaviour on `Setup.bat` on a consumer machine
 
-Known open items and their release-owner decisions: `RELEASE_OWNER_DECISIONS_v5.16.0.md`. Rollback: `ROLLBACK_PLAN.md`.
+Rollback: `ROLLBACK_PLAN.md`.
