@@ -59,3 +59,7 @@ immediately, so a new session can continue without repeating work.
   migrate_state(copy_input=False); transaction compares dicts. 863 tests OK. Bench 544 KB: load 20->3.5 ms,
   Guide.steps 20->2.5 ms, tx write 64->38 ms, no-op tx 5.8 ms. NEXT: test_store_cache.py, then animations,
   menu, poll.
+- (session 2) DONE 5.16.0 step 2 (commit 12d08c0): mission_canvas LIVE_MS=6000 then `_settle()`; `<Unmap>` stops
+  loops. Verified: idle frames/s 42 -> 0.0; gui_v5_motion_smoke passes. Run GUI smokes with
+  `PYTHONPATH=src:tests/gui xvfb-run -a python3 tests/gui/<file>.py` (or `xvfb-run -a python3 tests/gui/run_all.py`).
+  NEXT: menu closing (shell.show/Configure/Unmap/click) + panel pre-render; then poll skip.
