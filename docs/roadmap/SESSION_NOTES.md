@@ -197,3 +197,5 @@ immediately, so a new session can continue without repeating work.
 - (session 6) 5.18.0 RELEASE in progress: bump 48b004c..28cb68c (AI_Workbench, __init__, api_client, manifest,
   install.ps1), 68fb2c9 checklist. Manifest check PASS (225 files). CHANGELOG is apps/desktop/CHANGELOG.md.
   NEXT: CHANGELOG entry, ROADMAP ✅ (active 5.19.0), tag desktop-v5.18.0, verify CI + release run.
+- (session 6) 5.18.0: f01c00f CHANGELOG, d15edf3 ROADMAP ✅ (active 5.19.0). NEXT: tag desktop-v5.18.0, verify CI +
+  release run, then start 5.19.0 (optional helper AI, OpenAI-compatible API; gate = local fake HTTP server tests).
