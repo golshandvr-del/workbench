@@ -29,3 +29,8 @@ immediately, so a new session can continue without repeating work.
 
 ## Progress log
 - (session 2) notes file created.
+- (session 2) CONFIRMED root cause 1 in code: `v2/agents.py` PM template instruction "Return changes only as an
+  AIWB_MANAGER_PROPOSAL block" is copied into section "1. Your role" of `handoff.build_prompt` (handoff.py:321),
+  while section "9. Expected delivery" asks AIWB_FILE + AIWB_HANDOFF. Friend's log: 4 proposal blocks, 3 with
+  `operations: []` and invented keys (decisions, file_change_proposals, task_assessment...) -> rejected at
+  `proposals.py:84` "the proposal has no operations". PM keeps re-deciding DEC-0002 (rev 49 -> 63).
