@@ -269,3 +269,6 @@ immediately, so a new session can continue without repeating work.
 - (session 7) 9e09efc helper_card: collapsed by default (toggle "Show settings"/"Hide settings", w["do_toggle"], w["body"]),
   Save button label "Save helper" (two-homes rule). NEXT: regenerate docs/UI_MAP.md (tools/ui_map.py), smoke opens card,
   rerun polish/map/v519 smokes.
+- (session 7) d2947f1 smoke opens card; UI map regenerated 1383e80/902f887/e6f05c4 (Settings 8 visible = max).
+  polish + map + v519 smokes PASS. NEXT: unit suite, then release 5.19.0:
+  python3 tools/bump_desktop_release.py 5.19.0 --module helper_ai.py --module ui/helper_card.py --test test_helper_ai.py
