@@ -203,3 +203,16 @@ immediately, so a new session can continue without repeating work.
   5.19.0 recon: secrets -> aiwb/github/credential_store.py (CredentialStore protocol set/get/delete_secret(ref),
   MemoryCredentialStore for tests, WindowsCredentialStore, create_default_credential_store()). App prefs ->
   aiwb/ui/prefs.py AppPrefs (settings.json keys ui_theme/ui_lang/ui_mode/ui_reduce_motion, save callback).
+- (session 6) 5.19.0 recon 2: credential_store._validate_ref only accepts "github-api:<uuid>" -> target
+  "AIWorkbench/GitHub/API/<uuid>" (tests in test_github_accounts.py check bad refs). Settings page =
+  aiwb/ui/shell.py build_settings_page(shell, frame, extra=...) cards rows 0..4 (row 3 = app section via extra);
+  called at AI_Workbench.py:4644 (extra=self._settings_app_section); settings_data saved by _save_settings (~4466).
+  Home card = aiwb/ui/next_card.py NextStepCard(steps,state,perform,clipboard,status) built at AI_Workbench.py
+  ~5818 _make_home_next_card; use_answer(text) -> perform(key, paste_id, {"text"}) -> _done(out) sets message_var.
+  guide._paste returns {"message","kind"} (kinds: proposal, proposal_fix, charter_rejected, handoff, rejected ...).
+  DESIGN 5.19: aiwb/helper_ai.py (pure: HelperAIError, HelperService(settings, save, store) configured =
+  base_url+model (key optional, e.g. Ollama); complete(messages) urllib POST {base}/chat/completions timeout;
+  fix_messages(answer, problem), explain_messages(step)); credential ref "helper-ai:<uuid>" ->
+  "AIWorkbench/HelperAI/<uuid>"; Settings card "Helper AI (optional)"; NextStepCard optional helper=
+  buttons "Fix with helper AI" (after a failed paste) + "Explain this step", hidden when not configured; work in a
+  thread, result via after(); fixed text goes through the normal use_answer path.
