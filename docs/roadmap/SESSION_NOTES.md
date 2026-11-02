@@ -261,3 +261,5 @@ immediately, so a new session can continue without repeating work.
 - (session 7) Probe /tmp/probe.py OK: no helper btns before setup; app.helper_widgets["save"] with fake url+model (no key)
   -> card.helper_labels()==['Explain this step']; bad answer -> kind inbox_only, card.failed set, labels + 'Fix with helper AI'.
   Writing tests/gui/gui_v519_helper_smoke.py (srv.reply = guided_answer(h, files) for the fix).
+- (session 7) DONE cb150cb tests/gui/gui_v519_helper_smoke.py PASS (Save/Test/Explain/Fix->box->accepted/Remove).
+  NEXT: full GUI run_all (bg /tmp/gui_all.log) + unit, then 5.19.0 release (bump tool in tools/, manifest new files).
