@@ -253,3 +253,6 @@ immediately, so a new session can continue without repeating work.
   home_card); NextStepCard gets helper=getattr(self,"helper_service",None), lang=prefs.lang. NEXT: verify creation
   order (home card after helper_service), unit + GUI tests, then GUI smoke gui_v519_helper_smoke.py.
 - (session 6) Order verified: helper_service (4367) < _make_ui (4408) -> _make_home_page (4635) -> settings (4649).
+- (session 6) After 5.19 wiring: unit 917 OK (10 skipped). Running GUI run_all (bg, /tmp/gui_all.log). NEXT: GUI gate
+  tests/gui/gui_v519_helper_smoke.py (no settings -> no helper buttons, Settings card present; set up with fake
+  server -> Explain on Home; bad answer -> Fix button -> fixed text in paste box -> Use this answer works).
