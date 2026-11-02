@@ -44,3 +44,12 @@ immediately, so a new session can continue without repeating work.
   (workspace/shell.py:331 INPUT_PROMPTS, AI_Workbench.py `_mission_input` ~5590). The question/options are in
   step["explain"] (task blocked_reason / decision options) but never shown in the dialog. Decision entities have
   `options` + `recommendation` -> radio buttons possible.
+- (session 2) Menu root cause 4 detail: `ui/menu5.py` FloatingMenu = overrideredirect topmost Toplevel; closes only
+  on Esc, pick, or FocusOut+focus_get()==None (unreliable on Windows). `ui/shell.py show()` never closes it; root
+  <Configure>/<Unmap> never close it. Popup stored as `app.mission_popup` (AI_Workbench.py ~5501/5526).
+  Panel sprite drawn by raster.py in pure python on first open (~240 ms).
+- Release process: `python tools/bump_desktop_release.py X.Y.Z [--module m.py --test t.py]` (versions, manifest,
+  install.ps1, checklist copy); CHANGELOG entry `## [X.Y.Z] - date`; `tools/check_installer_manifest.py`;
+  push tag `desktop-vX.Y.Z` -> .github/workflows/release-desktop.yml builds+publishes on Windows.
+- PLAN (new roadmap 5.16 -> 5.20): 5.16 speed+menu, 5.17 clear input forms (decision dialog), 5.18 short PM
+  path, 5.19 optional helper AI API, 5.20 gate (friend's calculator log fixture + perf budgets) + release.
