@@ -31,6 +31,15 @@ INFO_ONLY = ("request_more_evidence", "report_risk")
 MAX_OPS = 60
 
 
+class NoOperations(ModelError):
+    """5.18.0 (R6): a proposal nothing could be read from — carries a short :attr:`fix_prompt` for the same chat."""
+
+    def __init__(self, message: str, fix_prompt: str, translation: dict[str, Any] | None = None) -> None:
+        super().__init__(message)
+        self.fix_prompt = fix_prompt
+        self.translation = translation or {}
+
+
 def find_block(text: str) -> dict[str, Any] | None:
     m = BLOCK_RE.search(text or "")
     if not m:
@@ -76,19 +85,32 @@ class ProposalService:
                     charter: dict[str, Any] | None = None, fixes: list[str] | None = None) -> dict[str, Any]:
         """Import an already parsed proposal (also used for a Project Charter, 3.4.0)."""
         from .report import parse_emergency, parse_remaining
+        from .rescue import duplicate_of, fix_prompt, translate
         ops = data.get("operations")
         remaining = parse_remaining(data.get("roadmap_remaining"))
+        state = self.store.load()
+        rescued = False
         if isinstance(ops, list) and not ops and remaining is False and charter is None:
             pass  # a pure decision: "nothing left" (roadmap 4.4.0, F25 → F26)
         elif not isinstance(ops, list) or not ops:
-            raise ModelError("the proposal has no operations")
+            # 5.18.0 (R6): the keys models invent (decisions, task_assessment, follow_up_tasks …) become operations
+            tr = translate(data, state) if charter is None else {"operations": [], "fixes": [], "leftover": []}
+            if not tr["operations"]:
+                why = "the proposal has no operations"
+                if tr["fixes"]:
+                    why += " (" + "; ".join(tr["fixes"][:3]) + ")"
+                raise NoOperations(why, fix_prompt(why, state, tr["leftover"]), tr)
+            ops, rescued = tr["operations"], True
+            fixes = list(fixes or []) + tr["fixes"] + [f"not used: {x}" for x in tr["leftover"]]
         if len(ops) > MAX_OPS:
             raise ModelError(f"too many operations ({len(ops)} > {MAX_OPS}); ask the manager to split the proposal")
         try:
             base = int(data.get("base_state_revision"))
         except (TypeError, ValueError):
-            raise ModelError("base_state_revision (integer) is required so Workbench can detect stale proposals") from None
-        state = self.store.load()
+            if not rescued:
+                raise ModelError("base_state_revision (integer) is required so Workbench can detect stale proposals") from None
+            base = int(state["state_revision"])
+            fixes = list(fixes or []) + [f"base_state_revision missing — the current revision {base} was used"]
         normalized, problems = [], []
         temp_refs: set[str] = set()
         for i, op in enumerate(ops):
@@ -100,6 +122,10 @@ class ProposalService:
                 continue
             entry = {"index": i, "operation": op["operation"], "raw": copy.deepcopy(op), "valid": True, "problem": "",
                      "decision": "pending", "reason": str(op.get("reason", ""))[:1000]}
+            if op["operation"] == "propose_decision":
+                dup = duplicate_of(str(op.get("title", "")), str(op.get("decision_id", "")), state)
+                if dup:  # 5.18.0: an accepted decision is final — the same decision is never proposed again
+                    entry.update(valid=False, problem=f"already decided ({dup}, final)", decision="rejected")
             if op["operation"] in ("create_task", "split_task"):
                 ref = str(op.get("temporary_ref") or f"new-{i + 1}")
                 if ref in temp_refs:
