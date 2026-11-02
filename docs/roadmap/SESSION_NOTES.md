@@ -191,3 +191,6 @@ immediately, so a new session can continue without repeating work.
 - (session 5) Home probe OK: useless proposal -> msg "Nothing to apply: ... short correction prompt ..." + clipboard =
   fix prompt, card unchanged (paste panel stays); then half-right -> "Review the plan PROP-0002 (1 change)". No dialogs.
   NEXT: tests/gui/gui_v518_pm_path_smoke.py from this probe, then release 5.18.0.
+- (session 6) Sandbox reset again; re-cloned, cpush+xvfb reinstalled. Remote HEAD = f4053cd (all session-5 work is
+  pushed). CI on f4053cd FAILED only because rescue.py + test_rescue.py are not in release_manifest.json (expected;
+  the 5.18.0 bump with --module v2/rescue.py --test test_rescue.py fixes it). NEXT: release 5.18.0.
