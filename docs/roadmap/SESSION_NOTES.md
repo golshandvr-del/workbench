@@ -110,3 +110,9 @@ immediately, so a new session can continue without repeating work.
   guide_action (INPUT_PROMPTS, askstring), AI_Workbench._mission_input + mission_column_pick (askstring; hook
   mission_input_hook(need,label)). PLAN: v2/choices.py (pure form spec) -> Guide.steps attaches question/choices ->
   ui/action_form.py (one window, radios, "Other answer…", Enter/Esc) -> wire 3 sites -> tests -> release.
+- (session 4) DONE 706d633+da8e1d1 v2/choices.py: parse_options(text)->(options,recommended) [bullets, "Options:",
+  (a)(b), "A or B?"]; decision_choices(step,state)->{question,options,recommended} (decision:Dn record / task:Tn
+  latest handoff decision_requests or blocked_reason / proposed decision options); form_spec(step,action,state,
+  optional)->{title,step_title,question,fields[{need,label,kind choice|yesno|note|entry,options,recommended,optional,
+  default}]}; initial_values(spec); validate(spec,values)->(inputs,err). OTHER="__other__". NEXT: Guide.steps adds
+  step["choices"]; ui/action_form.py; wire sites; tests/test_choices.py.
