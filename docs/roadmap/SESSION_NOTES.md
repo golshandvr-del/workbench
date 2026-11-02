@@ -164,3 +164,8 @@ immediately, so a new session can continue without repeating work.
   acceptance_criteria acceptance_policy deliverables context_refs priority(low|medium|high|critical)
   risk_level(low|medium|high). _apply: propose_decision -> state decision status proposed; update_task raw.changes.
   Friend's raw log NOT in repo -> 5.18 fixtures are reconstructed from the shapes recorded above (honest label).
+- (session 5) DONE 9ad69f1 v2/rescue.py: translate(data,state)->{operations,fixes,leftover} (decisions*/task_assessment/
+  task_change_proposals/follow_up_tasks/risks; accepted decision same id/title = FINAL skipped; file_change_proposals ->
+  leftover), duplicate_of(title,id,state), fix_prompt(problem,state,leftover) short. Verified by hand. NEXT: wire into
+  proposals.import_data (raise NoOperations(ModelError) with .fix_prompt when nothing usable), controller kind
+  "proposal_fix" -> guide/shell show prompt; propose_decision dup of accepted -> invalid op; prompts mark FINAL.
