@@ -467,6 +467,9 @@ def manager_update_prompt(snapshot: dict[str, Any], *, state_url: str = "", fall
             f"{e.get('new', '')} {e.get('why', '')}".rstrip() for e in since_events[-40:]]
     lines += ["", "## Rules", "- Separate: read from the snapshot / reported by agents / your inference / unknown.",
               "- Model claims are NOT evidence; only Workbench evidence counts. Never declare a task done.",
+              "- Accepted decisions are FINAL: never decide or propose them again (Workbench drops repeats).",
+              "- Put every change in `operations` (at least one), or answer `operations: []` with "
+              "`roadmap_remaining: false` when nothing is left. Files never go in a proposal.",
               f"- Use base_state_revision {snapshot['state_revision']}.", "", MANAGER_FORMAT]
     return "\n".join(lines)
 
