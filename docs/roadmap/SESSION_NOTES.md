@@ -128,3 +128,5 @@ immediately, so a new session can continue without repeating work.
   GUI smoke gui_v517_forms_smoke.py.
 - (session 4) DONE 58a8b1c+fa65945 tests/test_choices.py (14 OK). Test projects: ProjectsController(Path(d),
   make_pipeline=wb.make_inbox_pipeline) (NOT V2Controller). NEXT: full unit run, GUI smokes, gui_v517_forms_smoke.py.
+- (session 4) After 5.17 wiring: unit 890 OK (10 skipped); GUI 57/58 (only pre-existing sandbox-only S5 fails).
+  run_all takes ~4.5 min -> use timeout 580 + Bash timeout 600000. NEXT: tests/gui/gui_v517_forms_smoke.py.
