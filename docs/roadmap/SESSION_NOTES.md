@@ -169,3 +169,8 @@ immediately, so a new session can continue without repeating work.
   leftover), duplicate_of(title,id,state), fix_prompt(problem,state,leftover) short. Verified by hand. NEXT: wire into
   proposals.import_data (raise NoOperations(ModelError) with .fix_prompt when nothing usable), controller kind
   "proposal_fix" -> guide/shell show prompt; propose_decision dup of accepted -> invalid op; prompts mark FINAL.
+- (session 5) DONE 9706db0 proposals.py: class NoOperations(ModelError)(.fix_prompt,.translation); import_data calls
+  rescue.translate when ops empty (charter None), raises NoOperations if nothing usable; base_state_revision missing ->
+  current revision when rescued; propose_decision duplicate of accepted -> invalid "already decided (Dn, final)".
+  NEXT: controller.route catch NoOperations -> RouteResult("proposal_fix", record={"fix_prompt"}); guide.py ~885 &
+  shell.do_import treat like charter_rejected (out["prompt"]).
