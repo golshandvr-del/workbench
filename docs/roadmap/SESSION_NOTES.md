@@ -344,3 +344,7 @@ immediately, so a new session can continue without repeating work.
 - (session 10) BF-011 (afd8935 S2): validation_failed note dropped; next task prompt still "Claimed: tests pass", no
   failure info. Checked OK: troubleshoot x3 -> escalate -> task blocked (visible, unblock/manager/cancel). Summary
   6 S1 / 4 S2 / 1 S3. NEXT: stale proposal, continue-step dismissal, Quick ZIP, reject_handoff->re-prepare loop.
+- (session 11, after sandbox reset) Env restored at 23f52e2. BF-012 (22e4627 S3 continue step outlives dropped
+  handoff), BF-013 (c50039f S2 reject reason lost, next prompt "first handoff") were recorded at end of session 10;
+  checked OK: scope check, troubleshoot limit, out-of-date answer. Summary 6 S1 / 5 S2 / 2 S3. NEXT: stale proposal
+  (script o_stale.py was running when the session died), Quick ZIP, helper AI / network errors, Settings.
