@@ -1044,6 +1044,31 @@ user is asked a question that was already answered.
 [text] (the form then offers it pre-selected, plus *Other answer…*). For `recommendation` sentences use
 `choices.parse_options()` to split "X because …" into option *X* + rationale.
 
+### BF-048 · S2 · OPEN — end of the roadmap: "nothing left" written in words is refused, and the correction prompt forces the PM to **invent work**
+
+**Where:** `aiwb/v2/report.py` `parse_remaining()` knows only `true/yes/y/1` and `false/no/n/0/none`; anything else
+(`"nothing left"`, `"No, the project is complete"`, `"nothing"`, `[]`, missing field) is `None`. `proposals.import_data()`
+accepts an empty `operations` list only when `remaining is False`; otherwise it raises `NoOperations` with
+`rescue.fix_prompt()`. That prompt says *"`operations` must list at least one change"* and shows only create/update/
+decision examples; it **never mentions** `roadmap_remaining: false` — the one field that would make the answer valid.
+
+**Reproduce** (scripts `/tmp/hunt/fp2.py`, `/tmp/hunt/fp3.py`): all tasks are done; Home shows *"Tell the project
+manager what changed and ask for the next step"*. The PM answers `{"summary": "Everything is done", "operations": [],
+"roadmap_remaining": "nothing left"}` (or omits the field) → *"Nothing to apply: the proposal has no operations. A short
+correction prompt is ready…"*. The correction prompt asks for at least one operation. A PM that follows it must add a
+`create_task` / `update_task` / `propose_decision` that nobody needs; the project can never reach *"announce
+completion"* through this path. Only the exact values `false` / `"false"` / `"no"` work (*"Plan PROP-0001 accepted. The
+project manager says no roadmap stage is left — announce completion."*).
+
+**Why it matters:** the very last step of every project. Models phrase "done" freely; the app then pushes the PM into
+fake tasks (the same "revision 49 → 63 with no file" loop that 5.18.0 was meant to end) or leaves the user stuck at
+*Tell the project manager…* forever.
+
+**Expected:** accept more "no" forms (`nothing`, `nothing left`, `complete(d)`, `done`, strings starting with `no`,
+empty list) or ask a yes/no question in the card when it is unknown; when `operations` is empty, the fix prompt must
+offer both ways: *"either list at least one change, or — if nothing is left — answer with `\"operations\": [],
+\"roadmap_remaining\": false`"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
