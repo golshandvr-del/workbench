@@ -475,3 +475,6 @@ immediately, so a new session can continue without repeating work.
   deliveries / publish errors of the same task; ws_seen trimmed alphabetically. Summary 8 S1 / 27 S2 / 22 S3.
   Seen in passing (Persian UI): attention `why` text is always English (candidate for the i18n pass).
   NEXT: i18n.py (Persian-mode leftovers), resources.py, context_request_window.py.
+- (session 19) BF-060 (c42c695 S3) Persian Workspace: English literals in shell.py (Open on Home, More, Queue of each AI,
+  Who/Step, You/N open, Project details keys) + attention `why` always English. Summary 8 S1 / 27 S2 / 23 S3.
+  NEXT: resources.py (bindings / accounts), context_request_window.py, snapshot.py details.
