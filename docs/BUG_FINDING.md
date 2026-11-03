@@ -71,6 +71,21 @@ no code. Exactly the kind of "stuck" the friends hit on 5.15.
 **Expected:** a `blocks` edge that would make a cycle is skipped (with a note), and any dependency cycle among open
 tasks is shown as a step (and reported to the PM as stuck).
 
+### BF-003 · S1 · OPEN — when the task graph is already invalid, a plan cannot even be rejected
+
+**Where:** `aiwb/v2/proposals.py` `review()` → `_apply()` runs `validate_graph(s["tasks"])` on the **whole** graph
+even when `accept == []` (reject / *Ask for changes…*), and raises.
+
+**Reproduce:** continue BF-002 (cycle exists). The PM sends any new plan. *Reject the plan* → error
+`proposal not applied: resulting task graph is invalid: dependency cycle: TASK-X → TASK-E1 → TASK-X`.
+*Ask for changes…* → same error, and the change-request prompt is not handed out. Only *Accept* works, and only if
+the plan happens to break the cycle. A random-walk fuzz (30 projects) hit this 178 times.
+
+**Why it matters:** a plan step that cannot be removed sits at the top of Home forever (rank 5) unless the user
+accepts something they did not want.
+
+**Expected:** reject never validates or changes the graph; accepting only fails for problems the plan **adds**.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
