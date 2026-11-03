@@ -485,3 +485,5 @@ immediately, so a new session can continue without repeating work.
 - (session 19) BF-062 (f2ef5b5 S3) SECRET_RE refuses labels "session: work", "token: 128k", chat names, notes, and
   AI Studio links (40+ char id in path). Summary 8 S1 / 27 S2 / 25 S3.
   NEXT: context_request_window.py / context_request.py, then snapshot.py details, publisher.py.
+- (session 19) BF-063 (18c9afb S3) context pack numbers lines with splitlines() -> \x0c / U+2028 / NEL shift line numbers and symbol slices. Summary row a554025 (session 20). Summary 8 S1 / 27 S2 / 26 S3.
+- (session 20, after sandbox reset) Env restored at a554025. NEXT: context_request_window.py, rest of context_request.py (folder mode, ZIP pack), snapshot.py, publisher.py.
