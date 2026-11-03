@@ -786,6 +786,24 @@ exist, and the user is not told that the tag they typed was dropped.
 **Expected:** validate all facts first and run the whole proposed → released move in **one** transaction (all or nothing); default
 tag = label if it already starts with `v`; when the version is already tagged and a different tag is given, refuse or ask.
 
+### BF-037 · S3 · OPEN — "Accept anyway…" on an answer whose outcome is `failed` / `blocked`-less failure: files are written, the message says "Next: review the task", but there is no review — the guide offers a fresh prompt
+
+**Where:** `aiwb/v2/handoff.py` `resolve()` moves the task to `in_review` only for outcome `complete` / `partial` and to
+`blocked` / `needs_decision` for those outcomes; `failed` (and the empty outcome) leaves it `in_progress`. `guide._perform` ›
+`accept_handoff` still integrates the staged files and always returns *"Delivery … accepted. Next: review the task."*
+
+**Reproduce** (script `/tmp/hunt/h_res.py`): answer with a file block and `"outcome": "failed"` → card *"Problems found …
+[failed_outcome]"* → *Accept anyway…* (reason "ok") → *"Delivery HO-0001 accepted. 1 file(s) added to the project files. Next:
+review the task."* — the task is still **in progress**, there is no review card; Home shows *"Start TASK-0001 T with
+Implementer — Prepare the prompt"*, i.e. a new attempt from scratch (the accepted delivery is now the "previous handoff").
+
+**Why it matters:** the message names a step that does not exist; the user who accepted a partly useful answer expects to
+review it, and instead is pushed to re-send the task. Low impact (nothing is lost), but confusing in the guided mode.
+
+**Expected:** after accepting a `failed` answer either move the task to `in_review` (the user explicitly accepted it) or
+say *"Accepted as a failed attempt — the files are kept; prepare a new prompt to continue"*; never promise a review card
+that will not appear.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
