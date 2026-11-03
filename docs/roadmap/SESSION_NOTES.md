@@ -482,3 +482,6 @@ immediately, so a new session can continue without repeating work.
   the attempt freezes the old chat. Summary 8 S1 / 27 S2 / 24 S3. Checked OK: a binding disabled on purpose does not
   block Prepare (readiness ok=False only shows a hint). NEXT: SECRET_RE false positives (notes "max token: 8000",
   AI Studio links), context_request_window.py.
+- (session 19) BF-062 (f2ef5b5 S3) SECRET_RE refuses labels "session: work", "token: 128k", chat names, notes, and
+  AI Studio links (40+ char id in path). Summary 8 S1 / 27 S2 / 25 S3.
+  NEXT: context_request_window.py / context_request.py, then snapshot.py details, publisher.py.
