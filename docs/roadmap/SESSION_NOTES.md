@@ -313,3 +313,8 @@ immediately, so a new session can continue without repeating work.
 - (session 9) 66ca00f docs/BUG_FINDING.md created. Unit 921 OK (skip 10). pyflakes: only unused locals + 1 f-string w/o
   placeholder (artifacts.py:521) — harmless, no undefined names. GUI run_all started -> /tmp/gui_all.log. NEXT: review
   aiwb/v2/guide.py (next-step engine: every state must offer an action), paste pipeline, charter_repair, proposals.
+- (session 9) Read guide.py steps()/perform(). SUSPECTS to verify by script: (a) blocked task with reason
+  "prerequisite no longer valid" (dep cancelled) is shown with "It can continue now" -> transition(ready) raises
+  "not ready" -> only way out = cancel the task (no UI to drop the dead dependency?). (b) report.apply_decision
+  emergency `blocks` appends depends_on WITHOUT cycle check -> possible silent deadlock (blocked "waiting for" tasks
+  are hidden from steps and from the PM "stuck" report). Plan: write /tmp/fuzz_guide.py random-walk over Guide actions.
