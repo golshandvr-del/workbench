@@ -875,6 +875,28 @@ the charter — it always says ✓, so the promise does not hold.
 known operation; stale base revision as a warning) and show ✗ with the first problem, like the charter branch.
 Drop the duplicated *"The raw answer is kept in the Inbox"* in `route_answer`.
 
+### BF-041 · S2 · OPEN — an answer with some files **and** a context request: the box says "Context request ✓", the app takes it as a finished delivery and the request is lost
+
+**Where:** `aiwb/intake/preview.py` checks the context-request marker **before** file blocks, so the preview says
+*"Context request ✓ · the model asks for 1 file"*. `aiwb/v2/controller.py` `route_answer()` checks file blocks
+**first** (`if ex.files or HANDOFF_RE…` → `handoffs.ingest`) and returns; the context-request branch is never
+reached. `ingest()` keeps only the canonical file blocks, so the request is not stored on the handoff, the attempt
+or the diagnosis (`context_request` None, `unresolved_items` [], no diagnosis code).
+
+**Reproduce** (script `/tmp/hunt/pv.py`): TASK-0001's prompt is out; the AI writes one file and then (as the
+prompt's rule allows) asks for `src/x.py` with an `AIWB_CONTEXT_REQUEST` block — either order. Paste → the box shows
+**Context request ✓** → *Use this answer* → *"Answer linked to HO-0001 (reconciled, partial). 1 file(s) read …"*.
+Home: *"Check what Implementer delivered — Accept the delivery / Reject…"*; no *"Send the files … asked for"* step,
+nothing mentions the request. Accepting moves the task to review with the half-done work.
+
+**Why it matters:** models often send what they could do and ask for the missing file in the same answer. The app
+tells the user one thing (request), does another (delivery), and the AI never gets the file it needs; the user
+reviews and approves incomplete work, or rejects it without knowing why it is incomplete.
+
+**Expected:** one shared classifier for preview and import. If an answer has both, keep the files staged (not
+accepted) and record the context request on the handoff, so the card offers *Send the files … asked for* first;
+at least add a diagnosis *"the AI also asked for: src/x.py"* to the delivery card.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
