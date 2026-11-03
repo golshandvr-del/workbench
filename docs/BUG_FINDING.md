@@ -1254,6 +1254,30 @@ rewrite the code instead of reviewing it; a PM plan that checks task types again
 **Expected:** when the role changes, rebuild the role-specific fields from the new role's template (keeping the user's
 note), or at least ask *"Reset this AI's instructions to the Reviewer template?"*.
 
+### BF-057 · S3 · OPEN — after *Drop this prompt…* / *Reject…* the workflow stage, the attention queue and the restart warning disagree with Home
+
+**Where:** guided `abandon` rejects the handoff but leaves the task's `active_attempt_id` pointing at an attempt still in
+`prompt_ready` (it is never moved to `abandoned`). `aiwb/v2/workflow.py` `task_stage()` reads the attempt, not the
+handoff, so the task stays *"Prompt prepared, not copied"*; `WorkflowService.open_attempt_warning()` and
+`dashboard.attention_queue()` use the same data. After `reject_handoff` the stage is `rejected`, which is not in
+`USER_ACTION_STAGES`, so the attention queue is empty although Home's next step is *Start TASK-0001*.
+
+**Reproduce** (scripts `/tmp/hunt/wf.py`, `/tmp/hunt/wf2.py`):
+1. Prepare TASK-0001's prompt (HO-0001) → *Drop this prompt…* (reason "wrong chat"). Handoff `rejected`, attempt still
+   `prompt_ready`. Home: *"Start TASK-0001 T with Implementer"* (correct), but the task's workflow line / Agents hub
+   / attention queue says *"Prompt prepared, not copied — prompt built, not copied"*, and starting again warns
+   *"TASK-0001 already has attempt att-… (prompt_ready). Starting again keeps it, but a late answer to it will be
+   marked stale. Continue only if you really want a new attempt."* — about the prompt the user just dropped.
+2. Paste an answer → *Reject…* → stage *"Rejected"*, `user_action=False`, attention queue `[]`; Home says *Start
+   TASK-0001*.
+
+**Why it matters:** not a dead end (Home works), but three screens give three different stories; the warning makes a
+user who just dropped a prompt hesitate to start again.
+
+**Expected:** `abandon` moves the active attempt to `abandoned` (or clears `active_attempt_id`); `task_stage()` returns
+`ready_to_prepare` when the latest handoff of the active attempt is `rejected` and the task is still startable; the
+restart warning ignores attempts whose handoff was dropped.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
