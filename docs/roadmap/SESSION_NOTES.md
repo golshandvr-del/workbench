@@ -478,3 +478,7 @@ immediately, so a new session can continue without repeating work.
 - (session 19) BF-060 (c42c695 S3) Persian Workspace: English literals in shell.py (Open on Home, More, Queue of each AI,
   Who/Step, You/N open, Project details keys) + attention `why` always English. Summary 8 S1 / 27 S2 / 23 S3.
   NEXT: resources.py (bindings / accounts), context_request_window.py, snapshot.py details.
+- (session 19) BF-061 (1017097 S3) current_binding = max updated_at -> editing an OLD binding's note makes it current;
+  the attempt freezes the old chat. Summary 8 S1 / 27 S2 / 24 S3. Checked OK: a binding disabled on purpose does not
+  block Prepare (readiness ok=False only shows a hint). NEXT: SECRET_RE false positives (notes "max token: 8000",
+  AI Studio links), context_request_window.py.
