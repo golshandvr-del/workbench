@@ -91,12 +91,12 @@ class PerfBudgetTests(unittest.TestCase):
 
     def test_noop_transaction_does_not_write(self) -> None:
         before = self.store.path.stat().st_mtime_ns
-        rev = self.store.revision()
+        rev = self.store.revision
         time.sleep(0.01)
         with self.store.transaction("nothing") as s:
             _ = s["tasks"]["TASK-0002"]["title"]
         self.assertEqual(self.store.path.stat().st_mtime_ns, before, "a no-op transaction rewrote state.json")
-        self.assertEqual(self.store.revision(), rev)
+        self.assertEqual(self.store.revision, rev)
 
 
 if __name__ == "__main__":
