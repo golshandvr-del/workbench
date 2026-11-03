@@ -1091,7 +1091,10 @@ a different project, and the folder now holds project A's state over project B's
 `project_id` before the `new` branch (`other_project` unless the local state is the untouched default); make the
 confirmation list what will be replaced and where the backup is.
 
-### BF-050 · S2 · OPEN — project folder with a space or non-ASCII name (e.g. `پروژه من`, `my project`): the exported bundle can **never** be imported — on the phone or back on the PC
+### BF-050 · S2 · DUPLICATE (of BF-021) — project folder with a space or non-ASCII name (e.g. `پروژه من`, `my project`): the exported bundle can **never** be imported — on the phone or back on the PC
+
+**Note (session 18):** same root cause and fix as BF-021 (found again independently in session 17). Kept for the
+extra examples (`Ürün-Liste`, `-dash`, `۱۲۳`); track and fix it under BF-021.
 
 **Where:** `aiwb/v2/controller.py` creates `V2Project(root, root.name)`, so the raw folder name becomes `project_id`
 (`ProjectStore._default_project_id()`, which would sanitise it, is bypassed). `bundle.export_bundle()` writes it as is;
