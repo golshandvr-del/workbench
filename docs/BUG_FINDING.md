@@ -308,3 +308,11 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   `open_projects` / `open_project_workbench`; a folder that becomes read-only later → the action fails with
   *Permission denied …* on the card, the state is untouched (temp file never created), reopening works. The message is
   technical but honest — acceptable.
+- **Scope check** (script `/tmp/hunt/k_scope.py`): files outside the task's allowed paths are not staged and are listed
+  as `out_of_scope` errors on the card (troubleshoot / accept anyway / reject).
+- **Troubleshooting limit** (script `/tmp/hunt/l_valfail.py`): after 3 troubleshooting prompts the card offers
+  *Ask the project manager (stuck)* → the task becomes `blocked` with a clear reason and shows on Home
+  (*It can continue now / Ask the PM to re-plan / Cancel*). No dead end.
+- **Out-of-date answer** (script `/tmp/hunt/n_reject.py`): editing the task after its prompt was made
+  (`task_revision` 1 → 2) → the pasted answer is `reconciliation_required`, Home shows *The answer … is out of date*
+  with *Accept anyway… / Reject…*. Correct.
