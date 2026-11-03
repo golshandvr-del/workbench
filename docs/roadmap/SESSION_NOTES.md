@@ -308,3 +308,5 @@ immediately, so a new session can continue without repeating work.
 - (session 8) ROADMAP 5.16→5.20 COMPLETE. desktop-v5.20.0 release VERIFIED (run 41552064115 success, 5 assets:
   Setup.bat, SHA256SUMS, Source.zip, Windows_Payload.zip, release-manifest.json); CI 630665a success. Nothing pending.
   Next work needs a NEW roadmap from the owner (NOT RUN items in USER_GUIDE §8 need real Windows/real chats).
+- (session 9) Owner task: NO new roadmap. Bug hunt before showing app to friends: review code + flows, record every finding
+  in docs/BUG_FINDING.md (update continuously, checkpoint each edit). Env restored (clone, cpush, xvfb).
