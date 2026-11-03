@@ -661,6 +661,29 @@ this.
 *"secret — not sent"*), refuse them in `build_prompt` (listed under *Not included: … (secret file)*), run
 `scan_for_secrets` / `redact` over included bodies, and refuse paths whose resolved location is outside the root.
 
+### BF-031 · S3 · OPEN — guided context request: the "sensitive file" refusal can be bypassed by an alias (`.env ` / `id_rsa.` on Windows, or a link to the secret)
+
+**Where:** `aiwb/context_request.py` `resolve()`: `is_sensitive(it.path)` is checked on the **raw** requested name,
+then the file is read from `root / it.path`. `context_step.is_sensitive` matches exact names; `_path_problem`
+(`files.safe_path`) accepts a name with a trailing space / dot (it strips them, but the stripped result is not
+used). The resolve-inside-root check passes for a link that points to a secret **inside** the project.
+
+**Reproduce** (script `/tmp/hunt/c_ctx.py`):
+1. The AI's `AIWB_CONTEXT_REQUEST` asks for `.env ` (trailing space) or `id_rsa.` (trailing dot) →
+   `is_sensitive` = False, no path problem. On Windows the file system drops trailing spaces / dots, so the real
+   `.env` / `id_rsa` is read and prepared for the user to paste into the chat.
+2. A project file `notes.txt` that is a symlink to `.env` (or a hard link / junction) → requested as `notes.txt` →
+   the token is in the prepared context.
+(Also: secrets inside ordinary files, e.g. `API_KEY = 'sk-live-…'` in `settings.py`, are sent unredacted —
+`redact()` / `scan_for_secrets()` are not applied to context packs, while classic Git commit does scan.)
+
+**Why it matters:** low likelihood (needs an odd request or a link), but the rule exists precisely so a secret never
+reaches the chat without *"an explicit separate decision"*; the user trusts it and pastes without reading.
+
+**Expected:** check sensitivity on the normalised `safe_path` result **and** on the resolved target's name relative
+to the root; refuse names ending in a space or dot (BF-008); optionally run `scan_for_secrets` on the prepared text
+and warn before copying.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
