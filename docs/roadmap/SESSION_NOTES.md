@@ -467,3 +467,7 @@ immediately, so a new session can continue without repeating work.
 - (session 18) BF-057 (e9e782e S3) abandon leaves active attempt prompt_ready -> workflow stage / attention queue /
   restart warning say "prompt prepared"; after reject stage "rejected" not a user-action stage. Summary 8 S1 / 27 S2 / 20 S3.
   NEXT: snapshot.py, dashboard.py, next_action.py, i18n.py, resources.py.
+- (session 18) BF-058 (ae4a170 S3) next_action plan_project rank 1 beats pending proposal/decision when no tasks yet ->
+  overview / phone / PROJECT_STATUS.md disagree with Home. Summary 8 S1 / 27 S2 / 21 S3 (summary row babd31c, session 19).
+- (session 19, after sandbox reset) Env restored at babd31c. NEXT: dashboard.py, i18n.py, resources.py,
+  context_request_window.py, snapshot.py details.
