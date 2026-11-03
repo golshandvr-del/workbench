@@ -1563,6 +1563,29 @@ keep `MAX_BODY` above that), or measure `MAX_TEXT` in UTF-8 bytes. Check the siz
 *"This answer is too long for the phone. Paste it on the computer, or send it in parts."* — ideally checked on the
 phone before sending.
 
+### BF-071 · S3 · OPEN — phone and desktop clocks more than 5 minutes apart: pairing with the **correct** code is counted as *"Too many wrong attempts"*, and a paired phone gets only *"Companion error: unauthenticated"*
+
+**Where:** `aiwb/companion/crypto.py` `open_bytes()` checks the MAC first and then the timestamp window
+(`MAX_SKEW_SECONDS = 300`) and raises the same `EnvelopeError` for both. `service.handle()` turns every
+`EnvelopeError` into `401 {"error": "unauthenticated"}` and, for a `pair-…` key id, calls `_pair_failure()`, so
+after 5 such requests the code is cancelled (`_locked`). The phone (`CompanionActivity.background()`) has no case for
+`unauthenticated` and shows *"Companion error: unauthenticated"*. The time is taken from each device's own clock;
+nothing tells either side that the clocks differ.
+
+**Reproduce** (script `/tmp/hunt/comp7.py`, fake clock): start pairing → the phone sends a correctly sealed
+`pair_request` with its clock 7 minutes slow → `401 unauthenticated` ×5 → desktop: *"Too many wrong attempts - the
+code was cancelled. Create a new one."*; 6th try → `403 pairing_expired`. A paired device whose clock is 6 minutes
+ahead → every `get_state` → `401 unauthenticated`.
+
+**Why it matters:** a phone with a manually set time, or a desktop that has no time sync, can never pair, and the
+desktop blames the user for typing the code wrongly (the code was right — the MAC was valid). New codes fail the same
+way. A phone that was paired stops working after a clock change with a message that gives no hint.
+
+**Expected:** tell the cases apart: a valid MAC with a timestamp outside the window → `401 clock_skew` with the
+desktop time in the reply, **not** counted as a wrong attempt. On the phone: *"The phone's clock and the computer's
+clock differ by N minutes. Set both to automatic time and try again."* (or remember the offset from the reply and use
+it). The desktop window should say *"A phone tried to connect but its clock is N minutes off"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
