@@ -514,6 +514,23 @@ replacing anything, and the project silently takes another project's identity.
 **Expected:** check `other_project` first; treat a non-empty goal / changed settings / `state_revision` > 1 as local
 work so `older` / `diverged` apply; say *"This replaces the goal '…'"*.
 
+### BF-024 · S3 · OPEN — "Commit completed" dialog shows Persian / non-ASCII file names as `\331\276\330\261…`
+
+**Where:** `AI_Workbench.py` `commit_changes()` → `work()` returns `committed.stdout` of `git commit -m …` as the
+dialog text; Git's default `core.quotepath=true` writes every non-ASCII path byte as an octal escape inside quotes.
+(Status parsing uses `-z` and is correct; only the shown text is affected. Same for other dialogs that show raw Git
+output, e.g. `push_changes`.)
+
+**Reproduce** (script `/tmp/hunt/y_git.py`, under xvfb): project folder `apps/پروژه من` in a repository, files
+`فایل.py`, `a file.txt` → Git page › *Commit* → *"Commit completed — … create mode 100644
+"apps/\331\276\330\261\331\210\332\230\331\207 \331\205\331\206/\331\201\330\247\333\214\331\204.py""*.
+
+**Why it matters:** cosmetic, but the owner's users name folders and files in Persian; the confirmation looks like
+garbage.
+
+**Expected:** run Git with `-c core.quotepath=false` (as the status calls already pass `-c status.renames=false`), or
+build the message from the staged path list.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
