@@ -374,3 +374,5 @@ immediately, so a new session can continue without repeating work.
 - (session 12) BF-020 (43b925f S3): closeout.archive commits archived_at before writing the bundle; write error ->
   bug dialog, project read-only, card claims the bundle exists (workaround: Reopen -> Archive).
   Summary 7 S1 / 8 S2 / 5 S3. NEXT: write "Checked and OK" for session 12, report to owner.
+- (session 13, after sandbox reset) Env restored at 9820c33 (clone + cpush + xvfb). Summary 7 S1 / 8 S2 / 5 S3 (BF-001..020, all OPEN).
+  Owner: keep bug-hunting all areas, do not stop, no questions. NEXT: new-project wizard, bundle export/import, Run/Git page.
