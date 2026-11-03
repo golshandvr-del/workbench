@@ -1215,6 +1215,28 @@ text back to the model as the project's truth.
 and outside JSON string values); keep ZWNJ / ZWJ / NBSP inside bodies and strings. A leading BOM of the whole answer
 may still be removed. If a body ever has to be changed, say so per file.
 
+### BF-055 · S2 · OPEN — custom team (wizard): a task whose owner was removed / disabled, or that has no owner, is sent to the **project manager's** chat
+
+**Where:** `aiwb/v2/waves.py` `_owner()` and `aiwb/v2/guide.py` `_owner()`: when the owner is missing or disabled they
+fall back to `"agent-implementer"` if it exists, else `next(iter(agents))`. Since 5.9.0 a wizard project has **no**
+`agent-implementer` (ids come from names: `agent-dev-a`, `agent-ai-2` …) and the first agent in the dict is always
+`agent-project-manager`. `team_setup.save_team()` disables an AI that owns open tasks without reassigning them.
+
+**Reproduce** (scripts `/tmp/hunt/team.py`, `/tmp/hunt/team2.py`): team *Project manager · Dev A · Dev B*.
+1. TASK-0001 owned by Dev B, `ready`. Agents page › Edit team › remove Dev B → `{"disabled": ["agent-dev-b"]}`, no
+   warning. Home: *"Start TASK-0001 T with Project manager"* → *Prepare* → *"Prompt for TASK-0001 ready. Copy it into
+   agent-project-manager's chat."*
+2. A task with no owner (e.g. a rescued `owner_role: "Implementer"`, BF-046) → *"Start TASK-0001 T2 with Project
+   manager"*.
+
+**Why it matters:** the developer prompt (files, AIWB blocks) lands in the manager's planning chat, mixing the two
+roles the app works hard to keep apart; the PM chat's context fills with code and its next plans drift. The user
+followed the button, so nothing tells them it is wrong.
+
+**Expected:** fall back to an enabled non-manager AI (the least busy implementer-role agent, else any worker); never
+the project manager. When removing / disabling an AI that owns open tasks, ask whom to give them to (or reassign to
+the first remaining developer and say so).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
