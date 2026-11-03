@@ -28,7 +28,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|---|
 | S1 | 7 (BF-002, 003, 004, 007, 009, 010, 016) | 0 |
 | S2 | 11 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 025, 026) | 0 |
-| S3 | 8 (BF-006, 012, 015, 018, 020, 022, 023, 024) | 0 |
+| S3 | 9 (BF-006, 012, 015, 018, 020, 022, 023, 024, 027) | 0 |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
 BF-007 / BF-009 (any locked or invalid file on Windows — see BF-008).
