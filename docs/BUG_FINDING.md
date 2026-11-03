@@ -704,3 +704,7 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   `-z`), the sibling `other/` stays untouched; already-staged changes are refused; push without `origin` and push from
   `main` / `master` are refused with clear messages. Worker errors are shown as *"Operation failed"*. (Escaped names
   in the result dialog: BF-024.)
+- **Run page time limit / output cap** (script `/tmp/hunt/r_run.py`): an endless loop is killed at the limit (3 s →
+  3.0 s, *"Timed out"*, exit −9, partial output kept); 400 000 printed lines → bounded to the 50 000-character tail
+  with *"output was truncated while running to keep memory bounded"*, *Passed*, memory stays flat. (Background
+  processes holding the pipe: BF-029; Windows code page: BF-025.)
