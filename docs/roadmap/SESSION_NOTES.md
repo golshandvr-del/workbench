@@ -487,3 +487,4 @@ immediately, so a new session can continue without repeating work.
   NEXT: context_request_window.py / context_request.py, then snapshot.py details, publisher.py.
 - (session 19) BF-063 (18c9afb S3) context pack numbers lines with splitlines() -> \x0c / U+2028 / NEL shift line numbers and symbol slices. Summary row a554025 (session 20). Summary 8 S1 / 27 S2 / 26 S3.
 - (session 20, after sandbox reset) Env restored at a554025. NEXT: context_request_window.py, rest of context_request.py (folder mode, ZIP pack), snapshot.py, publisher.py.
+- (session 20) BF-064 (e285b99 S3) empty requested file: deliverable needs content -> listed as "Not provided: ready — ", left out of ZIP. Summary 8 S1 / 27 S2 / 27 S3. Seen, to record next: binary / UTF-16 / cp1252 files dumped as mojibake; folder request "build/" reported missing (SKIP_DIRS hits the requested folder); file + its folder -> duplicate blocks.
