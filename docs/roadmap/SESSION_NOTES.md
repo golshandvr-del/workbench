@@ -394,3 +394,6 @@ immediately, so a new session can continue without repeating work.
   BF-031 (5323620 S3) context request sensitive refusal bypassed by trailing space/dot or link alias; classic
   transactional apply checked OK; BF-032 (ea7c2c2 S2) smart check uses raw path -> false out_of_scope loop.
   Summary 7 S1 / 14 S2 / 11 S3. NEXT: closeout/waves/timeline/charter_repair/changes/attempts, paste_box, guide actions.
+- (session 15) BF-033 (68b627e S2) "revise" route on a done task: change recorded, task stays done, no prompt possible,
+  project can still be announced complete; BF-034 (5734643 S3) archive sets read-only before writing bundle, failed write
+  cannot be retried. Summary 7 S1 / 15 S2 / 12 S3. NEXT: waves/dispatch, timeline, charter_repair, paste_box, handoff.
