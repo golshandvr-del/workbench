@@ -1278,6 +1278,27 @@ user who just dropped a prompt hesitate to start again.
 `ready_to_prepare` when the latest handoff of the active attempt is `rejected` and the task is still startable; the
 restart warning ignores attempts whose handoff was dropped.
 
+### BF-058 · S3 · OPEN — before the first task exists, the "next action" (Workspace overview, phone, PROJECT_STATUS.md) says *"write the goal and copy the planning prompt"* even while a plan / decision waits
+
+**Where:** `aiwb/v2/next_action.py` `compute_next_actions()` appends `plan_project` with **rank 1** whenever
+`state["tasks"]` is empty; a pending proposal has rank 5 and an open decision 8/30, so `plan_project` always wins
+until a plan is accepted. Used by `controller.next_action()` / `next_action_text()` / `next_action_view()` (Workspace
+overview *Next step*, classic Projects window, phone companion `project_view`) and by `snapshot.build_snapshot()`
+(`next_action` of the published `PROJECT_STATUS.md` and of the manager-update fallback summary).
+
+**Reproduce** (scripts `/tmp/hunt/na.py`, `/tmp/hunt/na2.py`): new project, the PM's first plan PROP-0001 imported,
+decision DEC-0001 open. Home (guide): *"Review the plan PROP-0001 (1 change)"* (correct). `next_action_text()`:
+*"Write the project goal and copy the planning prompt to your project-manager chat"*; snapshot / PROJECT_STATUS.md:
+*"**plan_project** : no tasks yet: prepare the project-manager planning prompt"*; the phone shows the same.
+
+**Why it matters:** at the very first step of every project two screens disagree; a user who follows the overview or
+the phone copies the planning prompt again and gets a second plan. The published status tells the PM the project has
+not been planned although its plan is waiting.
+
+**Expected:** add `plan_project` only when there are no tasks **and** no pending proposal / charter import / open
+decision (or give it a rank after them); ideally derive the overview's next step from the same `Guide.steps()` that
+Home uses.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
