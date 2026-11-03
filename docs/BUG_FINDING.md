@@ -1187,6 +1187,34 @@ same answer (with the same sentence), and the loop never ends. Nothing on screen
 object with the keys; report `truncated` only when **no** later balanced candidate exists (and ideally only when the
 unclosed `{` is followed by `"key":` close to it, i.e. it really is the JSON).
 
+### BF-054 · S2 · OPEN — any auto-repair of a damaged answer silently deletes every Persian half-space (ZWNJ), emoji joiner (ZWJ) and NBSP **inside the delivered files**
+
+**Where:** `aiwb/intake/normalize.py` `_strip_invisible()` (called first by `normalize()`) removes `ZERO_WIDTH =
+"\u200b\u200c\u200d\u2060\ufeff\u00ad"` and replaces `NBSP` with a space in the **whole** text, file bodies included.
+The module docstring promises bodies are touched only for "invisible characters that cannot legitimately appear in
+source text" — but U+200C (ZWNJ) is a normal, required character of Persian writing (`می‌خواهم`, `پایگاه‌داده`), U+200D
+joins emoji sequences, and NBSP is used on purpose in French/Persian UI strings. Callers use the normalised text as soon
+as the raw text does not parse cleanly, so one damaged marker is enough to rewrite every file of the answer.
+`lenient.loads()` does the same for JSON answers (via `normalize()`).
+
+**Reproduce** (scripts `/tmp/hunt/zw.py`, `/tmp/hunt/zw3.py`, `/tmp/hunt/zw4.py`): a file body
+`title = "می‌خواهم"` + `emoji = "👨‍👩‍👧"` + `nb = "10 km"`:
+- clean `<<<AIWB_FILE path="src/t.py" action="write">>>` header → written byte-identical. ✓
+- the same answer with a smart-quoted header (`path=“src/t.py”`), an escaped marker (`\<\<\<AIWB\_FILE …`) or a bold
+  marker (`**<<<AIWB_FILE …>>>**`) — all very common chat-app damage → paste: *"Fixed automatically: the AIWB markers
+  were damaged by the chat app (zero_width, marker_lines) — repaired."* → *Accept* → the file on disk is
+  `title = "میخواهم"`, `emoji = "👨👩👧"`, `nb = "10 km"`. Quick mode (`quick.read_answer`) gives the same result.
+- JSON-files answer with one trailing comma → the repaired file loses its ZWNJ too.
+
+**Why it matters:** the owner's users write Persian; their UI strings, docs and Markdown files are full of half-spaces.
+After one cosmetic marker fix every delivered file is silently misspelt (and emoji / string constants changed); the
+message only talks about the *markers*, so nobody notices until much later, and the next prompt sends the damaged
+text back to the model as the project's truth.
+
+**Expected:** strip invisible characters only on **structural lines** (marker lines, fence lines, outside file bodies
+and outside JSON string values); keep ZWNJ / ZWJ / NBSP inside bodies and strings. A leading BOM of the whole answer
+may still be removed. If a body ever has to be changed, say so per file.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
