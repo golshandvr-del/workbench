@@ -165,6 +165,25 @@ promises undo says there is nothing to undo.
 `OSError` roll back the files already written from the backup and say which file failed and why; never reuse a
 backup folder (unique id, refuse if the folder exists).
 
+### BF-008 · S2 · OPEN — paths that are fine on Linux but break or misbehave on Windows are accepted
+
+**Where:** `aiwb/intake/answer_files.py` `safe_path()` and its copy `aiwb/v2/files.py` `safe_path()` (same rule,
+shared fixture `packages/contracts/fixtures/files/safe-paths.v1.json`). Only `/`, drive letter, `..`, NUL,
+`.git`, `.workbench` are refused.
+
+**Accepted today** (script `/tmp/hunt/h_quick_paths.py`): `con.py`, `aux.txt`, `src/NUL`, `LPT1` (reserved device
+names), `a.txt:stream` (**NTFS alternate data stream**), `src/x.py.` (Windows drops the trailing dot → writes
+`src/x.py`), `src/<a>.py`, `a"b.py`, `src/a|b.py`, `src/a?.py` (invalid characters).
+
+**Why it matters:** the friends use Windows. An AI that writes such a name makes Apply/Accept fail with an OS error
+(and in Quick mode / guided mode that error leaves files half-written — BF-007, BF-009). `a.txt:stream` is worse:
+on NTFS it **succeeds** and writes into a hidden stream of `a.txt`; the visible file stays as it was, so the user
+thinks the change is in the project when it is not. `x.py.` silently overwrites `x.py`.
+
+**Expected:** refuse (with a clear "skipped: not a valid Windows file name" problem) any segment that is a reserved
+device name (with or without extension), contains `<>:"|?*` or control characters, or ends with a dot or space —
+on every OS, so a project made on Linux also opens on Windows. Add these cases to the shared fixture.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
