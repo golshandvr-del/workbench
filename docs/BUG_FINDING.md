@@ -251,6 +251,23 @@ same task again without being told what is wrong, so it usually sends the same f
 next prompt has a section *"Your last delivery failed the user's tests: <note> — fix that"* (like the repair /
 troubleshooting prompts), and the old *"tests pass"* claim is shown as contradicted.
 
+### BF-012 · S3 · OPEN — the "answer was cut off — ask to continue" step outlives the prompt it belongs to
+
+**Where:** `aiwb/v2/guide.py` `steps()` shows `settings.guide.continue` (rank 0, top of Home) without checking that
+its `for` handoff is still open; `abandon` / `reject_handoff` / `troubleshoot` do not clear it.
+
+**Reproduce** (script `/tmp/hunt/m_continue.py`): prepare a task prompt → paste a cut-off answer → Home shows
+*The last answer was cut off — ask to continue* **and** the handoff step. The user chooses *Drop this prompt…*
+(wants to start over). Home still shows the continue step **first**, above *Start TASK*. *Paste the rest* →
+*"Answer linked to HO-0001 (**rejected**, complete). 2 file(s) read …"* — the files go onto the dropped handoff,
+nothing can be accepted; the step disappears and the user is back to *Start TASK* with the answer lost.
+
+**Why it matters:** confusing more than blocking (*Ignore the cut-off answer* exists), but the top step of Home leads
+the user to waste a chat round.
+
+**Expected:** the continue step is dropped automatically when its handoff is no longer open (and on abandon / reject /
+troubleshoot of that handoff).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
