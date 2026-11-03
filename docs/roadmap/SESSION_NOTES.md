@@ -403,3 +403,6 @@ immediately, so a new session can continue without repeating work.
 - (session 15) BF-036 (828dc0c S3) guided release: 3 separate transactions, missing run id leaves version tagged with
   default tag "vv1.0.0"; retry tag ignored. Summary 7 S1 / 16 S2 / 13 S3. NEXT: handoff late/stale answers, attempts,
   charter_repair, paste_box.
+- (session 15) BF-037 (303308e S3) "Accept anyway" on outcome failed: files written, message promises a review that
+  never appears (task stays in_progress, guide offers a fresh prompt). Summary 7 S1 / 16 S2 / 14 S3.
+  NEXT: attempts late answers, charter_repair, paste_box, i18n/RTL text, bundle import edge cases.
