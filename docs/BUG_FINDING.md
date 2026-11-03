@@ -768,6 +768,24 @@ the prompt. With one parallel chat the project silently stops advancing.
 transaction (*"prompt HO-0001 closed: task cancelled"*); a late answer for it is kept as *stale* and cannot be accepted
 without *Accept anyway…* that warns *"TASK-0001 is cancelled"*.
 
+### BF-036 · S3 · OPEN — guided "Record the release…": a missing run id leaves the version half-advanced with a wrong tag (`vv1.0.0`), and the tag typed on the retry is silently ignored
+
+**Where:** `aiwb/v2/guide.py` `_perform` › `release` runs three separate `advance_version` transactions (proposed → local →
+tagged → released). The released step's check (*needs a run id or artifact*) runs **after** the first two are already saved.
+The default tag is `"v" + label`, but `propose_version` accepts semver labels that already start with `v` (`_SEMVER = ^v?…`).
+On the retry the version is already `tagged`, so the `tag` field is skipped without a word.
+
+**Reproduce** (script `/tmp/hunt/t_rel.py`): version `v1.0.0`, milestone accepted → Home *Release version v1.0.0* › *Record the
+release…* with commit `abc1234`, tag empty, run id empty → error *"released needs a real build/run id or artifact"* — but the
+version is now **tagged**, tag **`vv1.0.0`**. Retry with tag `release-1`, run id `run-9` → *"Version v1.0.0 released."*, the
+recorded tag is still `vv1.0.0` (shown on the timeline, completion summary and expansion prompt as the release tag).
+
+**Why it matters:** the release record is the project's evidence of what was shipped; it now points to a tag that does not
+exist, and the user is not told that the tag they typed was dropped.
+
+**Expected:** validate all facts first and run the whole proposed → released move in **one** transaction (all or nothing); default
+tag = label if it already starts with `v`; when the version is already tagged and a different tag is given, refuse or ask.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
