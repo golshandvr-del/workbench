@@ -426,3 +426,5 @@ immediately, so a new session can continue without repeating work.
   Summary 8 S1 / 19 S2 / 16 S3. NEXT: raw-body fence strip (verify impact), bundle import, rescue prompts, i18n.
 - (session 16) BF-044 (a81421d S3) body="raw" ignored by parse_files: leading code fence of a raw Markdown file stripped;
   fence + prose flagged truncated. Summary 8 S1 / 19 S2 / 17 S3. NEXT: bundle import edge cases, rescue prompts, i18n/RTL.
+- (session 17, after sandbox reset) Env restored at 0a9377f (clean). Previous chat stopped (credit) right before reading
+  src/aiwb/v2/rescue.py. Summary 8 S1 / 19 S2 / 17 S3. NEXT: rescue prompts, bundle import edge cases, i18n/RTL.
