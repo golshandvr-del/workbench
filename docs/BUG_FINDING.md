@@ -125,6 +125,23 @@ so this needs an outside cause — rare, but a dead end when it happens.
 **Expected:** keep the last good state (e.g. `state.json.prev`, rotated on each write or every N writes) and offer
 *Restore the last good copy* in the error; the message must only mention backups that exist.
 
+### BF-006 · S3 · OPEN — text with a broken emoji (lone UTF-16 surrogate) makes paste / Quick apply fail with "a bug in AI Workbench"
+
+**Where:** `aiwb/v2/controller.py` `route_answer()` line ~461 (`text.encode("utf-8")` for the response id);
+`aiwb/v2/quick.py` `apply()` line ~302 (`i["content"].encode("utf-8")`). Only
+`project_version_store.py` uses `errors="surrogatepass"`.
+
+**Reproduce** (scripts `/tmp/hunt/f2.py`, `/tmp/hunt/f3.py`): paste text containing `"\ud83d"` (half of an emoji,
+e.g. an answer copied from a chat page that was cut in the middle of 🚀) → `UnicodeEncodeError: … surrogates not
+allowed`. In Quick mode, `read_answer` and `plan` accept the file, and **Apply** then fails.
+
+**Why it matters:** low. A normal emoji works (Tk 8.6 clipboard round-trip checked under xvfb: no surrogates). The
+global Tk handler shows the "Application error" dialog, so the app does not crash and nothing is written half-way.
+The message, though, says it is a bug and gives no way forward ("paste again without the broken character").
+
+**Expected:** pasted text is cleaned once at the entry point (`text.encode("utf-8", "replace").decode()` or
+replace lone surrogates with U+FFFD) and a note says *"1 broken character was replaced"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
