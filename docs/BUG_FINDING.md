@@ -591,3 +591,8 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   modified"*; `CON` / `:` / `/` / 101 characters / blank goal → clear inline message, nothing created; trailing space
   stripped; Persian name with a space creates and opens the project (but see BF-021 for its bundles); read-only
   parent → *"Permission denied …"* inline, nothing registered. Created projects are registered and opened.
+- **Git page commit / push** (script `/tmp/hunt/y_git.py`, under xvfb): project nested in a monorepo
+  (`apps/پروژه من`) → only in-scope files are staged (Persian names, spaces, a leading space kept intact thanks to
+  `-z`), the sibling `other/` stays untouched; already-staged changes are refused; push without `origin` and push from
+  `main` / `master` are refused with clear messages. Worker errors are shown as *"Operation failed"*. (Escaped names
+  in the result dialog: BF-024.)
