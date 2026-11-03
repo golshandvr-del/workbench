@@ -397,3 +397,6 @@ immediately, so a new session can continue without repeating work.
 - (session 15) BF-033 (68b627e S2) "revise" route on a done task: change recorded, task stays done, no prompt possible,
   project can still be announced complete; BF-034 (5734643 S3) archive sets read-only before writing bundle, failed write
   cannot be retried. Summary 7 S1 / 15 S2 / 12 S3. NEXT: waves/dispatch, timeline, charter_repair, paste_box, handoff.
+- (session 15) BF-035 (df5b3ae S2) cancelling a task leaves its open handoff: holds a chat slot, answer still accepted
+  and written into the project. Summary 7 S1 / 16 S2 / 12 S3. NEXT: timeline (milestones/versions), charter_repair,
+  paste_box live diagnosis, handoff stale/late answers, attempts.
