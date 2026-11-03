@@ -952,6 +952,28 @@ and nothing in the app says so (the message even says it was approved). Same cla
 same way; at least, when a handoff with files in its response has no `staged_files`, the card should re-stage from
 the stored response or refuse *Accept* with *"the files of this answer were not read — paste it here again"*.
 
+### BF-044 · S3 · OPEN — `body="raw"` is ignored: a raw file that starts with a code fence loses it (Markdown snippets, docs), and a raw file that opens a fence and goes on with prose is flagged "truncated"
+
+**Where:** `aiwb/v2/diagnose.py` `parse_files()` keeps only the `path` attribute (same root cause as BF-042);
+`_close()` always treats a first line that looks like a fence as the block's wrapper and drops it, plus the
+last line if it matches. The salvage prompt (`aiwb/inbox/salvage.py`) explicitly asks the AI for
+`<<<AIWB_FILE path="…" action="write" body="raw">>>` + *"the complete file text"*, i.e. **no** wrapper fence.
+
+**Reproduce** (scripts `/tmp/hunt/raw.py`, `/tmp/hunt/raw_g3.py`):
+- raw block for `docs/INSTALL.md` whose whole content is ```` ```bash ```` / `npm install` / ```` ``` ```` →
+  guided *Paste the answer* → *Accept the delivery* → *"1 file(s) added"*; on disk: `npm install\n` — the
+  Markdown code block is gone. Quick mode does the same.
+- raw block whose content starts with ```` ```bash ```` … ```` ``` ```` and then a paragraph → written as
+  `npm install\n```\n\nThen run the app.` (opening fence dropped, closing one left dangling) and the smart check
+  reports *"the code fence in docs/INSTALL.md was never closed"* (`truncated`) on a complete answer.
+
+**Why it matters:** the format the app itself asks for in its "resend only these files" prompt silently corrupts
+Markdown / text files that begin with a code block; the second case pushes the user into a pointless
+troubleshooting round.
+
+**Expected:** honour `body="raw"`: take the lines between the header and `<<<AIWB_END_FILE>>>` verbatim (only the
+final newline normalised), never strip fences; keep the current unwrap only for blocks without `body="raw"`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
