@@ -464,3 +464,6 @@ immediately, so a new session can continue without repeating work.
   Checked OK: a pending plan naming a removed AI -> accept refused with a clear "owner agent … does not exist",
   partial accept of the other changes works (no dead end). Summary 8 S1 / 27 S2 / 19 S3.
   NEXT: workflow.py, snapshot.py, dashboard.py, next_action.py, i18n.py.
+- (session 18) BF-057 (e9e782e S3) abandon leaves active attempt prompt_ready -> workflow stage / attention queue /
+  restart warning say "prompt prepared"; after reject stage "rejected" not a user-action stage. Summary 8 S1 / 27 S2 / 20 S3.
+  NEXT: snapshot.py, dashboard.py, next_action.py, i18n.py, resources.py.
