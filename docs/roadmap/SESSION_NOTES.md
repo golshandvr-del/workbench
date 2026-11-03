@@ -424,3 +424,5 @@ immediately, so a new session can continue without repeating work.
   ProjectsWindow import, shell.do_import call route_answer only -> accept approves task, writes no file.
   Also checked: body="raw" blocks strip a leading fence of a raw Markdown file (minor, folded into notes, not filed yet).
   Summary 8 S1 / 19 S2 / 16 S3. NEXT: raw-body fence strip (verify impact), bundle import, rescue prompts, i18n.
+- (session 16) BF-044 (a81421d S3) body="raw" ignored by parse_files: leading code fence of a raw Markdown file stripped;
+  fence + prose flagged truncated. Summary 8 S1 / 19 S2 / 17 S3. NEXT: bundle import edge cases, rescue prompts, i18n/RTL.
