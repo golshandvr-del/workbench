@@ -804,6 +804,27 @@ review it, and instead is pushed to re-send the task. Low impact (nothing is los
 say *"Accepted as a failed attempt — the files are kept; prepare a new prompt to continue"*; never promise a review card
 that will not appear.
 
+### BF-038 · S3 · OPEN — an answer for a prompt the user dropped says "Answer linked to HO-0001 (rejected, complete). 1 file(s) read" — and then nothing happens to it
+
+**Where:** `aiwb/v2/controller.py` `route_answer()` → `_match_handoff()` finds the handoff by the answer's `attempt_id` /
+`handoff_id` even when that handoff is already `rejected` (dropped with *Drop this prompt…*); `handoffs.ingest()` then attaches
+the response (attempt → `stale`), but every status step is skipped for a rejected handoff, so nothing is staged, no card is
+made, no `stale_reasons` / diagnosis. The message is built from the counters only and reads like a success.
+
+**Reproduce** (script `/tmp/hunt/a_late.py`): prepare TASK-0001's prompt (HO-0001) and send it → *Drop this prompt…* → prepare
+again (HO-0002). The AI's answer to the first prompt arrives (manifest names HO-0001 / its attempt) → paste → *"Answer linked to
+HO-0001 (rejected, complete). 1 file(s) read from AIWB file blocks."* Home still shows only *"Copy the prompt for TASK-0001 …"*
+(HO-0002); the delivered file is not staged anywhere, nothing asks the user what to do with it.
+
+**Why it matters:** dropping a prompt and re-asking is common (the chat was slow, the user changed their mind); the late
+answer is often the good one. The app says it took the answer, then silently ignores it; the user waits for a card that will
+never come or re-sends the task. (Late answers for *superseded* attempts get the *"out of date — Accept anyway… / Reject…"*
+card; dropped ones do not.)
+
+**Expected:** if the matched handoff is `rejected` / `superseded`, say so: *"This answer is for prompt HO-0001, which you
+dropped. Use it for TASK-0001 instead of HO-0002?"* — offering to link it to the task's open handoff (as a stale answer with
+*Accept anyway…*), or keep it in the Inbox only. Never report "linked" for a handoff that cannot take it.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
