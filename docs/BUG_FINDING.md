@@ -1537,6 +1537,32 @@ the first one stays *active* with a key nobody uses until the user notices and r
 result, for a short grace period after `expires`. Or refuse `decide()` after `expires` (*"This request came too late —
 create a new code"*) and clear `pending`, so no device is added. Show the remaining time next to the waiting request.
 
+### BF-070 · S3 · OPEN — phone *Send answer*: a Persian answer over ~150 000 characters (or any answer near the 300 000 limit) is refused with *"Companion error: bad_request"*; the `too_large` message is never reached
+
+**Where:** `aiwb/companion/crypto.py` `check_shape()` refuses any envelope field longer than 400 000 characters. `ct`
+is base64url of the whole UTF-8 JSON request, so the real ceiling is ~300 000 **bytes** of JSON — not 300 000
+characters of text. `service.handle()` maps that `EnvelopeError` (raised before decryption) to
+`400 {"error": "bad_request"}`. The size check that has a message, `MAX_TEXT = 300_000` characters in
+`_dispatch("submit_response")` (`too_large`, *"answer is too large for the companion channel"*), can never fire:
+anything over 300 000 characters is already over the envelope limit. Persian letters are 2 bytes in UTF-8, and JSON
+escapes add more for `"`, `\` and line breaks (code). `server.py MAX_BODY` (512 KB) is not the limit either.
+
+**Reproduce** (script `/tmp/hunt/comp6.py`, paired device with *submit_response*): ASCII 299 000 chars → `200`;
+ASCII 300 001 chars → `400 bad_request` (not `too_large`); the largest Persian answer accepted is **149 983**
+characters; a Persian answer of 175 000 characters (well under `MAX_TEXT`) → `400 bad_request`. On the phone
+(`CompanionActivity.background()`) any non-200 code that is not in its list is shown as
+*"Companion error: bad_request"*.
+
+**Why it matters:** long Persian answers (a whole module with Persian comments / UI texts) are exactly what users
+send from the phone. They fail with a message that looks like a program bug and says nothing about size, so the
+user retries the same thing. The documented limit (300 000 characters) is wrong by half for Persian text.
+
+**Expected:** size the envelope limit from the text limit (`ct` ≤ base64 of `MAX_TEXT` × 4 bytes + JSON overhead, and
+keep `MAX_BODY` above that), or measure `MAX_TEXT` in UTF-8 bytes. Check the size before the envelope
+(`413 too_large` from `handle()`), and on the phone map `too_large` / `bad_size` to
+*"This answer is too long for the phone. Paste it on the computer, or send it in parts."* — ideally checked on the
+phone before sending.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
