@@ -594,6 +594,24 @@ and work.)
 **Expected:** compare against the normalised path (strip a leading `./`, collapse `//` and `/./`), refusing only what
 `safe_path` really refuses (`..`, absolute, drive, `.git`, `.workbench`).
 
+### BF-028 · S3 · OPEN — Quick "Restore last apply" that fails half-way: "bug" dialog, and the retry says the files already restored were "edited by you"
+
+**Where:** `aiwb/v2/quick.py` `restore()`: files are restored one by one with no `OSError` handling; the record is
+marked `restored_at` only after the loop. On the retry, a file that was already restored no longer matches
+`after_sha` and is put in `kept`. `aiwb/ui/quick_window.py` `restore_now()` only catches `QuickError`.
+
+**Reproduce** (script `/tmp/hunt/q_edge.py`): apply changes `a.txt` and `b.txt`; `b.txt` is then locked / read-only
+(open in an editor that locks, antivirus, OneDrive sync) → *Restore last apply* → `PermissionError` → *"Application
+error — a bug in AI Workbench"*; `a.txt` is back to the original, `b.txt` is still the applied version. Unlock and
+press *Restore* again → `b.txt` restored, and the message says *"Kept because you edited them after the apply:
+a.txt"* — the user did not edit it; it is in fact correctly restored.
+
+**Why it matters:** low — the end state is right after a retry; the dialogs are alarming and the second message is
+false (it makes the user think a file was not restored).
+
+**Expected:** catch `OSError` per file, report *"Could not restore b.txt: <reason> — close the program that uses it
+and press Restore again"*; on retry treat a file whose current content equals its backup as already restored.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
