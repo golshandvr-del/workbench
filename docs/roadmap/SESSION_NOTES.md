@@ -329,3 +329,7 @@ immediately, so a new session can continue without repeating work.
 - (session 9) BF-005 (d5e6cb6, S2): corrupt state.json -> StoreError, message mentions .workbench/v2/backups which
   normally does not exist; events.jsonl exists but no recovery. NEXT: paste edge cases via ctl.route_answer (empty,
   huge 5MB, binary/NUL, RTL Persian, CRLF, BOM, answer for wrong handoff), then Quick mode, helper AI.
+- (session 10, after sandbox reset) Env restored. BF-006 (d1aa66b, S3): lone surrogate in pasted text -> UnicodeEncodeError
+  in route_answer / quick.apply (caught by Tk global handler -> "bug" dialog). Paste edge cases BOM/CRLF/NUL/fenced/RTL/
+  3MB noise/smart quotes all OK. NEXT: Quick mode path safety (../, absolute, C:\, reserved names), non-ASCII + read-only
+  project folder, Summary table, GUI S5 failure triage.
