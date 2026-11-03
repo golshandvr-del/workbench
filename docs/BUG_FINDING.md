@@ -759,3 +759,8 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   next open, never a false Passed / Failed; the batch stops on the first non-passing result; a running action cannot
   be removed; a worker exception lands in *"Action batch error"* with the refreshed queue. (Same runner as the Run
   page: BF-025, BF-029 apply here too.)
+- **Classic transactional apply (code review)**: every path is validated (links, escapes, parent-is-file,
+  sensitive, size) and compared with the previewed bytes **before** the first write; the backup + manifest are
+  written to a fresh, unique app-data folder (`exist_ok=False`); writes are atomic; any exception rolls back the
+  touched paths in reverse order from the exact preflight bytes and reports rollback errors. This is the model the
+  Quick (BF-007, BF-026, BF-028) and guided (BF-009) writers should follow.
