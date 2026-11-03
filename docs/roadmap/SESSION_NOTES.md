@@ -437,3 +437,6 @@ immediately, so a new session can continue without repeating work.
   never mentions roadmap_remaining:false, forces fake ops. Summary 8 S1 / 22 S2 / 18 S3. NEXT: bundle import, i18n/RTL.
 - (session 17) BF-049 (fa46ddc S2) bundle import: project with decisions/goal/team but no tasks = "new"; other project
   replaces it, other_project check skipped. Summary 8 S1 / 23 S2 / 18 S3. NEXT: bundle MAX_EVENTS / descends(), i18n/RTL.
+- (session 17) BF-050 (ea53ce9 S2) project_id = raw folder name (controller passes root.name); spaces / Persian names
+  -> bundle export unreadable everywhere. Bundle newer/older/same round trip checked OK. Summary 8 S1 / 24 S2 / 18 S3.
+  NEXT: i18n/RTL (Persian text in tasks/prompts/paths), duplicate file blocks, huge answers.
