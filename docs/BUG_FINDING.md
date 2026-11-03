@@ -1431,6 +1431,27 @@ The user sees "required but unavailable" for a file that exists.
 **Expected:** `deliverable` should depend on the status only; show an empty file as `## pkg/__init__.py (full_file,
 lines 0, sha256 e3b0…) — (empty file)` and write the empty entry into the ZIP.
 
+### BF-065 · S3 · OPEN — context pack: binary, UTF-16 and Windows-1252 files are pasted as garbage (U+FFFD, NUL bytes) and presented as "ready"
+
+**Where:** `aiwb/context_request.py` `resolve()` reads every file with `data.decode("utf-8", errors="replace")` — no
+binary check, no BOM / UTF-16 detection, no Windows-1252 fallback (Quick-mode ZIP import does all three, see
+*Checked and OK*). A folder request (`assets/`) expands to every file in it, images included.
+
+**Reproduce** (scripts `/tmp/hunt/ctx3.py`, `/tmp/hunt/ctx5.py`): request `assets/logo.png`, `win.txt` (cp1252
+`café résumé`), `u16.txt` (UTF-16 `hello`) → all three `status=ready`, suggested delivery *inline*; the pack contains
+`## assets/logo.png (full_file, lines 1-31 …)` followed by 31 "lines" of control characters and NUL bytes,
+`1: caf� r�sum�`, and `1: ��h\x00e\x00l\x00l\x00o\x00`. The sha256 is of the real file, so nothing marks the text as
+damaged.
+
+**Why it matters:** the model receives a corrupted listing labelled as the current file and may "fix" the encoding or
+rewrite the text it cannot read (accents lost → it writes `caf? r?sum?` back). NUL characters in the text can also cut
+the clipboard copy short on Windows/Tk, so the user pastes an incomplete pack without noticing. Asking for a folder
+that holds images (`assets/`, `static/`) is common.
+
+**Expected:** detect binary files (NUL byte / known extensions) and report them as `binary — attach it in the ZIP
+instead` (the ZIP path already copies raw bytes); decode UTF-8-BOM / UTF-16 (BOM) properly and fall back to
+Windows-1252 with a note, as Quick ZIP import does.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
