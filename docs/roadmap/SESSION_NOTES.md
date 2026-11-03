@@ -460,3 +460,7 @@ immediately, so a new session can continue without repeating work.
 - (session 18) BF-055 (615429f S2) waves/guide `_owner()` fallback = agent-implementer else FIRST agent = PM; wizard teams
   have no agent-implementer -> ownerless / removed-owner tasks go to the PM chat. Summary 8 S1 / 27 S2 / 18 S3.
   NEXT: team_setup leftovers (pending plan names removed AI; role change keeps old template text), workflow.py, snapshot.py.
+- (session 18) BF-056 (e8cb76b S3) Edit team role change keeps old template purpose/instructions/task types.
+  Checked OK: a pending plan naming a removed AI -> accept refused with a clear "owner agent … does not exist",
+  partial accept of the other changes works (no dead end). Summary 8 S1 / 27 S2 / 19 S3.
+  NEXT: workflow.py, snapshot.py, dashboard.py, next_action.py, i18n.py.
