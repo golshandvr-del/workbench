@@ -299,3 +299,4 @@ immediately, so a new session can continue without repeating work.
   `python3 tools/bump_desktop_release.py 5.20.0 --test test_perf_budgets.py` (in worktree /tmp/rel, copy file-by-file).
 - (session 8) Unit 921 OK. DONE guides: bc49f7a USER_GUIDE.md (§3d 5.16–5.20 + helper AI, privacy, NOT RUN),
   52c8b24 USER_GUIDE_FA.md (§۴الف). NEXT: check tests reading guides, CHANGELOG 5.20.0, bump, ROADMAP ✅, tag.
+- (session 8) 289e59d CHANGELOG 5.20.0. NEXT: bump in /tmp/rel worktree (--test test_perf_budgets.py), copy file-by-file.
