@@ -376,3 +376,7 @@ immediately, so a new session can continue without repeating work.
   Summary 7 S1 / 8 S2 / 5 S3. NEXT: write "Checked and OK" for session 12, report to owner.
 - (session 13, after sandbox reset) Env restored at 9820c33 (clone + cpush + xvfb). Summary 7 S1 / 8 S2 / 5 S3 (BF-001..020, all OPEN).
   Owner: keep bug-hunting all areas, do not stop, no questions. NEXT: new-project wizard, bundle export/import, Run/Git page.
+- (session 13) Bundle area: BF-021 (1694dbd S2) project_id = raw folder name -> bundles of "My Project" / Persian / long names can never be imported;
+  BF-022 (0f945c2 S3) export/import OSError -> bug dialog, malformed bundle -> raw Python text; BF-023 (b3cb781 S3) plan_import "new"
+  checked before other_project/older -> goal-only project replaced silently. Summary 7 S1 / 9 S2 / 7 S3.
+  NEXT: write checked-OK (bundle round trip), then new-project wizard, Run/Git page.
