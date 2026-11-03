@@ -420,3 +420,7 @@ immediately, so a new session can continue without repeating work.
 - (session 16) BF-042 (c5c92e7 S2) AIWB_FILE action="delete"/"move" parsed as empty write (diagnose.parse_files drops
   action): Quick apply empties the file; guided silently drops it and approves. Summary 7 S1 / 19 S2 / 16 S3.
   NEXT: bundle import edge cases, i18n/RTL, rescue prompts, diagnose.parse_files other attrs (body="raw").
+- (session 16) BF-043 (0251ef1 S1) staging + smart check only in guide._paste; companion submit_response, classic
+  ProjectsWindow import, shell.do_import call route_answer only -> accept approves task, writes no file.
+  Also checked: body="raw" blocks strip a leading fence of a raw Markdown file (minor, folded into notes, not filed yet).
+  Summary 8 S1 / 19 S2 / 16 S3. NEXT: raw-body fence strip (verify impact), bundle import, rescue prompts, i18n.
