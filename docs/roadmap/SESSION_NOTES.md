@@ -454,3 +454,6 @@ immediately, so a new session can continue without repeating work.
   complete JSON-files answer / marker-free charter "cut off". Summary 8 S1 / 25 S2 / 18 S3.
   NEXT (never hunted so far): intake/normalize.py, v2/team_setup.py, v2/workflow.py, v2/snapshot.py, v2/dashboard.py,
   v2/next_action.py, i18n.py.
+- (session 18) BF-054 (c66e5a5 S2) normalize._strip_invisible removes ZWNJ/ZWJ/NBSP from the WHOLE answer incl. file
+  bodies; triggered by any marker repair (smart quotes, escaped/bold marker) or JSON repair. Summary 8 S1 / 26 S2 / 18 S3.
+  NEXT: v2/team_setup.py, v2/workflow.py, v2/snapshot.py, v2/dashboard.py, v2/next_action.py, i18n.py.
