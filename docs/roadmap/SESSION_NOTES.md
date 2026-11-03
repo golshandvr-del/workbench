@@ -400,3 +400,6 @@ immediately, so a new session can continue without repeating work.
 - (session 15) BF-035 (df5b3ae S2) cancelling a task leaves its open handoff: holds a chat slot, answer still accepted
   and written into the project. Summary 7 S1 / 16 S2 / 12 S3. NEXT: timeline (milestones/versions), charter_repair,
   paste_box live diagnosis, handoff stale/late answers, attempts.
+- (session 15) BF-036 (828dc0c S3) guided release: 3 separate transactions, missing run id leaves version tagged with
+  default tag "vv1.0.0"; retry tag ignored. Summary 7 S1 / 16 S2 / 13 S3. NEXT: handoff late/stale answers, attempts,
+  charter_repair, paste_box.
