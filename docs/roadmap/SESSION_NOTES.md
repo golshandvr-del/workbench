@@ -440,3 +440,6 @@ immediately, so a new session can continue without repeating work.
 - (session 17) BF-050 (ea53ce9 S2) project_id = raw folder name (controller passes root.name); spaces / Persian names
   -> bundle export unreadable everywhere. Bundle newer/older/same round trip checked OK. Summary 8 S1 / 24 S2 / 18 S3.
   NEXT: i18n/RTL (Persian text in tasks/prompts/paths), duplicate file blocks, huge answers.
+- (session 17) BF-051 (ccaf8ad S2) one answer: duplicate paths / case twins / file-vs-folder unchecked -> silent drop or
+  BF-009 crash. Persian file paths + backslash paths checked OK. Summary 8 S1 / 25 S2 / 18 S3.
+  NEXT: Persian text in task titles/prompts (RTL), huge answers, Quick mode restore.
