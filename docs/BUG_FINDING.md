@@ -308,6 +308,24 @@ message even promises that prompts can be generated.
 problem (*"TASK-X is cancelled"*), is shown as invalid on the card and is not accepted by *Accept*; the repair prompt
 for the PM lists those tasks as cancelled so the next plan does not repeat it.
 
+### BF-015 · S3 · OPEN — helper AI: two network edge cases give a misleading message
+
+**Where:** `aiwb/helper_ai.py` `chat()`: the reply is read with `resp.read(MAX_REPLY_CHARS * 4 + 1)` (800 001 **bytes**)
+and then parsed; `http.client.IncompleteRead` (an `HTTPException`, not an `OSError`) is not caught.
+
+**Reproduce** (script `/tmp/hunt/q_helper.py`, fake opener):
+1. A server that escapes non-ASCII in JSON (`\u0633` = 6 bytes per Persian letter) sends a long reply (≥ ~135 000
+   Persian characters, below the 200 000-character limit) → the bytes are cut at 800 KB → *"The helper AI sent an
+   answer Workbench cannot read (not a Chat Completions reply)"* — wrong: it is a valid reply that was cut by us.
+2. The connection drops in the middle of the body → `IncompleteRead` → generic *"The helper AI call failed:
+   IncompleteRead."* (from `run_async`) instead of *"could not be reached / connection lost — try again"*.
+
+**Why it matters:** low — the app never crashes, nothing is written, and the user can retry; very long Persian replies
+are rare (servers like OpenAI / Ollama send raw UTF-8, which is fine up to the limit). Only the wording misleads.
+
+**Expected:** read up to the limit and, if the limit was hit, say *"the helper AI answer is too long"*; catch
+`http.client.HTTPException` together with `OSError` as a connection problem.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
