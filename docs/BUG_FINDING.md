@@ -425,6 +425,29 @@ case), *I did it by hand — record…* with the tag (release case).
 → continue with the Release; Release exists → record it); a 422 on `refs/tags/…` is reported as *"the tag already
 exists"*; after a partial failure the card says what was already done on GitHub.
 
+### BF-020 · S3 · OPEN — "Archive the project": if the final bundle cannot be written, the project is read-only anyway and the card says the bundle exists
+
+**Where:** `aiwb/v2/closeout.py` `archive()`: the `archived_at` transaction is committed **first**, then
+`path.parent.mkdir()` / `path.write_text()` run unguarded. `Guide._perform` (`archive` action) does not catch the
+`OSError`.
+
+**Reproduce** (script `/tmp/hunt/v_archive.py`; the write is made to fail with a file where `.workbench/archive/`
+must go — on Windows also a full disk, an antivirus / OneDrive lock or a read-only project folder):
+1. Completed project → *Archive the project* → `FileExistsError` / `OSError` reaches Tk → *"Application error — That
+   action stopped because of a bug in AI Workbench …"*.
+2. The project is nevertheless archived: the only step is *"The project is archived (read-only) — Nothing can change
+   until you reopen it. **The final bundle is in .workbench/archive/.**"* — no bundle was written. Pressing *Archive*
+   again is impossible (*"the project is already archived"*).
+3. Workaround (works, but nothing suggests it): *Reopen the project* → *Archive the project* again once the cause is
+   gone.
+
+**Why it matters:** low — no project data is lost; but the user gets a "bug" dialog and a card that states a false
+fact (the final bundle exists).
+
+**Expected:** write the bundle first (to a temp file, then rename) and mark the project archived only after it
+exists; a write error is reported as a normal message (*"The final bundle could not be written: <reason>. The project
+was not archived."*).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
