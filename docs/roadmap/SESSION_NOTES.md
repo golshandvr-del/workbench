@@ -387,3 +387,6 @@ immediately, so a new session can continue without repeating work.
 - (session 14) Quick mode: BF-026 (ac03fc9 S2) apply/restore follow symlinks/junctions outside the project; BF-027 (f7ed9cf S3) ZIP
   entries with ./ refused as unsafe; BF-028 (4ca5cfd S3) restore failing half-way -> bug dialog, retry says "edited by you".
   Summary 7 S1 / 11 S2 / 10 S3. NEXT: run timeout/kill + output cap, queued actions, context request, Quick prompt build.
+- (session 14) BF-029 (3278b0e S2) run hangs past time limit when a grandchild holds the pipe (server launchers);
+  BF-030 (7fef491 S2) Quick prompt sends .env / keys / outside-link files unredacted. Checked OK: run limit/output cap,
+  queued actions. Summary 7 S1 / 13 S2 / 10 S3. NEXT: guided context request packing, classic apply_changes_transactionally.
