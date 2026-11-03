@@ -215,3 +215,19 @@ show *"Could not write src/x/b.txt: … — close the program that uses it and p
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
+
+- **Unit suite** 921 tests OK (10 skipped) · **GUI suite** 61/62 — the one failure `gui_scenario_s5_reopen_smoke`
+  (`TclError: can't delete Tcl command` inside `root.destroy()` of the 2nd Tk in one process) is a known
+  sandbox/xvfb artefact: it passes on CI (Linux Py3.10 + 3.13, Windows). Real users never create two Tk roots. NOT A BUG.
+- **pyflakes**: no undefined names; only unused locals and one f-string without placeholders (`artifacts.py:521`). Harmless.
+- **Guide random walk** (30 projects × 150 actions): 0 unexpected exceptions, 0 states without a step, every step
+  has ≥1 action and exactly one primary (apart from BF-001…004, which are logic dead ends, not crashes).
+- **Paste robustness** (charter): UTF-8 BOM, CRLF, NUL characters, fenced in ```json, Persian text before the block,
+  3 MB of noise before the block (0.3 s), smart quotes (auto-fixed), Persian-only text (→ clear "no block" message),
+  normal emoji (Tk 8.6 clipboard round-trip checked): all OK.
+- **Writes of `state.json`**: temp file + fsync + `os.replace` — a crash during a save cannot damage it (BF-005 needs an
+  outside cause).
+- **Path safety against escape**: `..`, absolute, `C:`, NUL, `.git/`, `.workbench/` refused in Quick, guided staging
+  and ZIP import; `integrate()` also checks the resolved path stays inside the project. (Windows-specific names: BF-008.)
+- **Unhandled exceptions** in Tk callbacks go to `_report_callback_exception` (logged + dialog; the app keeps running);
+  Home card actions are wrapped (`home_perform` shows the error on the card).
