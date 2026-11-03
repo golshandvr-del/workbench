@@ -408,3 +408,6 @@ immediately, so a new session can continue without repeating work.
   NEXT: attempts late answers, charter_repair, paste_box, i18n/RTL text, bundle import edge cases.
 - (session 15) BF-038 (605ae2b S3) answer for a dropped (rejected) prompt is reported "linked", then silently ignored.
   Summary 7 S1 / 16 S2 / 15 S3. NEXT: charter_repair, paste_box, bundle import edge cases, i18n.
+- (session 16, after sandbox reset) Env restored at 9865011 (clean). Previous chat ended mid-test on charter_repair
+  role_of("Lead developer") -> 'project_manager' (substring "lead"). Summary 7 S1 / 16 S2 / 15 S3.
+  NEXT: finish charter_repair role check, paste_box, bundle import edge cases, i18n.
