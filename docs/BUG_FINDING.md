@@ -1656,6 +1656,35 @@ while the picker is in front — normal on low-RAM phones), the field is `null` 
 (`DocumentsContract.deleteDocument`) and say *"Export was interrupted — try again"*. Restore the open project and the
 paste box text in `onSaveInstanceState`.
 
+### BF-075 · S3 · OPEN — phone *Import files from ZIP*: a GitHub "Download ZIP" lands under `myapp-main/…`, Mac `__MACOSX` junk and nested `.git` are imported, a ZIP with `./` or `\` names is refused whole, and existing files are overwritten without a backup
+
+**Found by code review** (the path rule was replayed in Python: script `/tmp/hunt/kzip.py`).
+
+**Where:** `apps/mobile/.../core/Files.kt` `unzip()` (button *Import files from ZIP* in `StandaloneActivity`):
+- an entry is accepted only if `safePath(name) == name`, so harmless forms that `safePath` would normalise are
+  treated as attacks and refuse the **whole** archive: `./src/a.py` (many zip tools), `src\a.py` (older Windows
+  tools / .NET `ZipFile`) → *"Error: unsafe ZIP entry: ./src/a.py"*;
+- no top-folder strip (desktop Quick-mode import does it, see *Checked and OK*): GitHub's *Download ZIP*
+  (`myapp-main/src/a.py`) is written to `files/myapp-main/src/a.py`, so the next delivery creates a second copy at
+  `src/a.py` and the context the phone sends is split in two trees;
+- `.git` / `.workbench` are reserved only as the **first** part: `myapp-main/.git/…` (hundreds of objects) and
+  `__MACOSX/…/._a.py` are imported; binary files and `.env` are written too (no binary / sensitive check, no
+  512 KB per-file limit — `MAX_FILE` is used only for staging);
+- each entry is read completely with `readBytes()` before the total is checked, so one large entry (a 25 MB ZIP of a
+  big log / database dump expands to hundreds of MB) ends in `OutOfMemoryError` — an `Error`, not caught by
+  `guard {}` → the app closes;
+- existing files are overwritten in place (no backup, unlike `integrate()` which keeps `backups/<handoff>/`), not
+  atomically, and nothing is recorded in the project (no event), so the change is invisible in the timeline.
+
+**Why it matters:** importing the current code from a ZIP is how a phone-only user brings an existing project in. The
+two most common ZIP sources (GitHub download, Mac Finder) give a wrong layout or junk, some Windows ZIPs are refused
+with a "security" message, and a re-import silently replaces work.
+
+**Expected:** reuse the desktop rules (`intake/answer_files.py`): normalise `./` and `\`, strip one top folder,
+skip `__MACOSX`, `.DS_Store`, any `.git` / `.workbench` part, binaries and sensitive files with a list of what was
+skipped; enforce a per-entry limit while reading; keep a backup of overwritten files and record a `files_imported`
+event; show *"12 files imported, 3 replaced (backup kept), 5 skipped: …"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
