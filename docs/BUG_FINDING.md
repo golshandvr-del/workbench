@@ -974,6 +974,31 @@ troubleshooting round.
 **Expected:** honour `body="raw"`: take the lines between the header and `<<<AIWB_END_FILE>>>` verbatim (only the
 final newline normalised), never strip fences; keep the current unwrap only for blocks without `body="raw"`.
 
+### BF-045 · S2 · OPEN — rescued proposal: a task assessment that names tasks by **title** creates **duplicate tasks**
+
+**Where:** `aiwb/v2/rescue.py` `_task_ops()` treats an item as an update only when it carries an id starting with
+`TASK-`; everything else with a `title` becomes `create_task`. `UPDATE_KEYS` (`task_assessment`, `task_updates`,
+`updated_tasks` …) and `CREATE_KEYS` are merged into one list, so an *assessment* of existing work that says
+`{"title": "Build API", "status": "on track"}` is read as a **new** task "Build API". No check against the titles of
+existing tasks. Short ids (`"TASK-1"`, `"task-0001"`, `"1"`) are not normalised either → *"a change for unknown task
+TASK-1"*. `depends_on` given by title (`["Write tests"]`) is silently dropped (only existing `TASK-` ids are kept).
+
+**Reproduce** (scripts `/tmp/hunt/rs.py`, `/tmp/hunt/rs2.py`): TASK-0001 "Build API" and TASK-0002 "Build UI" exist.
+The PM answers a status prompt with `{"summary": "status check", "task_assessment": [{"title": "Build API", "status":
+"on track", "assessment": "fine"}, {"title": "Build UI", "status": "needs work"}]}` → *"Manager proposal PROP-0001 with
+2 change(s) is ready for review. Read from the answer: 2 new task(s) read from the answer's own keys."* → review
+(accept all) → **TASK-0003 "Build API" and TASK-0004 "Build UI"** exist next to the originals, both `ready`, no owner,
+objective = title; the dispatcher queues them for the implementer.
+
+**Why it matters:** the rescue exists for exactly these "assessment" answers (friend's calculator log). The review
+card shows "create_task Build API" which looks right to a non-technical user; accepting it duplicates the work and
+the next prompts build the same thing twice.
+
+**Expected:** items from `UPDATE_KEYS` never become `create_task`; match by id (normalised: `TASK-1` → `TASK-0001`)
+or by exact normalised title against existing tasks; an assessment with no field to change is skipped (as with ids).
+Resolve `depends_on` titles against existing tasks and the new tasks of the same answer; list unresolved ones in
+`leftover` instead of dropping them.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
