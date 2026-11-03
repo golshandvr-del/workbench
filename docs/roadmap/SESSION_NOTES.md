@@ -390,3 +390,7 @@ immediately, so a new session can continue without repeating work.
 - (session 14) BF-029 (3278b0e S2) run hangs past time limit when a grandchild holds the pipe (server launchers);
   BF-030 (7fef491 S2) Quick prompt sends .env / keys / outside-link files unredacted. Checked OK: run limit/output cap,
   queued actions. Summary 7 S1 / 13 S2 / 10 S3. NEXT: guided context request packing, classic apply_changes_transactionally.
+- (session 15, after sandbox reset) Env restored at ea7c2c2; pushed the cut summary line (BF-032 -> S2, 1d224ff).
+  BF-031 (5323620 S3) context request sensitive refusal bypassed by trailing space/dot or link alias; classic
+  transactional apply checked OK; BF-032 (ea7c2c2 S2) smart check uses raw path -> false out_of_scope loop.
+  Summary 7 S1 / 14 S2 / 11 S3. NEXT: closeout/waves/timeline/charter_repair/changes/attempts, paste_box, guide actions.
