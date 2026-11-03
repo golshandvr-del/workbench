@@ -1496,6 +1496,26 @@ shows only the first line).
 when normalising; in `render_status_md()` escape Markdown per item (replace newlines with spaces, escape a leading
 `#`, `-`, `|`) so text from the store can never create a heading or a list item.
 
+### BF-068 · S3 · OPEN — a new **draft** task (e.g. created from the phone) is announced as *"Approve finished work so the task can be closed"* on the phone, the classic Projects window and the Workspace
+
+**Where:** `aiwb/v2/next_action.py` emits type `approve_task` only for tasks in `draft` / `proposed` (*"task is draft;
+complete it and mark it ready"*). `aiwb/i18n.py` `ACTIONS["approve_task"]` translates that type as
+*"Approve finished work so the task can be closed"* / *"کار تمام‌شده را تأیید کنید تا Task بسته شود"*.
+`ProjectsController.next_action_text()` / `next_action_view()` use this text; `companion/service.py project_view()`
+sends it to the phone as `next_action`.
+
+**Reproduce** (scripts `/tmp/hunt/comp.py`, `/tmp/hunt/comp2.py`): phone (permission *create_task*) → *Add task*
+"From phone" → desktop state: TASK-0001 `draft` → phone `get_state` / Projects window next action: *"Approve finished
+work so the task can be closed (TASK-0001)"*. Home at the same time says *"Approve TASK-0001 From phone — The task is a
+draft. Approve it so it can start"*. Nothing has been worked on yet.
+
+**Why it matters:** the user who just added an idea from the phone is told that finished work waits to be closed; it
+reads like someone already did the task, and the phone (which cannot approve anything) shows it as the main message.
+The two screens describe opposite situations for the same step.
+
+**Expected:** translate `approve_task` as *"Approve the new task so it can start"* / *"Task جدید را تأیید کنید تا
+شروع شود"* (or rename the type to `approve_draft`); keep "finished work" wording for `review_delivery`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
