@@ -368,3 +368,6 @@ immediately, so a new session can continue without repeating work.
   missing "object" -> "Publish state now" shows the bug dialog; timer path swallows it (no last_error, no back-off,
   retried every 30 s). Checked OK: 401/403/429/5xx/conflict/protected-branch mapping. Summary 7 S1 / 7 S2 / 4 S3.
   NEXT: closeout / release (v2/closeout.py, repo.py _do_release).
+- (session 12) BF-019 (5ed6792 S2): RepoService.confirm replays all GitHub calls after a partial failure; create repo
+  -> 422 "creation failed" forever; release tag exists -> 422 mapped to "state branch moved" forever.
+  Summary 7 S1 / 8 S2 / 4 S3. NEXT: closeout archive (state archived before bundle write), expand.
