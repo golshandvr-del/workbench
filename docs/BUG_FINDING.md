@@ -924,6 +924,34 @@ operations (*"delete src/old.py"* in the plan, with backup) or refuse them visib
 (*"src/old.py: delete is not supported — delete it yourself"*) and never turn them into an empty write. Unknown
 actions should be a problem, not a write.
 
+### BF-043 · S1 · OPEN — an answer that comes in through the phone companion, the classic Projects window or Workbench "Import" is never staged: *Accept the delivery* approves the task and writes **no file**
+
+**Where:** staging (`aiwb/v2/files.stage`) and the smart check (`guide._diagnose`) run only inside
+`guide._paste()` (the Next-step card's *Paste the answer*). The other entry points call
+`ProjectsController.route_answer()` directly and stop there:
+- `aiwb/companion/service.py` op `submit_response` (the phone's *Send answer*);
+- `aiwb/v2/projects_window.py` `do_import` (*Import answer*, linked from the Workbench as "classic");
+- `aiwb/workspace/shell.py` `do_import` (scripts / older menu).
+`route_answer` links the answer to the handoff (status `reconciled`, outcome from the manifest), so the guide then
+shows the normal card *"Check what Implementer delivered … — Accept the delivery / Reject…"*. Its explanation does
+not mention files at all (*"core done Accepting records your review approval; tests are recorded next."*),
+because `staged_files` is empty.
+
+**Reproduce** (script `/tmp/hunt/comp.py`): TASK-0001's prompt is out → the answer (`src/core.py` in an AIWB block +
+manifest *complete*) is sent from the phone (`submit_response`) → *"Answer linked to HO-0001 (reconciled,
+complete). 1 file(s) read from AIWB file blocks."* → on the PC, Home shows *Check what Implementer delivered* →
+*Accept the delivery* → *"Delivery HO-0001 accepted and TASK-0001 approved. Next: record whether the tests/build
+passed."*, `files: []`. Task → `validation_pending`; **`src/core.py` is not on disk**; no smart check ran
+(scope, truncation, empty files are not checked either).
+
+**Why it matters:** the phone companion exists precisely so the user can send the AI's answer from the phone; the
+work then silently disappears while the task is marked approved. The next tasks build on code that is not there,
+and nothing in the app says so (the message even says it was approved). Same class as BF-010, but for every file.
+
+**Expected:** move staging + smart check into `route_answer` (or `handoffs.ingest`) so every entry point stages the
+same way; at least, when a handoff with files in its response has no `staged_files`, the card should re-stage from
+the stored response or refuse *Accept* with *"the files of this answer were not read — paste it here again"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
