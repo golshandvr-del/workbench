@@ -86,6 +86,27 @@ accepts something they did not want.
 
 **Expected:** reject never validates or changes the graph; accepting only fails for problems the plan **adds**.
 
+### BF-004 · S1 · OPEN — removing a task's last prerequisite leaves it "blocked: waiting for …" forever (invisible)
+
+**Where:** `aiwb/v2/tasks.py` `_refresh_readiness()` skips every task with an empty `depends_on`
+(`... or not t.get("depends_on"): continue`); `aiwb/v2/proposals.py` `_apply()` (`remove_dependency`) never
+re-derives readiness; `guide.steps()` hides blocked tasks whose reason starts with "waiting for".
+
+**Reproduce** (script `/tmp/hunt/c_remove_dep.py`):
+1. X ready, Y depends on X (blocked "waiting for X").
+2. The PM sends `remove_dependency Y → X`, the user accepts.
+3. Y: `blocked`, `depends_on: []`, reason still `waiting for TASK-X`. Even after X is **done**, Y never becomes
+   ready (nothing re-checks a task with no prerequisites). Home never shows Y; the PM report does not list Y as stuck.
+
+Same root cause after BF-002's cycle is broken with `remove_dependency`: the emergency-paused task stays
+`blocked [] "waiting for E1 (emergency)"` forever.
+
+**Why it matters:** a task silently disappears from the flow; the project ends with Home asking the PM "for the next
+step" while a planned task never runs. The PM sees nothing stuck.
+
+**Expected:** a blocked "waiting for/prerequisite" task with no open prerequisite becomes ready again
+(`_refresh_readiness` must not skip `depends_on == []`; `_apply` must refresh readiness for every task).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
