@@ -281,3 +281,8 @@ immediately, so a new session can continue without repeating work.
   5.20 recon: scenarios tests/gui/gui_scenario_s1..s9_*_smoke.py + scenario_driver.py; budget tests exist:
   test_store_cache.py, test_raster_9slice.py, test_release_gate.py, test_motion.py, gui_v516_light_smoke.py;
   guides docs/USER_GUIDE.md + docs/USER_GUIDE_FA.md.
+- (session 7) 5.20 recon 2: S2 pattern = new_guided_project -> charter_to_first_prompt (CHARTER fixture
+  packages/contracts/fixtures/valid/project-charter.v1.todo.json: refs t1..t3, m1/m2, team agents agent-core-dev ...)
+  -> d.use_answer(guided_answer(h, files)) -> "Accept…" -> file on disk. Raw friend log NOT in repo (test_rescue
+  reconstructs shapes). PLAN S10 tests/gui/gui_scenario_s10_calculator_smoke.py: calculator charter (PM owns docs task
+  t1, dev1 core t2, dev2 UI t3), PM answers half-right proposal shapes from the log, count PM rounds <= 2 to first code file.
