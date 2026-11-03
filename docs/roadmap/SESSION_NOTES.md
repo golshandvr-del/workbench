@@ -433,3 +433,5 @@ immediately, so a new session can continue without repeating work.
   NEXT: rescued decisions (string / no options), fix_prompt, bundle import, i18n/RTL.
 - (session 17) BF-047 (55d0397 S3) rescued text decisions lose PM choice / recommendation sentence as option.
   Summary 8 S1 / 21 S2 / 18 S3. NEXT: fix_prompt (NoOperations path), bundle import edge cases, i18n/RTL.
+- (session 17) BF-048 (1ed2ef9 S2) end of roadmap: roadmap_remaining "nothing left"/missing -> NoOperations; fix prompt
+  never mentions roadmap_remaining:false, forces fake ops. Summary 8 S1 / 22 S2 / 18 S3. NEXT: bundle import, i18n/RTL.
