@@ -26,7 +26,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 
 | Severity | Open | Fixed |
 |---|---|---|
-| S1 | 5 (BF-002, 003, 004, 007, 009) | 0 |
+| S1 | 6 (BF-002, 003, 004, 007, 009, 010) | 0 |
 | S2 | 3 (BF-001, 005, 008) | 0 |
 | S3 | 1 (BF-006) | 0 |
 
