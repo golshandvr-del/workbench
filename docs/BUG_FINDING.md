@@ -1627,6 +1627,35 @@ program on that port makes it look like a crash and asks for a bug report, with 
 program (maybe a second AI Workbench). Close it, or …"*); fall back to a free port (the QR code / manual address
 already carry the port); re-detect the LAN address on *Start* / *Pair new device…*.
 
+### BF-074 · S2 · OPEN — phone standalone mode: if Android recreates the screen while the file picker is open (rotation, dark-mode switch, low memory), *Export project bundle* / *Save files as ZIP* leave an **empty file** and say nothing; a pasted answer is lost on rotation
+
+**Found by code review** (no Android SDK in the sandbox; the logic is plain Kotlin and easy to follow).
+
+**Where:** `apps/mobile/.../StandaloneActivity.kt`: `pickExport()` builds the bundle text into the field
+`pendingExport` (ZIP: `pendingZip`) and only then opens `ACTION_CREATE_DOCUMENT`. The system picker **creates the
+file** as soon as the user taps *Save*. `onActivityResult(REQ_EXPORT)` writes `pendingExport` — but if the activity
+was destroyed and recreated in the meantime (rotation in the picker, theme / font / language change, process killed
+while the picker is in front — normal on low-RAM phones), the field is `null` and the code does
+`return@guard` silently. There is no `onSaveInstanceState`, no `configChanges` in `AndroidManifest.xml`, and the
+`current` project and the screen content are not restored either. The views are built in code without ids, so the
+*Paste the answer* `EditText` text is not restored by Android after a rotation.
+
+**Result for the user:**
+1. *Export project bundle* → picker → rotate the phone (or the system kills the app behind the picker) → *Save* →
+   back in the app: no message (neither *"Bundle saved."* nor an error); the chosen file exists with **0 bytes**.
+   Opening it on the desktop → *"the bundle is not valid JSON"*. The same for *Save files as ZIP* (empty ZIP →
+   *"broken / empty ZIP"* on the desktop).
+2. A long answer pasted into *Paste the answer* is gone after turning the phone; the open project falls back to the
+   project list (or to the project from the launch intent).
+
+**Why it matters:** the bundle is the only way to move a phone project to the desktop. The user thinks it was saved
+(they chose a file and the picker closed) and may delete the phone copy or carry an empty file to the computer.
+
+**Expected:** build the export text **in `onActivityResult`** from `current`/the project id (keep the id in
+`onSaveInstanceState`), or save `pendingExport` to a cache file; if nothing can be written, delete the empty document
+(`DocumentsContract.deleteDocument`) and say *"Export was interrupted — try again"*. Restore the open project and the
+paste box text in `onSaveInstanceState`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
