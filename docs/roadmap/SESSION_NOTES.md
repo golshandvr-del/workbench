@@ -471,3 +471,7 @@ immediately, so a new session can continue without repeating work.
   overview / phone / PROJECT_STATUS.md disagree with Home. Summary 8 S1 / 27 S2 / 21 S3 (summary row babd31c, session 19).
 - (session 19, after sandbox reset) Env restored at babd31c. NEXT: dashboard.py, i18n.py, resources.py,
   context_request_window.py, snapshot.py details.
+- (session 19) BF-059 (ef83754 S3) attention item key = kind:ref:rank (no handoff/reason) -> "Mark as read" mutes later
+  deliveries / publish errors of the same task; ws_seen trimmed alphabetically. Summary 8 S1 / 27 S2 / 22 S3.
+  Seen in passing (Persian UI): attention `why` text is always English (candidate for the i18n pass).
+  NEXT: i18n.py (Persian-mode leftovers), resources.py, context_request_window.py.
