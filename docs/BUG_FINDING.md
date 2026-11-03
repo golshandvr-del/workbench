@@ -340,3 +340,10 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
 - **Out-of-date answer** (script `/tmp/hunt/n_reject.py`): editing the task after its prompt was made
   (`task_revision` 1 → 2) → the pasted answer is `reconciliation_required`, Home shows *The answer … is out of date*
   with *Accept anyway… / Reject…*. Correct.
+- **Stale plan warning** (script `/tmp/hunt/o_stale.py`): a plan written for an older state that touches a task changed
+  since then is imported with *"written for an older project state: review carefully"* on the card. Works (the missing
+  check for **cancelled** tasks is BF-014).
+- **Quick mode ZIP import** (script `/tmp/hunt/p_zip.py`): top-folder strip, `../` / absolute / `C:` / `.git` /
+  `.workbench` entries skipped with a message, case duplicates reported, binary files skipped, Windows-1252 text
+  converted with a note, 5 MB entry refused (512 KB limit, reported), broken / empty ZIP → clear message, empty
+  `__init__.py` kept. All OK (Windows-invalid names: BF-008). `v2/files.py unzip_files()` has no caller (dead code).
