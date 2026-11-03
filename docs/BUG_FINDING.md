@@ -531,6 +531,30 @@ garbage.
 **Expected:** run Git with `-c core.quotepath=false` (as the status calls already pass `-c status.renames=false`), or
 build the message from the staged path list.
 
+### BF-025 · S2 · OPEN — Run page: a Python script that prints Persian (or any non-ANSI) text fails on Windows; output of other programs is garbled
+
+**Where:** `AI_Workbench.py` `build_project_file_run_spec()` builds `[sys.executable, file, …]`; `_run_process_bounded()`
+starts it with `env=os.environ.copy()` and reads the pipe as `encoding="utf-8", errors="replace"`. Nothing sets
+`PYTHONUTF8=1` / `PYTHONIOENCODING=utf-8`. On Windows a Python child whose stdout is a **pipe** encodes with the ANSI
+code page (cp1252 on en-US, cp1256 on fa-IR), not UTF-8 (UTF-8 mode is not the default before Python 3.15).
+
+**Reproduce** (script `/tmp/hunt/z_runenc.py`; the Windows pipe encoding is simulated with `PYTHONIOENCODING`):
+1. Project file `hello.py`: `print("سلام دنیا ✓")`. In a Windows console it prints fine.
+2. Run page › *Run / simulate* → en-US Windows: `UnicodeEncodeError: 'charmap' codec can't encode characters` →
+   status **Failed**, exit 1, *"File run did not pass … Use 'Repair prompt from latest failure…'"*; fa-IR Windows:
+   `ی` (U+06CC) and `✓` are not in cp1256 → also **Failed**, and the part that was written shows as `����` because
+   cp1256 bytes are decoded as UTF-8.
+3. The same decoding applies to *Run command* and queued actions (`cmd.exe` / tools write in the OEM / ANSI code page):
+   any non-ASCII output (Persian file names in `dir`, localized compiler messages) is replaced by `�`.
+
+**Why it matters:** a correct program is reported as failing, the failure is recorded in the task state
+(`Action Failed`) and the repair prompt asks the AI to "fix" code that has no bug — exactly the AI-loop risk of
+BF-011 / BF-013. The owner's users will often print Persian text.
+
+**Expected:** pass `PYTHONUTF8=1` and `PYTHONIOENCODING=utf-8` in the child environment for Python runs (and
+optionally for shell commands); for other programs decode with `locale.getpreferredencoding()` / the OEM code page
+when the bytes are not valid UTF-8.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
