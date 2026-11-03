@@ -1,4 +1,4 @@
-# AI Workbench — User Guide (desktop 5.15.0 · mobile 2.0.0)
+# AI Workbench — User Guide (desktop 5.20.0 · mobile 2.0.0)
 
 AI Workbench helps you build a software project with the chat AIs you already use (ChatGPT, Gemini,
 Claude, …) — **no API keys and no login inside the app**. The app does exactly two things with models:
@@ -158,6 +158,42 @@ Each of these is checked before every release by driving the real app with real 
 
 ![Home: a Windows copy (line-end \\) was repaired and the file is on disk](audit/screens/v5.15-scenarios/s9_02_task_windows_copy_applied.png)
 
+## 3d. Lighter, clearer, shorter (5.16.0 – 5.20.0)
+
+Built from real feedback on 5.15.0 (two friends building an "HTML calculator" with three chats).
+
+* **Fast and quiet (5.16.0).** Reading the project state is cached (~1 ms on a 560 KB project), a change is saved in
+  ~20–40 ms, the map stops animating a few seconds after the last change (an idle app draws nothing), and the
+  right-click menu opens in about 0.1 s and closes when you switch page, click elsewhere, or move or minimise the
+  window.
+* **Clear forms (5.17.0).** When a step needs your input (a decision, a reason, passed/failed) one window shows the
+  step, the **whole question** and its **options as radio buttons**. The project manager's recommendation is marked
+  *(recommended)*; *Other answer…* takes any text. Enter = OK, Esc = Cancel.
+* **A short project-manager path (5.18.0).** Each prompt asks for **one** answer format. If the manager returns a
+  proposal with no real changes but with ideas (decisions, new tasks, risks), Workbench turns them into changes you
+  review. If nothing can be used, a **short correction prompt** (about 15 lines) is copied for the same chat. A decision
+  you accepted is sent as *FINAL — do not decide again* and is never asked again.
+* **Optional helper AI (5.19.0)** — see below.
+* **Checked every release (5.20.0).** Scenario S10 "the friends' calculator" replays the friend's real answers: from the
+  charter to the first code file in **at most two** project-manager rounds. The speed budgets above are permanent tests.
+
+### Optional helper AI (Settings › Helper AI)
+
+Without it nothing changes — no extra buttons and nothing is sent anywhere. If you have a free or cheap API of a light
+model (OpenRouter, Groq, Google AI Studio's OpenAI-compatible endpoint, a local Ollama, … — any *OpenAI-compatible
+Chat Completions* address):
+
+1. **Settings › Helper AI (optional) › Show settings.** Choose a preset or type the address, then the model, the API key
+   (not needed for a local server) and a time limit. **Save helper**, then **Test**.
+2. Home's card now has **Explain this step** (one or two plain sentences about what to do now, in the app language).
+3. When a chat's answer could not be used, the card offers **Fix with helper AI**: the helper rewrites the answer into
+   Workbench's format without inventing anything, and the result goes **into the paste box**. Read it and press
+   *Use this answer* — it is never applied by itself.
+4. **Remove** forgets the address and deletes the key.
+
+The key is kept in Windows Credential Manager (never in `settings.json`), data is sent only when you click one of the
+two buttons, and errors (key refused, rate limit, time limit, address unreachable) are one clear sentence.
+
 ## 4. Timeline
 
 **History › Timeline**: one lane per AI (by its name) plus "Project"; the dates of the shown span are under the axis.
@@ -208,10 +244,13 @@ These checks need hardware or accounts only the product owner has; they are list
 
 - Physical Windows at 100 / 125 / 150 / 200 % DPI.
 - A complete project with real ChatGPT / Gemini / Claude chats (three AIs in parallel).
-- Scenarios S1–S9 (section 3c) by hand with real chats; installing 5.15.0 over 5.14.0 on a real Windows PC.
+- Scenarios S1–S10 (sections 3c, 3d) by hand with real chats; installing 5.20.0 over 5.15.0 on a real Windows PC.
+- The helper AI with a real provider account (OpenRouter, Groq, Google AI Studio); the tests use a local fake server.
 - A real phone: standalone mode, project files, GitHub with a real token.
 
 ## 9. Privacy
 
-Everything stays on your machine/phone. The app never talks to a model. GitHub is contacted only when you
+Everything stays on your machine/phone. The app never talks to a model on its own. The only exception is the
+optional helper AI (section 3d): once *you* set it up, the current step or the unusable answer is sent to the address
+you entered, and only when you click *Explain this step* or *Fix with helper AI*. GitHub is contacted only when you
 use the Git / GitHub page with your own token.
