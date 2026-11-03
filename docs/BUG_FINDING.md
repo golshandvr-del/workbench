@@ -1392,6 +1392,26 @@ AI Studio users cannot record their chat link at all.
 when the value itself looks random, e.g. ≥ 20 chars of `[A-Za-z0-9_-]`), allow long ids in the **path** of an
 `https://` link (keep the query-parameter check), and name the matched fragment in the message.
 
+### BF-063 · S3 · OPEN — context pack: line numbers and *symbol* slices are shifted when a file contains a form feed, U+2028 / U+2029, NEL or a lone vertical tab
+
+**Where:** `aiwb/context_request.py` `resolve()` numbers lines with `text.splitlines()`, which also breaks on
+`\x0b \x0c \x1c \x1d \x1e \x85 \u2028 \u2029`. Editors, `ast` (`python_symbol_lines()`), the model and every later
+`range` request count only `\n` (and `\r\n`). From the first such character on, every number is off by one per
+occurrence, and the symbol span from `ast` cuts the wrong lines.
+
+**Reproduce** (scripts `/tmp/hunt/ctx.py`, `/tmp/hunt/ctx2.py`):
+1. `src/mod.py` with a form-feed separator line (`\x0c`, allowed by PEP 8 and common in older / Emacs code) above
+   `def target(): return 'T'` on lines 7–8 → request `{"mode": "symbol", "symbol": "target"}` → pack *"lines 7-8"*:
+   `7: ` (empty) and `8: def target():` — the body `return 'T'` is missing.
+2. `src/app.js` with `'x\u2028y'` in a string on line 2 → request range 3–5 (`function target() { … }`) → pack shows
+   `3: y';`, `4: function target() {`, `5:   return 2;` — wrong text under the requested numbers, closing `}` missing.
+
+**Why it matters:** the model is told "line numbers are part of the listing"; it plans edits by those numbers and asks
+for follow-up ranges by them, so it reasons about the wrong code (or a truncated function) without any warning.
+
+**Expected:** split with `text.split("\n")` (after normalising `\r\n` / `\r`), the same rule `ast` and editors use;
+add a test file with `\x0c` and `\u2028`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
