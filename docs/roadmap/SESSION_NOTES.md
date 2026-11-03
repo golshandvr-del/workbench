@@ -326,3 +326,6 @@ immediately, so a new session can continue without repeating work.
   changes raise while graph has a cycle). BF-004 (54db8b5): remove_dependency leaves task blocked "waiting for" with
   depends_on=[] forever (_refresh_readiness skips empty depends_on). NEXT: corrupt/missing state file, paste edge cases
   (huge, binary, RTL), Quick mode, helper AI errors, summary table in BUG_FINDING.
+- (session 9) BF-005 (d5e6cb6, S2): corrupt state.json -> StoreError, message mentions .workbench/v2/backups which
+  normally does not exist; events.jsonl exists but no recovery. NEXT: paste edge cases via ctl.route_answer (empty,
+  huge 5MB, binary/NUL, RTL Persian, CRLF, BOM, answer for wrong handoff), then Quick mode, helper AI.
