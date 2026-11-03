@@ -10,7 +10,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|
 | ID | `BF-NNN` |
 | Severity | **S1** crash / data loss / stuck with no way out · **S2** wrong behaviour, workaround exists · **S3** cosmetic / docs / minor |
-| Status | `OPEN` · `FIXED (commit)` · `WONTFIX (reason)` · `NOT A BUG` |
+| Status | `OPEN` · `FIXED (commit)` · `WONTFIX (reason)` · `NOT A BUG` · `DUPLICATE (of BF-NNN)` |
 | How found | static analysis · unit/GUI tests · code review · scripted scenario |
 
 ## Method (session 9)
