@@ -1,3 +1,26 @@
+## [5.20.0] - 2026-11-03
+
+### Final gate of the roadmap 5.16 → 5.20 ("light, clear, short")
+
+- **Scenario S10 — "the friends' calculator".** The log that started this roadmap (an HTML calculator, the project
+  manager + two developers, more than ten project-manager rounds on 5.15.0 without a single code file) is now a
+  release gate on the real app: guided project → charter → the manager's documentation task gets a prompt with one
+  answer format → the friend's real answer shape (a proposal with `operations: []`) → a short correction prompt
+  (15 lines) → the spec → the core developer's task → `src/core/calc.js` on disk. **Two project-manager rounds** to
+  the first code file (before: more than ten, none).
+- **The 5.16.0 speed budgets are permanent tests.** On a large state (~560 KB, 40 tasks, 2000 events): a repeated
+  state read ≤ 5 ms (measured ~1 ms), one saved change ≤ 40 ms (measured ~20 ms), a no-op change writes nothing. Shared
+  CI runners get a x2 margin; the owner's machine gets the strict numbers. Menu drawing, animation frame cost, zero
+  idle frames and closing menus were already permanent tests.
+- **User guide (English and Persian).** New section "Lighter, clearer, shorter (5.16.0 – 5.20.0)" with the helper AI
+  set-up (Settings › Helper AI › Show settings › Save helper › Test; Explain this step; Fix with helper AI → paste box
+  → Use this answer; Remove). Privacy updated: the app never talks to a model on its own — only the optional helper
+  AI, after you set it up and click one of its two buttons.
+
+### Tests
+
+- `test_perf_budgets.py` (4), GUI gate `tests/gui/gui_scenario_s10_calculator_smoke.py`. Unit 921 OK.
+
 ## [5.19.0] - 2026-11-03
 
 ### Optional helper AI (Roadmap 5.19.0 — owner's friends' question: "can we add a free API of a light model?")
