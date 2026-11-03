@@ -684,6 +684,29 @@ reaches the chat without *"an explicit separate decision"*; the user trusts it a
 to the root; refuse names ending in a space or dot (BF-008); optionally run `scan_for_secrets` on the prepared text
 and warn before copying.
 
+### BF-032 · S2 · OPEN — guided smart check: a correct delivery written as `./src/app.py` or `src\app.py` is flagged "out of scope / expected file not delivered" and pushed into troubleshooting
+
+**Where:** `aiwb/v2/diagnose.py` `diagnose()` checks scope (`_in_scope`) and `missing_deliverable` on the **raw**
+path from the file block; `aiwb/v2/files.py` `stage()` normalises the same path with `safe_path()` (`./` removed,
+`\` → `/`, `//` collapsed) and stages the file correctly. `answer_files.canonical()` leaves AIWB answers unchanged,
+so the raw path reaches `diagnose`. (Comparison is also case-sensitive: `Src/app.py` vs scope `src/` — on Windows
+that is the same folder.)
+
+**Reproduce** (scripts `/tmp/hunt/d_diag.py`, `/tmp/hunt/d_diag2.py`): task scope `src/`, expected `src/app.py`;
+answer block `path="./src/app.py"` (or `src\app.py`, common from models that "think Windows") → the file **is**
+staged as `src/app.py`, but the card says *"Problems found in …'s answer — Smart check: [out_of_scope] ./src/app.py
+is outside this task's allowed paths; [missing_deliverable] expected file src/app.py was not delivered"* with
+*Build the troubleshooting prompt* as the main action. `src//app.py` → only the false *missing_deliverable*.
+
+**Why it matters:** a correct answer is reported as broken; the troubleshooting prompt tells the AI the file is
+missing / out of scope, so it resends the same thing; after `TROUBLESHOOT_ATTEMPTS` the task is **escalated and
+blocked** (*"stuck after 3 troubleshooting prompts"*). The user must know to use *Accept anyway…*. Same AI-loop
+risk as BF-011 / BF-013.
+
+**Expected:** normalise each path with `safe_path()` before the scope / deliverable checks (and compare
+case-insensitively, as Windows does), so `diagnose` and `stage` agree; mention *"path normalised: ./src/app.py →
+src/app.py"* as a fix, not an error.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
