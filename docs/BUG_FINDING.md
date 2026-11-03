@@ -1452,6 +1452,26 @@ that holds images (`assets/`, `static/`) is common.
 instead` (the ZIP path already copies raw bytes); decode UTF-8-BOM / UTF-16 (BOM) properly and fall back to
 Windows-1252 with a note, as Quick ZIP import does.
 
+### BF-066 · S3 · OPEN — context request for a folder named `build/`, `dist/`, `venv/` … is answered *"the folder does not exist or is empty"*; sub-folders with those names are dropped silently
+
+**Where:** `aiwb/context_request.py` `_expand_folders()` skips every file whose relative path contains a part in
+`SKIP_DIRS` (`.git .workbench node_modules __pycache__ .venv venv dist build .idea .vscode`) — including the folder the
+model **explicitly asked for**. When nothing is left, it reports `missing` with *"the folder does not exist or is empty"*.
+Files under a nested `src/dist/` are also left out without any line in the pack.
+
+**Reproduce** (script `/tmp/hunt/ctx4.py`): project with `build/gen.py` (a hand-written build script) and
+`src/dist/x.py` → request `"build/"` → `[('build/', 'missing')]`, pack: *"- build/: missing — the folder does not
+exist or is empty"*. Request `"src/"` → only `src/main.py`; `src/dist/x.py` is not mentioned anywhere.
+
+**Why it matters:** many projects keep real source in `build/` (build scripts, Gradle/CMake helpers) or `dist/`
+packaging config; the model is told a folder it can see in the file tree does not exist, so it creates a new one or
+works around it. The user has no way to send it from the window (no "include anyway").
+
+**Expected:** apply `SKIP_DIRS` only to folders **below** the requested one (and never to the requested folder itself);
+report skipped sub-folders (*"src/dist/ skipped (build output) — ask for it by name"*); say "is empty" vs "does not
+exist" separately. (Related small issue: requesting `pkg/core.py` and `pkg/` puts `pkg/core.py` in the pack twice;
+de-duplicate after expansion.)
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
