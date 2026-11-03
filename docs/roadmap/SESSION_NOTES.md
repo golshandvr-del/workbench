@@ -364,3 +364,7 @@ immediately, so a new session can continue without repeating work.
 - (session 12) BF-017 (27f7b0c S2): _save_settings failure only logged; prefs / helper AI / toolbar Save say "Saved";
   lost at restart; helper key stored in Credential Manager without saved ref (orphan). Summary 7 S1 / 7 S2 / 3 S3.
   NEXT: v2/publisher.py (GitHub publish errors), closeout/release.
+- (session 12) BF-018 (7def0de S3): state publisher catches only OSError/URLError; IncompleteRead / bad JSON /
+  missing "object" -> "Publish state now" shows the bug dialog; timer path swallows it (no last_error, no back-off,
+  retried every 30 s). Checked OK: 401/403/429/5xx/conflict/protected-branch mapping. Summary 7 S1 / 7 S2 / 4 S3.
+  NEXT: closeout / release (v2/closeout.py, repo.py _do_release).
