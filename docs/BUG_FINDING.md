@@ -1237,6 +1237,23 @@ followed the button, so nothing tells them it is wrong.
 the project manager. When removing / disabling an AI that owns open tasks, ask whom to give them to (or reassign to
 the first remaining developer and say so).
 
+### BF-056 · S3 · OPEN — Edit team › changing an AI's role keeps the old role's purpose, rules and task types in every prompt
+
+**Where:** `aiwb/v2/team_setup.py` `_write_team()`: for an existing agent only `name`, `role`,
+`preferred_model_label`, `enabled` are changed. `purpose`, `instructions`, `allowed_task_types`, `review_policy`,
+`escalation_rules` stay those of the template the AI was created with (`_agent_data()` is used only for new rows).
+
+**Reproduce** (script `/tmp/hunt/team3.py`): team *Project manager · Dev A · Dev B* (developers). Edit team › Dev B role
+→ *Reviewer / tester* → saved. A review task for Dev B → prompt: *"you are Dev B (agent-dev-b, role reviewer)"* then
+*"## 1. Your role — Purpose: Implement one approved task within its scope."*; `allowed_task_types` still
+`implementation, bug_fix, tests`.
+
+**Why it matters:** the AI gets contradictory instructions (reviewer by name, implementer by purpose) and tends to
+rewrite the code instead of reviewing it; a PM plan that checks task types against the agent sees the old list.
+
+**Expected:** when the role changes, rebuild the role-specific fields from the new role's template (keeping the user's
+note), or at least ask *"Reset this AI's instructions to the Reviewer template?"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
