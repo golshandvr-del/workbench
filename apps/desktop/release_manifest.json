@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "app": "ai-workbench-desktop",
-  "version": "5.19.0",
+  "version": "5.20.0",
   "channel": "stable",
   "_comment": "payload[].path = location inside the installer ZIP and the installed program folder (flat layout, unchanged since 1.14.4); payload[].source = repository-relative source file. install.ps1 must copy every path (tools/check_installer_manifest.py).",
   "payload": [
@@ -278,8 +278,8 @@
       "source": "apps/desktop/tests/test_ui_balance.py"
     },
     {
-      "path": "WINDOWS_RELEASE_CHECKLIST_v5.19.0.md",
-      "source": "docs/release/v5.19.0/WINDOWS_RELEASE_CHECKLIST_v5.19.0.md"
+      "path": "WINDOWS_RELEASE_CHECKLIST_v5.20.0.md",
+      "source": "docs/release/v5.20.0/WINDOWS_RELEASE_CHECKLIST_v5.20.0.md"
     },
     {
       "path": "install.ps1",
@@ -920,6 +920,10 @@
     {
       "path": "test_helper_ai.py",
       "source": "apps/desktop/tests/test_helper_ai.py"
+    },
+    {
+      "path": "test_perf_budgets.py",
+      "source": "apps/desktop/tests/test_perf_budgets.py"
     }
   ],
   "zip_timestamp": [
