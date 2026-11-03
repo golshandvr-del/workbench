@@ -494,6 +494,26 @@ confirmation unguarded. The menu calls them through `WorkspaceShell._guard`, whi
 <reason>"*; `read_bundle` reports *"the bundle is damaged (project / db_version)"* and *"the bundle is not UTF-8
 text"*.
 
+### BF-023 · S3 · OPEN — bundle import into a project that has a goal but no tasks yet: another project's / an older bundle replaces it as "new", with no warning
+
+**Where:** `aiwb/v2/bundle.py` `plan_import()`: the `new` case (`local` has no `tasks` / `proposals` / `milestones` /
+`handoffs`) is checked **before** the `other_project` and `older` checks. The goal, `settings` (team setup, helper
+choices, publish settings) and edited agents are not counted as "local work".
+
+**Reproduce** (scripts `/tmp/hunt/w_bundle3.py`, `/tmp/hunt/w_bundle4.py`):
+1. Folder `todo`, goal *"track my todos"* written (revision 2+), no plan yet. Import the bundle of project `shop` →
+   *"Import the project (revision 2)."* (a plain Yes/No, `safe=True`) → the goal is now *"sell things"* and
+   `state.project_id` is `shop`, while the store / event ledger of this folder keep using `todo`.
+2. Same folder, goal refined three times (revision 5); import an older bundle of the **same** project (revision 2) →
+   again *"Import the project (revision 2)."* → the newer goal is replaced; the *older* warning never appears.
+   A backup is kept in `.workbench/v2/backups/`, but nothing in the app can restore it.
+
+**Why it matters:** low — only early-stage work is affected and a backup exists; but the dialog states nothing about
+replacing anything, and the project silently takes another project's identity.
+
+**Expected:** check `other_project` first; treat a non-empty goal / changed settings / `state_revision` > 1 as local
+work so `older` / `diverged` apply; say *"This replaces the goal '…'"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
