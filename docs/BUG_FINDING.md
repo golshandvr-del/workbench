@@ -1069,7 +1069,11 @@ empty list) or ask a yes/no question in the card when it is unknown; when `opera
 offer both ways: *"either list at least one change, or — if nothing is left — answer with `\"operations\": [],
 \"roadmap_remaining\": false`"*.
 
-### BF-049 · S2 · OPEN — bundle import: a project with decisions / goal / own team but no tasks yet counts as "empty" → a bundle of **another project** replaces it with only *"Import the project (revision 2)."*
+### BF-049 · S2 · DUPLICATE (of BF-023) — bundle import: a project with decisions / goal / own team but no tasks yet counts as "empty" → a bundle of **another project** replaces it with only *"Import the project (revision 2)."*
+
+**Note (session 18):** same root cause as BF-023 (`plan_import()` checks `new` before `other_project` / `older`).
+It shows the loss is bigger than a goal (accepted decisions, a custom team) — so BF-023 is raised to **S2**. Track
+and fix under BF-023.
 
 **Where:** `aiwb/v2/bundle.py` `plan_import()` returns `kind: "new"` (safe) when the local state has no `tasks`,
 `proposals`, `milestones` or `handoffs`. It ignores `decisions`, `agents` (custom team), `settings.goal` / wizard
