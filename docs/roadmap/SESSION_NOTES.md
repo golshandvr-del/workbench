@@ -337,3 +337,7 @@ immediately, so a new session can continue without repeating work.
   BF-008 (37e442d S2 Windows-invalid paths accepted incl. NTFS ADS), BF-009 (bbc4a66 S1 accept_handoff write failure ->
   handoff accepted, half files, no retry). NEXT: Summary table, unzip_files (no backup, partial), non-ASCII/read-only
   folder, GUI S5 triage, helper AI / network errors, Settings.
+- (session 10) BF-010 (ac7eb7b S1): files.stage() silently skips >512KB / empty / >8MB-total files; accept approves
+  the task with the file missing. Checked OK: Persian folder names, read-only folders, scope check, S5 = sandbox only.
+  Summary now 6 S1 / 3 S2 / 1 S3. NEXT: stale proposal (base_state_revision old), continue-step dismissal, Quick ZIP,
+  troubleshoot limit (3 attempts -> then?), validation failed path.
