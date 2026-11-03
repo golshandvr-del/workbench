@@ -1299,6 +1299,29 @@ not been planned although its plan is waiting.
 decision (or give it a rank after them); ideally derive the overview's next step from the same `Guide.steps()` that
 Home uses.
 
+### BF-059 · S3 · OPEN — Workspace *Needs your attention › More › Mark as read* hides every **later** item of the same task / kind too (new delivery, new publish error)
+
+**Where:** `aiwb/v2/dashboard.py` `attention_queue()` builds the item key as `f"{kind}:{ref}:{rank}"` — no handoff,
+attempt, response or reason in it. `WorkspaceController.mark_seen()` stores these keys in `.workbench/v2/ui.json`
+(`ws_seen`) and the overview calls `attention(hide_seen=True)`. So a key marked read once stays "read" for any future
+event that lands on the same task at the same rank. Also `mark_seen()` keeps `sorted(cur)[-500:]`: the **alphabetically**
+last 500, not the newest (once full, new `decision:` keys are dropped first and come back unread).
+
+**Reproduce** (scripts `/tmp/hunt/dash.py`, `/tmp/hunt/dash4.py`):
+1. TASK-0001, answer pasted for HO-0001 → overview: *"TASK-0001 · agent-implementer — Review the delivery"* → *More ›
+   Mark as read*. Reject it, start again, paste a **new** answer for HO-0002 → queue item `task:TASK-0001:4`
+   `seen=True` → the overview says *"Nothing needs your attention."*
+2. Publishing paused *"token expired"* → mark read. Later it pauses for *"repository not found"* → key is still
+   `publish:publish:1` → hidden as well.
+
+**Why it matters:** "Mark as read" is meant for *this* notification; it silently mutes the task (or publishing) for
+the rest of the project. A new delivery that waits for review, or a new GitHub error, never appears in the overview
+list. (Home's guided steps still show the delivery, so it is not a dead end.)
+
+**Expected:** include the event identity in the key (`task:TASK-0001:4:HO-0002`, `publish:<reason hash>`,
+`proposal:PROP-0003`), or store the "seen" mark together with the state revision / handoff id and treat a changed one
+as unread. Trim `ws_seen` by recency, not by sort order.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
