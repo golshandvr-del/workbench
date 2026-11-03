@@ -286,3 +286,6 @@ immediately, so a new session can continue without repeating work.
   -> d.use_answer(guided_answer(h, files)) -> "Accept…" -> file on disk. Raw friend log NOT in repo (test_rescue
   reconstructs shapes). PLAN S10 tests/gui/gui_scenario_s10_calculator_smoke.py: calculator charter (PM owns docs task
   t1, dev1 core t2, dev2 UI t3), PM answers half-right proposal shapes from the log, count PM rounds <= 2 to first code file.
+- (session 7) DONE d56e2d9 tests/gui/gui_scenario_s10_calculator_smoke.py PASS (calc charter: PM task t0 spec, log
+  proposal ops=[] -> 15-line fix prompt -> spec -> core dev -> src/core/calc.js; 2 PM rounds). NEXT 5.20 item 2:
+  perf budgets as permanent tests (check what is already covered), then USER_GUIDE(.md/_FA.md) helper AI section.
