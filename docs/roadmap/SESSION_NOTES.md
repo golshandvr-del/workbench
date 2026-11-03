@@ -411,3 +411,6 @@ immediately, so a new session can continue without repeating work.
 - (session 16, after sandbox reset) Env restored at 9865011 (clean). Previous chat ended mid-test on charter_repair
   role_of("Lead developer") -> 'project_manager' (substring "lead"). Summary 7 S1 / 16 S2 / 15 S3.
   NEXT: finish charter_repair role check, paste_box, bundle import edge cases, i18n.
+- (session 16) BF-039 (b54ff2f S2) charter_repair role_of(): "lead"/"owner"/"manager" substring rule first ->
+  "Lead developer"/"Tech lead" become a 2nd project_manager (skipped by agent_hub, offered as PM, prompt says PM).
+  Summary 7 S1 / 17 S2 / 15 S3. NEXT: charter_repair other normalizers (versions, refs, ownership), paste_box, bundle import, i18n.
