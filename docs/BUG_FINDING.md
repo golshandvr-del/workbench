@@ -555,6 +555,27 @@ BF-011 / BF-013. The owner's users will often print Persian text.
 optionally for shell commands); for other programs decode with `locale.getpreferredencoding()` / the OEM code page
 when the bytes are not valid UTF-8.
 
+### BF-026 · S2 · OPEN — Quick mode Apply / Restore write through a symbolic link or junction to files outside the project
+
+**Where:** `aiwb/v2/quick.py` `apply()` / `restore()`: the target is `root / path` with only `safe_path()` (text
+rules) checked; nothing resolves the path or refuses links. The classic importer (`AI_Workbench.py`
+`validate_relative_path`: *"Symbolic-link paths are not accepted"*, *"Path escapes the project folder"*) and guided
+`files.integrate()` (`root not in target.resolve().parents` → skipped) both protect against this; Quick does not.
+
+**Reproduce** (script `/tmp/hunt/q_edge.py`):
+1. Project folder has `lib` → a symlink to a folder outside the project (on Windows: a directory junction or
+   symlink, e.g. a shared library folder, a `node_modules` / `venv` link, a OneDrive-redirected folder).
+2. Quick answer delivers `lib/evil.txt` → *Apply* → the file is written **outside the project** (the same for an
+   existing file: it is overwritten there, and its backup is taken from there). *Restore* writes / deletes there too.
+
+**Why it matters:** an AI answer can change files the user never put in the project (shared code used by other
+projects, files in the user's profile); the plan shows them as ordinary project files. Quick mode is meant for the
+least technical users.
+
+**Expected:** the same check as the other two paths: resolve the target and refuse (as a plan problem *"skipped: goes
+through a link to outside the project"*) any path whose resolved location is not inside the resolved root, or any
+link component.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
