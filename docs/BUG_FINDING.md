@@ -564,3 +564,9 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   paused *"needs Contents write"*; 403 with `X-RateLimit-Remaining: 0` / 429 → back-off with retry time; 5xx /
   timeout / reset / `RemoteDisconnected` → *"GitHub is not reachable"* with back-off; writing to `main` / `master` /
   `develop` refused. (Other exceptions: BF-018.)
+- **Bundle round trip** (script `/tmp/hunt/w_round.py`): export → immediate re-import → *"already up to date"*
+  (`same`); reopening the project / showing Home / the publisher tick does not bump the revision, so a phone bundle
+  that adds one event is correctly `newer` (*"Update the project from revision 2 to 3 (a backup is kept)"*) and
+  imports; exporting right after gives `same` on the phone side. Damaged `state_sha256`, wrong `bundle_type` /
+  `bundle_version`, newer `db_version`, > 8 MB → clear messages. (Folder-name ids: BF-021; errors: BF-022; `new`
+  case: BF-023.)
