@@ -268,6 +268,22 @@ the user to waste a chat round.
 **Expected:** the continue step is dropped automatically when its handoff is no longer open (and on abandon / reject /
 troubleshoot of that handoff).
 
+### BF-013 · S2 · OPEN — after "Reject…" the reason is lost and the next prompt says "This is the first handoff"
+
+**Where:** `aiwb/v2/guide.py` `reject_handoff` → `resolve_handoff(ref, False, reason)`; the task prompt
+(`aiwb/v2/handoff.py`, section *6. Previous handoff*) only looks at accepted/complete handoffs.
+
+**Reproduce** (script `/tmp/hunt/n_reject.py`): prepare → paste a delivery → *Reject…* with reason
+`wrong algorithm` → *"Delivery rejected. A new prompt can be prepared."* → *Prepare the prompt*. The new prompt has
+**`## 6. Previous handoff — This is the first handoff for this task.`** and no trace of the reason.
+
+**Why it matters:** same loop as BF-011: the user explains what is wrong, the app forgets it, and the user pastes a
+fresh prompt into the chat (often a **new** chat — the prompt calls itself "self-contained"), so the AI repeats the
+same mistake. The user has to retype the reason by hand into the chat.
+
+**Expected:** the next prompt for the task includes *"Your previous delivery (HO-…) was rejected by the user:
+<reason>"* (and a short list of what it delivered), like the repair / troubleshooting prompts do.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
