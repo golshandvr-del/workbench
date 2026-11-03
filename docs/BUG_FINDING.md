@@ -212,6 +212,26 @@ delivered. With friends on Windows (OneDrive folders, editors keeping files open
 on an `OSError` restore the files already written from the backup, remove the `.aiwb-tmp`, keep the handoff open and
 show *"Could not write src/x/b.txt: … — close the program that uses it and press Accept again"*.
 
+### BF-010 · S1 · OPEN — guided mode silently drops delivered files (over 512 KB, over 8 MB in total, or empty) and still approves the task
+
+**Where:** `aiwb/v2/files.py` `stage()`: `if not p or not _in_scope(...) or not body.strip() or size > MAX_FILE or
+total + size > MAX_TOTAL: continue` → no problem, no message. `_diagnose()` only knows about out-of-scope files.
+
+**Reproduce** (script `/tmp/hunt/k2_big.py`): task scope `src/x/**`; the answer delivers `src/x/a.py` (small) and
+`src/x/big.py` (~600 KB, e.g. a data file or a bundled library), both inside scope, manifest says `complete`.
+Paste → *"2 file(s) read … Check: … four-backtick fence …"* (only style warnings) → step *Check what Implementer
+delivered* with **Accept the delivery** as the primary button, explaining *"Accepting adds **1** delivered file(s)"*.
+Accept → *"Delivery accepted and TASK approved. 1 file(s) added"* → task `validation_pending`.
+`src/x/big.py` **is not on disk** and nothing ever says so (only the number 2 → 1 differs).
+
+**Why it matters:** the task is marked as done with a missing file; the next task (or the build) fails later and the
+user cannot see why. The same silent skip happens for a file whose body is only whitespace (an AI writing
+"empty `__init__.py`") and for everything after the 8 MB total.
+
+**Expected:** every skipped file becomes a diagnosis problem (`too_large` / `empty_file` / `total_too_large`,
+severity error for size limits) listed on the card, so the user can *Build the troubleshooting prompt* or accept
+knowingly; an intentionally empty file (e.g. `__init__.py`) should simply be written empty.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
