@@ -448,6 +448,29 @@ fact (the final bundle exists).
 exists; a write error is reported as a normal message (*"The final bundle could not be written: <reason>. The project
 was not archived."*).
 
+### BF-021 · S2 · OPEN — "Export project for the phone" makes a file nobody can import when the folder name has a space, Persian letters, brackets or is long
+
+**Where:** `aiwb/v2/controller.py` `ProjectsController.__init__`: `V2Project(root, root.name)` passes the **raw folder
+name** as `project_id`, so `ProjectStore._default_project_id()` (which slugs the name) is never used. `bundle.read_bundle()`
+(and `State.PROJECT_ID` in the mobile app, `Bundle.kt`) accepts only `^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$`.
+`export_bundle()` does not check the id.
+
+**Reproduce** (script `/tmp/hunt/w_bundle.py`):
+1. Open a project in a folder called `My Project`, `پروژه من`, `app (copy)` or a name longer than 80 characters.
+2. Settings › *Export project for the phone…* → *"Project exported to … Open it in AI Workbench Mobile → Projects →
+   Import."* — the file is written.
+3. Import it on the phone, into another Desktop folder, or even back into the same project → *"the project_id in the
+   bundle is not valid"*. Same for the final bundle written by *Archive the project* (`closeout.archive`).
+   Folders like `todo` work.
+
+**Why it matters:** the Desktop ↔ phone feature silently fails for ordinary folder names (Windows users very often have
+spaces; the owner's users write Persian names); the export claims success, the error appears only on the other device
+and does not say why.
+
+**Expected:** derive a valid `project_id` (slug, e.g. `my-project`, a hash for non-Latin names) for new projects and
+keep the display name separately; or accept any non-empty id in bundles (both apps) and validate only what matters
+(length, no control characters); at the very least refuse the export with a clear reason.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
