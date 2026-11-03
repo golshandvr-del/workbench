@@ -1134,6 +1134,24 @@ the user is told everything is fine and either loses the earlier body without kn
 (*"src/a.py was sent twice — the last version is used"*); flag case-insensitive twins and file-vs-folder conflicts
 (within the answer and against the disk) as errors **before** *Accept* is offered.
 
+### BF-052 · S3 · OPEN — "an accepted decision is final" does not hold for Persian titles written with Arabic letters or without the half-space
+
+**Where:** `aiwb/v2/rescue.py` `norm()` lower-cases and keeps `0-9a-z` + U+0600–U+06FF, turning everything else
+(including ZWNJ U+200C) into a space. It does not unify Arabic `ي`/`ك` with Persian `ی`/`ک`, does not treat a missing
+half-space as equal (`پایگاه‌داده` ≠ `پایگاهداده`), and keeps Persian digits. `duplicate_of()` (used by both
+`translate()` and `proposals.import_data()` for `propose_decision`) compares these forms exactly.
+
+**Reproduce** (script `/tmp/hunt/fa.py`): DEC-0001 *"انتخاب پایگاه‌داده"* accepted. A later proposal with
+`propose_decision` *"انتخاب پايگاه‌داده"* (Arabic yeh — common from Arabic keyboards and some model outputs) or
+*"انتخاب پایگاهداده"* (no half-space) → **not** recognised as already decided → a new *Decide:* card asks the same
+question again. With ZWNJ or a normal space it is recognised.
+
+**Why it matters:** the 5.18.0 guard against re-deciding (*"DEC-0002 approved three times"*) works only for English;
+the owner's users write Persian.
+
+**Expected:** in `norm()` map `ي→ی`, `ك→ک`, `ة→ه`, `ۀ→ه`, drop ZWNJ / tatweel / diacritics (U+064B–U+065F) before
+comparing, convert Persian/Arabic digits to ASCII; reuse it wherever titles are compared.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
