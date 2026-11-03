@@ -318,3 +318,7 @@ immediately, so a new session can continue without repeating work.
   "not ready" -> only way out = cancel the task (no UI to drop the dead dependency?). (b) report.apply_decision
   emergency `blocks` appends depends_on WITHOUT cycle check -> possible silent deadlock (blocked "waiting for" tasks
   are hidden from steps and from the PM "stuck" report). Plan: write /tmp/fuzz_guide.py random-walk over Guide actions.
+- (session 9) GUI run_all 61/62 (S5 sandbox-only). CONFIRMED + recorded: BF-001 (25c9b1d, S2 dead prerequisite ->
+  primary button always fails), BF-002 (4c8ada9, S1 emergency `blocks` edge -> cycle, hidden from Home & PM report).
+  Repro scripts in /tmp/hunt (lost on reset; text in BUG_FINDING is enough to recreate). NEXT: random-walk fuzzer
+  /tmp/hunt/fuzz.py over Guide steps/actions looking for non-ModelError exceptions + dead ends.
