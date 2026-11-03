@@ -294,3 +294,6 @@ immediately, so a new session can continue without repeating work.
   permanent: load <15ms (test_store_cache), menu raster <250ms, idle 0 fps + menu closes (gui_v516_light), release gate.
   MISSING: transaction + 5 ms load budget -> new tests/test_perf_budgets.py (release --test it). Then USER_GUIDE(.md/_FA.md)
   helper AI + S10 section, CHANGELOG 5.20.0, bump, ROADMAP ✅, tag desktop-v5.20.0 = roadmap end.
+- (session 8) DONE 8579e24+fix: tests/test_perf_budgets.py PASS (4 tests; ProjectStore.revision is a PROPERTY; CI env -> x2 slack).
+  NEXT: unit suite, USER_GUIDE.md + USER_GUIDE_FA.md (helper AI section), CHANGELOG 5.20.0, bump
+  `python3 tools/bump_desktop_release.py 5.20.0 --test test_perf_budgets.py` (in worktree /tmp/rel, copy file-by-file).
