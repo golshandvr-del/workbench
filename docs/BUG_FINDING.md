@@ -825,6 +825,35 @@ card; dropped ones do not.)
 dropped. Use it for TASK-0001 instead of HO-0002?"* — offering to link it to the task's open handoff (as a stale answer with
 *Accept anyway…*), or keep it in the Inbox only. Never report "linked" for a handoff that cannot take it.
 
+### BF-039 · S2 · OPEN — charter repair turns "Lead developer", "Tech lead", "Code owner", "Release manager" into a second **project manager**
+
+**Where:** `aiwb/v2/charter_repair.py` `role_of()` checks `_ROLE_RULES` in order, and the `project_manager` rule
+comes first with the keys `lead`, `owner`, `manager`, `coordinator`, `planner`; every key longer than 3 letters
+is also matched as a **substring** (`len(k) > 3 and k in words`). So any role text containing *lead* / *owner* /
+*manager* becomes `project_manager` before the *developer* / *engineer* rule is ever tried. It also catches
+"Team leader", "Product owner", "Release manager", "Senior lead engineer", "Code owner / backend". The same
+substring rule makes *"Contest backend dev"* and *"Latest-API integrator"* a **reviewer** (`test` inside
+*contest* / *latest*) and *"UI designer"* an **architect**.
+
+**Reproduce** (script `/tmp/hunt/cr_lead.py`): the PM's charter lists `agent-lead-dev`, role *"Lead developer"*,
+purpose *"builds the API"*, owning module `api` and task t1 → the import notes
+*"team.agents[1].role: 'Lead developer' → project_manager"* (one line among the repair notes, easy to miss) →
+accept the plan → the team has **two** `project_manager` agents. Effects seen:
+- TASK-0001's prompt starts *"you are Lead developer (agent-lead-dev, role project_manager)"*;
+- *Settings › Team › Project manager* now offers `agent-lead-dev` (`pm_choices`);
+- `agent_hub` (idle / overload alerts, *rebalance*) and the mission-board lanes skip it as "the PM" — its
+  workload is never counted and no task can be rebalanced to or from it;
+- charter validation counts it out of `workers`; a charter whose only builder is a *"Lead developer"* fails with
+  *"no AI besides the project manager does the work"* — on a team that does have a builder.
+
+**Why it matters:** "lead developer" / "tech lead" is one of the most common ways a model names the main builder.
+The app silently changes the agent's job; the prompt tells it it is a manager; team tools ignore it.
+
+**Expected:** match whole words only (no substring for keys like `test`, `lead`, `design`); try the specific work
+words (*developer, engineer, dev, programmer, backend, frontend*) before the generic *lead / owner / manager*;
+never create a second `project_manager` from a fuzzy guess — if the charter already has a PM, fall back to the
+work role or ask, and show the role change as a warning, not a quiet repair note.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
