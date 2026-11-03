@@ -361,3 +361,6 @@ immediately, so a new session can continue without repeating work.
   load_settings_with_recovery (only OSError caught) -> "The application failed to start", every start. Checked OK:
   JSON syntax error / non-object -> .corrupt-<ts> backup; BOM; directory / no permission -> defaults.
   Summary 7 S1 / 6 S2 / 3 S3. NEXT: helper AI settings (HelperService), GitHub publish errors, closeout.
+- (session 12) BF-017 (27f7b0c S2): _save_settings failure only logged; prefs / helper AI / toolbar Save say "Saved";
+  lost at restart; helper key stored in Credential Manager without saved ref (orphan). Summary 7 S1 / 7 S2 / 3 S3.
+  NEXT: v2/publisher.py (GitHub publish errors), closeout/release.
