@@ -1069,6 +1069,28 @@ empty list) or ask a yes/no question in the card when it is unknown; when `opera
 offer both ways: *"either list at least one change, or — if nothing is left — answer with `\"operations\": [],
 \"roadmap_remaining\": false`"*.
 
+### BF-049 · S2 · OPEN — bundle import: a project with decisions / goal / own team but no tasks yet counts as "empty" → a bundle of **another project** replaces it with only *"Import the project (revision 2)."*
+
+**Where:** `aiwb/v2/bundle.py` `plan_import()` returns `kind: "new"` (safe) when the local state has no `tasks`,
+`proposals`, `milestones` or `handoffs`. It ignores `decisions`, `agents` (custom team), `settings.goal` / wizard
+answers, `attempts`, Inbox answers and charter imports in progress. The `other_project` check comes **after** the
+`new` branch, so a different `project_id` is never noticed in that case. `AI_Workbench.import_project_bundle()` then
+asks a plain yes/no with the message *"Import the project (revision N)."* (no warning icon, nothing about what is lost).
+
+**Reproduce** (script `/tmp/hunt/bd.py`): project B (folder `tmppe513o1i`) has goal *"B's own goal"*, an accepted
+decision DEC-0001 *Database → SQLite*, and a custom agent `agent-db`, no tasks yet. Import the bundle exported from
+project A → plan `{"kind": "new", "safe": true, "message": "Import the project (revision 2)."}` → after import:
+`project_id` = A's id, goal gone, decisions `[]`, `agent-db` gone. Only a file
+`.workbench/v2/backups/state-…-pre-bundle-import.json` remains (no UI tells the user it exists or how to restore it).
+
+**Why it matters:** the typical moment to import from the phone is early (the user set up the team and answered the
+first decisions on the PC, then picks the wrong bundle on the phone / in Downloads). The work is silently replaced by
+a different project, and the folder now holds project A's state over project B's files.
+
+**Expected:** treat any user content (decisions, non-default agents, goal, attempts, Inbox) as local work; check
+`project_id` before the `new` branch (`other_project` unless the local state is the untouched default); make the
+confirmation list what will be replaced and where the backup is.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
