@@ -300,3 +300,5 @@ immediately, so a new session can continue without repeating work.
 - (session 8) Unit 921 OK. DONE guides: bc49f7a USER_GUIDE.md (§3d 5.16–5.20 + helper AI, privacy, NOT RUN),
   52c8b24 USER_GUIDE_FA.md (§۴الف). NEXT: check tests reading guides, CHANGELOG 5.20.0, bump, ROADMAP ✅, tag.
 - (session 8) 289e59d CHANGELOG 5.20.0. NEXT: bump in /tmp/rel worktree (--test test_perf_budgets.py), copy file-by-file.
+- (session 8) 5.20.0 bump 579d2e7..1d76349 + b29d163 checklist; manifest PASS 229 files. Running GUI run_all (bg
+  /tmp/gui_all.log) before tag. NEXT: ROADMAP ✅ (all done), tag desktop-v5.20.0, verify release = ROADMAP END.
