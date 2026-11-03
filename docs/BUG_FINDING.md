@@ -284,6 +284,30 @@ same mistake. The user has to retype the reason by hand into the chat.
 **Expected:** the next prompt for the task includes *"Your previous delivery (HO-…) was rejected by the user:
 <reason>"* (and a short list of what it delivered), like the repair / troubleshooting prompts do.
 
+### BF-014 · S2 · OPEN — a plan may depend on (or edit) a cancelled task; it is accepted without a word and lands in BF-001
+
+**Where:** `aiwb/v2/proposals.py` `import_data()`: an operation is only marked invalid for an **unknown** task id
+(`r not in state["tasks"]`); the status of the referenced task is never looked at. `review()` / `apply` then create the
+dependency or edit the cancelled task as asked.
+
+**Reproduce** (scripts `/tmp/hunt/o_stale.py`, `/tmp/hunt/o2_fresh.py`):
+1. Task X exists, the user cancels it (or the PM superseded it in an earlier plan).
+2. The PM — who often still has the old task list in its chat — sends a plan with `create_task N` `depends_on: [X]`
+   (fresh `base_state_revision`, so not even the *older state* warning appears) and/or `update_task X`.
+3. Card: *Review the plan … Nothing is applied until you accept it.* — every operation `valid`, no problem shown.
+   *Accept* → *"Plan accepted. Next roadmap stage: prompts for the next tasks can be generated."*
+4. Result: N is immediately `blocked: prerequisite no longer valid: X (cancelled) — re-plan this task`; Home shows
+   *N is blocked* with **It can continue now** as primary, which always fails (BF-001). The `update_task` on the
+   cancelled X is applied too (objective changed, revision 2) and has no effect at all.
+
+**Why it matters:** the PM is the main source of tasks, so this is the most likely way to reach BF-001; the plan
+review was the one place where the user could have seen the problem, and it says everything is fine. The accept
+message even promises that prompts can be generated.
+
+**Expected:** at import, an operation that depends on / edits / splits a `cancelled` or `superseded` task gets a
+problem (*"TASK-X is cancelled"*), is shown as invalid on the card and is not accepted by *Accept*; the repair prompt
+for the PM lists those tasks as cancelled so the next plan does not repeat it.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
