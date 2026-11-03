@@ -447,3 +447,6 @@ immediately, so a new session can continue without repeating work.
   decision re-asked. Summary 8 S1 / 25 S2 / 19 S3 (summary row pushed 5f4ff9b in session 18).
 - (session 18, after sandbox reset) Env restored at 5f4ff9b (clean). NEXT: Persian text in prompts (RTL), huge answers,
   Quick mode restore, then remaining modules not yet hunted.
+- (session 18) Dedup: BF-050 = DUPLICATE of BF-021, BF-049 = DUPLICATE of BF-023 (BF-023 raised to S2). New status
+  `DUPLICATE (of BF-NNN)` in the legend. Before filing a new BF, grep BUG_FINDING.md for the function name first.
+  Summary 8 S1 / 24 S2 / 18 S3 (+2 duplicates).
