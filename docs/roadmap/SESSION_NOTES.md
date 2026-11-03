@@ -450,3 +450,7 @@ immediately, so a new session can continue without repeating work.
 - (session 18) Dedup: BF-050 = DUPLICATE of BF-021, BF-049 = DUPLICATE of BF-023 (BF-023 raised to S2). New status
   `DUPLICATE (of BF-NNN)` in the legend. Before filing a new BF, grep BUG_FINDING.md for the function name first.
   Summary 8 S1 / 24 S2 / 18 S3 (+2 duplicates).
+- (session 18) BF-053 (09c0fea S2) lenient.find_object stops at the first unclosed `{` -> stray `{` in prose makes a
+  complete JSON-files answer / marker-free charter "cut off". Summary 8 S1 / 25 S2 / 18 S3.
+  NEXT (never hunted so far): intake/normalize.py, v2/team_setup.py, v2/workflow.py, v2/snapshot.py, v2/dashboard.py,
+  v2/next_action.py, i18n.py.
