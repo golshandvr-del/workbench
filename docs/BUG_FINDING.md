@@ -708,3 +708,9 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   3.0 s, *"Timed out"*, exit −9, partial output kept); 400 000 printed lines → bounded to the 50 000-character tail
   with *"output was truncated while running to keep memory bounded"*, *Passed*, memory stays flat. (Background
   processes holding the pipe: BF-029; Windows code page: BF-025.)
+- **Queued actions (code review)**: each action is validated again right before it runs (chaining / pipes / blocked
+  patterns / `..` / symlinked or escaping working directory refused); the state is saved as `Running` before the
+  start and the result right after, so an unclean exit becomes *"Interrupted — the command may have completed"* on the
+  next open, never a false Passed / Failed; the batch stops on the first non-passing result; a running action cannot
+  be removed; a worker exception lands in *"Action batch error"* with the refreshed queue. (Same runner as the Run
+  page: BF-025, BF-029 apply here too.)
