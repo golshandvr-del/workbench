@@ -333,3 +333,7 @@ immediately, so a new session can continue without repeating work.
   in route_answer / quick.apply (caught by Tk global handler -> "bug" dialog). Paste edge cases BOM/CRLF/NUL/fenced/RTL/
   3MB noise/smart quotes all OK. NEXT: Quick mode path safety (../, absolute, C:\, reserved names), non-ASCII + read-only
   project folder, Summary table, GUI S5 failure triage.
+- (session 10) Recorded BF-007 (8351b05 S1 Quick apply half-way -> no restore + backup id reuse destroys original),
+  BF-008 (37e442d S2 Windows-invalid paths accepted incl. NTFS ADS), BF-009 (bbc4a66 S1 accept_handoff write failure ->
+  handoff accepted, half files, no retry). NEXT: Summary table, unzip_files (no backup, partial), non-ASCII/read-only
+  folder, GUI S5 triage, helper AI / network errors, Settings.
