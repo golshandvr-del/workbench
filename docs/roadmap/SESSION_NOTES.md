@@ -457,3 +457,6 @@ immediately, so a new session can continue without repeating work.
 - (session 18) BF-054 (c66e5a5 S2) normalize._strip_invisible removes ZWNJ/ZWJ/NBSP from the WHOLE answer incl. file
   bodies; triggered by any marker repair (smart quotes, escaped/bold marker) or JSON repair. Summary 8 S1 / 26 S2 / 18 S3.
   NEXT: v2/team_setup.py, v2/workflow.py, v2/snapshot.py, v2/dashboard.py, v2/next_action.py, i18n.py.
+- (session 18) BF-055 (615429f S2) waves/guide `_owner()` fallback = agent-implementer else FIRST agent = PM; wizard teams
+  have no agent-implementer -> ownerless / removed-owner tasks go to the PM chat. Summary 8 S1 / 27 S2 / 18 S3.
+  NEXT: team_setup leftovers (pending plan names removed AI; role change keeps old template text), workflow.py, snapshot.py.
