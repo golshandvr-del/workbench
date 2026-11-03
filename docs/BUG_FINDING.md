@@ -231,3 +231,8 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   and ZIP import; `integrate()` also checks the resolved path stays inside the project. (Windows-specific names: BF-008.)
 - **Unhandled exceptions** in Tk callbacks go to `_report_callback_exception` (logged + dialog; the app keeps running);
   Home card actions are wrapped (`home_perform` shows the error on the card).
+- **Folder names / permissions** (script `/tmp/hunt/j_folders.py`): a Persian folder name with a space
+  (`پروژه من`) works end to end (charter → plan). A read-only new folder → `PermissionError` shown in a dialog by
+  `open_projects` / `open_project_workbench`; a folder that becomes read-only later → the action fails with
+  *Permission denied …* on the card, the state is untouched (temp file never created), reopening works. The message is
+  technical but honest — acceptable.
