@@ -302,3 +302,4 @@ immediately, so a new session can continue without repeating work.
 - (session 8) 289e59d CHANGELOG 5.20.0. NEXT: bump in /tmp/rel worktree (--test test_perf_budgets.py), copy file-by-file.
 - (session 8) 5.20.0 bump 579d2e7..1d76349 + b29d163 checklist; manifest PASS 229 files. Running GUI run_all (bg
   /tmp/gui_all.log) before tag. NEXT: ROADMAP ✅ (all done), tag desktop-v5.20.0, verify release = ROADMAP END.
+- (session 8) GUI run_all 61/62 (only S5 = known sandbox-only TclError; passes in CI). NEXT: ROADMAP ✅, tag desktop-v5.20.0.
