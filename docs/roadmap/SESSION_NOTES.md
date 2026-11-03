@@ -305,3 +305,6 @@ immediately, so a new session can continue without repeating work.
 - (session 8) GUI run_all 61/62 (only S5 = known sandbox-only TclError; passes in CI). NEXT: ROADMAP ✅, tag desktop-v5.20.0.
 - (session 8) d645c01 ROADMAP 5.20.0 ✅ (all 5.16–5.20 done). Tagging desktop-v5.20.0 now. After: verify Release run
   assets (5) + CI green -> ROADMAP COMPLETE. Nothing else pending.
+- (session 8) ROADMAP 5.16→5.20 COMPLETE. desktop-v5.20.0 release VERIFIED (run 41552064115 success, 5 assets:
+  Setup.bat, SHA256SUMS, Source.zip, Windows_Payload.zip, release-manifest.json); CI 630665a success. Nothing pending.
+  Next work needs a NEW roadmap from the owner (NOT RUN items in USER_GUIDE §8 need real Windows/real chats).
