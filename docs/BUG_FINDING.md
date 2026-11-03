@@ -32,7 +32,24 @@ Goal: find problems **before** the owner shows the app to friends — especially
 
 ## Findings
 
-_(none yet — hunt in progress)_
+### BF-001 · S2 · OPEN — a task whose prerequisite was cancelled: the offered button always fails
+
+**Where:** `aiwb/v2/guide.py` `steps()` (task branches `draft/proposed` and `blocked`), `aiwb/v2/tasks.py`
+`readiness()` / `_transition_in()`.
+
+**Reproduce** (script `/tmp/hunt/a_dead_dep.py`, re-creatable from this text):
+1. Task A, task B with `depends_on: [A]`. Cancel A (or the PM supersedes it).
+2. B (draft) → Home shows **"Approve TASK-B"** with *Approve the task* (primary) / *Cancel…*.
+   *Approve* → error `TASK-B is not ready: prerequisite no longer valid: TASK-A (cancelled) — re-plan this task`.
+3. B (blocked "waiting for A") → becomes `blocked: prerequisite no longer valid …`, Home shows
+   **"TASK-B is blocked"** with *It can continue now* (primary) → same error.
+
+**Why it matters:** the primary button can never succeed. In the draft variant the only other button is *Cancel…*
+(the work is lost); the "ask the project manager" step does not appear because this broken step counts as "something
+waiting for you". No button removes the dead dependency.
+
+**Expected:** a dead prerequisite gets its own step: *Drop the dead prerequisite and continue* / *Ask the project
+manager to re-plan* / *Cancel…* — and never a button that is known to fail.
 
 ## Checked and OK
 
