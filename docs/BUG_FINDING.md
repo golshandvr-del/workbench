@@ -1606,6 +1606,27 @@ meant to touch. The user finds out only on the phone, far from the desktop.
 pairing request); disable *Set permissions* / *Revoke* when nothing is selected; after saving, say
 *"Pixel: view project, create task (submit answers removed)"*.
 
+### BF-073 · S3 · OPEN — Mobile Companion › *Pair new device…* while port 47821 is taken (second Workbench, another program) shows *"That action stopped because of a bug in AI Workbench"*
+
+**Where:** `aiwb/companion/window.py` `do_pair()` calls `self.server.start()` without the `try/except OSError` that
+`toggle()` has. `CompanionServer.start()` raises `OSError` (*Address already in use* / *Permission denied* / a LAN
+address that is gone after a Wi-Fi change) from `ThreadingHTTPServer(...)`. The exception reaches
+`_report_callback_exception`, which shows the generic *"Application error — … because of a bug in AI Workbench …
+send this file"* dialog. The port is fixed (`DEFAULT_PORT = 47821`, no fallback, no setting); the host is detected
+once (`lan_address()`) when the window is first opened and is never refreshed.
+
+**Reproduce** (script `/tmp/hunt/compwin.py`, under xvfb): another socket listens on the companion port → open
+Mobile Companion → *Pair new device…* → callback exception `OSError(98, 'Address already in use')` (generic bug
+dialog in the app). The *Start* button with the same port → *"Could not start the endpoint: [Errno 98] Address
+already in use"* (handled).
+
+**Why it matters:** *Pair new device…* is the first button a new user clicks. A second Workbench window or any other
+program on that port makes it look like a crash and asks for a bug report, with no hint about what to do.
+
+**Expected:** handle `OSError` in `do_pair()` like `toggle()`, with a useful text (*"Port 47821 is used by another
+program (maybe a second AI Workbench). Close it, or …"*); fall back to a free port (the QR code / manual address
+already carry the port); re-detect the LAN address on *Start* / *Pair new device…*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
