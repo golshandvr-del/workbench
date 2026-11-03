@@ -277,3 +277,7 @@ immediately, so a new session can continue without repeating work.
 - (session 7) 5.19.0: f26b7f3 CHANGELOG, 244577c ROADMAP ✅ (active 5.20.0). Tagging desktop-v5.19.0 now.
   NEXT 5.20.0: S10 "friends' calculator" scenario (guided PM + 2 devs, log fixture answers, <=2 PM rounds to first
   code file), 5.16 perf budgets as permanent tests, user guide (fa/en) + CHANGELOG, release desktop-v5.20.0.
+- (session 7) Tag desktop-v5.19.0 pushed (64ec2ba), Release run 41549833352 in progress (verify later).
+  5.20 recon: scenarios tests/gui/gui_scenario_s1..s9_*_smoke.py + scenario_driver.py; budget tests exist:
+  test_store_cache.py, test_raster_9slice.py, test_release_gate.py, test_motion.py, gui_v516_light_smoke.py;
+  guides docs/USER_GUIDE.md + docs/USER_GUIDE_FA.md.
