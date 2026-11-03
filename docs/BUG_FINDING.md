@@ -570,3 +570,7 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   imports; exporting right after gives `same` on the phone side. Damaged `state_sha256`, wrong `bundle_type` /
   `bundle_version`, newer `db_version`, > 8 MB → clear messages. (Folder-name ids: BF-021; errors: BF-022; `new`
   case: BF-023.)
+- **New-project wizard** (script `/tmp/hunt/x_wizard.py`, under xvfb): existing folder → *"already exists and was not
+  modified"*; `CON` / `:` / `/` / 101 characters / blank goal → clear inline message, nothing created; trailing space
+  stripped; Persian name with a space creates and opens the project (but see BF-021 for its bundles); read-only
+  parent → *"Permission denied …"* inline, nothing registered. Created projects are registered and opened.
