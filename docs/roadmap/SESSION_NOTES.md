@@ -322,3 +322,7 @@ immediately, so a new session can continue without repeating work.
   primary button always fails), BF-002 (4c8ada9, S1 emergency `blocks` edge -> cycle, hidden from Home & PM report).
   Repro scripts in /tmp/hunt (lost on reset; text in BUG_FINDING is enough to recreate). NEXT: random-walk fuzzer
   /tmp/hunt/fuzz.py over Guide steps/actions looking for non-ModelError exceptions + dead ends.
+- (session 9) Fuzzer /tmp/hunt/fuzz.py (30 seeds): 0 crashes, 0 dead ends, but exposed BF-003 (754707e: reject/ask-for-
+  changes raise while graph has a cycle). BF-004 (54db8b5): remove_dependency leaves task blocked "waiting for" with
+  depends_on=[] forever (_refresh_readiness skips empty depends_on). NEXT: corrupt/missing state file, paste edge cases
+  (huge, binary, RTL), Quick mode, helper AI errors, summary table in BUG_FINDING.
