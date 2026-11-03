@@ -494,7 +494,10 @@ confirmation unguarded. The menu calls them through `WorkspaceShell._guard`, whi
 <reason>"*; `read_bundle` reports *"the bundle is damaged (project / db_version)"* and *"the bundle is not UTF-8
 text"*.
 
-### BF-023 · S3 · OPEN — bundle import into a project that has a goal but no tasks yet: another project's / an older bundle replaces it as "new", with no warning
+### BF-023 · S2 · OPEN — bundle import into a project that has a goal but no tasks yet: another project's / an older bundle replaces it as "new", with no warning
+
+**Severity raised S3 → S2 (session 18):** BF-049 showed that accepted decisions and a custom team are lost too, and
+that a bundle of a **different** project is imported with the same plain *"Import the project (revision N)."*.
 
 **Where:** `aiwb/v2/bundle.py` `plan_import()`: the `new` case (`local` has no `tasks` / `proposals` / `milestones` /
 `handoffs`) is checked **before** the `other_project` and `older` checks. The goal, `settings` (team setup, helper
