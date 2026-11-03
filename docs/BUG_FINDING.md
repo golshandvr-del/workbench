@@ -999,6 +999,30 @@ or by exact normalised title against existing tasks; an assessment with no field
 Resolve `depends_on` titles against existing tasks and the new tasks of the same answer; list unresolved ones in
 `leftover` instead of dropping them.
 
+### BF-046 · S2 · OPEN — rescued assessment overwrites the task's **objective** with the PM's comment ("Looks good so far, no change needed")
+
+**Where:** `aiwb/v2/rescue.py` `FIELD_SYNONYMS` maps `description` and `goal` → `objective` (and `files` / `outputs`
+→ `deliverables`). In `_task_ops()` an item of `task_assessment` / `task_updates` is read field by field with `_changes()`
+— the *whole item*, not only a `changes` object — so the assessment's free-text comment becomes a new objective.
+Related: `owner_role` is copied as written (`"Implementer"`, `"developer"`) and `proposals.review()` matches it with
+`a["role"] == raw["owner_role"]` (exact, lower-case ids) → the new task gets **no owner**. It is not a dead end
+(the dispatcher falls back to the implementer), but the task shows no owner and the role the PM asked for is lost.
+
+**Reproduce** (script `/tmp/hunt/rs4.py`): `task_assessment: [{"task_id": "TASK-0001", "status": "on track",
+"description": "Looks good so far, no change needed"}, {"task_id": "TASK-0002", "status": "at risk", "goal": "finish
+this week", "files": "src/ui/app.js"}]` → *"2 task change(s) read from the answer's own keys"* → review shows two
+`update_task` → accept → TASK-0001 objective = *"Looks good so far, no change needed"*, TASK-0002 objective =
+*"finish this week"*. The next developer prompt for TASK-0001 says *"- Objective: Looks good so far, no change
+needed"* — the real objective ("Build API objective") is gone from the prompt.
+
+**Why it matters:** the developer AI receives a meaningless objective and builds whatever it guesses; the original
+objective can only be restored by hand (Edit task). It happens with the most common "status report" answer shape.
+
+**Expected:** for items without a `changes` object, take only explicit task fields (`acceptance_criteria`, `priority`,
+`depends_on`, `scope`, `owner_agent_id`, …); never map `description` / `goal` / `assessment` / `status` / `files` of an
+assessment onto `objective` / `deliverables` (keep them as the operation's `reason`). Match `owner_role` through
+`charter_repair.role_of()` (case-insensitive), and list an unknown role in the review card instead of dropping it.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
