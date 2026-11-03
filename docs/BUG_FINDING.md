@@ -639,6 +639,28 @@ whole app freezes in a busy state with no cancel button.
 holds the output"*. Optionally: run the child in a Windows Job Object (kill-on-close) / its own session and kill
 the whole tree on time-out; add a *Stop* button for the running job.
 
+### BF-030 · S2 · OPEN — Quick mode prompt: `.env`, keys and files behind a link to outside the project are pasted into the AI chat without a word
+
+**Where:** `aiwb/v2/quick.py` `inventory()` / `build_prompt()`: every file (except tool folders) is listed in
+*Choose… (files the AI needs to see)* (`quick_window._fill_include_menu`) and its content is copied into the prompt
+as is. No `is_sensitive` check (guided `context_step.is_sensitive` refuses `.env`, `*.pem`, `id_rsa`,
+`credentials.json`, `.ssh/` … *"never packed without a separate decision"*; classic uses `is_sensitive_path`), no
+`redact()` / `scan_for_secrets()`, and no link check (`target.is_file()` follows symlinks / junctions).
+
+**Reproduce** (script `/tmp/hunt/q_prompt.py`): project with `.env` (`TOKEN=ghp_…`), `cfg.env` → a symlink to a
+secrets file outside the project, `shared/` → a link to an outside folder. Quick › *Choose…* lists `.env` and
+`cfg.env` like any file; tick them → *Copy prompt* → the token and the outside file's `API_KEY=sk-live-…` are in the
+prompt text the user pastes into ChatGPT / Gemini; `shared/x.py` (outside the project) too. The file list sent in
+every prompt also names `.env`.
+
+**Why it matters:** the user's API keys / tokens go to a third-party chat (and its history / training) in the mode
+meant for the least technical users, who cannot judge which files are secret; the other two modes protect exactly
+this.
+
+**Expected:** use the shared sensitive-file rule: hide sensitive files from *Choose…* (or show them disabled with
+*"secret — not sent"*), refuse them in `build_prompt` (listed under *Not included: … (secret file)*), run
+`scan_for_secrets` / `redact` over included bodies, and refuse paths whose resolved location is outside the root.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
