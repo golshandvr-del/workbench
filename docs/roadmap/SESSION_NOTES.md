@@ -428,3 +428,6 @@ immediately, so a new session can continue without repeating work.
   fence + prose flagged truncated. Summary 8 S1 / 19 S2 / 17 S3. NEXT: bundle import edge cases, rescue prompts, i18n/RTL.
 - (session 17, after sandbox reset) Env restored at 0a9377f (clean). Previous chat stopped (credit) right before reading
   src/aiwb/v2/rescue.py. Summary 8 S1 / 19 S2 / 17 S3. NEXT: rescue prompts, bundle import edge cases, i18n/RTL.
+- (session 17) BF-045 (0679819 S2) rescue: assessment by title -> duplicate create_task; BF-046 (c5da09d S2) rescue:
+  assessment "description"/"goal" overwrites objective; owner_role case-sensitive. Summary 8 S1 / 21 S2 / 17 S3.
+  NEXT: rescued decisions (string / no options), fix_prompt, bundle import, i18n/RTL.
