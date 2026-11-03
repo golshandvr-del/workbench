@@ -1112,6 +1112,28 @@ what to do.
 on load (or in `export_bundle`, with the same mapping on import). At minimum, the export should refuse with a clear
 message instead of writing a file that cannot be read.
 
+### BF-051 · S2 · OPEN — conflicting paths inside **one** answer are never checked: same path twice, case twins, a file named like a folder (→ the BF-009 crash, from a single answer)
+
+**Where:** `aiwb/v2/files.py` `stage()` and `aiwb/v2/diagnose.py` look at each block on its own; the preview counts
+blocks. Nothing compares the paths of one answer with each other, or with folders that exist on disk.
+
+**Reproduce** (scripts `/tmp/hunt/dup.py`, `/tmp/hunt/dir.py`), guided *Paste the answer* → *Accept the delivery*:
+- `src/a.py` twice (v1, then v2) → preview *"Files ✓ · 2 files"*, paste *"2 file(s) read"*, accept *"1 file(s) added"*;
+  the first body is dropped silently (`./src/a.py` + `src/a.py` → same).
+- `src/A.py` + `src/a.py` → *"2 file(s) added"*; on Windows / macOS (case-insensitive) the second **overwrites** the
+  first; on Linux both exist and imports break depending on the OS.
+- a block `path="src"` (AI meant the folder) + `src/a.py` → no warning anywhere; *Accept* raises
+  `FileExistsError` / `IsADirectoryError` **after** the handoff was committed as accepted: task jumps to *Review*,
+  `integrated_files` none, `src` left as a file or a stray `src.aiwb-tmp` in the project. Same if `src/` already exists
+  on disk. This is BF-009's half-written state, but reachable from an answer alone (no locked file needed).
+
+**Why it matters:** models repeat a file when they "fix" it later in the same answer, or name a folder in a block;
+the user is told everything is fine and either loses the earlier body without knowing or ends in the BF-009 dead end.
+
+**Expected:** in `stage()` / the smart check: merge identical normalised paths keeping the last and say so
+(*"src/a.py was sent twice — the last version is used"*); flag case-insensitive twins and file-vs-folder conflicts
+(within the answer and against the disk) as errors **before** *Accept* is offered.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
