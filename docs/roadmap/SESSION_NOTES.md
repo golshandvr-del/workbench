@@ -348,3 +348,6 @@ immediately, so a new session can continue without repeating work.
   handoff), BF-013 (c50039f S2 reject reason lost, next prompt "first handoff") were recorded at end of session 10;
   checked OK: scope check, troubleshoot limit, out-of-date answer. Summary 6 S1 / 5 S2 / 2 S3. NEXT: stale proposal
   (script o_stale.py was running when the session died), Quick ZIP, helper AI / network errors, Settings.
+- (session 11) BF-014 (ce399bd S2): proposal import only rejects UNKNOWN task ids; depends_on / update_task on a
+  cancelled task is accepted silently -> new task blocked "prerequisite no longer valid" (BF-001 dead end). Stale
+  warning itself works (o_stale.py). Summary 6 S1 / 6 S2 / 2 S3. NEXT: Quick ZIP (unzip_files), helper AI / network.
