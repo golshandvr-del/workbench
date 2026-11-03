@@ -1091,6 +1091,27 @@ a different project, and the folder now holds project A's state over project B's
 `project_id` before the `new` branch (`other_project` unless the local state is the untouched default); make the
 confirmation list what will be replaced and where the backup is.
 
+### BF-050 · S2 · OPEN — project folder with a space or non-ASCII name (e.g. `پروژه من`, `my project`): the exported bundle can **never** be imported — on the phone or back on the PC
+
+**Where:** `aiwb/v2/controller.py` creates `V2Project(root, root.name)`, so the raw folder name becomes `project_id`
+(`ProjectStore._default_project_id()`, which would sanitise it, is bypassed). `bundle.export_bundle()` writes it as is;
+`bundle.read_bundle()` (desktop) and `Bundle.kt` (mobile, `State.PROJECT_ID`) both require
+`^[A-Za-z0-9][A-Za-z0-9_.-]{0,79}$` and refuse with *"the project_id in the bundle is not valid"*.
+
+**Reproduce** (script `/tmp/hunt/bd3.py`): folders `پروژه من`, `my project`, `Ürün-Liste`, `-dash`, `۱۲۳`, or a name
+longer than 80 characters → *Export project to the phone* succeeds (*"Project exported to … Open it in AI Workbench Mobile →
+Projects → Import."*) → importing that file, even into the same project on the PC, fails with *"the project_id in the
+bundle is not valid"*. Renaming the folder later does not help: the old id is stored in `state.json`.
+
+**Why it matters:** the owner's audience is Persian-speaking; Persian folder names and names with spaces are the norm,
+and the user guide recommends *Export → phone*. The feature is dead for them, and the error text gives no hint why or
+what to do.
+
+**Expected:** derive a valid id at creation (`ProjectStore._default_project_id()`-like slug, ASCII fallback such as
+`project-<hash>` for names without ASCII letters) and keep the display name separately; migrate existing invalid ids
+on load (or in `export_bundle`, with the same mapping on import). At minimum, the export should refuse with a clear
+message instead of writing a file that cannot be read.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
