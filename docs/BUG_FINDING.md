@@ -51,6 +51,26 @@ waiting for you". No button removes the dead dependency.
 **Expected:** a dead prerequisite gets its own step: *Drop the dead prerequisite and continue* / *Ask the project
 manager to re-plan* / *Cancel…* — and never a button that is known to fail.
 
+### BF-002 · S1 · OPEN — an emergency task can deadlock the whole project silently
+
+**Where:** `aiwb/v2/report.py` `apply_decision()` (emergency `blocks`), `aiwb/v2/proposals.py` `review()`.
+
+**Reproduce** (script `/tmp/hunt/b_emergency_cycle.py`):
+1. Task X (ready), task Y depends on X (blocked "waiting for X").
+2. The PM sends a proposal: `create_task E1` (a hotfix) with `depends_on: [X]` and
+   `emergency_tasks: [{"ref": "E1", "blocks": ["X"]}]` (a natural thing to write: "fix X first").
+3. Accept the plan → message *"Emergency: TASK-E1 goes first; paused until it is done: TASK-X"*.
+   Result: X depends on E1 and E1 depends on X → **cycle**. X, Y, E1 are all `blocked: waiting for …`.
+   `waves()` reports `cycle: [X, Y, E1]`, no task can start.
+
+**Why it matters:** `apply_decision` adds `blocks` edges to `depends_on` **after** `validate_graph()` ran, without a
+cycle check. "waiting for …" tasks are hidden from Home **and** from the PM's "Stuck tasks" report section, so Home
+only says *"Ask the project manager for the next step"* and the PM is told nothing is stuck → endless PM rounds,
+no code. Exactly the kind of "stuck" the friends hit on 5.15.
+
+**Expected:** a `blocks` edge that would make a cycle is skipped (with a note), and any dependency cycle among open
+tasks is shown as a step (and reported to the PM as stuck).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
