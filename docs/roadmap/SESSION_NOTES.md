@@ -380,3 +380,6 @@ immediately, so a new session can continue without repeating work.
   BF-022 (0f945c2 S3) export/import OSError -> bug dialog, malformed bundle -> raw Python text; BF-023 (b3cb781 S3) plan_import "new"
   checked before other_project/older -> goal-only project replaced silently. Summary 7 S1 / 9 S2 / 7 S3.
   NEXT: write checked-OK (bundle round trip), then new-project wizard, Run/Git page.
+- (session 13) Wizard + Git commit/push checked OK. BF-024 (168e92e S3) commit dialog shows Persian paths as octal escapes (core.quotepath);
+  BF-025 (5c81cea S2) Run page: Python child on Windows writes pipe in ANSI code page -> print("سلام") fails -> false "Action Failed"
+  + repair prompt. Summary 7 S1 / 10 S2 / 8 S3. NEXT: run timeout/kill, queued actions, Quick mode restore, context request.
