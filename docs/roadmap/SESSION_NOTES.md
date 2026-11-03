@@ -417,3 +417,6 @@ immediately, so a new session can continue without repeating work.
 - (session 16) BF-040 (3fc6f4c S3) paste preview always "Manager proposal ✓" (no parse); BF-041 (8851c89 S2) answer with
   files + context request: preview says request, route_answer treats as delivery, request lost.
   Summary 7 S1 / 18 S2 / 16 S3. NEXT: bundle import edge cases, i18n/RTL, Quick mode read_answer, rescue prompts.
+- (session 16) BF-042 (c5c92e7 S2) AIWB_FILE action="delete"/"move" parsed as empty write (diagnose.parse_files drops
+  action): Quick apply empties the file; guided silently drops it and approves. Summary 7 S1 / 19 S2 / 16 S3.
+  NEXT: bundle import edge cases, i18n/RTL, rescue prompts, diagnose.parse_files other attrs (body="raw").
