@@ -1412,6 +1412,25 @@ for follow-up ranges by them, so it reasons about the wrong code (or a truncated
 **Expected:** split with `text.split("\n")` (after normalising `\r\n` / `\r`), the same rule `ast` and editors use;
 add a test file with `\x0c` and `\u2028`.
 
+### BF-064 · S3 · OPEN — context pack: an **empty** requested file (e.g. `__init__.py`) is listed under *"Not provided"* as *"ready — "* and left out of the ZIP
+
+**Where:** `aiwb/context_request.py` `resolve()` gives an existing empty file status `ready` with `content = ""`;
+`ResolvedItem.deliverable` is `status in ("ready", "stale") and bool(self.content)` → `False`. `pack_inline()` then
+puts it in *"## Not provided"* as `- pkg/__init__.py: ready — ` (status and empty detail), `pack_zip()` skips it, and
+`context_step.prepare()` counts it in `missing`. The window summary says *"N-1/N item(s) ready"* and, if the item is
+`required`, *"required but unavailable: pkg/__init__.py"*.
+
+**Reproduce** (script `/tmp/hunt/ctx3.py`): project with an empty `pkg/__init__.py` → request `files: ["pkg/__init__.py"]`
+(or the folder `pkg/`) → resolved `status=ready deliverable=False`; inline pack:
+*"## Not provided / - pkg/__init__.py: ready — "*.
+
+**Why it matters:** the model is told the file could not be provided, with the contradictory reason "ready", and
+typically asks again or assumes the package marker is missing (and then writes a new `__init__.py` or changes imports).
+The user sees "required but unavailable" for a file that exists.
+
+**Expected:** `deliverable` should depend on the status only; show an empty file as `## pkg/__init__.py (full_file,
+lines 0, sha256 e3b0…) — (empty file)` and write the empty entry into the ZIP.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
