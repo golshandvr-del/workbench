@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 7 (BF-002, 003, 004, 007, 009, 010, 016) | 0 |
-| S2 | 7 (BF-001, 005, 008, 011, 013, 014, 017) | 0 |
+| S2 | 8 (BF-001, 005, 008, 011, 013, 014, 017, 019) | 0 |
 | S3 | 4 (BF-006, 012, 015, 018) | 0 |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
