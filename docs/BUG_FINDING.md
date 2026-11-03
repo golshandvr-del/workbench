@@ -107,6 +107,24 @@ step" while a planned task never runs. The PM sees nothing stuck.
 **Expected:** a blocked "waiting for/prerequisite" task with no open prerequisite becomes ready again
 (`_refresh_readiness` must not skip `depends_on == []`; `_apply` must refresh readiness for every task).
 
+### BF-005 · S2 · OPEN — a damaged `state.json` blocks the project, and the error points to a backup that does not exist
+
+**Where:** `aiwb/v2/store.py` `_read_raw()` message; `backup()` is only called before a migration
+(`store.py`) and before a bundle import (`bundle.py`).
+
+**Reproduce** (script `/tmp/hunt/d_corrupt.py`): start a project, then cut `.workbench/v2/state.json` short
+(or empty it — e.g. a OneDrive/Dropbox sync conflict, disk full, a crash of another tool).
+Opening the project → *"V2 state file is corrupt (…); a backup is kept next to it. Restore a backup from
+.workbench/v2/backups or move the file away."* — but `.workbench/v2/backups/` **does not exist** in a normal project.
+
+**Why it matters:** the project cannot be opened (Projects / Workbench / Home card all fail) and the advice is false.
+"Move the file away" silently starts an **empty** project — the plan, tasks and decisions are gone, although
+`events.jsonl` (the event ledger) is still there. Writes themselves are safe (temp file + fsync + `os.replace`),
+so this needs an outside cause — rare, but a dead end when it happens.
+
+**Expected:** keep the last good state (e.g. `state.json.prev`, rotated on each write or every N writes) and offer
+*Restore the last good copy* in the error; the message must only mention backups that exist.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
