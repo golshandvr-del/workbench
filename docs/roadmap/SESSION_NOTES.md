@@ -310,3 +310,6 @@ immediately, so a new session can continue without repeating work.
   Next work needs a NEW roadmap from the owner (NOT RUN items in USER_GUIDE §8 need real Windows/real chats).
 - (session 9) Owner task: NO new roadmap. Bug hunt before showing app to friends: review code + flows, record every finding
   in docs/BUG_FINDING.md (update continuously, checkpoint each edit). Env restored (clone, cpush, xvfb).
+- (session 9) 66ca00f docs/BUG_FINDING.md created. Unit 921 OK (skip 10). pyflakes: only unused locals + 1 f-string w/o
+  placeholder (artifacts.py:521) — harmless, no undefined names. GUI run_all started -> /tmp/gui_all.log. NEXT: review
+  aiwb/v2/guide.py (next-step engine: every state must offer an action), paste pipeline, charter_repair, proposals.
