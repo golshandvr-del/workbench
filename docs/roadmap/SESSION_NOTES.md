@@ -383,3 +383,4 @@ immediately, so a new session can continue without repeating work.
 - (session 13) Wizard + Git commit/push checked OK. BF-024 (168e92e S3) commit dialog shows Persian paths as octal escapes (core.quotepath);
   BF-025 (5c81cea S2) Run page: Python child on Windows writes pipe in ANSI code page -> print("سلام") fails -> false "Action Failed"
   + repair prompt. Summary 7 S1 / 10 S2 / 8 S3. NEXT: run timeout/kill, queued actions, Quick mode restore, context request.
+- (session 14, after sandbox reset) Env restored at 3a2a60c (clone + cpush + xvfb). Summary 7 S1 / 10 S2 / 8 S3 (BF-001..025, all OPEN). Session 13 was cut (credits) while starting Quick mode Apply/Restore. NEXT: Quick mode apply/restore, run timeout/kill, queued actions, context request.
