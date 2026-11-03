@@ -357,3 +357,7 @@ immediately, so a new session can continue without repeating work.
   NEXT: Settings dialog save/load, GitHub publish errors, release/closeout steps.
 - (session 12, after sandbox reset) Env restored at 783edb6 (clone + cpush + xvfb). Summary 6 S1 / 6 S2 / 3 S3.
   NEXT: Settings dialog save/load + invalid values, GitHub publish errors, release/closeout steps.
+- (session 12) BF-016 (1f188ca S1): settings.json in UTF-16 / cp1252 -> UnicodeDecodeError escapes
+  load_settings_with_recovery (only OSError caught) -> "The application failed to start", every start. Checked OK:
+  JSON syntax error / non-object -> .corrupt-<ts> backup; BOM; directory / no permission -> defaults.
+  Summary 7 S1 / 6 S2 / 3 S3. NEXT: helper AI settings (HelperService), GitHub publish errors, closeout.
