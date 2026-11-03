@@ -184,6 +184,31 @@ thinks the change is in the project when it is not. `x.py.` silently overwrites 
 device name (with or without extension), contains `<>:"|?*` or control characters, or ends with a dot or space —
 on every OS, so a project made on Linux also opens on Windows. Add these cases to the shared fixture.
 
+### BF-009 · S1 · OPEN — guided mode: "Accept the delivery" that fails while writing files leaves the task "in review" with half the files and no retry
+
+**Where:** `aiwb/v2/guide.py` `_perform` → `accept_handoff`: `c.resolve_handoff(ref, True, …)` is committed
+**first**, then `files.integrate()` writes the files one by one with no error handling; `integrated_files` is only
+saved after the last write.
+
+**Reproduce** (script `/tmp/hunt/i_integrate_fail.py`): task scope `src/x/**`; the answer delivers `src/x/a.txt` and
+`src/x/b.txt`; on disk `src/x/b.txt` cannot be written (here a folder of that name; on Windows: the file is open in
+another program / read-only / locked by antivirus / a BF-008 name). *Accept the delivery* →
+`IsADirectoryError` ("Application error / bug" dialog in the app, or an error line on the Home card).
+Result:
+- handoff = `accepted`, `integrated_files` = none, the staged bodies are still in the state;
+- `src/x/a.txt` **was overwritten**, `src/x/b.txt` not written, a stray `src/x/b.txt.aiwb-tmp` is left in the
+  project folder;
+- the task jumps to *Review TASK* (approve / reject / review prompt). There is **no step to write the missing files
+  again** — accept is not offered any more, and approving the task approves files that are not on disk.
+- The backup of `a.txt` exists under `.workbench/v2/backups/HO-…/` but nothing in the UI restores it.
+
+**Why it matters:** the project silently ends up with a mix of old and new files, and the plan says the task was
+delivered. With friends on Windows (OneDrive folders, editors keeping files open) a locked file is common.
+
+**Expected:** write the files **before** marking the handoff accepted (or in one "integration pending" state);
+on an `OSError` restore the files already written from the backup, remove the `.aiwb-tmp`, keep the handoff open and
+show *"Could not write src/x/b.txt: … — close the program that uses it and press Accept again"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
