@@ -232,6 +232,25 @@ user cannot see why. The same silent skip happens for a file whose body is only 
 severity error for size limits) listed on the card, so the user can *Build the troubleshooting prompt* or accept
 knowingly; an intentionally empty file (e.g. `__init__.py`) should simply be written empty.
 
+### BF-011 · S2 · OPEN — "Tests/build failed…": the user's note is thrown away and the next prompt still says "tests pass"
+
+**Where:** `aiwb/v2/guide.py` `_perform`: `validation_failed` copies the note into `run_id` only when no run id is
+given (truncated to 100 chars), then `record_validation` stores `summary="recorded in the guided loop"`. The task
+prompt (`aiwb/v2/handoff.py`, section *6. Previous handoff*) lists only the earlier handoff's claims.
+
+**Reproduce** (script `/tmp/hunt/l_valfail.py`): deliver → accept → *Tests/build failed…* with the note
+`2 tests fail in test_calc` → task goes back to `in_progress`, Home shows *Start TASK with Implementer* →
+*Prepare the prompt*. The new prompt contains **`Claimed (NOT verified): tests pass`** and **nothing** about the
+failure or the user's note; evidence summary = `recorded in the guided loop`.
+
+**Why it matters:** the user did the right thing (ran the tests, wrote what failed), but the AI is asked to do the
+same task again without being told what is wrong, so it usually sends the same files → a loop. This is the normal
+"fix the bug" path the friends will hit first.
+
+**Expected:** store the note as the evidence summary; when a task goes back to work after a failed validation, the
+next prompt has a section *"Your last delivery failed the user's tests: <note> — fix that"* (like the repair /
+troubleshooting prompts), and the old *"tests pass"* claim is shown as contradicted.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
