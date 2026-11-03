@@ -142,6 +142,29 @@ The message, though, says it is a bug and gives no way forward ("paste again wit
 **Expected:** pasted text is cleaned once at the entry point (`text.encode("utf-8", "replace").decode()` or
 replace lone surrogates with U+FFFD) and a note says *"1 broken character was replaced"*.
 
+### BF-007 · S1 · OPEN — Quick mode: an apply that fails half-way cannot be restored, and the retry destroys the original file
+
+**Where:** `aiwb/v2/quick.py` `apply()`: files are written one by one; the apply record is saved (`_save`) only
+**after** the last write; the backup id is `A-{len(applies)+1}` — the same id again on the next try.
+`aiwb/ui/quick_window.py` `apply` only catches `QuickError`.
+
+**Reproduce** (script `/tmp/hunt/h_quick_paths.py`):
+1. Folder has `src/old.py` = `old` and a folder `docs/`.
+2. Answer delivers `src/old.py` = `NEW` and a file named `docs` (any write error works: a file that is open in
+   Excel / locked by antivirus on Windows, a read-only file, disk full, a Windows-invalid name — see BF-008).
+3. *Apply* → `IsADirectoryError` (the "Application error / bug" dialog). `src/old.py` is **already `NEW`**.
+4. *Restore last apply* → **"There is no apply to restore."** (no record was saved).
+5. The user pastes a fixed answer (`src/old.py` = `NEWER`) and applies → it gets id **A-0001 again** and backs up
+   the current file into the same folder → `backups/A-0001/src/old.py` is now `NEW`. *Restore* brings back `NEW`.
+   The original `old` is **gone for good**.
+
+**Why it matters:** silent data loss of the user's own code in the mode meant for the simplest users; the button that
+promises undo says there is nothing to undo.
+
+**Expected:** save the apply record (status `writing`) right after the backup and before the first write; on any
+`OSError` roll back the files already written from the backup and say which file failed and why; never reuse a
+backup folder (unique id, refuse if the folder exists).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
