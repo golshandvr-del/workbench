@@ -384,3 +384,6 @@ immediately, so a new session can continue without repeating work.
   BF-025 (5c81cea S2) Run page: Python child on Windows writes pipe in ANSI code page -> print("سلام") fails -> false "Action Failed"
   + repair prompt. Summary 7 S1 / 10 S2 / 8 S3. NEXT: run timeout/kill, queued actions, Quick mode restore, context request.
 - (session 14, after sandbox reset) Env restored at 3a2a60c (clone + cpush + xvfb). Summary 7 S1 / 10 S2 / 8 S3 (BF-001..025, all OPEN). Session 13 was cut (credits) while starting Quick mode Apply/Restore. NEXT: Quick mode apply/restore, run timeout/kill, queued actions, context request.
+- (session 14) Quick mode: BF-026 (ac03fc9 S2) apply/restore follow symlinks/junctions outside the project; BF-027 (f7ed9cf S3) ZIP
+  entries with ./ refused as unsafe; BF-028 (4ca5cfd S3) restore failing half-way -> bug dialog, retry says "edited by you".
+  Summary 7 S1 / 11 S2 / 10 S3. NEXT: run timeout/kill + output cap, queued actions, context request, Quick prompt build.
