@@ -576,6 +576,24 @@ least technical users.
 through a link to outside the project"*) any path whose resolved location is not inside the resolved root, or any
 link component.
 
+### BF-027 · S3 · OPEN — a ZIP answer whose entries start with `./` is refused completely ("unsafe path")
+
+**Where:** `aiwb/intake/answer_files.py` `zip_files()`: an entry is unsafe when
+`safe_path(name) != name.replace("\\", "/")`. `safe_path("./src/a.py")` is `src/a.py` (a valid normalisation), so
+the comparison fails and every `./…` entry is skipped. Guided `files.unzip_files()` has the same comparison (refuses
+the whole archive). Backslash names are accepted, `./` names are not.
+
+**Reproduce** (script `/tmp/hunt/q_edge.py`): a ZIP made with `zf.writestr(os.path.join(".", ...))` — what Python
+code that walks `"."` produces (a common way a chat's code tool builds the ZIP) — holding `./README.md`,
+`./src/app.py` → Quick *Load ZIP…* → *"./README.md is an unsafe path — skipped; ./src/app.py is an unsafe path —
+skipped"*, nothing to apply. (ZIPs from the `zip` tool, Windows Explorer and `shutil.make_archive` have clean names
+and work.)
+
+**Why it matters:** low — the user can ask for another ZIP; but the message calls an ordinary file "unsafe".
+
+**Expected:** compare against the normalised path (strip a leading `./`, collapse `//` and `/./`), refusing only what
+`safe_path` really refuses (`..`, absolute, drive, `.git`, `.workbench`).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
