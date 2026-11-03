@@ -1516,6 +1516,27 @@ The two screens describe opposite situations for the same step.
 **Expected:** translate `approve_task` as *"Approve the new task so it can start"* / *"Task جدید را تأیید کنید تا
 شروع شود"* (or rename the type to `approve_draft`); keep "finished work" wording for `review_delivery`.
 
+### BF-069 · S3 · OPEN — phone pairing: approving the phone after the 10-minute code ran out registers the device, but the phone is told *"The pairing code expired"* and never gets its device id
+
+**Where:** `aiwb/companion/service.py`: `pair_request` is accepted until `expires`; the request then waits in `pending`
+for the desktop user. `decide()` does not check `expires` and adds the device to `devices.json` (`status: active`).
+The phone learns the result only by polling `pair_status` with the pairing key, but `handle()` answers every `pair-…`
+request after `expires` with `403 pairing_expired` — including that poll.
+
+**Reproduce** (script `/tmp/hunt/comp4.py`, fake clock): start pairing → phone sends `pair_request` at t+590 s →
+`200 pending` → desktop shows *Pixel* waiting (`pairing_state` already `expired`) → at t+620 s the user clicks
+*Approve device* → `decide()` returns the new device (`active`) → phone polls `pair_status` → `403 pairing_expired` →
+the phone shows *"The pairing code expired or was already used. Create a new one on the desktop."* The device list on
+the desktop shows *Pixel — active*.
+
+**Why it matters:** the two sides disagree. The desktop says the phone is paired; the phone says it is not, and it
+cannot learn its device id, so it can never use the registration. Making a new code creates a second *Pixel* entry;
+the first one stays *active* with a key nobody uses until the user notices and revokes it.
+
+**Expected:** let `pair_status` (only that op) through for a pairing that is `used` and has a pending request or a
+result, for a short grace period after `expires`. Or refuse `decide()` after `expires` (*"This request came too late —
+create a new code"*) and clear `pending`, so no device is added. Show the remaining time next to the waiting request.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
