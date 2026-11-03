@@ -746,6 +746,28 @@ exists (the guide says archived) while it does not.
 `archived_at` and show *"Could not write the final bundle: <reason>"*; let *Archive* re-write a missing bundle of an
 archived project.
 
+### BF-035 · S2 · OPEN — cancelling a task that has an open prompt: the prompt keeps a chat slot, and its answer can still be accepted into the project
+
+**Where:** `aiwb/v2/proposals.py` `_apply` › `close_or_cancel_task` (and `guide` › `cancel` → `tasks.transition(…, "cancelled")`)
+only sets the task status. The task's open handoff (`prepared` / `prompt_exported` / `response_received` / …) and its active
+attempt are left as they are. `waves.dispatch()` counts every open handoff as a busy chat, and `guide.steps()` keeps showing
+the handoff card (*Copy the prompt… / Paste the answer*, then *Check what … delivered › Accept the delivery*).
+
+**Reproduce** (script `/tmp/hunt/w_cancel.py`): `max_parallel_chats` 2; T0 and T1 have prompts prepared, T2 waits for a free chat.
+1. The PM's plan has `close_or_cancel_task` for T0 → *Accept* → T0 is **cancelled**, but `HO-0001` stays *prepared*: dispatch
+   still says 2 of 2 chats busy, T2 stays *queued*; Home still asks to copy T0's prompt.
+2. Paste an answer for `HO-0001` → *"Answer linked to HO-0001 (reconciled, complete)"* → *Accept the delivery* → *"1 file(s)
+   added to the project files"*: the cancelled task's code is written into the project (`src/a.py`), and the task stays cancelled.
+3. The only way to free the slot is *Drop this prompt…*; after the accept, it is gone and the files are already in.
+
+**Why it matters:** the PM cancels a task because its work is no longer wanted (replaced, wrong direction); the app keeps
+inviting the user to send / paste / accept it, writes its files, and blocks the next task's chat until the user guesses to drop
+the prompt. With one parallel chat the project silently stops advancing.
+
+**Expected:** cancelling (and superseding) a task supersedes its open handoffs and abandons its active attempt in the same
+transaction (*"prompt HO-0001 closed: task cancelled"*); a late answer for it is kept as *stale* and cannot be accepted
+without *Accept anyway…* that warns *"TASK-0001 is cancelled"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
