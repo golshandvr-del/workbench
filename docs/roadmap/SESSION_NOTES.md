@@ -341,3 +341,6 @@ immediately, so a new session can continue without repeating work.
   the task with the file missing. Checked OK: Persian folder names, read-only folders, scope check, S5 = sandbox only.
   Summary now 6 S1 / 3 S2 / 1 S3. NEXT: stale proposal (base_state_revision old), continue-step dismissal, Quick ZIP,
   troubleshoot limit (3 attempts -> then?), validation failed path.
+- (session 10) BF-011 (afd8935 S2): validation_failed note dropped; next task prompt still "Claimed: tests pass", no
+  failure info. Checked OK: troubleshoot x3 -> escalate -> task blocked (visible, unblock/manager/cancel). Summary
+  6 S1 / 4 S2 / 1 S3. NEXT: stale proposal, continue-step dismissal, Quick ZIP, reject_handoff->re-prepare loop.
