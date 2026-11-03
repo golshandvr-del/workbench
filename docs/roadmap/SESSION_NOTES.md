@@ -371,3 +371,6 @@ immediately, so a new session can continue without repeating work.
 - (session 12) BF-019 (5ed6792 S2): RepoService.confirm replays all GitHub calls after a partial failure; create repo
   -> 422 "creation failed" forever; release tag exists -> 422 mapped to "state branch moved" forever.
   Summary 7 S1 / 8 S2 / 4 S3. NEXT: closeout archive (state archived before bundle write), expand.
+- (session 12) BF-020 (43b925f S3): closeout.archive commits archived_at before writing the bundle; write error ->
+  bug dialog, project read-only, card claims the bundle exists (workaround: Reopen -> Archive).
+  Summary 7 S1 / 8 S2 / 5 S3. NEXT: write "Checked and OK" for session 12, report to owner.
