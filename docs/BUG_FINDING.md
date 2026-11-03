@@ -1347,6 +1347,26 @@ checks only `rank_text` / `ask`, so the gap is not caught.
 (`stage_label(stage, lang)` and FA versions of the fixed phrases); extend the FA test to scan `shell.py` for
 `text="[A-Za-z]` literals outside `tr((`.
 
+### BF-061 · S3 · OPEN — editing an **old** chat binding (note, name, link) makes it the AI's current chat again; the next prompt is recorded against the old chat
+
+**Where:** `aiwb/v2/resources.py` `current_binding()` picks the enabled binding with the greatest
+`(updated_at, chat_binding_id)`. `update_binding()` (any field, e.g. only `note`) and `confirm_binding()` refresh
+`updated_at`, so "the binding I touched last" wins, not "the binding I chose last". `workflow.bind_attempt()` freezes
+that binding into the attempt when the prompt is copied.
+
+**Reproduce** (scripts `/tmp/hunt/res.py`, `/tmp/hunt/res4.py`): Implementer bound to CHAT-0001 *"old chat"* (GPT free),
+later to CHAT-0002 *"new chat"* (GPT paid) → current = *new chat* ✓. Edit CHAT-0001's note to *"archived, do not use"*
+→ current = **old chat**; Agents page / Inspector: *"Implementer → GPT free · chat old chat"*; start a task and copy
+the prompt → the attempt's `workflow.chat_binding_id` = `CHAT-0001`. *Confirm* on CHAT-0002 flips it back.
+
+**Why it matters:** writing "do not use" on the old chat is exactly what makes the app use it; the history then says the
+work was done in the free account's old chat (wrong audit trail, wrong account usage counts), and a user who reads the
+Agents page pastes into the old chat.
+
+**Expected:** keep an explicit "current" marker per agent (set by *bind_chat* / *Use this chat*), or order by
+`confirmed_at` / creation instead of `updated_at`; editing a note must never change which chat is current. Optional:
+creating a new binding disables (or marks "previous") the older ones of the same agent.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
