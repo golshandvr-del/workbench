@@ -351,6 +351,31 @@ defaults and a notice), or decoded as UTF-16 (BOM) / Windows-1252 as a fallback.
 (`_save_github_account_metadata`, `_save_github_repository_binding_metadata`) read with plain `utf-8` (no `-sig`):
 they already catch the decode error, so they are fine.
 
+### BF-017 · S2 · OPEN — when `settings.json` cannot be written, every settings change says "Saved" and is lost at restart
+
+**Where:** `AI_Workbench.py` `_save_settings()` catches every exception, writes it to `logs/app.log` and returns
+`False`; the callers ignore the result: `_save_prefs()` (theme / language / mode / reduce motion),
+`HelperService.configure()` / `clear()` (`save=self._save_settings`, result not checked), `save_now()` (Toolbar ›
+Save: `set_status("Saved." / "Settings saved. No project is open.")` is unconditional — only the small status-bar
+badge uses `ok`), project register / remove, quick-instruction editor, output format / playbook combos.
+
+**Reproduce** (script `/tmp/hunt/s_savefail.py`, under xvfb; the write is made to fail by putting a folder where
+`settings.json` goes — on Windows the same happens when the file is locked by antivirus / OneDrive / a second
+Workbench window, or `%LOCALAPPDATA%` is read-only):
+1. Settings › Language → فارسی: the UI switches, no message.
+2. Toolbar › Save → status *"Settings saved. No project is open."*
+3. Settings › Helper AI › Save → *"Saved. m at https://… · key saved"*.
+4. `app.log` has 3 errors; `settings.json` was never written. Restart → English, helper AI not set up, newly added
+   projects missing from the list. With a key: the key **is** written to Windows Credential Manager but its
+   `credential_ref` is not saved anywhere → an orphan secret that *Remove* can no longer delete.
+
+**Why it matters:** the user is told the opposite of what happened and only finds out after a restart (e.g. the
+helper AI key "disappears"); nothing points to `app.log`.
+
+**Expected:** a failed settings write is reported once (*"Settings could not be saved: <reason> — changes will be
+lost when you close Workbench"*), `save_now()` / the helper card show the real result, and `HelperService.configure()`
+rolls back the secret it just stored when the settings save fails.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
