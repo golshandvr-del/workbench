@@ -487,3 +487,14 @@ _(areas reviewed with no problem found are listed here so they are not re-checke
   `.workbench` entries skipped with a message, case duplicates reported, binary files skipped, Windows-1252 text
   converted with a note, 5 MB entry refused (512 KB limit, reported), broken / empty ZIP → clear message, empty
   `__init__.py` kept. All OK (Windows-invalid names: BF-008). `v2/files.py unzip_files()` has no caller (dead code).
+- **Settings file load** (script `/tmp/hunt/r_settings.py`): JSON syntax error / non-object file → preserved as
+  `settings.json.corrupt-<ts>` and the app starts with defaults; UTF-8 BOM accepted; a folder in its place or no read
+  permission → defaults. (Non-UTF-8 encodings: BF-016.) Unknown theme / language / mode values fall back to defaults
+  (`ui/prefs.py`).
+- **Helper AI settings form** (`ui/helper_card.py`): non-number time limit → clear message; time limit clamped to
+  5…300 s; address without `http(s)://` / with spaces → clear message; `/chat/completions` tail stripped; empty model
+  refused. (Save failure not reported: BF-017.)
+- **GitHub state publisher error mapping** (script `/tmp/hunt/t_pub.py`): 401 → paused *"rejected the token"*; 403 →
+  paused *"needs Contents write"*; 403 with `X-RateLimit-Remaining: 0` / 429 → back-off with retry time; 5xx /
+  timeout / reset / `RemoteDisconnected` → *"GitHub is not reachable"* with back-off; writing to `main` / `master` /
+  `develop` refused. (Other exceptions: BF-018.)
