@@ -289,3 +289,8 @@ immediately, so a new session can continue without repeating work.
 - (session 7) DONE d56e2d9 tests/gui/gui_scenario_s10_calculator_smoke.py PASS (calc charter: PM task t0 spec, log
   proposal ops=[] -> 15-line fix prompt -> spec -> core dev -> src/core/calc.js; 2 PM rounds). NEXT 5.20 item 2:
   perf budgets as permanent tests (check what is already covered), then USER_GUIDE(.md/_FA.md) helper AI section.
+- (session 8) Sandbox reset. Restored clone/cpush/xvfb. desktop-v5.19.0 release VERIFIED (5 assets), CI b8378f6 success.
+  Perf measured (558 KB, 2000 events): cached load 1.0 ms (gate <=5), transaction 20.7 ms (gate <=40). Already
+  permanent: load <15ms (test_store_cache), menu raster <250ms, idle 0 fps + menu closes (gui_v516_light), release gate.
+  MISSING: transaction + 5 ms load budget -> new tests/test_perf_budgets.py (release --test it). Then USER_GUIDE(.md/_FA.md)
+  helper AI + S10 section, CHANGELOG 5.20.0, bump, ROADMAP ✅, tag desktop-v5.20.0 = roadmap end.
