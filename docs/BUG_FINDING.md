@@ -728,6 +728,24 @@ drops it. The user has to discover by themselves that they should have picked *N
 milestone as no longer accepted) so the guide offers *Prepare the prompt* for revision 2, or refuse *revise* with *"TASK-0001
 is finished — use New task (it will build on TASK-0001)"* and suggest `new_task` when `done` is true.
 
+### BF-034 · S3 · OPEN — "Archive the project": if writing the final bundle fails, the project is read-only with no bundle, and Archive can never be retried
+
+**Where:** `aiwb/v2/closeout.py` `archive()`: the state transaction sets `archived_at` **first**, then the bundle is written
+with `path.write_text(...)` (not atomic, no `OSError` handling). A failed write leaves `archived_at` set; a second *Archive*
+raises *"the project is already archived"*. The archive path uses the project id, so also a stale partial file can stay.
+
+**Reproduce** (script `/tmp/hunt/e_close.py`): complete the project → `.workbench/archive/` not writable (OneDrive "files on
+demand" folder, antivirus, disk full, read-only share) → *Archive* → `PermissionError` (*"Application error"* / guarded error);
+`closeout.is_archived` = True, **no bundle file**. Make the folder writable → *Archive* → *"the project is already archived"*.
+The only way out is *Reopen* then announce + archive again; the guide card says *"The project is archived (read-only)"*.
+
+**Why it matters:** low frequency; but the step's whole promise is "a final bundle is kept"; the user believes the archive
+exists (the guide says archived) while it does not.
+
+**Expected:** write the bundle first (atomic temp file + `os.replace`), then set `archived_at`; or on failure roll back
+`archived_at` and show *"Could not write the final bundle: <reason>"*; let *Archive* re-write a missing bundle of an
+archived project.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
