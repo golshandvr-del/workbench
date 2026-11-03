@@ -351,3 +351,7 @@ immediately, so a new session can continue without repeating work.
 - (session 11) BF-014 (ce399bd S2): proposal import only rejects UNKNOWN task ids; depends_on / update_task on a
   cancelled task is accepted silently -> new task blocked "prerequisite no longer valid" (BF-001 dead end). Stale
   warning itself works (o_stale.py). Summary 6 S1 / 6 S2 / 2 S3. NEXT: Quick ZIP (unzip_files), helper AI / network.
+- (session 11) BF-015 (bdad86c S3): helper AI reads 800 KB bytes then parses -> long \u-escaped Persian reply reported
+  as "not a Chat Completions reply"; IncompleteRead not caught (generic message). Checked OK: Quick ZIP import, stale
+  plan warning, helper AI HTTP 401/404/429/timeout/reset/SSL/HTML messages. Summary 6 S1 / 6 S2 / 3 S3.
+  NEXT: Settings dialog save/load, GitHub publish errors, release/closeout steps.
