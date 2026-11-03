@@ -376,6 +376,30 @@ helper AI key "disappears"); nothing points to `app.log`.
 lost when you close Workbench"*), `save_now()` / the helper card show the real result, and `HelperService.configure()`
 rolls back the secret it just stored when the settings save fails.
 
+### BF-018 · S3 · OPEN — GitHub state publishing: a dropped connection or an odd reply gives "a bug in AI Workbench" / is never shown
+
+**Where:** `aiwb/v2/publisher.py`: `GitHubStateClient._call()` only turns `OSError` / `URLError` into a `PublishError`;
+`urllib_transport()` parses the body with `json.loads` unguarded; `branch_head()` / `default_head()` / `commit_tree()`
+index `body["object"]["sha"]` / `["tree"]["sha"]` directly. `StatePublisher.tick()` (*"never raises"*) only catches
+`PublishError`. `ProjectsController.publish_now()` does not wrap it; `tick_publisher()` does, but records nothing.
+
+**Reproduce** (script `/tmp/hunt/t_pub.py`, fake transport):
+1. Connection drops while GitHub's reply is being read (`http.client.IncompleteRead`), a proxy / captive portal answers
+   200 with an HTML page (`JSONDecodeError`), or a reply lacks the expected field (`KeyError: 'object'`).
+2. Projects window › *Publish state now* → the exception reaches Tk → *"Application error — That action stopped
+   because of a bug in AI Workbench … What happened: IncompleteRead(1 bytes read)"*.
+3. Timer path (every 30 s, publishing enabled): `tick_publisher()` returns `{"status": "error", …}`, but the queue keeps
+   `last_error=""`, `attempts=0`, no back-off; the status line stays *"Not published yet · local revision 2 · last
+   published —"* (no error, even in Advanced mode) and the same failing call is repeated every 30 s.
+   (Compare: `RemoteDisconnected` / timeout / reset are `OSError`s → correctly *"GitHub is not reachable"* with back-off.)
+
+**Why it matters:** low — publishing is optional and local work is never affected; but the "bug" dialog is alarming
+and the silent timer hides why nothing is published.
+
+**Expected:** `_call()` maps `http.client.HTTPException` and undecodable / unexpected bodies to
+`PublishError("network" / "invalid", …)`; `tick()` keeps its *never raises* promise by recording any other exception
+in `last_error` with back-off.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
