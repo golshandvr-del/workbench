@@ -274,3 +274,6 @@ immediately, so a new session can continue without repeating work.
   python3 tools/bump_desktop_release.py 5.19.0 --module helper_ai.py --module ui/helper_card.py --test test_helper_ai.py
 - (session 7) 5.19.0 RELEASE: unit 917 OK; bump ba3633d..2c2ab98 + 1e6e197 checklist; manifest PASS 228 files.
   NEXT: CHANGELOG (apps/desktop/CHANGELOG.md), ROADMAP ✅ (active 5.20.0), tag desktop-v5.19.0, verify release.
+- (session 7) 5.19.0: f26b7f3 CHANGELOG, 244577c ROADMAP ✅ (active 5.20.0). Tagging desktop-v5.19.0 now.
+  NEXT 5.20.0: S10 "friends' calculator" scenario (guided PM + 2 devs, log fixture answers, <=2 PM rounds to first
+  code file), 5.16 perf budgets as permanent tests, user guide (fa/en) + CHANGELOG, release desktop-v5.20.0.
