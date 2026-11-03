@@ -443,3 +443,7 @@ immediately, so a new session can continue without repeating work.
 - (session 17) BF-051 (ccaf8ad S2) one answer: duplicate paths / case twins / file-vs-folder unchecked -> silent drop or
   BF-009 crash. Persian file paths + backslash paths checked OK. Summary 8 S1 / 25 S2 / 18 S3.
   NEXT: Persian text in task titles/prompts (RTL), huge answers, Quick mode restore.
+- (session 17) BF-052 (fa6f81a S3) rescue.norm() does not unify Arabic ي/ك, ZWNJ-less forms, Persian digits -> accepted
+  decision re-asked. Summary 8 S1 / 25 S2 / 19 S3 (summary row pushed 5f4ff9b in session 18).
+- (session 18, after sandbox reset) Env restored at 5f4ff9b (clean). NEXT: Persian text in prompts (RTL), huge answers,
+  Quick mode restore, then remaining modules not yet hunted.
