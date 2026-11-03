@@ -400,6 +400,31 @@ and the silent timer hides why nothing is published.
 `PublishError("network" / "invalid", …)`; `tick()` keeps its *never raises* promise by recording any other exception
 in `last_error` with back-off.
 
+### BF-019 · S2 · OPEN — a GitHub write (create repo / release) that fails half-way can never succeed on retry
+
+**Where:** `aiwb/v2/repo.py` `RepoService.confirm()` runs several GitHub calls in a row (`_do_create`: create repo →
+branch; `_do_release`: tag ref → Release) and keeps `github_pending` on any error, so *Confirm and send to GitHub*
+replays **all** calls. None of the steps checks whether it is already done. In addition
+`GitHubStateClient._call()` maps every 409/422 on a path containing `/git/refs` to *"the state branch moved on GitHub
+since the last read (not fast-forward)"* — also for a tag that already exists.
+
+**Reproduce** (scripts `/tmp/hunt/u_release.py`, `/tmp/hunt/u_create.py`, fake transport):
+1. *Release:* tag `v1.0.0` is created, then `POST /releases` gets a 502 → *"GitHub: GitHub server error 502"*. Press
+   *Confirm* again (GitHub is fine now) → the tag POST gets 422 *Reference already exists* → *"GitHub: the state branch
+   moved on GitHub since the last read (not fast-forward)"* — every retry, forever. The version stays `planned`; on
+   GitHub there is a tag without a Release.
+2. *Create repository:* `POST /user/repos` succeeds, the branch step gets a 503. *Confirm* again → *"GitHub API POST
+   /user/repos failed: 422 Repository creation failed."* — every retry. The project is not connected, although the
+   private repository exists on the user's account.
+
+**Why it matters:** the only offered button can never work again and the message (state branch / creation failed)
+points the wrong way. Workarounds exist but are not suggested: *Cancel* → *Connect an existing repository…* (create
+case), *I did it by hand — record…* with the tag (release case).
+
+**Expected:** each step is idempotent (repo exists and is ours → continue with the branch; tag exists at the same SHA
+→ continue with the Release; Release exists → record it); a 422 on `refs/tags/…` is reported as *"the tag already
+exists"*; after a partial failure the card says what was already done on GitHub.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
