@@ -1,3 +1,28 @@
+## [5.19.0] - 2026-11-03
+
+### Optional helper AI (Roadmap 5.19.0 — owner's friends' question: "can we add a free API of a light model?")
+
+- **Settings › Helper AI (optional).** Any OpenAI-compatible Chat Completions API: OpenRouter, Groq, Google AI Studio
+  (OpenAI-compatible endpoint), a local Ollama … Choose a provider preset or type the address, then the model, an API
+  key (optional for local servers) and a time limit. **Save helper · Test · Remove.** The key is kept in Windows
+  Credential Manager (like GitHub tokens), never in `settings.json`. The card starts collapsed ("Show settings").
+- **Explain this step** (Home card): one or two plain sentences about what to do now, in the app language.
+- **Fix with helper AI** (Home card, only after an answer could not be used): the helper rewrites the chat's answer
+  into Workbench's format (files + AIWB_HANDOFF, or a manager proposal) without inventing anything. The result goes
+  **into the paste box** — you check it and press "Use this answer"; it is never applied by itself.
+- **Nothing changes without it.** Not set up: no new buttons, nothing is sent anywhere. Set up: data is sent only when
+  you click one of the two buttons. Calls run in the background (the window stays responsive) with a time limit;
+  network problems (401 key refused, 429 rate limit, timeout, unreachable address, broken reply) give one clear
+  sentence, and the key never appears in a message.
+
+### Tests
+
+- `test_helper_ai.py` (15, against a real local fake OpenAI-compatible server: success, timeout, 401, 429, broken and
+  empty reply, unreachable address, key only in the Authorization header and in the credential store, fix/explain
+  prompts). GUI gate `tests/gui/gui_v519_helper_smoke.py` (hidden when not set up · Save helper / Test · Explain this
+  step · unusable answer → Fix with helper AI → rewritten answer in the box → accepted · Remove hides the buttons).
+  `docs/UI_MAP.md` regenerated (Settings stays at 8 visible controls). Unit 917 OK.
+
 ## [5.18.0] - 2026-11-02
 
 ### The short project-manager path (Roadmap 5.18.0 — owner's friends' feedback: "the project manager step takes
