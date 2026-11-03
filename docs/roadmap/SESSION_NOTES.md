@@ -355,3 +355,5 @@ immediately, so a new session can continue without repeating work.
   as "not a Chat Completions reply"; IncompleteRead not caught (generic message). Checked OK: Quick ZIP import, stale
   plan warning, helper AI HTTP 401/404/429/timeout/reset/SSL/HTML messages. Summary 6 S1 / 6 S2 / 3 S3.
   NEXT: Settings dialog save/load, GitHub publish errors, release/closeout steps.
+- (session 12, after sandbox reset) Env restored at 783edb6 (clone + cpush + xvfb). Summary 6 S1 / 6 S2 / 3 S3.
+  NEXT: Settings dialog save/load + invalid values, GitHub publish errors, release/closeout steps.
