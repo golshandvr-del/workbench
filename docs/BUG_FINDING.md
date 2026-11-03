@@ -897,6 +897,33 @@ reviews and approves incomplete work, or rejects it without knowing why it is in
 accepted) and record the context request on the handoff, so the card offers *Send the files … asked for* first;
 at least add a diagnosis *"the AI also asked for: src/x.py"* to the delivery card.
 
+### BF-042 · S2 · OPEN — an `AIWB_FILE … action="delete"` (or `"move"`) block is read as "write an empty file": Quick mode empties the file, guided mode drops it and approves the task
+
+**Where:** `aiwb/v2/diagnose.py` `parse_files()` (used by `answer_files._aiwb_files`) keeps only the `path`
+attribute of the block header; `action` / `from` are thrown away, so every block becomes `{path, content: ""}`.
+The JSON reader in the same module **does** look at `action` (*"delete is not applied by the guided loop —
+skipped"*), so the two formats disagree. The prompts only show `action="write"`, but the attribute itself invites
+other values and models do send `delete` / `move` / `rename` when a task says "remove" or "rename".
+
+**Reproduce** (scripts `/tmp/hunt/q_read.py`, `/tmp/hunt/g_del.py`):
+- **Quick mode:** `src/old.py` exists → answer `<<<AIWB_FILE path="src/old.py" action="delete">>>` +
+  `<<<AIWB_END_FILE>>>` → preview *"Files ✓ · 1 file"*, plan *"0 new · 1 changed"* → *Apply* → `src/old.py` is
+  now **0 bytes** (not deleted, content gone). Only *Restore last apply* brings it back. `action="move"
+  from="src/old.py"` with path `src/new.py` → *"1 new"*: an empty `src/new.py` is created, the old file stays.
+- **Guided mode:** task *"remove old module"*, answer = the delete block + manifest *"removed src/old.py",
+  outcome complete* → *"Answer linked … 1 file(s) read"*, no diagnosis → *Accept the delivery* → *"Delivery
+  HO-0001 accepted and TASK-0001 approved"* — `src/old.py` is still there, unchanged; the summary in the ledger
+  says it was removed (the empty body is skipped silently, as in BF-010).
+
+**Why it matters:** in Quick mode a "remove this file" answer silently wipes a file's contents and leaves an
+empty file behind (an empty module still imports; an empty config breaks the app). In guided mode the task is
+approved although the requested removal never happened.
+
+**Expected:** parse `action`; for `delete` / `move` / `rename` either perform them as explicit, previewed
+operations (*"delete src/old.py"* in the plan, with backup) or refuse them visibly as the JSON reader does
+(*"src/old.py: delete is not supported — delete it yourself"*) and never turn them into an empty write. Unknown
+actions should be a problem, not a write.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
