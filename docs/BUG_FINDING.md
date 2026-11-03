@@ -1586,6 +1586,26 @@ desktop time in the reply, **not** counted as a wrong attempt. On the phone: *"T
 clock differ by N minutes. Set both to automatic time and try again."* (or remember the offset from the reply and use
 it). The desktop window should say *"A phone tried to connect but its clock is N minutes off"*.
 
+### BF-072 · S2 · OPEN — Mobile Companion › *Set permissions*: selecting a device does not load its permissions, so changing one permission silently removes the others (e.g. *submit answers* is taken away)
+
+**Where:** `aiwb/companion/window.py`: one set of check boxes (`perm_vars`, initialised to `DEFAULT_PERMISSIONS` =
+*view project* only) serves both *Approve device* and *Set permissions*. The device list has no `<<TreeviewSelect>>`
+handler, so selecting a device never shows its current permissions. `do_permissions()` writes whatever the boxes
+show to the selected device, without confirmation and without saying what changed.
+
+**Reproduce** (script `/tmp/hunt/compwin.py`, under xvfb): device *Pixel* has `view_project, create_task,
+submit_response` (shown in the list) → select *Pixel* → the boxes still show only *view project* → the user ticks
+nothing else (or only adds one box) and clicks *Set permissions* → *Pixel* now has `view_project` only. The phone's
+next *Send answer* → *"not allowed to submit response"*. The same carried-over boxes are used by *Approve device*, so
+the permissions chosen for one device are silently given to the next phone that pairs.
+
+**Why it matters:** the natural way to use the form (select → change one box → set) removes rights the user never
+meant to touch. The user finds out only on the phone, far from the desktop.
+
+**Expected:** on selection, load the device's permissions into the boxes (and reset them to the defaults for a new
+pairing request); disable *Set permissions* / *Revoke* when nothing is selected; after saving, say
+*"Pixel: view project, create task (submit answers removed)"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
