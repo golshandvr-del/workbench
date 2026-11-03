@@ -414,3 +414,6 @@ immediately, so a new session can continue without repeating work.
 - (session 16) BF-039 (b54ff2f S2) charter_repair role_of(): "lead"/"owner"/"manager" substring rule first ->
   "Lead developer"/"Tech lead" become a 2nd project_manager (skipped by agent_hub, offered as PM, prompt says PM).
   Summary 7 S1 / 17 S2 / 15 S3. NEXT: charter_repair other normalizers (versions, refs, ownership), paste_box, bundle import, i18n.
+- (session 16) BF-040 (3fc6f4c S3) paste preview always "Manager proposal ✓" (no parse); BF-041 (8851c89 S2) answer with
+  files + context request: preview says request, route_answer treats as delivery, request lost.
+  Summary 7 S1 / 18 S2 / 16 S3. NEXT: bundle import edge cases, i18n/RTL, Quick mode read_answer, rescue prompts.
