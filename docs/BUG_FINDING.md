@@ -854,6 +854,27 @@ words (*developer, engineer, dev, programmer, backend, frontend*) before the gen
 never create a second `project_manager` from a fuzzy guess — if the charter already has a PM, fall back to the
 work role or ask, and show the role change as a warning, not a quiet repair note.
 
+### BF-040 · S3 · OPEN — paste box live diagnosis says "Manager proposal ✓" for any text with the marker, even when the import will refuse it
+
+**Where:** `aiwb/intake/preview.py` `_preview()` returns `Preview("proposal", True, "Manager proposal ✓ — paste it
+to review its changes.")` as soon as `<<<AIWB_MANAGER_PROPOSAL>>>` appears; nothing is parsed. The charter and the
+context-request branches use the real reader (*"5.12.0 (owner audit B2): ✓ only when importing works"*); the
+proposal branch was left out.
+
+**Reproduce** (script `/tmp/hunt/pv.py`) — the box shows the green ✓ line, then *Use this answer* gives:
+- JSON cut off (`"operations": [`) → *"AIWB_MANAGER_PROPOSAL is not valid JSON … the raw answer is kept in the
+  Inbox The raw answer is kept in the Inbox."* (also: the sentence is doubled and the first has no full stop);
+- no `base_state_revision` → *"base_state_revision (integer) is required …"* (rejected);
+- `"operations": []` → *proposal_fix* (*"Nothing to apply"*).
+
+**Why it matters:** the live diagnosis exists so the user knows *before* pasting whether the answer is usable
+(and can ask the PM chat to fix it while it is still open). For the PM's answers — the most frequent paste after
+the charter — it always says ✓, so the promise does not hold.
+
+**Expected:** run the same reader as `proposals.import_text` in a dry mode (JSON, base revision, at least one
+known operation; stale base revision as a warning) and show ✗ with the first problem, like the charter branch.
+Drop the duplicated *"The raw answer is kept in the Inbox"* in `route_answer`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
