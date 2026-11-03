@@ -1322,6 +1322,31 @@ list. (Home's guided steps still show the delivery, so it is not a dead end.)
 `proposal:PROP-0003`), or store the "seen" mark together with the state revision / handoff id and treat a changed one
 as unread. Trim `ws_seen` by recency, not by sort order.
 
+### BF-060 · S3 · OPEN — Persian (RTL) Workspace still shows English labels and English "why" texts on the Overview and Project pages
+
+**Where:** `aiwb/workspace/shell.py` builds several widgets with literal English text instead of `self.wc.tr((en, fa))`:
+line 147 `"Open on Home"` (Next-step card button), 463 / 672 / 813 `"More"` (menu buttons), 468 `"Queue of each AI
+(double-click a step to do it)"`, 471–472 headings `"Who"` / `"Step"`, 478–479 `"You"` and `f"{len(steps)} open"`,
+605–607 the Project details keys `Goal / Name / Platform / Constraints / Answer format / Folder`, 610 the hint *"Change
+them on Home (Next step › Change the project details…) …"*. In `aiwb/v2/dashboard.py` `attention_queue()` the `why`
+part is always English (`f"{stage_label(stage, 'en')} — {ts['why']}"`, `"open decision: …"`, `"manager proposal
+waiting"`, `"publishing paused: …"`, `"; no owner yet"`), and `WorkspaceController.attention_text()` shows it as
+*"(چرا: …)"*.
+
+**Reproduce** (script `/tmp/hunt/dash3.py`, plus reading `shell.py`): `set_language("fa")`, one delivery waiting →
+Overview item: *"TASK-0001 · agent-implementer — تحویل را بازبینی کنید (چرا: Waiting for your review — answer parsed;
+your review decides)"*; decision: *"DEC-0001 — تصمیم بگیرید (چرا: open decision: پایگاه داده)"*. On the same page the
+queue box is titled *"Queue of each AI (double-click a step to do it)"* with columns *Who / Step*, rows *"You — 2 open"*,
+buttons *"More"* and *"Open on Home"*.
+
+**Why it matters:** the owner's users pick Persian; half-English screens with mixed-direction sentences (an English
+clause inside an RTL line) are hard to read and look unfinished in the friends' demo. `test_dashboard_fa_labels`
+checks only `rank_text` / `ask`, so the gap is not caught.
+
+**Expected:** wrap every literal in `self.wc.tr(...)` (or i18n `TERMS`); give `attention_queue()` a translated `why`
+(`stage_label(stage, lang)` and FA versions of the fixed phrases); extend the FA test to scan `shell.py` for
+`text="[A-Za-z]` literals outside `tr((`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
