@@ -272,3 +272,5 @@ immediately, so a new session can continue without repeating work.
 - (session 7) d2947f1 smoke opens card; UI map regenerated 1383e80/902f887/e6f05c4 (Settings 8 visible = max).
   polish + map + v519 smokes PASS. NEXT: unit suite, then release 5.19.0:
   python3 tools/bump_desktop_release.py 5.19.0 --module helper_ai.py --module ui/helper_card.py --test test_helper_ai.py
+- (session 7) 5.19.0 RELEASE: unit 917 OK; bump ba3633d..2c2ab98 + 1e6e197 checklist; manifest PASS 228 files.
+  NEXT: CHANGELOG (apps/desktop/CHANGELOG.md), ROADMAP ✅ (active 5.20.0), tag desktop-v5.19.0, verify release.
