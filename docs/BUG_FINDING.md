@@ -707,6 +707,27 @@ risk as BF-011 / BF-013.
 case-insensitively, as Windows does), so `diagnose` and `stage` agree; mention *"path normalised: ./src/app.py →
 src/app.py"* as a fix, not an error.
 
+### BF-033 · S2 · OPEN — "Request a change… › Change this task" on a finished task: the change is recorded and then nothing can ever work on it
+
+**Where:** `aiwb/v2/changes.py` `apply_route(route="revise")` only refuses cancelled / superseded tasks; for a `done` task it calls
+`tasks.update()` (adds *"Change request: …"* to the acceptance criteria, `task_revision` + 1) but the status stays `done`.
+`handoff.prepare()` refuses a done task (*"TASK-0001 is done; it must be ready or in progress for a handoff"*), the guide
+offers no step for it, and nothing in the app ever uses the `done → in_progress` transition that `models.py` allows.
+`suggest_route()` even returns `done: True` and still suggests *revise* for "fix …" requests (the most common wording).
+
+**Reproduce** (script `/tmp/hunt/e_close.py`): task done → *Tasks* › select it › *Request a change…* › *"fix the wrong rounding"*
+→ suggested route *revise* (Change this task) → OK → status bar *"TASK-0001 is now revision 2; earlier attempts are for the old
+revision…"*. The task is still **Done**, there is no *Prepare the prompt* for it, the guide only shows *"Tell the project
+manager what changed"*; and `closeout.can_announce` stays true — the project can be announced **complete** with the requested
+fix never sent to any AI.
+
+**Why it matters:** "fix this finished part" is the most natural change request; the app says it was accepted and then silently
+drops it. The user has to discover by themselves that they should have picked *New task* instead.
+
+**Expected:** for a done task either move it back to `in_progress` (the allowed transition; emit *task_reopened*, mark the
+milestone as no longer accepted) so the guide offers *Prepare the prompt* for revision 2, or refuse *revise* with *"TASK-0001
+is finished — use New task (it will build on TASK-0001)"* and suggest `new_task` when `done` is true.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
