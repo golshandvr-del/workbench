@@ -471,6 +471,29 @@ and does not say why.
 keep the display name separately; or accept any non-empty id in bundles (both apps) and validate only what matters
 (length, no control characters); at the very least refuse the export with a clear reason.
 
+### BF-022 · S3 · OPEN — bundle export / import: a file error gives the "bug in AI Workbench" dialog; a malformed bundle gives a raw Python message
+
+**Where:** `AI_Workbench.py` `export_project_bundle()`: `Path(path).write_text(...)` unguarded;
+`import_project_bundle()`: `Path(path).read_bytes()` unguarded, and `ctl.import_bundle(...)` (backup + write) after the
+confirmation unguarded. The menu calls them through `WorkspaceShell._guard`, which only catches `ModelError`.
+`bundle.read_bundle()` assumes `project` is an object and `db_version` is a number.
+
+**Reproduce** (script `/tmp/hunt/w_bundle2.py`, under xvfb):
+1. *Export project for the phone…* to a place that cannot be written (folder removed / read-only / OneDrive or
+   antivirus lock on an existing file) → `FileNotFoundError` / `PermissionError` → *"Application error — That action
+   stopped because of a bug in AI Workbench"*.
+2. *Import project from the phone…* → confirm → the project folder is read-only / locked → `PermissionError: …
+   .workbench/v2/backups` → the same "bug" dialog (nothing changed — the backup step failed first).
+3. A bundle with `"project": [1]` → *"'list' object has no attribute 'get'"*; `db_version: "x"` inside state_json →
+   *"invalid literal for int() with base 10: 'x'"*; a Windows-1252 file → *"'utf-8' codec can't decode byte 0xe9 …"*.
+   (Handled — nothing changes — but the text says nothing to a user.)
+
+**Why it matters:** low — no data is lost; the dialogs are alarming / unhelpful.
+
+**Expected:** catch `OSError` around the file read/write and the import, report *"Could not write/read <file>:
+<reason>"*; `read_bundle` reports *"the bundle is damaged (project / db_version)"* and *"the bundle is not UTF-8
+text"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
