@@ -612,6 +612,33 @@ false (it makes the user think a file was not restored).
 **Expected:** catch `OSError` per file, report *"Could not restore b.txt: <reason> — close the program that uses it
 and press Restore again"*; on retry treat a file whose current content equals its backup as already restored.
 
+### BF-029 · S2 · OPEN — Run page: a script that starts a background process (a server) keeps the app "busy" until that process ends — the time limit does not apply
+
+**Where:** `AI_Workbench.py` `_run_process_bounded()`: after the child exits (or is killed on time-out), the reader
+threads are joined with `timeout=5`, then `stream.close()` is called on the pipes. A grandchild that inherited the
+pipe (any `subprocess.Popen` / `start` / `npm run dev`-style launcher; on Windows `Popen` inherits handles) keeps the
+write end open, the reader thread stays blocked in `read()` holding the buffer lock, and `close()` waits for that
+lock — i.e. until the grandchild exits. On time-out, `killpg` / `taskkill /T` miss a grandchild in another session
+or one whose parent already exited. Same runner for *Run command* and queued actions.
+
+**Reproduce** (scripts `/tmp/hunt/r_run.py`, `/tmp/hunt/r_run2.py`; `faulthandler` shows the main thread in
+`stream.close()`, the readers in `drain` → `stream.read`):
+1. `server.py`: starts `python -c "import time; time.sleep(60)"` with `Popen`, prints *"server started"*, exits.
+2. Run page › time limit 10 s › *Run / simulate* → returns after **60 s** (when the grandchild ends), status Passed.
+3. `bgloop.py` (launches a detached child, then loops): time limit 3 s → *"Process timed out after 3 seconds"* only
+   after **40 s**.
+With a real server (runs until closed) the run never returns: the progress bar spins, every other action says
+*"Another operation is running. Wait for it to finish."*, and on Windows the server has no window
+(`CREATE_NO_WINDOW`), so the user cannot find what to close — only killing AI Workbench helps.
+
+**Why it matters:** "run my app" for a web project very often starts a server or opens a browser via a launcher; the
+whole app freezes in a busy state with no cancel button.
+
+**Expected:** do not close the pipes while a reader may be blocked — after the deadline, stop waiting for the readers
+(they are daemon threads), take the captured tail, and return; note *"a background process is still running and
+holds the output"*. Optionally: run the child in a Windows Job Object (kill-on-close) / its own session and kill
+the whole tree on time-out; add a *Stop* button for the running job.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
