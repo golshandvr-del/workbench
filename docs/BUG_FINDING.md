@@ -1367,6 +1367,31 @@ Agents page pastes into the old chat.
 `confirmed_at` / creation instead of `updated_at`; editing a note must never change which chat is current. Optional:
 creating a new binding disables (or marks "previous") the older ones of the same agent.
 
+### BF-062 · S3 · OPEN — the "looks like a password" filter refuses ordinary account / chat labels with the words *token* or *session* (and AI Studio chat links)
+
+**Where:** `aiwb/v2/resources.py` `SECRET_RE` contains `(?:password|passwd|token|cookie|session|api[_ -]?key)\s*[:=]`
+and `[A-Za-z0-9+/]{40,}={0,2}`; `_clean()` applies it to **every** text field (`display_name`, `chat_name`, `note`,
+`provider`) and `_link()` to the chat link.
+
+**Reproduce** (scripts `/tmp/hunt/res5.py`, `/tmp/hunt/res6.py`) — all refused with *"… looks like a password, token or
+key. Workbench never stores model credentials; use a plain label instead."*:
+- account profile names *"Gemini — session: work"*, *"GPT paid (token: 128k)"*;
+- chat names *"Session: Monday planning"*, *"Login work — max token: 8000"*;
+- notes *"token: 32k context"*, *"uses API key = none, web chat only"*;
+- link `https://aistudio.google.com/app/prompts/1aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcd` (Google AI Studio's normal
+  chat URL: a 40+ character id). ChatGPT / Claude / Gemini links pass.
+
+In the Workspace the refusal only appears in the status bar (`_guard()`), after the user went through two
+`askstring` dialogs, and the dialog values are lost.
+
+**Why it matters:** "token" (context size, limits) and "session" (a chat session) are everyday words for people who use
+several AI accounts; the message accuses the user of pasting a secret and gives no hint which part triggered it.
+AI Studio users cannot record their chat link at all.
+
+**Expected:** match real secret shapes (known prefixes, long high-entropy strings **without** spaces, `key=value` only
+when the value itself looks random, e.g. ≥ 20 chars of `[A-Za-z0-9_-]`), allow long ids in the **path** of an
+`https://` link (keep the query-parameter check), and name the matched fragment in the message.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
