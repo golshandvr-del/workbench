@@ -1023,6 +1023,27 @@ objective can only be restored by hand (Edit task). It happens with the most com
 assessment onto `objective` / `deliverables` (keep them as the operation's `reason`). Match `owner_role` through
 `charter_repair.role_of()` (case-insensitive), and list an unknown role in the review card instead of dropping it.
 
+### BF-047 · S3 · OPEN — rescued decisions: a decision written as text loses the PM's choice; a recommendation *sentence* becomes the only option
+
+**Where:** `aiwb/v2/rescue.py` `_decision_ops()`. A string item (`"decision": "Use SQLite"`, `"decisions": ["Use SQLite
+for storage", "Use React"]`) becomes `{"title": text}` → `recommendation` empty, `options` empty. A dict with only
+`question` + `recommendation` puts the whole recommendation sentence into `options` (`chosen` is prepended when it is not
+among the options).
+
+**Reproduce** (scripts `/tmp/hunt/rs5.py`, `/tmp/hunt/rs6.py`):
+- `{"decision": "Use SQLite"}` → review → card *"Decide: Use SQLite"* with an empty explanation; the form has no option
+  and no "Recommended" — only *Other answer…* — although the PM already said what it chose.
+- `{"decisions": [{"question": "Which database?", "recommendation": "SQLite because it is simple"}]}` → card *"Which
+  database? Options: SQLite because it is simple. Recommended: SQLite because it is simple."*; one radio button with the
+  whole sentence; choosing it stores the sentence as the decision.
+
+Not a dead end (typing an answer works: *"Decision DEC-0001 recorded."*), but the decision log gets odd entries and the
+user is asked a question that was already answered.
+
+**Expected:** a plain-text decision is a decision **made** by the PM: title = text, recommendation = text, options =
+[text] (the form then offers it pre-selected, plus *Other answer…*). For `recommendation` sentences use
+`choices.parse_options()` to split "X because …" into option *X* + rationale.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
