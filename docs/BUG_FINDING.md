@@ -1163,6 +1163,30 @@ the owner's users write Persian.
 **Expected:** in `norm()` map `ي→ی`, `ك→ک`, `ة→ه`, `ۀ→ه`, drop ZWNJ / tatweel / diacritics (U+064B–U+065F) before
 comparing, convert Persian/Arabic digits to ASCII; reuse it wherever titles are compared.
 
+### BF-053 · S2 · OPEN — one stray `{` in the prose before a marker-free JSON answer → "Cut off ✗", the complete answer is never read
+
+**Where:** `aiwb/intake/lenient.py` `find_object()`: it scans from the **first** `{`; when `_balanced_end()` reaches the
+end of the text without closing it and the rest of the text contains the wanted keys (`"files"` / `"tasks"`), it stops
+with `truncated=True` — it never tries the next `{`. A `{` in prose (*"the {name placeholder"*, *"each task has a
+{title, objective} pair"* without its `}`, *"{{x}"*) therefore swallows the real object that follows. Callers:
+`answer_files.json_files()` (JSON-files answers) and `charter._load()` (marker-free charter).
+
+**Reproduce** (scripts `/tmp/hunt/len.py`, `/tmp/hunt/len2.py`, `/tmp/hunt/len3.py`):
+- Guided task, prompt HO-0001 open. Paste *"I replaced the {name placeholder. Here you go:\n"* + a complete
+  `{"files": [{"path": "src/a.py", "content": "x = 1\n"}], "summary": "done", "outcome": "complete"}` → preview
+  *"Cut off ✗ — the answer ends in the middle; paste it to get a continue prompt."*; paste → *"The answer was cut off.
+  A continue prompt is ready."*; Home: *"The last answer was cut off — ask to continue"*. Without the stray `{` the
+  same answer gives *"1 file(s) read from Strict JSON"*.
+- Marker-free charter with *"Each task is a {title, objective pair."* before it → *"the charter JSON was opened but
+  never closed (the answer was probably cut off)"*.
+
+**Why it matters:** the answer is complete; the user is sent to ask the model to "continue", the model repeats the
+same answer (with the same sentence), and the loop never ends. Nothing on screen points at the real cause.
+
+**Expected:** in `find_object()`, when an object is not closed, keep scanning from the next `{` and prefer a balanced
+object with the keys; report `truncated` only when **no** later balanced candidate exists (and ideally only when the
+unclosed `{` is followed by `"key":` close to it, i.e. it really is the JSON).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
