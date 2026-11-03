@@ -326,6 +326,31 @@ are rare (servers like OpenAI / Ollama send raw UTF-8, which is fine up to the l
 **Expected:** read up to the limit and, if the limit was hit, say *"the helper AI answer is too long"*; catch
 `http.client.HTTPException` together with `OSError` as a connection problem.
 
+### BF-016 · S1 · OPEN — a `settings.json` that is not UTF-8 stops the app from starting at all
+
+**Where:** `AI_Workbench.py` `load_settings_with_recovery()`: `path.read_text(encoding="utf-8-sig")` sits inside
+`try … except OSError`; a `UnicodeDecodeError` (a `ValueError`, not an `OSError`) escapes. The corrupt-file backup
+logic below it (`settings.json.corrupt-<ts>`) is never reached. `WorkbenchApp.__init__` → `main()` catches it as a
+start-up failure.
+
+**Reproduce** (script `/tmp/hunt/r_settings.py` for the function, `/tmp/hunt/r_start.py ok|utf16|cp1252` for the
+whole app under xvfb):
+1. Save `%LOCALAPPDATA%\AIWorkbench\settings.json` as UTF-16 (Windows PowerShell 5 `… > settings.json` /
+   `Out-File`, or Notepad *Save as → Unicode*) or as ANSI / Windows-1252 with a non-ASCII character (e.g. a project
+   path `C:\Users\José\…`, PowerShell 5 `Set-Content`).
+2. Start AI Workbench → *"The application failed to start. Details were written to …\app.log —
+   'utf-8' codec can't decode byte 0xff in position 0"*, exit code 1. Every later start fails the same way.
+
+**Why it matters:** the app cannot be opened until the user finds and deletes / re-saves a file in a hidden folder;
+the message does not say which file. The function's own docstring promises tolerance for files *"edited with
+Notepad / PowerShell 5"* — exactly the editors that produce these encodings. (A JSON syntax error or a non-object
+file is handled correctly: renamed to `.corrupt-<ts>`, app starts with defaults.)
+
+**Expected:** an undecodable file is treated like a corrupt one (preserved as `settings.json.corrupt-<ts>`, start with
+defaults and a notice), or decoded as UTF-16 (BOM) / Windows-1252 as a fallback. The two background writers
+(`_save_github_account_metadata`, `_save_github_repository_binding_metadata`) read with plain `utf-8` (no `-sig`):
+they already catch the decode error, so they are fine.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
