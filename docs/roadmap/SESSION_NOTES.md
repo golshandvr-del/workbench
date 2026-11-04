@@ -560,3 +560,4 @@ immediately, so a new session can continue without repeating work.
 - (session 27) Checked ui/team_table.py + team_setup.check_rows (empty/dup/casefold names, PM row, max workers, spinbox clamp) OK.
 - (session 27) Checked ui/startup.py (DPI awareness never raises, splash TclError-safe) OK.
 - (session 27) Checked workspace/shell._start_form (wizard mode=start, prefilled; name optional there) OK.
+- (session 27) BF-099 (S3) v2/projects_window.ProposalDialog: no scroll; 40 ops -> 1041px on 768px screen, Apply/Cancel unreachable. Repro /tmp/hunt/propdlg.py (xvfb). Summary 11 S1 / 35 S2 / 51 S3. NEXT: other dialogs that pack rows without scroll (action_form, choices), build_center_dialogs.py.
