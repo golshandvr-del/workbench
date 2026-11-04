@@ -1848,6 +1848,32 @@ characters can be sent to the helper — the last part (from `src/core/m6.py`) w
 several calls by file block; after the call, add *"the helper saw only the first part; check the end"*; keep the
 original answer (e.g. *Undo helper fix*).
 
+### BF-082 · S3 · OPEN — when the project manager says "complete", the closeout card hides open milestones and the pending release: the cycle is announced with *"0 milestone(s) accepted … Released: none"*, and the old milestones pop up again in the next cycle
+
+**Where:** `aiwb/v2/guide.py` `steps()`: `end = closeout_steps(st)` — *"the end of the algorithm replaces every other
+step"*. `closeout.can_announce()` checks only that every **task** is finished and that the last PM route is
+`complete`. It does not check milestones still `planned` (their *Accept milestone* step, rank 15) or a version
+waiting for *Release version …*. Both steps disappear from Home as soon as the plan with
+`roadmap_remaining: false` is accepted. `closeout.expand()` does not close them either.
+
+**Reproduce** (script `/tmp/hunt/close.py`): TASK-0001 done (*Tests/build passed*) → Home shows *Accept milestone Core
+ready* and *Release version 0.1.0* → the other tasks are cancelled and the PM's plan says no roadmap stage is left
+(`last_decision.route = complete`) → Home shows **only** *Announce the completion* → *"Completion announced. Cycle 1 is
+complete: 1 task(s) done, **0 milestone(s) accepted** … **Released: none**."* → only *Expand… / Archive* are offered. The
+milestone and the release can no longer be reached (archiving freezes them for good). After *Expand the project…* →
+cycle 2 starts with *Accept milestone Core ready* and *Accept milestone Both apps usable* (a cycle-1 milestone whose
+two tasks were **both cancelled**, offered with *"All its tasks are done"*; accepting it gives
+*"Milestone MS-0002 accepted."*).
+
+**Why it matters:** the completion record and the final archive bundle (the project's permanent summary) say nothing
+was accepted or released, even when the user was about to do it. The release step, the one that records the tag and
+the CI run, is silently skipped. The next cycle then starts with leftovers from the old roadmap.
+
+**Expected:** `can_announce` (or the closeout card) should list the open milestones and the unreleased version and
+offer them first (*"Before announcing: accept milestone Core ready, release 0.1.0 — or skip"*). On *Expand*, close or
+carry over the old milestones explicitly. A milestone whose tasks are **all** cancelled should be offered as *Drop*,
+not as *"All its tasks are done"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
