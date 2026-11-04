@@ -1968,6 +1968,27 @@ compare window also keeps offering all 30 old candidates for every path.
 **Expected:** a *Remove* button per candidate (and *Remove all*) in the compare window, or auto-drop the oldest
 when the limit is reached (with a note), or remove the candidates that were used in a merge.
 
+### BF-087 · S3 · OPEN — preview › *Semantic* tab: for a file over 256 000 characters a change after the cut is reported as *"(no textual differences detected)"* and *"Structural parsing failed … SyntaxError"*
+
+**Where:** `aiwb/semantic_diff.py` `analyze_semantic_diff()` cuts `before` / `after` to `MAX_SEMANTIC_CHARS` (256 000)
+**before** parsing and before the unified diff. The AST then sees a file cut in the middle (false *SyntaxError*), and
+the diff of two identical prefixes is empty → `format_semantic_report` prints *"Added/Removed/Modified structural
+items: none detected"* and *"Bounded unified diff: (no textual differences detected)"*. The only hint is the generic
+*"source excerpt truncated to stay within analysis limits"*.
+
+**Reproduce** (script `/tmp/hunt/sem.py`): a 617 780-char Python file with 20 000 functions; the new version renames
+the last one (`f19999` → `g19999`) → report: no structural changes, warning *"Structural parsing failed; falling back
+to text diff: SyntaxError: '(' was never closed (<unknown>, line 25822)"*, unified diff empty → *"(no textual
+differences detected)"*.
+
+**Why it matters:** the Semantic tab is the reviewer's summary of *what changed*. Here it says *nothing changed*
+and *your file has a syntax error*, both false, for a change that the answer really makes. Generated files, data
+files and large modules hit this.
+
+**Expected:** when a side is over the limit, say *"File too large for semantic analysis (617 780 characters); see
+the Diff tab"* and skip the AST, or diff the full text (only the output is bounded); never print *"no textual
+differences"* unless the full texts are equal.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
