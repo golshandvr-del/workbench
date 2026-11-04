@@ -2166,6 +2166,30 @@ user gets "nothing readable" with no hint why.
 **Expected:** remember the opening character of each string. Only a string opened by `“`/`„` (smart-quote damage) may be
 closed by `”`/`“`; a string opened by `"` closes only at an unescaped `"`. Same fix as BF-092; add a shared test.
 
+### BF-095 · S3 · OPEN — Quick mode *Apply* silently overwrites edits the user made **after** the preview (and a file created meanwhile under a "new" path); the classic apply refuses this
+
+**Where:** `aiwb/v2/quick.py` `apply()`: it trusts the `status` computed earlier by `plan()` (`new` / `changed`) and
+writes `i["content"]` without re-reading the target. Nothing compares the file on disk with what the diff was built
+from. `aiwb/ui/quick_window.py` `use_answer()` builds the plan when the answer is pasted; `apply_now()` applies it
+later (minutes later, after the user has read the diff, often after switching to the editor). The classic
+`AI_Workbench.apply_changes_transactionally()` has exactly this guard: *"File changed after preview; preview again to
+prevent overwriting new changes"* / *"File was created/deleted after preview"*.
+
+**Reproduce** (script `/tmp/hunt/quickstale.py`):
+1. `src/a.py` = `x = 1`. Paste an answer with `src/a.py` = `x = 2` and a new `src/new.py` → plan *changed* / *new*.
+2. Before clicking *Apply*, the user adds a line to `src/a.py` in their editor and creates their own `src/new.py`.
+3. *Apply* → *"Applied 2 file(s) — backup A-0001."* Both files are replaced with no warning. The diff the user approved
+   showed neither their new line nor the existing `src/new.py` (the tree said *new*).
+4. *Restore last apply* brings both back (the backup is taken at apply time), so nothing is lost **if** the user
+   notices. But the status line says nothing was overwritten that was not in the diff.
+
+**Why it matters:** Quick mode is the "simplest" path and the user is expected to edit freely between rounds. The
+approval was given for a diff that is no longer true; a file shown as *new* can overwrite an existing file.
+
+**Expected:** keep the hash (or bytes) of each target as read by `plan()`; in `apply()` re-check every target first. If any
+changed, or a *new* path now exists, write nothing and say *"src/a.py changed since the preview — review again"*, then
+re-plan, like the classic apply.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
