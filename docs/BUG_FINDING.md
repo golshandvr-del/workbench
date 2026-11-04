@@ -1742,6 +1742,31 @@ device on the desktop and an unpaired phone.
 `configChanges` for this simple screen); add texts for `pairing_used` / `denied`; on the desktop, drop a pending
 request whose phone stopped polling, or show *"waiting since …"* next to it.
 
+### BF-078 · S1 · OPEN — *Ask only for what is missing* (repair) accepts the partial delivery but never writes its files, while the repair prompt tells the AI **not** to resend them: the files that did arrive are lost for good (desktop and phone)
+
+**Where:** desktop `aiwb/v2/guide.py` `Guide.perform(..., "repair")` calls `c.resolve_handoff(ref, True, …)` (handoff →
+`accepted`) and builds `repair_prompt()`, but does not call `files.integrate()` — only `accept_handoff` does. The
+repair prompt lists the staged files under *"## Arrived complete (do NOT resend)"*. Afterwards the old handoff is
+`accepted`, so it never shows a card again and nothing integrates it later. The phone does the same in
+`core/Guide.kt` `"repair"` (`p.resolveHandoff(ref, true, …)` without `Files.integrate`).
+
+**Reproduce** (script `/tmp/hunt/repair.py`, guided loop with the test helpers): TASK-0001 prompt → partial answer
+(`src/core/a.txt` + manifest `partial`, unresolved *"missing file: src/core/b.txt"*) → *"Answer linked to HO-0001
+(reconciled, partial)"*, staged `['src/core/a.txt']` → card *Check what Implementer delivered* → **Ask only for what is
+missing** → *"Repair prompt for TASK-0001 ready (only the missing items)."*; the prompt says *Arrived complete (do NOT
+resend): - src/core/a.txt* → files on disk: **none**; HO-0001 `accepted`, `integrated_files: None` → the AI sends only
+`src/core/b.txt` → *Accept the delivery* → *"Delivery HO-0002 accepted and TASK-0001 approved. 1 file(s) added"* →
+on disk only `src/core/b.txt`. **`src/core/a.txt` is gone**; TASK-0001 goes on to validation as approved.
+
+**Why it matters:** the repair button is the recommended way out of a partial delivery (it is placed right after the
+primary action). Using it loses exactly the work that was complete, and the prompt itself makes sure the AI will not
+send it again. Nothing in the app says so; the task is approved with half its files. Later tasks fail on missing
+code, and the user blames the AI.
+
+**Expected:** in `repair`, integrate the staged files of the partial delivery (the same as `accept_handoff`) and say
+*"1 file kept (src/core/a.txt); asking only for: …"*. Add the "files on disk" check to the E2E guide test
+(`test_v2_guide.py` takes the repair path but only checks the prompt text). Same fix in the phone's `Guide.kt`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
