@@ -2054,6 +2054,32 @@ consumed at the request, and users read the warning text first.
 `pair_request` only), or make `decide()` refuse after expiry and clear `pending` when the code expires, so the window
 disables Approve and says *"The request expired; pair again"*.
 
+### BF-091 · S2 · OPEN — a file block whose `<<<AIWB_END_FILE>>>` is missing swallows the **next** file: the marker line and the next file's text are written into the first file, the next file is lost, and the smart check says nothing
+
+**Where:** `aiwb/v2/diagnose.py` `parse_files()` (used by `v2/files.py` `stage()` and by `diagnose()`): while a block is
+open, every line — including a new `<<<AIWB_FILE …>>>` header — is appended to the open block's body until the next
+`<<<AIWB_END_FILE>>>`. A header inside an open block is never treated as *"the previous block ended without its end
+marker"*. `intake/normalize.py` `truncation_report()` only looks at the **last** header, so a missing end marker
+in the middle is reported as *not* cut off; `diagnose()` sees `open_file = False` and no `truncated` problem.
+The phone's `core/Diagnose.kt` `parseFiles()` uses the same rule.
+
+**Reproduce** (script `/tmp/hunt/nested2.py`, on top of `/tmp/hunt/repair.py`): guided TASK-0001 answer with
+`src/core/a.txt` and `src/core/b.txt`, the first `<<<AIWB_END_FILE>>>` removed (a common chat-copy loss) → paste →
+*"Answer linked to HO-0001 (reconciled, **complete**). 1 file(s) read from AIWB file blocks."*, diagnosis only
+`unverified_test_claim` → staged `src/core/a.txt` = `"src/core/a.txt content\n\n<<<AIWB_FILE path=\"src/core/b.txt\"
+action=\"write\" body=\"raw\">>>\nsrc/core/b.txt content\n"` → *Accept the delivery* → *"1 file(s) added to the project
+files"* → `a.txt` on disk contains the AIWB header and b's text; `b.txt` does not exist.
+
+**Why it matters:** a source file in the project is silently corrupted (for code: a syntax error with an AIWB marker
+in it), a delivered file is lost, and the task is approved as *complete*. Nothing on the card, the diagnosis or the
+truncation check warns the user. Losing one marker line in a copy is common (the BF-053 / copy-damage family), and
+the user has no reason to open `a.txt`.
+
+**Expected:** in `parse_files()` (desktop and phone), a new `<<<AIWB_FILE` header while a block is open closes the
+open block and records a `truncated` / `missing_end_marker` **error** for it ("the file block a.txt has no
+<<<AIWB_END_FILE>>>; the next file started inside it"). Never stage a body that contains an AIWB header line.
+`truncation_report()` should check every block, not only the last.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
