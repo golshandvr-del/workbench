@@ -1989,6 +1989,26 @@ files and large modules hit this.
 the Diff tab"* and skip the AST, or diff the full text (only the output is bounded); never print *"no textual
 differences"* unless the full texts are equal.
 
+### BF-088 · S3 · OPEN — dependency / change-impact analysis never resolves a relative import (`./util`, `../lib/x.js`, `#include "../inc/c.h"`): the preview's *Impact* tab says *"Direct dependents: (none resolved by static analysis)"* for ordinary JS/TS/C projects
+
+**Where:** `aiwb/dependency_analysis.py` `scan_dependency_graph()` (line ~106): every reference goes through
+`ref = ref.strip().strip(".").replace("\\", "/")`. `strip(".")` removes the leading dots, so `./util` → `/util` and
+`../lib/helper.js` → `/lib/helper.js`. `PurePosixPath(rel).parent / "/util"` is then the **absolute** path `/util`,
+which never matches a project file → the import is listed as *unresolved*. Only plain names next to the file
+(`#include "b.h"`) still resolve. Used by the preview's impact pane (`AI_Workbench.py` `impact_worker` →
+`analyze_project_impact`) and by *Static dependency graph…*.
+
+**Reproduce** (script `/tmp/hunt/dep.py`): `src/app/main.js` = `import { x } from './util'` +
+`import y from '../lib/helper.js'`; `src/app/a.c` = `#include "b.h"` + `#include "../../inc/c.h"` → forward edges only
+`a.c → b.h`; unresolved `main.js: ['/lib/helper.js', '/util']`, `a.c: ['/../inc/c.h']`;
+`analyze_project_impact(["src/app/util.js"])` → direct dependents **[]** (`main.js` imports it).
+
+**Why it matters:** in JS/TS, relative imports are almost every internal import, so the impact report tells the reviewer
+that changing a shared module affects nothing. A false *"no dependents"* is worse than no report.
+
+**Expected:** do not strip dots from path-style references (only from Python module names); normalise `parent / ref`
+with `posixpath.normpath`, and keep `..` that would leave the project as unresolved.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
