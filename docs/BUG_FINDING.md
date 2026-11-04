@@ -2080,6 +2080,37 @@ open block and records a `truncated` / `missing_end_marker` **error** for it ("t
 <<<AIWB_END_FILE>>>; the next file started inside it"). Never stage a body that contains an AIWB header line.
 `truncation_report()` should check every block, not only the last.
 
+### BF-092 · S2 · OPEN — a valid JSON answer (files or marker-free charter) whose text contains a typographic quote `“Save”` is reported as *"Cut off ✗"* / *"never closed"*; the complete answer is never read
+
+**Where:** `aiwb/intake/lenient.py` `_balanced_end()`: inside a string opened by a straight `"` it also ends the string
+on U+201D (`if c == quote or (quote == '"' and c in "\u201d")`). In valid JSON, `”` inside a string is an ordinary
+character (English UI text, README prose, Word/Docs copy: *Click the “Save” button*). Once `”` "closes" the string, the
+real closing `"` opens a new one, string state is inverted for the rest of the text, and `{` / `}` are counted on the
+wrong side. The object is reported as unclosed (`truncated=True`) or cut at a `}` inside a string. Callers:
+`answer_files.json_files()` (via `extract()` → paste preview, guided paste, classic import) and `charter._load()`
+(marker-free charter, and a charter whose end marker is missing). This is a different root cause from BF-053 (a stray `{`
+before the JSON); that fix will not cover it.
+
+**Reproduce** (scripts `/tmp/hunt/lenient.py`, `/tmp/hunt/lenient2.py`, `/tmp/hunt/lenient3.py`):
+- `find_object('{"title": "Add the ”Save” button", "objective": "o"}')` → `text=''`, `truncated=True`;
+  `find_object('{"a": "use ” then }", "b": 2}')` → `'{"a": "use ” then }'` (cut inside the string; `json.loads` → Unterminated string).
+- *"Here is the result:"* + `json.dumps({"files": [{"path": "README.md", "content": "Click the “Save” button.\n"}, …]})`
+  (strictly valid JSON) → `extract()` format `''`, no files, `truncated=True`; `preview()` →
+  **"Cut off ✗ — the answer ends in the middle; paste it to get a continue prompt."** The same answer with straight
+  quotes → *"Files ✓ · 2 files · Strict JSON"*. (Inside a ```json fence it reads fine, because fences skip `find_object`.)
+- Marker-free charter (test fixture) with one task objective *"Add the “Save” button to the toolbar"* →
+  `parse_charter` **"the charter JSON was opened but never closed (the answer was probably cut off)"**; the same charter
+  after `<<<AIWB_PROJECT_CHARTER>>>` with a missing end marker → *"the charter block is not closed … (the answer was
+  probably cut off)"*, instead of the planned *"end marker … was missing"* auto-fix.
+
+**Why it matters:** typographic quotes are very common in model prose and docs. The answer is complete, but the user is
+told it was cut off and asked to request "continue"; the model resends the same text and the loop never ends. Nothing
+on screen points at the quote.
+
+**Expected:** a string opened by `"` ends only at an unescaped `"`. A string opened by `“` (smart-quote damage) may end
+at `”` or `"`. Track the opening character instead of treating `”` as closing every string. Add a test with `“…”` inside
+a straight-quoted JSON value.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
