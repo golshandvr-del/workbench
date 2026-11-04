@@ -2009,6 +2009,29 @@ that changing a shared module affects nothing. A false *"no dependents"* is wors
 **Expected:** do not strip dots from path-style references (only from Python module names); normalise `parent / ref`
 with `posixpath.normpath`, and keep `..` that would leave the project as unresolved.
 
+### BF-089 · S3 · OPEN — architecture plan: a non-text `status` fails with the raw *"unhashable type: 'list'"*; `severity` is never checked, so the schema's placeholder `"low|medium|high"` is saved as a real value
+
+**Where:** `aiwb/architecture_plan.py` `validate_plan()`: `if status not in {"draft", …}` with `status = ["proposed"]`
+or `{}` raises `TypeError: unhashable type: 'list'` (not `ArchitecturePlanError`). The editor (`AI_Workbench.py`
+`open_architecture_plan_editor` › *Validate* / *Import JSON…* / *Validate and save plan*) catches every exception and
+shows it as is: **"Invalid architecture plan — unhashable type: 'list'"**. The prompt builder (~9706) adds
+*"Saved architecture plan was not embedded because loading/validation failed: unhashable type: 'list'"*.
+Also, `risks[].severity` only has a length limit (40). `schema_contract()` (sent to the model) shows
+`"severity": "low|medium|high"`, and a model that copies the template has that text accepted and saved as the
+severity. `"banana"` / `"HIGH"` are accepted too.
+
+**Reproduce** (script `/tmp/hunt/arch.py`): `schema_contract()` JSON with `"status": ["proposed"]` → `parse_plan` raises
+`TypeError | unhashable type: 'list'`; with `risks[0].severity = "banana"` → valid, saved as `banana`; the unchanged
+template → valid with severity `low|medium|high`.
+
+**Why it matters:** the user sees a Python internals message with no field name, so they cannot tell which field to
+fix (every other check names the field). Unchecked severities make the risk list unreliable, and the plan is embedded
+in every prompt as *"validated"*.
+
+**Expected:** check `isinstance(status, str)` first and say *"status must be one of draft, proposed, approved, blocked,
+complete"*; accept only `low` / `medium` / `high` for severity (case-insensitive), or turn the placeholder into
+`medium` with a note.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
