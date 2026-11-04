@@ -2190,6 +2190,22 @@ approval was given for a diff that is no longer true; a file shown as *new* can 
 changed, or a *new* path now exists, write nothing and say *"src/a.py changed since the preview — review again"*, then
 re-plan, like the classic apply.
 
+### BF-096 · S2 · OPEN — Git Review & Sync: a branch that exists on the remote but has no upstream can **never** be pushed ("remote branch changed since the plan" forever); a branch tracking `origin/main` stays *"ahead by 1"* after every successful push
+
+**Where:** `aiwb/git/sync.py`.
+- `build_plan()` reads `remote_sha` only from the tracking ref of `snap.branch.upstream`. With no upstream, `remote_sha=''` and the state is `NO_UPSTREAM` (push allowed, *"the first push will create it"*).
+- `safe_push()` sets `upstream = plan.upstream or f"{remote}/{plan.branch}"` and calls `remote_branch_sha()` (live `ls-remote`). If `origin/<branch>` already exists, `live != plan.remote_sha ('')`, so the push is refused: *"The remote branch changed since the plan was built (expected none, found 3be6478…). Fetch and build a new plan."* Building a new plan gives `remote_sha=''` again, so the user is stuck in a loop. *Commit selected + Push…* has the same problem: the commit is created, then *"Commit created, push failed"*.
+- Related: a branch created with `git switch -c feat origin/main` has upstream `origin/main`. `safe_push` checks the live SHA of **main** and pushes to `refs/heads/feat` without `-u` (because `plan.upstream` is set). The push succeeds, but the upstream stays `origin/main`, so every refresh shows *"Local branch is ahead by 1 commit(s)"* with *Push* enabled again. The "remote moved" guard also watches the wrong branch.
+
+**Reproduce** (script `/tmp/hunt/gitsync.py`, real bare remote):
+1. `git switch -c feat2`, commit, `git push origin feat2` (no `-u`, which is very common, and also the result of pushing from another tool or a CLI tutorial), then commit again.
+2. Git Review → plan `no_upstream`, Push enabled → *Push…* → refused (above). Refresh/fetch → same plan → same refusal, every time.
+3. `git switch -c feat3 origin/main`, commit → plan `local_ahead` (upstream `origin/main`) → push OK → refresh → still `local_ahead`, *"ahead by 1"*.
+
+**Why it matters:** the only offered action always fails, and the advice it gives (*fetch and build a new plan*) cannot help. The user has to know `git branch -u origin/feat2` from a terminal. This is the "stuck with a misleading step" family.
+
+**Expected:** with no upstream (or an upstream whose branch name differs from the pushed branch), read the live SHA of `origin/<branch>` during `build_plan()` and store it as `remote_sha`. Compare and push against that ref. If it exists and is an ancestor of HEAD, push with `-u`; if not, say *"origin/feat2 already exists and has different commits — fetch and merge first"*. When the upstream is a different branch (`origin/main`), push with `-u` to `origin/<branch>`, or warn that the branch tracks `main`.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
