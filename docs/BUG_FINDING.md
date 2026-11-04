@@ -1927,6 +1927,29 @@ diagnostics), so they close the chat or overwrite the paste box. The answer is g
 was not stored; split it into smaller answers"* (nothing linked), or store it in chunks; never make up a response
 id, and only say *"kept in the Inbox"* when it really was.
 
+### BF-085 · S3 · OPEN — Response Inbox › *Copy repair prompt* on an answer that parsed fine copies *"AI Workbench could not import your previous answer. The response could not be imported."*; the real gap (a missing file) is not named
+
+**Where:** `aiwb/inbox/inbox_window.py` `repair_text()`: when the outcome has no salvage result (the normal case for a
+well-formed AIWB answer: `status = parsed`, no issues), it falls into the *"could not import"* branch with the
+fallback reason *"The response could not be imported."*. The button is never disabled and nothing checks
+`out.status`. Guided-mode problems (missing file, partial outcome — known to the handoff) are not used.
+
+**Reproduce** (script `/tmp/hunt/inboxwin.py`): TASK-0001 partial answer (only `src/core/a.txt`, manifest says
+`b.txt` is missing) pasted on the guided card → *"Answer linked to HO-0001 (reconciled, partial) … Still open:
+missing file: src/core/b.txt"* → Tools › **Response Inbox…** → the answer is listed (status still `captured`) →
+*Reparse* → `parsed`, no issues → **Copy repair prompt** → clipboard:
+*"AIWB_ATTEMPT_ID: att-… / AI Workbench could not import your previous answer. / The response could not be imported.
+/ Resend the COMPLETE answer …"*.
+
+**Why it matters:** the prompt tells the chat AI its answer failed completely and asks for everything again,
+while one file is missing. The AI regenerates the files that were already fine (the *"do NOT regenerate"* list
+that `repair_prompt` would give is empty here), and the user cannot tell from the message what is wrong.
+
+**Expected:** disable *Copy repair prompt* (or say *"This answer was read without problems"*) when the last parse is
+`parsed` with no issues. For guided answers, build the prompt from the handoff's diagnosis (missing / truncated
+files) or send the user to the guided card's *Troubleshoot*. Also update the Inbox status after a guided paste
+(it stays `captured`).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
