@@ -1901,7 +1901,7 @@ The user decides on a vague label, and the AI later gets a decision that does no
 
 **Expected:** accept object items in `decision_requests` (`question` / `title` / `text` + `options` / `recommendation`),
 or at least turn them into text and note it in `fixes`; show the question (not `unresolved_items`) as the card text
-of a `needs_decision` task. Same check in the phone's `Project.kt` ingest.
+of a `needs_decision` task. **Phone:** the same — `core/Project.kt` ingest `lst(k)` keeps only `String` / `Number` items (object items dropped), and `blocked_reason` prefers `unresolved_items` (line ~680) — fix both.
 
 ## Checked and OK
 
