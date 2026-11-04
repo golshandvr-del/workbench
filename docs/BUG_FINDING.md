@@ -2208,6 +2208,19 @@ re-plan, like the classic apply.
 
 **Expected:** with no upstream (or an upstream whose branch name differs from the pushed branch), read the live SHA of `origin/<branch>` during `build_plan()` and store it as `remote_sha`. Compare and push against that ref. If it exists and is an ancestor of HEAD, push with `-u`; if not, say *"origin/feat2 already exists and has different commits — fetch and merge first"*. When the upstream is a different branch (`origin/main`), push with `-u` to `origin/<branch>`, or warn that the branch tracks `main`.
 
+### BF-097 · S3 · OPEN — Sync & Build: after *"The remote branch moved"* the user pulls/rebases as asked, then the resumed operation loops on *"HEAD moved since the commit was recorded; check again"*; *Check* never clears it
+
+**Where:** `aiwb/github/orchestrator.py`. `commit()` records `git.commit_sha` and `base_remote_sha`; `push()` refuses when `snap.branch.head_sha != self.git.commit_sha` (*"HEAD moved … check again"*). `check()` on a record that has a `commit_sha` only logs *"Resuming: Local commit … exists (not pushed)"* and sets the state back to `COMMITTED`. It never compares the recorded commit with HEAD, and it never resets the record. `commit()` / `adopt_head()` return early (*"Idempotent"*) because `commit_sha` is set. `AI_Workbench.py` (~12310) offers *"Resume unfinished operation … ?"* for every record with a `commit_sha` and a non-terminal state, so reopening the window brings back the same dead record.
+
+**Reproduce** (script `/tmp/hunt/sbresume.py`, real bare remote, two clones):
+1. Sync & Build on work branch → Check → commit `b.txt`. Meanwhile someone else pushes to the same branch → push: *"The remote branch moved; nothing was pushed. The local commit is kept."*; *Next: "The remote moved: press Check to build a new plan."*
+2. The user integrates the remote change (`git pull --rebase`, the normal fix; the local commit gets a new SHA).
+3. Reopen → *Resume?* Yes → Check: all OK, state `committed`, *Next: "Press Commit + Push + Build to push the recorded commit."* → *"HEAD moved since the commit was recorded; check again."* → Check → same state → same error, every time.
+
+**Why it matters:** every step the window suggests leads back to the same error. The only exits are *Cancel* (which says *"local commit … is kept"*, so it sounds risky) or answering **No** to *Resume?*, and nothing on screen suggests either one. The rebased commit (same content) is what the user wants to build.
+
+**Expected:** in `check()`, if the recorded commit is not pushed and HEAD differs from it, say so and offer *"Use the new HEAD {sha} instead"* (adopt it after the same ahead-of-remote checks; update `base_remote_sha` from the fresh plan), or mark the record superseded and start a new operation. Also, do not offer *Resume?* for a record whose commit is no longer HEAD or an ancestor of HEAD.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
