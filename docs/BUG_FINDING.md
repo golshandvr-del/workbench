@@ -1767,6 +1767,33 @@ code, and the user blames the AI.
 *"1 file kept (src/core/a.txt); asking only for: …"*. Add the "files on disk" check to the E2E guide test
 (`test_v2_guide.py` takes the repair path but only checks the prompt text). Same fix in the phone's `Guide.kt`.
 
+### BF-079 · S1 · OPEN — *Troubleshoot* drops the good files of the rejected answer; the prompt says *"Fix ONLY these problems … do not change anything else"*, so a correct fix answer carries no files and is approved with **nothing on disk** (desktop and phone)
+
+**Where:** desktop `aiwb/v2/guide.py` `perform(..., "troubleshoot")` rejects the handoff (`resolve_handoff(ref, False, …)`),
+so its `staged_files` are never integrated. `diagnose.troubleshoot_prompt()` lists only the problems and says *"Fix
+ONLY these problems and send the corrected files completely; do not change anything else"*. It does not list
+the files that were fine or ask for them again. The fix answer's smart check uses the task scope only.
+`missing_deliverable` does not fire for an answer with **no** file at all. The phone has the same code in
+`core/Guide.kt` `"troubleshoot"` + `Diagnose.troubleshootPrompt`.
+
+**Reproduce** (script `/tmp/hunt/trouble.py`): TASK-0001 (scope `src/core/**`) → the answer has `src/core/a.txt` (good) +
+`README.md` (out of scope) + manifest `complete` → *"Smart check found problems: out_of_scope"*, staged
+`['src/core/a.txt']` → card *Problems found …* → primary **Troubleshoot** → the prompt shows only *"[out_of_scope]
+README.md is outside this task's allowed paths"* → the AI does exactly that: *"Removed README.md (out of scope);
+nothing else changed."*, manifest only, no file blocks → *"Answer linked to HO-0002 (reconciled, complete)."* → *Check
+what Core developer delivered* → *Accept the delivery* → *"Delivery HO-0002 accepted and TASK-0001 approved. Next:
+record whether the tests/build passed."* → files on disk: **none**; task `validation_pending`.
+
+**Why it matters:** *Troubleshoot* is the primary button whenever the smart check finds a problem (out of scope,
+one empty file, one truncated file). In every such case the good files of the first answer are thrown away. The
+prompt invites a minimal fix, and the next answer is approved without its code. The data loss is silent, as in
+BF-078.
+
+**Expected:** keep the good staged files of the rejected answer and carry them into the new handoff (integrate them
+on accept, unless the fix answer replaces them). Alternatively, list them in the prompt as *"send these files again
+unchanged: …"*. In the smart check, flag an answer that has no file for a code task (`missing_deliverable` /
+`no_files`), and do not let a clean *Accept* approve the task then.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
