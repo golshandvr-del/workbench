@@ -2231,6 +2231,16 @@ re-plan, like the classic apply.
 
 **Expected:** treat an empty parent as missing: *"Choose an existing parent folder."* Drop the `or "."` fallback, and in `create_project_folder()` refuse an empty or relative parent.
 
+### BF-099 · S3 · OPEN — classic Projects window: the proposal review dialog grows one row per operation with no scrollbar; for a normal planning proposal (≥ ~28 operations on a 768 px screen) *Apply selected* / *Cancel* are off-screen
+
+**Where:** `aiwb/v2/projects_window.py` `ProposalDialog`: one `ttk.Checkbutton` per operation is packed straight into the `Toplevel`, then the button bar. There is no scroll container, no size or geometry, and no keyboard binding (`<Return>` / `<Escape>`). `grab_set()` + `wait_window` make it modal. `proposals.MAX_OPS = 60`, and a first plan from the project manager (create tasks + assignments + dependencies) easily has 30–60 operations. Reached through Project Workbench › Tools › *classic* (`classic_projects` → `ProjectsWindow.do_proposal`).
+
+**Reproduce** (script `/tmp/hunt/propdlg.py`, xvfb 1366×768): 40 valid `create_task` operations → dialog requested height **1041 px** on a **768 px** screen. The bottom ~270 px, including the only two buttons, cannot be reached. The window manager cannot make the window taller than the screen, and there is nothing to scroll.
+
+**Why it matters:** the user cannot accept the plan from this dialog at all. The only way out is closing the window (treated as *Cancel*, so nothing is applied). The modal grab blocks the main window meanwhile. Laptops at 125 % scaling hit this with even fewer operations.
+
+**Expected:** put the operation list in a scrollable frame (or a `Treeview` with check marks) with a bounded height, keep the button bar outside it, bind `<Return>` = *Apply selected* and `<Escape>` = *Cancel*, and add *Select all / none*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
