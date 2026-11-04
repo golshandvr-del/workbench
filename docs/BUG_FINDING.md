@@ -1685,6 +1685,33 @@ skip `__MACOSX`, `.DS_Store`, any `.git` / `.workbench` part, binaries and sensi
 skipped; enforce a per-entry limit while reading; keep a backup of overwritten files and record a `files_imported`
 event; show *"12 files imported, 3 replaced (backup kept), 5 skipped: …"*.
 
+### BF-076 · S1 · OPEN — phone standalone mode: an answer pasted into the always-visible *Paste an AI answer → Read answer* box is never staged, so *Accept the delivery* writes **no file** (phone twin of BF-043)
+
+**Found by code review** (no Android SDK in the sandbox; the Kotlin path is short and direct).
+
+**Where:** `apps/mobile/.../StandaloneActivity.kt` `render()` puts a free *Paste an AI answer* box with a
+*Read answer* button under every project screen. Its handler calls `p.routeAnswer(text)` (`core/Project.kt`)
+directly. Staging (`Files.stage`), the smart check (`Guide.diagnoseInto`) and the cut-off check
+(`Normalize.truncationReport` → continue prompt) run only in `core/Guide.kt` `paste()`, the step card's
+*Paste the answer*. `routeAnswer` still links the answer (handoff `reconciled`, outcome from the manifest).
+
+**Result for the user:** the developer prompt is out → the user pastes the AI's answer (with `AIWB_FILE` blocks) into
+the big box at the bottom of the screen and taps *Read answer* → *"Answer linked to HO-0001 (reconciled, complete)."*
+→ the top card now says *"Check what Implementer delivered … Accepting never closes the task."* (no *"Accepting adds N
+delivered file(s)"*, because `staged_files` is empty) → *Accept the delivery* → `Files.integrate()` returns an
+empty list → *"Delivery HO-0001 accepted. Next: review the task."*, task → `in_review`. **No file is written** to
+`files/`; *Project files* stays empty / old; the ZIP and the bundle carry no code. A cut-off answer is accepted
+the same way (no *"The answer was cut off"* prompt), and no scope / empty-file problems are shown.
+
+**Why it matters:** on the phone the free box is the most visible place to paste (it sits under every screen, with
+a big hint *"Paste the full answer from the chat here"*), and the result message looks like success. The work is
+lost while the plan moves on; later tasks build on files that are not there. Same class as BF-043 / BF-010.
+
+**Expected:** do staging + diagnosis + truncation handling in one place used by every entry point (move them
+into `Project.routeAnswer` / `ingest`, or make *Read answer* call `Guide.run(step, "paste")`); and in
+`accept_handoff`, if the stored response has file blocks but `staged_files` is empty, re-stage from the
+response or refuse with *"the files of this answer were not read — paste it again"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
