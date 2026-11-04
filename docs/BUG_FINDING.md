@@ -2140,6 +2140,32 @@ as *changed* against an identical file on disk.
 **Expected:** never apply the line-end repair inside an AIWB file block (from header to `<<<AIWB_END_FILE>>>`), the same
 as the escape step. Count only prose lines when deciding whether the answer was copied as rendered text.
 
+### BF-094 · S3 · OPEN — JSON auto-repair gives up when a value contains `“…”,` (typographic quote then a comma): an answer with one trailing comma becomes *"Nothing Workbench can read yet"*
+
+**Where:** `aiwb/intake/normalize.py` `_scan_json()`: inside a string opened by a **straight** `"`, a `“` or `”` is taken
+as the closing quote when the next non-space character is `:` `,` `}` `]` or the end (*"A smart quote closing a string
+that was opened by a smart quote"*, but the check never looks at how the string was opened). In `"He said “hi”, then
+left"` the `”` before `,` ends the string, ` then left"` opens a new one, and the rest of the object is scanned
+inside-out. The repaired text does not parse, so `normalize_json_text()` returns the original unchanged and **no**
+repair is applied, including the trailing-comma / comment fixes the answer needed. Callers: `lenient.loads()` (JSON
+files answers, marker-free charter) and `context_request._loads()`. This is different from BF-092 (`lenient._balanced_end`,
+locating the object): here the object is found (e.g. in a ```json fence) but cannot be repaired.
+
+**Reproduce** (scripts `/tmp/hunt/scanjson.py`, `/tmp/hunt/scanjson2.py`):
+- `lenient.loads('{"a": "Click “Save” now", "b": [1,],}')` → OK (the `”` is followed by a space);
+  `lenient.loads('{"a": "He said “hi”, then left", "b": [1,],}')` → **"not valid JSON: Illegal trailing comma before end
+  of array"**.
+- Paste preview, ```` ```json ```` fence with `{"files": [{"path": "README.md", "content": "Press “Save”, then close.\n"},],
+  "summary": "done",}` → **"Nothing Workbench can read yet: no charter, no files, no handoff."**; the same answer with
+  `Save` unquoted → *"Files ✓ · 1 file · Strict JSON · 1 auto-fix"*; with `“Save”,` but no trailing commas → *"Files ✓"*.
+
+**Why it matters:** `“word”,` is ordinary English prose (and the normal style of many models and of Word/Docs text).
+The repair layer exists for trailing commas and comments; one quoted word in any value silently turns it off, and the
+user gets "nothing readable" with no hint why.
+
+**Expected:** remember the opening character of each string. Only a string opened by `“`/`„` (smart-quote damage) may be
+closed by `”`/`“`; a string opened by `"` closes only at an unescaped `"`. Same fix as BF-092; add a shared test.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
