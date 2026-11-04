@@ -1903,6 +1903,30 @@ The user decides on a vague label, and the AI later gets a decision that does no
 or at least turn them into text and note it in `fixes`; show the question (not `unresolved_items`) as the card text
 of a `needs_decision` task. **Phone:** the same — `core/Project.kt` ingest `lst(k)` keeps only `String` / `Number` items (object items dropped), and `blocked_reason` prefers `unresolved_items` (line ~680) — fix both.
 
+### BF-084 · S3 · OPEN — a guided answer over 12 MB is never stored in the Inbox, but every message says *"It is kept in the Inbox"*; the handoff points to a response id that does not exist
+
+**Where:** `aiwb/v2/controller.py` `route_answer()`: `cap = self.make_pipeline(self.root).capture_text(text, …)`;
+`rid = cap.response.response_id if cap.response else ""` — `cap.issue` (`too_large`, `aiwb/inbox/store.py`
+`MAX_RAW_BYTES = 12 MB`) is ignored and a made-up id is used instead: `rid = rid or "resp-" + sha256(text)[:12]`.
+That id is never in the Inbox store (real ids are `resp-YYYYMMDD-HHMMSS-xxxxxxxx`), yet it is written to
+`handoff.source_response_id` / proposal `source_response_id`, and the messages (*"This answer names a task/attempt
+this project is not waiting for. It is kept in the Inbox; nothing was changed."*, *"… The raw answer is kept in the
+Inbox."*, *"the answer is kept in the Inbox"*) are shown as usual.
+
+**Reproduce** (scripts `/tmp/hunt/big.py`, `/tmp/hunt/big2.py`, `/tmp/hunt/big3.py`): TASK-0001 answer with a
+third file of 12.6 MB (12 705 704 chars) → *"Answer linked to HO-0001 (reconciled, complete). 3 file(s) read …"*
+(only 2 staged — the silent drop is BF-010) → Inbox items **1 → 1** (only the earlier answer), response id
+`resp-2e10bee750eb` (not in the store). The same answer with an unknown attempt id → *"… It is kept in the Inbox;
+nothing was changed."* → Inbox still 1 item, 1 raw file: the answer is **not** kept anywhere.
+
+**Why it matters:** the user is told the answer is safe and can be found in the Inbox (re-parse, repair evidence,
+diagnostics), so they close the chat or overwrite the paste box. The answer is gone. The repair-evidence path
+(`_inbox_repair_evidence`) and *reparse* also cannot find it by the stored id.
+
+**Expected:** when `capture_text` returns an issue, stop and say *"The answer is larger than the 12 MB limit and
+was not stored; split it into smaller answers"* (nothing linked), or store it in chunks; never make up a response
+id, and only say *"kept in the Inbox"* when it really was.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
