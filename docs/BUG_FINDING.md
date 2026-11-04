@@ -2111,6 +2111,35 @@ on screen points at the quote.
 at `”` or `"`. Track the opening character instead of treating `”` as closing every string. Add a test with `“…”` inside
 a straight-quoted JSON value.
 
+### BF-093 · S3 · OPEN — "copied as rendered text" repair strips every line-end `\` or `/` from **raw (unfenced) file bodies**: a `.gitignore` loses its folder slashes, a shell script / Dockerfile loses its line continuations
+
+**Where:** `aiwb/intake/normalize.py` `strip_copy_damage()`: the line-end removal targets every line **outside code
+fences** (`outside = [i for i … if not fenced[i]]`). The `in_file` guard (lines inside an AIWB file block) is applied only
+to the Markdown-escape step, not to the line-end step. A `body="raw"` file (the format the guided prompt asks for:
+`AI_Workbench.py` ~3209 *"Return complete text files using <<<AIWB_FILE … body="raw">>> blocks"*) has no fence, so its
+lines count as "outside". When ≥ 60 % (and ≥ 3) of those lines end with `/` or `\`, which is normal for a `.gitignore`
+(`node_modules/`, `dist/`, …) or a `docker run \` / `RUN apt-get … && \` script, exactly that character is removed from
+every such line. Callers: `v2/quick.py` `read_answer()` (Quick mode, **always**) and `normalize()` (guided paste /
+classic import / charter, as soon as one marker is damaged, e.g. a smart-quoted `path=“…”`, see `answer_files.extract`).
+
+**Reproduce** (scripts `/tmp/hunt/copydmg.py`, `/tmp/hunt/copydmg4.py`):
+- Quick: `<<<AIWB_FILE path=".gitignore" action="write" body="raw">>>` + `node_modules/ dist/ build/ .venv/ __pycache__/
+  *.log` + END → file content `node_modules\ndist\nbuild\n.venv\n__pycache__\n*.log\n`, fix *"copy_damage:5 line-end
+  slashes removed (answer was copied as rendered text)"*. These patterns now match files with those names, not only folders.
+- Quick: a raw `scripts/run.sh` with `docker run --rm \` + 6 continuation lines → every `\` removed; the script runs
+  `docker run --rm` alone and then fails on `-p 8080:80`.
+- Guided (`answer_files.extract`) with the same blocks and one smart-quoted header `path=“…”` → same damage, reported
+  only as *"the AIWB markers were damaged by the chat app (copy_damage, marker_lines) — repaired"*.
+- The same files inside a ```` ``` ```` fence, or answers with enough prose, are left alone (so it shows up mostly for
+  one-file answers, which are the common case for "update .gitignore" / "add a run script").
+
+**Why it matters:** the user is told the *markers* were repaired; the file body change is silent in the file list.
+Applying writes a broken script, or a `.gitignore` with different semantics, over the user's file. The plan shows it
+as *changed* against an identical file on disk.
+
+**Expected:** never apply the line-end repair inside an AIWB file block (from header to `<<<AIWB_END_FILE>>>`), the same
+as the escape step. Count only prose lines when deciding whether the answer was copied as rendered text.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
