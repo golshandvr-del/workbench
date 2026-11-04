@@ -2221,6 +2221,16 @@ re-plan, like the classic apply.
 
 **Expected:** in `check()`, if the recorded commit is not pushed and HEAD differs from it, say so and offer *"Use the new HEAD {sha} instead"* (adopt it after the same ahead-of-remote checks; update `base_remote_sha` from the fresh plan), or mark the record superseded and start a new operation. Also, do not offer *Resume?* for a record whose commit is no longer HEAD or an ancestor of HEAD.
 
+### BF-098 · S3 · OPEN — New Project wizard: an empty *Parent folder* is accepted and the project is created in the app's current working directory (on Windows often the install folder or `C:\Windows\System32`)
+
+**Where:** `aiwb/ui/project_wizard.py` `problems()` step 0: `Path(self.vars["parent"].get().strip() or ".").expanduser().is_dir()`. The `or "."` turns an empty field into the current directory, which always exists, so the check passes. `AI_Workbench._create_from_wizard()` → `create_project_folder(Path(d["parent"]).expanduser(), …)` with `d["parent"] == ""` → `Path("")` resolves to the process CWD. Neither layer refuses an empty parent.
+
+**Reproduce** (script `/tmp/hunt/emptyparent.py`): clear the *Parent folder* field (it is pre-filled with `~/Documents`, so the user has to empty it, e.g. intending to *Browse…* and then cancelling after selecting the text) → *Next* is accepted → *Create project* → `create_project_folder(Path(""), "Calc", …)` creates `<CWD>/Calc`. The status says *"Created Calc …"* without the full path. When started from a shortcut, the CWD is the program folder (Program Files → *PermissionError*, shown as a raw error) or wherever the launcher was, so the user cannot find the project.
+
+**Why it matters:** the project ends up somewhere the user did not choose and does not see, often inside the app's own folder (lost on uninstall/update), or the step fails with a confusing permission error.
+
+**Expected:** treat an empty parent as missing: *"Choose an existing parent folder."* Drop the `or "."` fallback, and in `create_project_folder()` refuse an empty or relative parent.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
