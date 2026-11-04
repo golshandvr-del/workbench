@@ -1794,6 +1794,32 @@ on accept, unless the fix answer replaces them). Alternatively, list them in the
 unchanged: …"*. In the smart check, flag an answer that has no file for a code task (`missing_deliverable` /
 `no_files`), and do not let a clean *Accept* approve the task then.
 
+### BF-080 · S2 · OPEN — an answer with **no file blocks at all** (the AI put the code in an ordinary ```` ```python ```` fence) passes the smart check, and *Accept the delivery* approves the task with nothing written
+
+**Where:** `aiwb/v2/diagnose.py` `diagnose()` raises `missing_deliverable` only for `expected_paths`, and the
+guided flow never fills them: `controller.start_task()` → `handoffs.prepare()` without `expected_paths`, so the
+attempt has `expected_paths: []`. `handoffs.ingest()` uses the same empty list. With zero files there is no
+`empty_file` / `out_of_scope` either. The manifest's `completed_items` (e.g. `src/core/lib.py`) are not compared with
+the delivered files. The *Check what … delivered* card mentions files only when `staged_files` is non-empty, so
+it says nothing about their absence. The phone (`Diagnose.kt`, `Guide.kt`) works the same way.
+
+**Reproduce** (script `/tmp/hunt/nofiles.py`): TASK-0001 *Core library* (scope `src/core/**`, criteria *"Unit tests
+pass"*, *"docs/contracts/core-api.md written"*) → answer = attempt line + *"Here is the code:"* + an ordinary
+```` ```python ```` block + manifest `complete`, `completed_items: ["src/core/lib.py", "docs/contracts/core-api.md"]` →
+*"Answer linked to HO-0001 (reconciled, complete)."* (no *"N file(s) read"*), diagnosis `[]` → card *"Check what
+Core developer delivered … Implemented the core library as requested. Accepting records your review approval"*
+→ *Accept the delivery* → *"Delivery HO-0001 accepted and TASK-0001 approved. Next: record whether the tests/build
+passed."* → files on disk: none; task `validation_pending`.
+
+**Why it matters:** answering with a plain Markdown code block instead of the AIWB file format is the most common way
+chat AIs break the format. The app treats it as a clean, complete delivery and approves the task. The only hint is
+a missing *"N file(s) read"* phrase. This is also why the fix answer in BF-079 passes.
+
+**Expected:** for a task with a code scope, an answer with no file block → error `no_files` (*"No file arrived — the
+code is not in AIWB file blocks"*), with a troubleshooting / salvage prompt; compare `completed_items` that look like
+paths with the delivered files (`missing_deliverable`); fill `expected_paths` from `deliverables`; say *"0 files"*
+on the card.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
