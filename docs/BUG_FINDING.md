@@ -1820,6 +1820,34 @@ code is not in AIWB file blocks"*), with a troubleshooting / salvage prompt; com
 paths with the delivered files (`missing_deliverable`); fill `expected_paths` from `deliverables`; say *"0 files"*
 on the card.
 
+### BF-081 · S2 · OPEN — *Fix with helper AI* silently sends only the first 60 000 characters of a long answer; the rewritten answer that goes back into the paste box has lost the last files and the manifest, and the card only says *"The helper AI rewrote the answer"*
+
+**Where:** `aiwb/helper_ai.py` `fix_messages()` cuts the answer to `MAX_ANSWER_CHARS = 60000` and tells only the
+helper (*"The answer below was cut to its first part; convert only what is there."*). `aiwb/ui/next_card.py`
+`fix_answer()` → `done()` puts the result into the paste box (replacing the user's full answer) with the fixed
+message *"The helper AI rewrote the answer into Workbench's format. Check it in the box, then press \"Use this
+answer\"."* — no word that a part was dropped. 60 000 characters is a normal size for a multi-file answer (8 files of
+~700 lines ≈ 80 000 characters).
+
+**Reproduce** (script `/tmp/hunt/helper_cut.py`, fake opener = an ideal helper that converts everything it is given
+and invents nothing): TASK-0001 answer with 8 files `src/core/m0…m7.py` (700 lines each) as `### File:` headings +
+```` ```python ```` fences and the manifest as plain JSON at the end (79 177 chars) → *Use this answer* fails → **Fix
+with helper AI** → the helper receives the first 60 000 chars → result 60 305 chars, **no `AIWB_HANDOFF`**, `m6.py`
+cut in the middle, `m7.py` missing → box filled, message *"The helper AI rewrote the answer…"* → *Use this answer* →
+*"Answer linked to HO-0001 (reconciled, partial). 7 file(s) read … Smart check found problems: truncated."*, diagnosis
+`no_manifest` + *"the code fence in src/core/m6.py was never closed"* → the user, who was just told the helper fixed
+the answer, presses *Accept anyway* → *"7 file(s) added"*; `m6.py` on disk has **63 of 700 lines**, `m7.py` and the
+manifest (outcome, open items) are gone.
+
+**Why it matters:** the helper is offered exactly when an answer is long and messy. The problems it then shows look
+like the chat AI's fault (*"truncated"*, *"no manifest"*), so the user troubleshoots the chat or accepts, while the
+loss was made by Workbench. The original full answer is no longer in the box.
+
+**Expected:** when the answer is longer than the limit, say so before sending (*"Only the first 60 000 of 79 177
+characters can be sent to the helper — the last part (from `src/core/m6.py`) will be missing"*) or split it into
+several calls by file block; after the call, add *"the helper saw only the first part; check the end"*; keep the
+original answer (e.g. *Undo helper fix*).
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
