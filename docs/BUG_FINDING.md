@@ -2204,6 +2204,8 @@ re-plan, like the classic apply.
 
 **Why it matters:** the only offered action always fails, and the advice it gives (*fetch and build a new plan*) cannot help. The user has to know `git branch -u origin/feat2` from a terminal. This is the "stuck with a misleading step" family.
 
+**Also affects Sync & Build:** `aiwb/github/orchestrator.py` `commit()` stores `base_remote_sha = fresh.remote_sha` (same tracking-ref-only `build_plan()`), and `push()` compares it with the live `ls-remote` SHA of `origin/<branch>`. With a bound work branch that exists on GitHub but has no local upstream, every run ends with *"The remote branch moved; nothing was pushed. The local commit is kept."*; a retry gives the same result.
+
 **Expected:** with no upstream (or an upstream whose branch name differs from the pushed branch), read the live SHA of `origin/<branch>` during `build_plan()` and store it as `remote_sha`. Compare and push against that ref. If it exists and is an ancestor of HEAD, push with `-u`; if not, say *"origin/feat2 already exists and has different commits — fetch and merge first"*. When the upstream is a different branch (`origin/main`), push with `-u` to `origin/<branch>`, or warn that the branch tracks `main`.
 
 ## Checked and OK
