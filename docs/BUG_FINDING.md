@@ -1950,6 +1950,24 @@ that `repair_prompt` would give is empty here), and the user cannot tell from th
 files) or send the user to the guided card's *Troubleshoot*. Also update the Inbox status after a guided paste
 (it stays `captured`).
 
+### BF-086 · S3 · OPEN — *Save response candidate* stops for good after 30 candidates: the error says *"remove one before saving another"*, but the app has no way to remove a candidate
+
+**Where:** `aiwb/candidate_store.py` `save_candidate()` refuses when `len(list_candidates(root)) >= MAX_CANDIDATES`
+(30) with *"At most 30 candidates are retained per project; remove one before saving another."*.
+`delete_candidate()` exists but has **no caller**: the Tools › *Several answers* menu offers only *Save response
+candidate…* and *Compare candidates / choose files…* (`AI_Workbench.py` ~6587), and the compare window has only
+*Merge selection and run Preview…* / *Cancel*. Merging does not remove the used candidates either.
+
+**Reproduce** (script `/tmp/hunt/cand.py`): save 30 candidates → the 31st → *"At most 30 candidates are retained
+per project; remove one before saving another."*; `list_candidates` = 30. Nothing in the UI deletes one.
+
+**Why it matters:** the feature becomes unusable in an active project (a few tasks with 2–3 alternatives each
+reach 30), and the only fix is deleting JSON files by hand inside the hidden `.workbench/candidates` folder. The
+compare window also keeps offering all 30 old candidates for every path.
+
+**Expected:** a *Remove* button per candidate (and *Remove all*) in the compare window, or auto-drop the oldest
+when the limit is reached (with a note), or remove the candidates that were used in a merge.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
