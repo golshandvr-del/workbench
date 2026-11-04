@@ -2032,6 +2032,28 @@ in every prompt as *"validated"*.
 complete"*; accept only `low` / `medium` / `high` for severity (case-insensitive), or turn the placeholder into
 `medium` with a note.
 
+### BF-090 · S3 · OPEN — Mobile Companion: approving a device after the 10-minute code expiry adds an *active* device that the phone can never use; desktop says *"Device approved."*, phone says *"The pairing code expired or was already used"*
+
+**Where:** `aiwb/companion/service.py`: `handle()` refuses every `pair-…` request once `clock() > pairing["expires"]`
+(`403 pairing_expired`) — including the phone's `pair_status` poll that must fetch the new `device_id`. But
+`decide()` does not check the expiry, and `pending` is not cleared at expiry, so `companion/window.py` `refresh()`
+keeps **Approve device** / **Deny** enabled under *"Code expired. Click 'Pair new device…'"* (it clears only the QR).
+`decide(approve=True)` then calls `registry.add(...)` → a new `status: active` device with the phone's key.
+
+**Reproduce** (script `/tmp/hunt/comp.py`, clock injected): `start_pairing` → phone `pair_request` (pending) at 0 s →
+`pair_status` at 590 s → `pending` → user clicks *Approve* at 620 s (the window still shows the request; state
+`expired`, `used: True`) → `decide` returns `dev-7d0f…` *active* → phone polls `pair_status` → **403
+`pairing_expired`** → phone shows `R.string.pairing_expired`. `registry.list()` holds the active orphan device.
+
+**Why it matters:** the user approved within the dialog, sees *"Device approved."* and a new device in the list, while
+the phone reports failure; retrying adds another device each time. The orphan entries look like real paired phones
+(`last_seen: never`) and keep a valid key on the desktop until revoked by hand. Slow approval is likely: the code is
+consumed at the request, and users read the warning text first.
+
+**Expected:** either let `pair_status` work for a used pairing until the result has been delivered (expiry applies to
+`pair_request` only), or make `decide()` refuse after expiry and clear `pending` when the code expires, so the window
+disables Approve and says *"The request expired; pair again"*.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
