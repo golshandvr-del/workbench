@@ -1874,6 +1874,9 @@ offer them first (*"Before announcing: accept milestone Core ready, release 0.1.
 carry over the old milestones explicitly. A milestone whose tasks are **all** cancelled should be offered as *Drop*,
 not as *"All its tasks are done"*.
 
+**Phone:** the same (`core/Guide.kt` line 48 `closeoutSteps(st)…?.let { return it }`; `core/Closeout.kt`
+`canAnnounce` checks only tasks) — fix both.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
