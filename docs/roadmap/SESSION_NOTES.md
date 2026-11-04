@@ -558,3 +558,4 @@ immediately, so a new session can continue without repeating work.
 - (session 27) Checked github/artifacts.py download_artifact (trusted host, size/time caps, .part + os.replace, sha256 vs digest) + inspect_zip/safe_extract_zip (traversal, reserved names, case collisions, file/dir collisions, links, bomb ratio, actual-bytes cap, staging) OK. NEXT: ui/project_wizard.py, ui/startup.py.
 - (session 27) BF-098 (S3) project_wizard: empty parent -> `or "."` passes check, create_project_folder(Path("")) -> CWD. Repro /tmp/hunt/emptyparent.py. validate_project_folder_name OK (only COM¹/LPT¹ superscript reserved names missed; minor, not filed). Summary 11 S1 / 35 S2 / 50 S3. NEXT: workspace/shell.py start form, ui/startup.py, team_table.
 - (session 27) Checked ui/team_table.py + team_setup.check_rows (empty/dup/casefold names, PM row, max workers, spinbox clamp) OK.
+- (session 27) Checked ui/startup.py (DPI awareness never raises, splash TclError-safe) OK.
