@@ -1877,6 +1877,32 @@ not as *"All its tasks are done"*.
 **Phone:** the same (`core/Guide.kt` line 48 `closeoutSteps(st)…?.let { return it }`; `core/Closeout.kt`
 `canAnnounce` checks only tasks) — fix both.
 
+### BF-083 · S3 · OPEN — an AI decision request written as an object (`{"question": …, "options": […]}`) is silently dropped: the *waits for a decision* card shows only the unresolved item, without the question or its options
+
+**Where:** `aiwb/v2/handoff.py` `ingest()` stores `decision_requests=_list(manifest.get("decision_requests"))`;
+`_list()` keeps only `str` / `int` / `float` items, so object items vanish with no `fixes` / issue entry. After
+*Accept*, `resolve()` sets `blocked_reason = "; ".join(unresolved_items or decision_requests)`, and
+`choices.choice_spec()` builds the *Decide…* form from `decision_requests` (now empty) or from `blocked_reason`. The
+prompt shows strings (`"decision_requests": ["what the user must decide"]`), but objects with a question and
+options are the natural JSON form, and models often write them that way (the PM rescue reader already accepts
+`decision_requests` with objects — `rescue.py` `DECISION_KEYS`).
+
+**Reproduce** (scripts `/tmp/hunt/needdec.py`, `/tmp/hunt/needdec2.py`): TASK-0001 answer with outcome `needs_decision`,
+`unresolved_items: ["storage layer"]`, `decision_requests: [{"question": "SQLite or JSON files?", "options": ["SQLite",
+"JSON"]}]` → *"Answer linked to HO-0001 (reconciled, needs_decision) … Still open: storage layer"*; stored
+`decision_requests: []` → *Accept* → card *"TASK-0001 Core library waits for a decision"*, text **"storage layer"**;
+the *Decide…* form asks **"storage layer"** with **no options** → the user types something → *"Decision recorded
+(DEC-0001)"*, decision title *"storage layer"*. The same answer with `decision_requests: ["SQLite or JSON files?"]` gives
+the form question *"SQLite or JSON files?"* with the options *SQLite / JSON files*. (The card text itself shows
+`unresolved_items` before the question even then.)
+
+**Why it matters:** the decision is the only thing the AI needs from the user, and the app throws its wording away.
+The user decides on a vague label, and the AI later gets a decision that does not answer its question.
+
+**Expected:** accept object items in `decision_requests` (`question` / `title` / `text` + `options` / `recommendation`),
+or at least turn them into text and note it in `fixes`; show the question (not `unresolved_items`) as the card text
+of a `needs_decision` task. Same check in the phone's `Project.kt` ingest.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
