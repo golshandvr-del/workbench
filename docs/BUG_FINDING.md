@@ -1712,6 +1712,36 @@ into `Project.routeAnswer` / `ingest`, or make *Read answer* call `Guide.run(ste
 `accept_handoff`, if the stored response has file blocks but `staged_files` is empty, re-stage from the
 response or refuse with *"the files of this answer were not read — paste it again"*.
 
+### BF-077 · S2 · OPEN — phone pairing: turning the phone (or leaving the Companion screen) while it waits for approval loses the pairing; the desktop then registers an *active* device nobody can use, and the same code can no longer be used
+
+**Found by code review** (no Android SDK in the sandbox).
+
+**Where:** `apps/mobile/.../CompanionActivity.kt` `pair()`: the random device key (`CompanionCrypto.randomBytes(32)`)
+and the 5-minute `pair_status` polling loop live only inside the activity (local variable + single-thread
+`executor`). Nothing is saved before the desktop approves. `AndroidManifest.xml` declares no `configChanges` for
+`.CompanionActivity`, and there is no `onSaveInstanceState`. On rotation / dark-mode or font change / *Back* /
+the system killing the app, `onDestroy()` calls `executor.shutdownNow()` → `Thread.sleep` is interrupted → the
+result is posted to a destroyed activity and dropped. The new activity shows the pair form again, with no message.
+
+On the desktop (`aiwb/companion/service.py`) the request already sits in `pending` (`used = True`); the user clicks
+*Approve device* → `decide()` adds the device to `devices.json` as **active** with the lost key.
+
+**Result for the user:** scan the QR code → *"Code sent. Approve this phone in Workbench on the desktop…"* → turn the
+phone to read the code better / go back to take a screenshot → the pair form is back, the phone says nothing → on
+the PC *Approve device* → *Pixel — active* in the list. The phone is not paired. Scanning the same QR again →
+*"Companion error: this pairing code was already used"* (`pairing_used` has no own text). A new code adds a
+second *Pixel* entry; the first stays *active* until someone revokes it (same leftover as BF-069). A *denied*
+request also shows only *"Companion error: pairing was denied on the desktop"* (no own string).
+
+**Why it matters:** pairing is the first contact with the Companion, and waiting up to 5 minutes for the user to
+walk to the PC makes a rotation or a screen change during the wait very likely. The user ends up with a "paired"
+device on the desktop and an unpaired phone.
+
+**Expected:** save the pending pairing (host, port, pairing id, secret, device key, deadline) in prefs before
+`pair_request` and resume polling in `onCreate`; do not cancel the poll on a configuration change (or declare
+`configChanges` for this simple screen); add texts for `pairing_used` / `denied`; on the desktop, drop a pending
+request whose phone stopped polling, or show *"waiting since …"* next to it.
+
 ## Checked and OK
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
