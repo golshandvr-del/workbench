@@ -193,7 +193,13 @@ class RepoService:
 
     # -- GitHub calls (fake-able transport)
     def _do_create(self, client: GitHubStateClient, pl: dict[str, Any]) -> dict[str, Any]:
-        body = client.raw("POST", "/user/repos", {"name": pl["name"], "private": True, "auto_init": True})
+        # BF-019: idempotent — a repository left behind by an earlier half-finished attempt is reused
+        try:
+            body = client.raw("GET", f"/repos/{pl['owner']}/{pl['name']}")
+        except PublishError as exc:
+            if "404" not in str(exc):
+                raise
+            body = client.raw("POST", "/user/repos", {"name": pl["name"], "private": True, "auto_init": True})
         return {"url": body.get("html_url", ""), "default_branch": body.get("default_branch", "main"), **self._ensure_branch(client, pl)}
 
     def _do_connect(self, client: GitHubStateClient, pl: dict[str, Any]) -> dict[str, Any]:
