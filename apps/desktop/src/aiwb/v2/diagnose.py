@@ -47,7 +47,8 @@ def parse_files(text: str) -> tuple[list[dict[str, Any]], bool]:
         if cur is None:
             m = FILE_HEAD.match(line)
             if m:
-                cur = {"path": dict(ATTR.findall(m.group(1))).get("path", ""), "lines": []}
+                attrs = dict(ATTR.findall(m.group(1)))
+                cur = {"path": attrs.get("path", ""), "raw": attrs.get("body", "").lower() == "raw", "lines": []}
             continue
         if line.strip() == FILE_END:
             files.append(_close(cur))
