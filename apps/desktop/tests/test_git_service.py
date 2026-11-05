@@ -46,7 +46,7 @@ class GitCommandRunnerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         command = fake_subprocess.call_args.args[0]
         kwargs = fake_subprocess.call_args.kwargs
-        self.assertEqual(command, [r"C:\Program Files\Git\cmd\git.exe", "-C", r"C:\work space\project", "status", "--porcelain=v1", "--untracked-files=all", "-z"])
+        self.assertEqual(command, [r"C:\Program Files\Git\cmd\git.exe", "-c", "core.quotepath=false", "-C", r"C:\work space\project", "status", "--porcelain=v1", "--untracked-files=all", "-z"])
         self.assertIs(kwargs["shell"], False)
         self.assertEqual(kwargs["timeout"], 17)
         self.assertEqual(kwargs["env"]["EXISTING"], "preserved")
