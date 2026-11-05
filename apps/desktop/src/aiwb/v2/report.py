@@ -21,7 +21,8 @@ from .store import emit
 
 ROUTES = ("emergency", "next_stage", "complete")
 _TRUE = ("true", "yes", "y", "1")
-_FALSE = ("false", "no", "n", "0", "none")
+_FALSE = ("false", "no", "n", "0", "none", "nothing", "nothing left", "complete", "completed", "done",
+          "no, the project is complete")
 
 DECISION_FORMAT = """## Your decision (required in the block)
 Add two fields to the AIWB_MANAGER_PROPOSAL JSON:
@@ -37,7 +38,10 @@ def parse_remaining(v: Any) -> bool | None:
         return v
     if isinstance(v, (int, float)):
         return bool(v)
-    s = str(v if v is not None else "").strip().lower()
+    if isinstance(v, list):
+        return False if not v else None
+    # Match whole statements, never arbitrary 'no...' prefixes ('no tests yet').
+    s = str(v if v is not None else "").strip().lower().rstrip(".! ")
     if s in _TRUE:
         return True
     if s in _FALSE:
