@@ -130,6 +130,7 @@ class StandaloneLoopTest {
             val hid = Json.str(h["handoff_id"])
             g.perform("handoff:$hid", "paste", mapOf("text" to answer(h)))
             g.perform("handoff:$hid", "accept_handoff")
+            g.perform("task:$tid", "approve")
             val note = "۲ تست در test_calc خراب است: " + "incorrect boundary; ".repeat(20)
             g.perform("task:$tid", "validation_failed", mapOf("note" to note, "run_id" to "run-42"))
             val ev = State.coll(p.state(), "evidence").values.map { Json.obj(it) }.last { it["type"] == "test_run" }
