@@ -135,7 +135,7 @@ class WorkflowTests(unittest.TestCase):
                 self.assertEqual(task_stage(st, tid)["stage"], "ready_to_prepare")
                 self.assertTrue(task_stage(st, tid)["user_action"])
                 self.assertEqual(self.ctl.start_warning(tid), "")
-                self.assertTrue(any(x["ref"] == tid and x["stage"] == "ready_to_prepare" for x in attention_queue(st)))
+                self.assertTrue(any(x["ref"] == tid and x["action"] == "start_task" for x in attention_queue(st)))
                 self.assertIn("prepare", [x["id"] for x in g.find(f"task:{tid}")["actions"]])
                 # Old saved states must project correctly without a migration/write.
                 with self.p.store.transaction("legacy dropped prompt fixture") as s:
