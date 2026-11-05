@@ -119,6 +119,62 @@ class StandaloneLoopTest {
         } finally { p.store.root.parentFile.deleteRecursively() }
     }
 
+    @Test fun bf011FailedValidationNoteSurvivesRestartAndReachesPrompt() {
+        val p = project()
+        try {
+            val tid = Json.str(p.createTask(linkedMapOf("title" to "Calculator", "objective" to "fix calculator",
+                "owner_agent_id" to "agent-implementer", "allowed_paths" to arrayListOf<Any?>("src/core/"),
+                "acceptance_policy" to "evidence_required"), "ready")["task_id"])
+            val g = Guide(p)
+            val h = p.startTask(tid)
+            val hid = Json.str(h["handoff_id"])
+            g.perform("handoff:$hid", "paste", mapOf("text" to answer(h)))
+            g.perform("handoff:$hid", "accept_handoff")
+            val note = "۲ تست در test_calc خراب است: " + "incorrect boundary; ".repeat(20)
+            g.perform("task:$tid", "validation_failed", mapOf("note" to note, "run_id" to "run-42"))
+            val ev = State.coll(p.state(), "evidence").values.map { Json.obj(it) }.last { it["type"] == "test_run" }
+            assertEquals(note, ev["summary"])
+            assertEquals("run-42", Json.obj(ev["source"])["run_id"])
+            assertEquals(h["attempt_id"], ev["attempt_id"])
+            val restarted = Project(ProjectStore(p.store.root))
+            val fresh = restarted.startTask(tid)
+            val prompt = Json.str(fresh["prompt"])
+            assertTrue(prompt, prompt.contains(note) && prompt.contains("run-42") && prompt.contains("CONTRADICTED"))
+            assertFalse(prompt.contains("Claimed (NOT verified): tests pass"))
+            p.store.transaction("old and foreign evidence fixture") { s ->
+                for ((key, subject, revision) in listOf(Triple("EV-old", tid, 0L), Triple("EV-other", "other-task", 1L))) {
+                    State.coll(s, "evidence")[key] = LinkedHashMap(ev).apply {
+                        put("evidence_id", key); put("subject_id", subject); put("task_revision", revision)
+                        put("summary", "DO NOT LEAK"); put("state_revision", 999999L)
+                    }
+                }
+            }
+            assertFalse(Json.str(restarted.startTask(tid)["prompt"]).contains("DO NOT LEAK"))
+        } finally { p.store.root.parentFile.deleteRecursively() }
+    }
+
+    @Test fun bf013RejectedDeliveryReasonSurvivesRestartAndReachesPrompt() {
+        val p = project()
+        try {
+            val tid = Json.str(p.createTask(linkedMapOf("title" to "Calculator", "objective" to "test",
+                "owner_agent_id" to "agent-implementer", "allowed_paths" to arrayListOf<Any?>("src/core/")), "ready")["task_id"])
+            val h = p.startTask(tid)
+            val hid = Json.str(h["handoff_id"])
+            val g = Guide(p)
+            g.perform("handoff:$hid", "paste", mapOf("text" to answer(h)))
+            val reason = "الگوریتم اشتباه است — wrong algorithm, handle zero correctly"
+            g.perform("handoff:$hid", "reject_handoff", mapOf("reason" to reason))
+            val restarted = Project(ProjectStore(p.store.root))
+            val fresh = restarted.startTask(tid)
+            val prompt = Json.str(fresh["prompt"])
+            assertEquals(hid, fresh["previous_handoff_id"])
+            assertTrue(prompt, prompt.contains(reason) && prompt.contains("rejected by the user"))
+            assertTrue(prompt.contains("done"))
+            assertFalse(prompt.contains("This is the first handoff"))
+            assertEquals(reason, Json.obj(State.require(p.state(), "handoffs", hid)["resolution"])["reason"])
+        } finally { p.store.root.parentFile.deleteRecursively() }
+    }
+
     @Test fun charterFixtureIsValid() {
         val r = Charter.parse(charterText(), State.empty("todo"))
         assertTrue(r.errors.toString(), r.ok)
