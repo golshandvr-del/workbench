@@ -415,6 +415,36 @@ class ProposalTests(Base):
         self.p.tasks.update(b["task_id"], {"depends_on": []})
         self.assertEqual(self.p.tasks.get(b["task_id"])["status"], "ready")
 
+    def test_bf014_cancelled_dependencies_and_edits_are_invalid_on_import(self):
+        a = self.ready_task("A")
+        self.p.tasks.transition(a["task_id"], "cancelled", "not wanted")
+        operations = [
+            {"operation": "create_task", "title": "New", "depends_on": [a["task_id"]]},
+            {"operation": "create_task", "title": "New refs", "depends_on_refs": [a["task_id"]]},
+            {"operation": "update_task", "task_id": a["task_id"], "changes": {"objective": "overwrite"}},
+        ]
+        p = self.p.proposals.import_text(self.block(self.p.store.revision, operations))
+        for op in p["operations"]:
+            self.assertFalse(op["valid"], op)
+            self.assertIn("cancelled", op["problem"])
+        before = self.p.store.load()["tasks"]
+        with self.assertRaises(ModelError):
+            self.p.proposals.review(p["proposal_id"], [0, 1, 2], confirm_stale=True)
+        self.assertEqual(self.p.store.load()["tasks"], before)
+
+    def test_bf014_review_rechecks_dependencies_cancelled_after_import(self):
+        a = self.ready_task("A")
+        p = self.p.proposals.import_text(self.block(self.p.store.revision, [
+            {"operation": "create_task", "title": "New", "depends_on_refs": [a["task_id"]]}]))
+        self.assertTrue(p["operations"][0]["valid"])
+        self.p.tasks.transition(a["task_id"], "cancelled", "cancelled after import")
+        before = self.p.store.load()["tasks"]
+        self.assertTrue(self.p.proposals.preview(p["proposal_id"], [0])["errors"])
+        with self.assertRaisesRegex(ModelError, "cancelled"):
+            self.p.proposals.review(p["proposal_id"], [0], confirm_stale=True)
+        self.assertEqual(self.p.store.load()["tasks"], before)
+        self.assertEqual(self.p.proposals.get(p["proposal_id"])["status"], "pending")
+
     def test_prompts_and_probe(self):
         pp = planning_prompt({"goal": "Build a todo app"}, self.p.agents.list())
         self.assertIn("AIWB_MANAGER_PROPOSAL", pp)
