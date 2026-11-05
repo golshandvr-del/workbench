@@ -76,6 +76,10 @@ def status_sections(state: dict[str, Any]) -> dict[str, list[str]]:
     since = str(g.get("manager_seen_at", ""))
     tasks = state.get("tasks", {})
     integrated, finished, stuck, github = [], [], [], []
+    # Legacy state can already contain a cycle. Do not hide it as ordinary
+    # "waiting for" work: the manager needs the actual graph problem to repair it.
+    from .tasks import validate_graph
+    stuck.extend(validate_graph(tasks))
     for h in sorted(state.get("handoffs", {}).values(), key=lambda h: h.get("handoff_id", "")):
         at = str(h.get("integrated_at", ""))
         if at and at > since:
@@ -120,8 +124,10 @@ def status_prompt(state: dict[str, Any], update: str) -> str:
 
 def apply_decision(s: dict[str, Any], p: dict[str, Any], created: dict[str, str]) -> dict[str, Any]:
     """Inside the review transaction: mark emergencies, pause what they block, record the route."""
+    from .tasks import validate_graph
     emergency = []
     paused = []
+    skipped_blocks = []
     for e in p.get("emergency_tasks") or []:
         tid = created.get(e["ref"], e["ref"])
         t = s["tasks"].get(tid)
@@ -135,11 +141,18 @@ def apply_decision(s: dict[str, Any], p: dict[str, Any], created: dict[str, str]
             bt = s["tasks"].get(created.get(b, b))
             if not bt or bt["task_id"] == tid or bt.get("status") not in ("ready", "in_progress", "blocked"):
                 continue
-            if tid not in bt["depends_on"]:
-                bt["depends_on"].append(tid)
             old = bt["status"]
             if old == "blocked" and not str(bt.get("blocked_reason", "")).startswith("waiting for"):
                 continue
+            if tid not in bt["depends_on"]:
+                # Emergency edges are graph edits too. Check the cumulative graph
+                # before retaining each edge, including transitive and cross-emergency cycles.
+                bt["depends_on"].append(tid)
+                problems = validate_graph(s["tasks"])
+                if problems:
+                    bt["depends_on"].remove(tid)
+                    skipped_blocks.append(f"{bt['task_id']} -> {tid} skipped: {'; '.join(problems)}")
+                    continue
             bt["status"] = "blocked"
             bt["blocked_reason"] = f"waiting for {tid} (emergency)"
             bt["updated_at"] = now_utc()
@@ -149,7 +162,7 @@ def apply_decision(s: dict[str, Any], p: dict[str, Any], created: dict[str, str]
     r = route(emergency, remaining, len(open_tasks(s)))
     fs = s["settings"].setdefault("flow", {})
     fs["last_decision"] = {"route": r, "proposal_id": p["proposal_id"], "emergency": emergency, "paused": paused,
-                           "roadmap_remaining": remaining, "at": now_utc()}
+                           "skipped_blocks": skipped_blocks, "roadmap_remaining": remaining, "at": now_utc()}
     if remaining is not None:
         fs["roadmap_remaining"] = remaining
     emit(s, "pm_decision", proposal_id=p["proposal_id"], route=r, emergency=emergency, paused=paused,
@@ -164,7 +177,9 @@ def route_message(decision: dict[str, Any] | None) -> str:
     r = decision.get("route")
     if r == "emergency":
         return (f" Emergency: {', '.join(decision.get('emergency') or [])} goes first"
-                + (f"; paused until it is done: {', '.join(decision['paused'])}." if decision.get("paused") else "."))
+                + (f"; paused until it is done: {', '.join(decision['paused'])}." if decision.get("paused") else ".")
+                + (" Unsafe emergency dependencies were not added: " + "; ".join(decision["skipped_blocks"])
+                   if decision.get("skipped_blocks") else ""))
     if r == "complete":
         return " The project manager says no roadmap stage is left — announce completion."
     return " Next roadmap stage: prompts for the next tasks can be generated."
