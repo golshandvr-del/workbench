@@ -89,6 +89,36 @@ class InvariantTests(GuideBase):
         self.g.perform("continue", "dismiss")
         self.assertEqual(self.check_invariant()[0]["key"], "charter")
 
+    def test_bf012_continuation_is_owned_by_a_live_active_handoff(self):
+        from aiwb.v2.models import ModelError
+        tid = self.c.project.tasks.create({"title": "Code", "objective": "code", "owner_agent_id": "agent-implementer",
+            "allowed_paths": ["src/x/"], "acceptance_criteria": ["works"]}, status="ready")["task_id"]
+        h = self.c.start_task(tid)
+        hid = h["handoff_id"]
+        self.g.perform(f"handoff:{hid}", "paste", text=answer_for(h, cut=True))
+        self.assertIn("continue", [s["key"] for s in self.g.steps()])
+        self.g.perform(f"handoff:{hid}", "abandon", reason="start over")
+        before = self.c.state()
+        self.assertNotIn("continue", [s["key"] for s in self.g.steps()])
+        with self.assertRaises(ModelError):
+            self.g.perform("continue", "paste", text=answer_for(h))
+        self.assertEqual(self.c.state(), before)
+        # Projection also repairs old saved states without deleting their partial answer.
+        for status in ("accepted", "rejected", "superseded", "missing"):
+            with self.subTest(status=status):
+                with self.c.project.store.transaction("legacy continuation fixture") as s:
+                    s["handoffs"][hid]["status"] = status
+                    s["settings"]["guide"]["continue"]["for"] = f"handoff:{hid if status != 'missing' else 'HO-missing'}"
+                before = self.c.state()
+                self.assertNotIn("continue", [s["key"] for s in self.g.steps()])
+                self.assertEqual(self.c.state(), before)
+        with self.c.project.store.transaction("old open prompt fixture") as s:
+            s["handoffs"][hid]["status"] = "prepared"
+            s["settings"]["guide"]["continue"]["for"] = f"handoff:{hid}"
+        fresh = self.c.start_task(tid)
+        self.assertNotEqual(fresh["attempt_id"], h["attempt_id"])
+        self.assertNotIn("continue", [s["key"] for s in self.g.steps()])
+
     def test_incomplete_charter_returns_the_fix_prompt(self):
         self.g.perform("design", "design", goal="An offline todo app")
         bad = json.loads(FIXTURE.read_text(encoding="utf-8"))
