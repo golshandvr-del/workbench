@@ -58,7 +58,7 @@ def _strip_invisible(s: str, fixes: list[str]) -> str:
     in_file = in_string = escaped = False
     zw = nb = 0
     for i, line in enumerate(lines):
-        marker = _fix_marker_line(line)
+        marker = _fix_marker_line(line.translate({ord(c): None for c in ZERO_WIDTH}))
         if in_file and not marker.startswith("<<<AIWB_END_FILE>>>"):
             continue
         cleaned = []
