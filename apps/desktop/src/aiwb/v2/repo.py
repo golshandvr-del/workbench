@@ -231,8 +231,24 @@ class RepoService:
         repo = repo_info(self.store.load())
         sha = client.branch_head(repo["branch"]) or repo.get("head", "")
         o, n = repo["full_name"].split("/", 1)
-        client.raw("POST", f"/repos/{o}/{n}/git/refs", {"ref": f"refs/tags/{pl['tag']}", "sha": sha})
-        body = client.raw("POST", f"/repos/{o}/{n}/releases", {"tag_name": pl["tag"], "name": f"{pl['label']}",
-                                                               "target_commitish": repo["branch"],
-                                                               "body": "Released with AI Workbench."})
+        # BF-019: idempotent steps — an existing tag / Release from an earlier half-finished attempt is reused
+        try:
+            client.raw("GET", f"/repos/{o}/{n}/git/ref/tags/{pl['tag']}")
+        except PublishError as exc:
+            if "404" not in str(exc):
+                raise
+            try:
+                client.raw("POST", f"/repos/{o}/{n}/git/refs", {"ref": f"refs/tags/{pl['tag']}", "sha": sha})
+            except PublishError as exc2:
+                if exc2.kind == "conflict":
+                    raise PublishError("invalid", f"the tag {pl['tag']} could not be created (it may already exist at another commit)") from None
+                raise
+        try:
+            body = client.raw("GET", f"/repos/{o}/{n}/releases/tags/{pl['tag']}")
+        except PublishError as exc:
+            if "404" not in str(exc):
+                raise
+            body = client.raw("POST", f"/repos/{o}/{n}/releases", {"tag_name": pl["tag"], "name": f"{pl['label']}",
+                                                                   "target_commitish": repo["branch"],
+                                                                   "body": "Released with AI Workbench."})
         return {"tag": pl["tag"], "commit_sha": sha, "url": (body or {}).get("html_url", "")}
