@@ -195,6 +195,35 @@ class HelperClientTests(unittest.TestCase):
                     self.assertEqual(settings, before)
                     self.assertEqual(store._values, secrets)
 
+    def test_bf017_callable_settings_replacement_rolls_back_current_dict(self) -> None:
+        current = {"settings": {}}
+        store = MemoryCredentialStore()
+        svc = h.HelperService(lambda: current["settings"], store=store)
+        svc.configure(self.srv.url, "old", api_key=KEY)
+        ref = svc.config["credential_ref"]
+
+        def replace_then_fail():
+            current["settings"] = dict(current["settings"], other="keep this")
+            raise OSError(KEY)  # Arbitrary persistence errors must never echo the secret.
+
+        svc._save = replace_then_fail
+        with self.assertRaises(h.HelperAIError) as caught:
+            svc.configure(self.srv.url, "new", api_key="replacement")
+        self.assertNotIn(KEY, str(caught.exception))
+        self.assertEqual(svc.config["model"], "old")
+        self.assertEqual(svc.api_key(), KEY)
+        self.assertEqual(current["settings"]["other"], "keep this")
+        self.assertEqual(len(store._values), 1)
+        self.assertEqual(store.get_secret(ref), KEY)
+
+    def test_bf017_reports_failed_credential_rollback(self) -> None:
+        from unittest.mock import patch
+        svc = h.HelperService({}, save=lambda: False, store=self.store)
+        with patch.object(self.store, "delete_secret", side_effect=CredentialStoreError("locked")):
+            with self.assertRaisesRegex(h.HelperAIError, "rollback failed"):
+                svc.configure(self.srv.url, "m", api_key=KEY)
+        self.assertFalse(svc.configured)
+
     def test_bf017_failed_key_deletion_keeps_reachable_configuration(self) -> None:
         from unittest.mock import patch
         self.svc.configure(self.srv.url, "m", api_key=KEY)
