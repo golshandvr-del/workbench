@@ -141,10 +141,11 @@ def diagnose(text: str, *, attempt_id: str = "", allowed_paths: list[str] | None
     claimed = (m.group(1) if m else "") or str((man or {}).get("attempt_id", ""))
     if attempt_id and claimed and claimed != attempt_id:
         add("wrong_attempt", f"the answer is for attempt {claimed}, this prompt was {attempt_id}")
+    from aiwb.intake.answer_files import safe_path
     for f in files:
-        p = f["path"]
-        if not p or p.startswith(("/", "\\")) or re.match(r"^[A-Za-z]:", p) or ".." in p.replace("\\", "/").split("/"):
-            add("unsafe_path", f"unsafe file path {p!r}", p)
+        p = safe_path(f["path"])
+        if not p:
+            add("unsafe_path", f"unsafe or Windows-invalid file path {f['path']!r}", f["path"])
             continue
         if not _in_scope(p, list(allowed_paths or [])):
             add("out_of_scope", f"{p} is outside this task's allowed paths ({', '.join(allowed_paths or [])})", p)
