@@ -4502,12 +4502,26 @@ class WorkbenchApp:
                     payload["task_playbook"] = self.task_playbook_var.get()
                 atomic_write(self.settings_path, json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
                 self.settings_data = payload
+                self._settings_save_error = ""
+                self._settings_save_warned = False
                 return True
         except Exception as exc:
             try:
                 log_exception(type(exc), exc, exc.__traceback__)
             except Exception:
                 pass
+            self._settings_save_error = (f"Settings could not be saved: {str(exc)[:300]} — "
+                                         "changes may be lost when you close Workbench. "
+                                         "Check settings file permissions and logs/app.log, then retry Save.")
+            try:
+                self.set_status(self._settings_save_error)
+                if getattr(self, "shell", None) is not None:
+                    self.shell.statusbar.show_saved("")
+                if not getattr(self, "_settings_save_warned", False):
+                    self._settings_save_warned = True
+                    messagebox.showwarning("Settings not saved", self._settings_save_error, parent=self.root)
+            except tk.TclError:
+                pass  # The window may already be closing; preserve the failure result.
             return False
 
     def _load_project_profile(self, workspace: Path) -> None:
@@ -4895,6 +4909,9 @@ class WorkbenchApp:
             self._store_current_profile()
         ok = self._save_settings()
         self.shell.statusbar.show_saved("Saved" if ok is not False else "")
+        if ok is False:
+            self.set_status(self._settings_save_error)
+            return
         self.set_status("Saved." if self.workspace is not None else "Settings saved. No project is open.")
 
     def run_next_step(self) -> Any:
