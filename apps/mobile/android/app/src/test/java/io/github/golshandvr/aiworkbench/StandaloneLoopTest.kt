@@ -82,6 +82,43 @@ class StandaloneLoopTest {
         }
     }
 
+    @Test fun bf012ContinuationOnlyBelongsToLiveActivePrompt() {
+        val p = project()
+        try {
+            val tid = Json.str(p.createTask(linkedMapOf("title" to "Code", "objective" to "test",
+                "owner_agent_id" to "agent-implementer", "allowed_paths" to arrayListOf<Any?>("src/core/")), "ready")["task_id"])
+            val h = p.startTask(tid)
+            val hid = Json.str(h["handoff_id"])
+            val g = Guide(p)
+            val cut = "AIWB_ATTEMPT_ID: ${h["attempt_id"]}\n<<<AIWB_FILE path=\"src/core/a.txt\" action=\"write\">>>\nhalf"
+            g.perform("handoff:$hid", "paste", mapOf("text" to cut))
+            assertTrue(g.steps().any { it.key == "continue" })
+            g.perform("handoff:$hid", "abandon", mapOf("reason" to "start over"))
+            val before = p.state()
+            assertFalse(g.steps().any { it.key == "continue" })
+            try { g.perform("continue", "paste", mapOf("text" to answer(h))); fail("closed continuation accepted") }
+            catch (_: ModelError) { }
+            assertEquals(before, p.state())
+            for (status in listOf("accepted", "rejected", "superseded", "missing")) {
+                p.store.transaction("legacy continuation fixture") { s ->
+                    State.require(s, "handoffs", hid)["status"] = status
+                    Json.obj(Json.obj(Json.obj(s["settings"])["guide"])["continue"])["for"] =
+                        "handoff:" + if (status == "missing") "HO-missing" else hid
+                }
+                val legacy = p.state()
+                assertFalse(g.steps().any { it.key == "continue" })
+                assertEquals(legacy, p.state())
+            }
+            p.store.transaction("old open prompt") { s ->
+                State.require(s, "handoffs", hid)["status"] = "prepared"
+                Json.obj(Json.obj(Json.obj(s["settings"])["guide"])["continue"])["for"] = "handoff:$hid"
+            }
+            val fresh = p.startTask(tid)
+            assertTrue(fresh["attempt_id"] != h["attempt_id"])
+            assertFalse(g.steps().any { it.key == "continue" })
+        } finally { p.store.root.parentFile.deleteRecursively() }
+    }
+
     @Test fun charterFixtureIsValid() {
         val r = Charter.parse(charterText(), State.empty("todo"))
         assertTrue(r.errors.toString(), r.ok)
