@@ -151,6 +151,10 @@ class AiwbTests(unittest.TestCase):
         self.assertFalse(files[0]["complete"])
         self.assertNotIn("AIWB_FILE", files[0]["body"])
         self.assertTrue(files[1]["complete"])
+        damaged = '\\<\\<\\<AIWB\\_FILE path="a.txt"\\>\\>\\>\npartial'
+        canonical_text, ex = canonical(damaged)
+        self.assertTrue(ex.truncated)
+        self.assertNotIn("<<<AIWB_END_FILE>>>", canonical_text)
 
     def test_fence_is_longer_than_any_backtick_run_in_the_body(self):
         self.assertEqual(fence_for("a"), "````")
