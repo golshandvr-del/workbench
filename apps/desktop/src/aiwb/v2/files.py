@@ -39,7 +39,13 @@ def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
     with store.transaction("stage files") as s:
         h = s["handoffs"][handoff_id]
         allowed = task_paths(s["tasks"].get(h["task_id"]) or {})
-        staged: list[dict[str, Any]] = []
+        # Troubleshooting inherits only complete, safe files from the previous
+        # delivery. Retain their original preview hashes until the user accepts.
+        staged = [dict(f) for f in h.get("retained_files") or []
+                  if f.get("content") is not None and safe_path(f["path"]) == f["path"]
+                  and _in_scope(f["path"], allowed)]
+        inherited = {f["path"] for f in staged}
+        seen: set[str] = set()
         problems: list[dict[str, Any]] = []
         def problem(code: str, message: str, path: str, severity: str = "error") -> None:
             problems.append({"code": code, "message": message, "path": path, "severity": severity})
@@ -53,8 +59,10 @@ def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
             if not _in_scope(p, allowed):
                 problem("out_of_scope", f"{p} is outside this task's allowed paths", p)
                 continue
-            if any(x["path"] == p for x in staged):
+            if p in seen:
                 problem("duplicate_path", f"{p} was sent twice — the last version is used", p, "warning")
+            seen.add(p)
+            inherited.discard(p)
             staged = [x for x in staged if x["path"] != p]
             staged.append({"path": p, "sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(), "size": size,
                            "content": body})
@@ -95,6 +103,8 @@ def integrate(store: Any, root: Path, handoff_id: str, *, accept_reason: str | N
     h = store.load()["handoffs"].get(handoff_id)
     if h is None:
         raise ModelError(f"Unknown handoff {handoff_id}")
+    if h.get("source_response_id") and "staged_files" not in h:
+        raise ModelError("The files of this answer were not staged — paste the answer again before accepting it")
     blocking = [p for p in h.get("staging_problems") or []
                 if p.get("severity") == "error" and p.get("code") in ("too_large", "total_too_large", "file_conflict")]
     if blocking:
@@ -116,6 +126,7 @@ def integrate(store: Any, root: Path, handoff_id: str, *, accept_reason: str | N
                 if accept_reason is not None:
                     HandoffService.resolve_state(s, handoff_id, True, accept_reason)
                 hh["staged_files"] = [{k: v for k, v in x.items() if k != "content"} for x in hh.get("staged_files") or []]
+                hh.pop("retained_files", None)
                 hh["integrated_files"] = written
                 hh["integration_backup"] = backup.relative_to(root).as_posix()
                 hh["integrated_at"] = now_utc()
