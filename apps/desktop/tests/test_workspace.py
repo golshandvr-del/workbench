@@ -120,7 +120,7 @@ class ResourceTests(Base):
         acc = self.p.resources.add_account({"display_name": "GPT paid — work", "provider": "GPT", "plan": "paid"})
         self.assertTrue(acc["self_declared"])
         for bad in ({"display_name": "x", "password": "p"}, {"display_name": "sk-abcdefghijklmnop"},
-                    {"display_name": "ok", "note": "token: 123"}, {"display_name": "y", "plan": "premium"}):
+                    {"display_name": "ok", "note": "token: abcdefghijklmnopqrstuvwxyz0123"}, {"display_name": "y", "plan": "premium"}):
             with self.assertRaises(ModelError):
                 self.p.resources.add_account(bad)
         with self.assertRaises(ModelError):
