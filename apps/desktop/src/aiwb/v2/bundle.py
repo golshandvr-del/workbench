@@ -151,7 +151,12 @@ def _comparable(state: dict[str, Any]) -> dict[str, Any]:
 def plan_import(local: dict[str, Any] | None, incoming: dict[str, Any]) -> dict[str, Any]:
     """Decide what importing *incoming* over *local* means. Pure; never writes."""
     rev_in = int(incoming.get("state_revision", 0) or 0)
-    if local is None or not any(local.get(k) for k in ("tasks", "proposals", "milestones", "handoffs")):
+    # BF-023: a written goal, changed settings or a revision above the first planning steps count as local work too
+    st_local = (local or {}).get("settings") or {}
+    has_work = bool(local) and (any(local.get(k) for k in ("tasks", "proposals", "milestones", "handoffs"))
+                                or bool(str(st_local.get("goal") or "").strip())
+                                or bool(st_local.get("team_setup")) or bool(st_local.get("helper")))
+    if local is None or not has_work:
         return {"kind": "new", "safe": True, "local_revision": 0, "bundle_revision": rev_in,
                 "message": f"Import the project (revision {rev_in})."}
     rev_local = int(local.get("state_revision", 0) or 0)
