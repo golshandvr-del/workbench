@@ -161,6 +161,20 @@ class LedgerTests(Base):
 
 
 class BuildEvidenceTests(Base):
+    def test_bf109_unscoped_foreign_ci_never_validates_project_tasks(self):
+        from types import SimpleNamespace as NS
+        from aiwb.v2.ledger import record_build_evidence
+        t = self.ready_task("B", acceptance_policy="evidence_required", required_approvals=["validation"])
+        self.p.attempts.create(t["task_id"])
+        self.p.tasks.transition(t["task_id"], "validation_pending")
+        for outcome in ("success", "failure"):
+            with self.subTest(outcome=outcome):
+                git = NS(repository="o/foreign", branch="work", task_id="TASK-FROM-A", commit_sha="a" * 40)
+                build = NS(run_id=991, outcome=outcome, head_sha="a" * 40)
+                self.assertEqual(record_build_evidence(self.p, git, build), [])
+                self.assertEqual(self.p.tasks.get(t["task_id"])["status"], "validation_pending")
+                self.assertEqual(self.p.evidence.list(t["task_id"]), [])
+
     def test_real_actions_run_becomes_verified_evidence_once(self):
         from types import SimpleNamespace as NS
         from aiwb.v2.ledger import record_build_evidence
