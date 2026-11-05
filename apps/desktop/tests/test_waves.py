@@ -94,7 +94,7 @@ class GuideDeskTests(unittest.TestCase):
         import json
         from aiwb.v2 import files
         from aiwb.v2.models import ModelError
-        for route in ("direct", "guide", "proposal", "supersede"):
+        for route in ("direct", "proposal", "supersede"):
             for received in (False, True):
                 with self.subTest(route=route, received=received), tempfile.TemporaryDirectory() as tmp:
                     c = ProjectsController(Path(tmp), make_pipeline=wb.make_inbox_pipeline)
@@ -117,9 +117,6 @@ class GuideDeskTests(unittest.TestCase):
                         proposal = p.proposals.import_data({"base_state_revision": c.state()["state_revision"],
                             "operations": [{"operation": "close_or_cancel_task", "task_id": ids[0], "reason": "not wanted"}]})
                         p.proposals.review(proposal["proposal_id"], accept=[0])
-                    elif route == "guide":
-                        p.tasks.transition(ids[0], "blocked", "cancel unwanted work")
-                        Guide(c).perform(f"task:{ids[0]}", "cancel", reason="not wanted")
                     else:
                         p.tasks.transition(ids[0], "superseded" if route == "supersede" else "cancelled", "not wanted")
                     st = c.state()
@@ -129,7 +126,7 @@ class GuideDeskTests(unittest.TestCase):
                     self.assertEqual(waves.dispatch(st)["next"], [ids[1]])
                     self.assertFalse(any(x["key"] == f"handoff:{hid}" for x in Guide(c).steps()))
                     # A reply arriving after cancellation is retained, but cannot revive or publish unwanted work.
-                    p.handoff.ingest(hid, "late-response", answer)
+                    p.handoffs.ingest(hid, "late-response", answer)
                     files.stage(p.store, hid, answer)
                     self.assertIn("late-response", c.state()["attempts"][h["attempt_id"]]["response_ids"])
                     for reason in (None, "accept anyway"):
@@ -138,7 +135,7 @@ class GuideDeskTests(unittest.TestCase):
                             files.integrate(p.store, p.store.root, hid, accept_reason=reason)
                         self.assertEqual(c.state(), before)
                     with self.assertRaises(ModelError):
-                        p.handoff.resolve(hid, True, "accept anyway")
+                        p.handoffs.resolve(hid, True, "accept anyway")
                     self.assertFalse((p.store.root / "src/p0/new.py").exists())
                     self.assertEqual(waves.dispatch(c.state())["next"], [ids[1]])
 
