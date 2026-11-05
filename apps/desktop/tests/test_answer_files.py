@@ -117,13 +117,40 @@ class AiwbTests(unittest.TestCase):
         self.assertEqual(ex.format, "aiwb")
         self.assertIn("repaired", ex.fixes[0])
         self.assertEqual(parse_files(text)[0][0], {"path": "src/b.py", "body": "print(1)", "fenced": True,
-                                                   "fence_balanced": True})
+                                                   "fence_balanced": True, "action": "write", "complete": True})
 
     def test_clean_aiwb_answers_come_back_unchanged(self):
         t = 'AIWB_ATTEMPT_ID: att-1\n<<<AIWB_FILE path="a.py" action="write">>>\n````\nA=1\n````\n<<<AIWB_END_FILE>>>\n'
         out, ex = canonical(t)
         self.assertEqual(out, t)
         self.assertEqual(ex.attempt_id, "att-1")
+
+    def test_bf044_raw_markdown_and_boundary_whitespace_are_preserved(self):
+        for body in ("```bash\nnpm install\n```", "\n```bash\nx\n```\n\nThen run.\n", "\n\n  "):
+            with self.subTest(body=body):
+                text = '<<<AIWB_FILE path="docs/INSTALL.md" body="raw">>>\n' + body + '\n<<<AIWB_END_FILE>>>'
+                files, opened = parse_files(text)
+                self.assertFalse(opened)
+                self.assertEqual(files[0]["body"], body)
+                self.assertTrue(files[0]["fence_balanced"])
+
+    def test_bf042_unsupported_actions_never_become_empty_writes(self):
+        for action in ("delete", "move", "rename", "remove", "unknown"):
+            for text in ('<<<AIWB_FILE path="src/old.py" action="' + action + '">>>\n<<<AIWB_END_FILE>>>',
+                         json.dumps({"files": [{"path": "src/old.py", "action": action, "content": "danger"}]})):
+                with self.subTest(action=action, text=text):
+                    ex = extract(text)
+                    self.assertEqual(ex.files, [])
+                    self.assertTrue(ex.problems)
+
+    def test_bf091_unclosed_file_cannot_swallow_next_file(self):
+        files, incomplete = parse_files('<<<AIWB_FILE path="a.txt">>>\na\n'
+            '<<<AIWB_FILE path="b.txt">>>\nb\n<<<AIWB_END_FILE>>>')
+        self.assertTrue(incomplete)
+        self.assertEqual([f["path"] for f in files], ["a.txt", "b.txt"])
+        self.assertFalse(files[0]["complete"])
+        self.assertNotIn("AIWB_FILE", files[0]["body"])
+        self.assertTrue(files[1]["complete"])
 
     def test_fence_is_longer_than_any_backtick_run_in_the_body(self):
         self.assertEqual(fence_for("a"), "````")
@@ -147,6 +174,11 @@ class ZipTests(unittest.TestCase):
         files, _ = parse_files(text)
         self.assertEqual([f["path"] for f in files], ["README.md", "src/x.py"])
         self.assertEqual(files[1]["body"], "a=1")
+
+    def test_bf027_dot_relative_zip_entries_are_read(self):
+        ex = zip_files(make_zip({"./README.md": "read", "./src/app.py": "pass", "./../bad.py": "bad"}))
+        self.assertEqual([f["path"] for f in ex.files], ["README.md", "src/app.py"])
+        self.assertEqual(len(ex.problems), 1)
 
     def test_limits_of_1x_are_kept(self):
         self.assertIn("not a readable ZIP", zip_files(b"not a zip").problems[0])
@@ -188,6 +220,23 @@ class GuidedLoopTests(unittest.TestCase):
         self.assertTrue(h["staged_files"], h)
         self.g.perform(step["key"], "accept_handoff")
         return (self.root / "src/calc.py").read_text(encoding="utf-8")
+
+    def test_bf042_guided_delete_is_rejected_and_existing_file_unchanged(self):
+        step = self._handoff_step()
+        target = self.root / "src/calc.py"
+        target.parent.mkdir()
+        target.write_text("ORIGINAL", encoding="utf-8")
+        out = self.g.perform(step["key"], "paste", text='<<<AIWB_FILE path="src/calc.py" action="delete">>>\n<<<AIWB_END_FILE>>>')
+        self.assertEqual(out["kind"], "rejected", out)
+        self.assertIn("Unsupported", out["message"])
+        self.assertEqual(target.read_text(), "ORIGINAL")
+
+    def test_bf032_path_alias_delivery_matches_scope_and_expected_path(self):
+        from aiwb.v2.diagnose import diagnose
+        for path in ("./src/calc.py", "src\\calc.py"):
+            text = '<<<AIWB_FILE path="' + path + '">>>\n````\nA=1\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{}\n<<<AIWB_END_HANDOFF>>>'
+            result = diagnose(text, allowed_paths=["./src/"], expected_paths=["src/calc.py"])
+            self.assertTrue(result["acceptable"], result)
 
     def test_markdown_answer_without_manifest_creates_the_file(self):
         step = self._handoff_step()
