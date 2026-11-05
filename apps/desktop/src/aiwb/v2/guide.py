@@ -246,6 +246,13 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                          [_a("manager_prompt", "Ask the project manager to repair the dependencies")], rank=4))
 
     cont = g.get("continue")
+    if cont and str(cont.get("for", "")).startswith("handoff:"):
+        h = st["handoffs"].get(cont["for"].split(":", 1)[1]) or {}
+        t = tasks.get(h.get("task_id")) or {}
+        from .waves import OPEN_HANDOFF
+        if (h.get("status") not in OPEN_HANDOFF or t.get("status") in ("done", "cancelled", "superseded")
+                or (t.get("active_attempt_id") and t["active_attempt_id"] != h.get("attempt_id"))):
+            cont = None  # Read-only projection also handles stale continuation in older saved projects.
     if cont:
         charter_cut = cont.get("for") == "charter"
         out.append(_step("continue", "prompt", "The last answer was cut off — ask to continue",
