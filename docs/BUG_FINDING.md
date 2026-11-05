@@ -27,11 +27,11 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
-| S2 | 33 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 8 (BF-001, BF-014, BF-026, BF-051, BF-105, BF-106, BF-108, BF-109) |
-| S3 | 51 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 3 (BF-028, BF-095, BF-104) |
+| S2 | 31 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 10 (BF-001, BF-014, BF-026, BF-033, BF-035, BF-051, BF-105, BF-106, BF-108, BF-109) |
+| S3 | 50 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 4 (BF-028, BF-057, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
-**Remaining top risks:** BF-008 actual Windows/Android gates; remaining lifecycle, intake, persistence and UI findings. Session-32 fixes have Desktop unit and real Kotlin/JVM regression evidence, NOT an Android APK/device/instrumentation or frozen full GUI pass. File exception rollback is not a database/filesystem power-loss transaction; backups/journals remain for manual recovery.
+**Remaining top risks:** BF-008 actual Windows/Android gates; remaining lifecycle, intake, persistence and UI findings. Session-33 fixes have Desktop unit and real Kotlin/JVM regression evidence, NOT an Android APK/device/instrumentation or frozen full GUI pass. File exception rollback is not a database/filesystem power-loss transaction; backups/journals remain for manual recovery.
 
 ## Findings
 
@@ -734,7 +734,9 @@ risk as BF-011 / BF-013.
 case-insensitively, as Windows does), so `diagnose` and `stage` agree; mention *"path normalised: ./src/app.py →
 src/app.py"* as a fix, not an error.
 
-### BF-033 · S2 · OPEN — "Request a change… › Change this task" on a finished task: the change is recorded and then nothing can ever work on it
+### BF-033 · S2 · FIXED (c80a0d36) — "Request a change… › Change this task" on a finished task: the change is recorded and then nothing can ever work on it
+
+**Repair evidence — session 33 / V5.23:** Completed, cancelled and superseded tasks no longer suggest an unusable revise route. Suggestions offer an explicit follow-up task (architecture-wide requests still offer replan); direct revise refuses before mutation. The original task/revision/evidence remain unchanged. Regression covers all three terminal states, no-mutation refusal, a real ready/startable follow-up and unchanged open-task revision behaviour. This change-route UI/service is Desktop-only. Final-source Desktop suite: 966 tests OK / 10 skipped; full Mobile pure-JVM suite: 110 tests OK. These are Linux unit/JVM results, not native Windows, Android APK/lint/device or final GUI gates.
 
 **Where:** `aiwb/v2/changes.py` `apply_route(route="revise")` only refuses cancelled / superseded tasks; for a `done` task it calls
 `tasks.update()` (adds *"Change request: …"* to the acceptance criteria, `task_revision` + 1) but the status stays `done`.
@@ -773,7 +775,9 @@ exists (the guide says archived) while it does not.
 `archived_at` and show *"Could not write the final bundle: <reason>"*; let *Archive* re-write a missing bundle of an
 archived project.
 
-### BF-035 · S2 · OPEN — cancelling a task that has an open prompt: the prompt keeps a chat slot, and its answer can still be accepted into the project
+### BF-035 · S2 · FIXED (21d9b243) — cancelling a task that has an open prompt: the prompt keeps a chat slot, and its answer can still be accepted into the project
+
+**Repair evidence — session 33 / V5.23:** Desktop TaskService and Mobile Project retire every open handoff as superseded, abandon unfinished attempts through legal transitions, and clear active_attempt_id inside the cancellation/supersession transaction. Manager proposals use the same lifecycle boundary (0f2a5f10, dea478eb). Accepted/rejected historical records and staged payloads remain inspectable. Both acceptance and file-publication APIs refuse cancelled/superseded work, including direct integration without acceptance callbacks (10f254f2, d48fad0c, d9ec6cb8). Late responses remain linked to the closed record without reserving a chat or writing files. Deliberate policy: terminal work cannot be accepted even with an override reason; create a follow-up task instead. Desktop tests cover direct/proposal cancellation, supersession, prepared/received deliveries, dispatch-slot reuse, late responses, an exhaustive handoff/attempt-state matrix and injected state-write failure preserving the whole original lifecycle. Kotlin/JVM tests cover the corresponding direct/proposal/supersession and late-file refusal paths. Guide cannot offer task cancellation while an open handoff suppresses the task card; no fabricated guided-action test is claimed. Final-source Desktop suite: 966 tests OK / 10 skipped; full Mobile pure-JVM suite: 110 tests OK. These are Linux unit/JVM results, not native Windows, Android APK/lint/device or final GUI gates.
 
 **Where:** `aiwb/v2/proposals.py` `_apply` › `close_or_cancel_task` (and `guide` › `cancel` → `tasks.transition(…, "cancelled")`)
 only sets the task status. The task's open handoff (`prepared` / `prompt_exported` / `response_received` / …) and its active
@@ -1281,7 +1285,9 @@ rewrite the code instead of reviewing it; a PM plan that checks task types again
 **Expected:** when the role changes, rebuild the role-specific fields from the new role's template (keeping the user's
 note), or at least ask *"Reset this AI's instructions to the Reviewer template?"*.
 
-### BF-057 · S3 · OPEN — after *Drop this prompt…* / *Reject…* the workflow stage, the attention queue and the restart warning disagree with Home
+### BF-057 · S3 · FIXED (d2be38db) — after *Drop this prompt…* / *Reject…* the workflow stage, the attention queue and the restart warning disagree with Home
+
+**Repair evidence — session 33 / V5.23:** Rejecting a delivery now closes unfinished attempts (unanswered prompts become abandoned; parsed answers become rejected) and detaches only its own active pointer. Mobile shares this lifecycle repair (87715d22). Desktop workflow projects startable tasks without an active attempt, and legacy rejected/superseded handoffs, as ready_to_prepare before obsolete context flags; restart warnings ignore closed prompts (86ff81e5). Regression drives actual Guide Drop/Reject, checks Home Prepare, dashboard start_task and absent restart warning, verifies legacy projections are read-only, and starts a fresh attempt. Mobile regression verifies Drop/Reject, fresh restart, and that a late old response cannot steal the newer active attempt. Original reproductions are retained below. Final-source Desktop suite: 966 tests OK / 10 skipped; full Mobile pure-JVM suite: 110 tests OK. These are Linux unit/JVM results, not native Windows, Android APK/lint/device or final GUI gates.
 
 **Where:** guided `abandon` rejects the handoff but leaves the task's `active_attempt_id` pointing at an attempt still in
 `prompt_ready` (it is never moved to `abandoned`). `aiwb/v2/workflow.py` `task_stage()` reads the attempt, not the
