@@ -520,8 +520,20 @@ class ProjectsController:
                                        "for. It is kept in the Inbox; nothing was changed.", text=text)
                 h = self.project.handoffs.ingest(hid, rid, text, file_hashes=file_hashes,
                                                  declared_attempt=ex.attempt_id if ex.attempt_id else "")
+                # All entry points (Home, classic import and Companion) must use
+                # the same delivery boundary, not just the guide's paste button.
+                from .files import stage
+                from .context_step import clear
+                from .guide import Guide
+                clear(self.project.store, hid)
+                stage(self.project.store, hid, text)
+                problems = Guide(self)._diagnose(hid, text)
+                h = self.state()["handoffs"][hid]
                 self._dirty("handoff answer")
                 msg = f"Answer linked to {hid} ({h['status']}, {h['outcome'] or 'no outcome'})."
+                errors = [p["code"] for p in problems if p["severity"] == "error"]
+                if errors:
+                    msg += " Smart check found problems: " + "; ".join(errors) + "."
                 if ex.files:
                     msg += f" {len(ex.files)} file(s) read from {ex.label}."
                 if ex.fixes:
