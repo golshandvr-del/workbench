@@ -16,6 +16,11 @@ import io
 import os
 import re
 import zipfile
+import uuid
+
+from aiwb.intake.answer_files import safe_path
+from .file_transaction import FileTransactionError, transaction
+from .models import ModelError
 from pathlib import Path
 from typing import Any
 
@@ -26,17 +31,6 @@ from .store import emit
 MAX_FILE = 512 * 1024
 MAX_TOTAL = 8 * 1024 * 1024
 RESERVED = (".git", ".workbench")
-
-
-def safe_path(path: str) -> str:
-    """The normalised relative path, or "" when it must never be written."""
-    p = (path or "").strip().replace("\\", "/")
-    if not p or p.startswith("/") or re.match(r"^[A-Za-z]:", p) or "\x00" in p:
-        return ""
-    parts = [x for x in p.split("/") if x not in ("", ".")]
-    if not parts or any(x == ".." for x in parts) or parts[0] in RESERVED:
-        return ""
-    return "/".join(parts)
 
 
 def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
@@ -61,37 +55,44 @@ def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
         return [{k: v for k, v in x.items() if k != "content"} for x in staged]
 
 
-def integrate(store: Any, root: Path, handoff_id: str) -> list[str]:
-    """F17: write the staged files of an accepted handoff into ``root``; returns the written paths."""
+def integrate(store: Any, root: Path, handoff_id: str, *, accept_reason: str | None = None) -> list[str]:
+    """Publish all staged files, then commit integration and optional acceptance together.
+
+    File/state failures roll back published files and retain the open handoff bodies
+    for retry. Acceptance uses the same lifecycle rules as the direct service API.
+    """
+    from .handoff import HandoffService
     root = Path(root).resolve()
-    h = store.load()["handoffs"].get(handoff_id) or {}
+    if safe_path(handoff_id) != handoff_id or "/" in handoff_id:
+        raise ModelError("Invalid handoff backup identity")
+    h = store.load()["handoffs"].get(handoff_id)
+    if h is None:
+        raise ModelError(f"Unknown handoff {handoff_id}")
     staged = [x for x in h.get("staged_files") or [] if x.get("content") is not None]
-    if not staged:
+    if not staged and accept_reason is None:
         return []
     backup = root / ".workbench" / "v2" / "backups" / handoff_id
-    written: list[str] = []
-    for f in staged:
-        p = safe_path(f["path"])
-        target = (root / p).resolve() if p else root
-        if not p or root not in target.parents:
-            continue
-        target.parent.mkdir(parents=True, exist_ok=True)
-        if target.is_file():
-            b = backup / p
-            b.parent.mkdir(parents=True, exist_ok=True)
-            b.write_bytes(target.read_bytes())
-        tmp = target.with_name(target.name + ".aiwb-tmp")
-        tmp.write_text(f["content"], encoding="utf-8", newline="")
-        os.replace(tmp, target)
-        written.append(p)
-    with store.transaction("integrate files") as s:
-        hh = s["handoffs"][handoff_id]
-        hh["staged_files"] = [{k: v for k, v in x.items() if k != "content"} for x in hh.get("staged_files") or []]
-        hh["integrated_files"] = written
-        hh["integrated_at"] = now_utc()
-        emit(s, "files_integrated", handoff_id=handoff_id, task_id=hh["task_id"], paths=written[:50],
-             count=len(written), importance="major")
-    return written
+    if backup.exists():
+        backup = backup.with_name(handoff_id + "-" + uuid.uuid4().hex)
+    try:
+        with transaction(root, staged, backup):
+            written = [f["path"] for f in staged]
+            # This state commit is INSIDE the filesystem rollback boundary.
+            with store.transaction("integrate and accept files") as s:
+                hh = s["handoffs"][handoff_id]
+                if hh != h:
+                    raise ModelError("The delivery changed during integration; review it again")
+                if accept_reason is not None:
+                    HandoffService.resolve_state(s, handoff_id, True, accept_reason)
+                hh["staged_files"] = [{k: v for k, v in x.items() if k != "content"} for x in hh.get("staged_files") or []]
+                hh["integrated_files"] = written
+                hh["integration_backup"] = backup.relative_to(root).as_posix()
+                hh["integrated_at"] = now_utc()
+                emit(s, "files_integrated", handoff_id=handoff_id, task_id=hh["task_id"], paths=written[:50],
+                     count=len(written), importance="major")
+        return written
+    except (OSError, FileTransactionError) as exc:
+        raise ModelError(str(exc)) from exc
 
 
 def list_files(root: Path) -> list[dict[str, Any]]:
