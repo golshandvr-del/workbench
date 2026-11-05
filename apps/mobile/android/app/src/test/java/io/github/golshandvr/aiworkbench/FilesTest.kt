@@ -126,7 +126,7 @@ class FilesTest {
         assertTrue(out.prompt, "src/calc.py" in out.prompt)
         val next = g.steps().first { it.key.startsWith("handoff:") }
         val h = State.require(p.state(), "handoffs", next.ref)
-        val manifest = "<<<AIWB_HANDOFF>>>\n" + Json.stringify(linkedMapOf<String, Any?>(
+        val manifest = "<<<AIWB_HANDOFF>>>\n" + io.github.golshandvr.aiworkbench.core.StrictJson.stringify(linkedMapOf<String, Any?>(
             "schema_version" to "1.0", "handoff_id" to next.ref, "task_id" to tid,
             "task_revision" to h["task_revision"], "attempt_id" to h["attempt_id"],
             "outcome" to "complete", "summary" to "Removed out-of-scope README")) + "\n<<<AIWB_END_HANDOFF>>>\n"
