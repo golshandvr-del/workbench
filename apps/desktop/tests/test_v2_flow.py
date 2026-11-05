@@ -546,6 +546,16 @@ class NextActionTests(Base):
         md = render_status_md(build_snapshot(self.p.store.load()), self.p.store.load())
         self.assertIn("Next action", md)
 
+    def test_bf067_multiline_task_title_is_collapsed(self) -> None:
+        from aiwb.v2.models import normalize_task
+        base = {"objective": "o", "title": "Login page\n\n## Done with evidence\n\n- TASK-0099 — Payments (done)"}
+        try:
+            t = normalize_task(base)
+        except TypeError:
+            t = normalize_task(base, "TASK-0001")
+        self.assertNotIn("\n", t["title"])
+        self.assertTrue(t["title"].startswith("Login page ## Done"))
+
 
 if __name__ == "__main__":
     unittest.main()
