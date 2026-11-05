@@ -233,7 +233,7 @@ class ArtifactsDialog:
             dl = self.downloads.get(a.artifact_id)
             local = ""
             if dl:
-                local = {"matched": "✔ SHA-256 matches GitHub digest", "computed_only": "SHA-256 computed (no reference)"}.get(dl.verification, dl.verification)
+                local = {"matched": "Download matched SHA-256 (rechecked on extract)", "computed_only": "Download SHA-256 computed (no reference)"}.get(dl.verification, dl.verification)
             self.tree.insert("", "end", iid=str(a.artifact_id), text=a.name, values=(
                 f"{a.size_in_bytes:,}", "EXPIRED" if a.expired else a.expires_at.replace("T", " ").replace("Z", "")[:16],
                 (a.sha256_reference or "")[:12] + ("…" if a.sha256_reference else "none"), belongs, local))
@@ -279,15 +279,19 @@ class ArtifactsDialog:
             return
         target = res.path.with_suffix("")
         try:
+            res.assert_current()
             files = ar.inspect_zip(res.path)
-        except ar.UnsafeArchiveError as exc:
+        except (ar.UnsafeArchiveError, ar.GitHubApiError) as exc:
             self.status_var.set(f"Refused to extract: {exc}")
             return
         if not self.confirm("Extract artifact", f"Extract {len(files)} file(s) into a new folder?\n\n{target}"):
             return
         try:
+            # The user may have kept the confirmation open while another tool
+            # replaced the archive. Cached verification is not proof of its bytes.
+            res.assert_current()
             out = ar.safe_extract_zip(res.path, target)
-        except (ar.UnsafeArchiveError, OSError) as exc:
+        except (ar.UnsafeArchiveError, ar.GitHubApiError, OSError) as exc:
             self.status_var.set(f"Refused to extract: {self.redact(exc)}")
             return
         self.status_var.set(f"Extracted {len(out)} file(s) into {target}.")
