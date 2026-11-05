@@ -110,6 +110,28 @@ def _list(v: Any) -> list[str]:
     return [str(x)[:1000] for x in v if isinstance(x, (str, int, float)) and str(x).strip()][:MAX_LIST]
 
 
+def _decisions(v: Any) -> list[str]:
+    """BF-083: decision requests may be plain text or objects (question/title/text + options/recommendation)."""
+    if not isinstance(v, list):
+        return []
+    out: list[str] = []
+    for x in v:
+        if isinstance(x, dict):
+            q = next((str(x[k]).strip() for k in ("question", "title", "text", "decision") if isinstance(x.get(k), (str, int, float)) and str(x[k]).strip()), "")
+            opts = [str(o).strip() for o in (x.get("options") if isinstance(x.get("options"), list) else []) if isinstance(o, (str, int, float)) and str(o).strip()]
+            rec = x.get("recommendation") or x.get("recommended")
+            if not q:
+                continue
+            if opts:
+                q += "\nOptions: " + ", ".join(opts)
+            if isinstance(rec, (str, int, float)) and str(rec).strip():
+                q += "\nRecommended: " + str(rec).strip()
+            out.append(q[:1000])
+        elif isinstance(x, (str, int, float)) and str(x).strip():
+            out.append(str(x)[:1000])
+    return out[:MAX_LIST]
+
+
 class HandoffService:
     def __init__(self, store: ProjectStore) -> None:
         self.store = store
