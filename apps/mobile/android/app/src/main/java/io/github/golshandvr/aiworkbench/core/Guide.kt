@@ -33,12 +33,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
 
     private fun wf(st: Obj, h: Obj) = Json.obj(Json.obj(State.coll(st, "attempts")[h["attempt_id"]])["workflow"])
 
-    private fun owner(st: Obj, t: Obj): String {
-        val agents = State.coll(st, "agents")
-        val o = Json.str(t["owner_agent_id"])
-        if (o.isNotEmpty() && o in agents && Json.obj(agents[o])["enabled"] != false) return o
-        return if ("agent-implementer" in agents) "agent-implementer" else agents.keys.firstOrNull() ?: ""
-    }
+    private fun owner(st: Obj, t: Obj): String = Waves.owner(st, t)
 
     fun steps(): List<Step> {
         val st = project.state()
@@ -142,6 +137,11 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                     listOf(a("validation_passed", "Tests/build passed…", "run_id"), a("validation_failed", "Tests/build failed…", "note"),
                         a("waive_validation", "I can't run tests — accept on review…", "reason"),
                         a("record_validation", "Record the result (passed/failed)…", "result", "run_id")), ref = tid, rank = 14))
+                (s == "ready" || s == "in_progress") && owner(st, t).isEmpty() ->
+                    out.add(step("task:$tid", "decision", "Assign an enabled worker to $name",
+                        "No enabled worker is available. Edit the team and assign an AI; implementation work will not " +
+                            "be sent to the project manager by default.",
+                        listOf(a("manager_prompt", "Ask the project manager to re-plan")), ref = tid, rank = 38))
                 (s == "ready" || s == "in_progress") && tid !in desk.next -> Unit  // waits for its wave or a free chat (4.1.0)
                 s == "ready" || s == "in_progress" -> {
                     val who = owner(st, t)
