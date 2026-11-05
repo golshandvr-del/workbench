@@ -18,9 +18,10 @@ The active plan is [V5.21–V5.30](ROADMAP.md), replacing the completed V5.16–
 preserved verbatim in `docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Short_FA.md`.
 These are repair-stage targets, **not released application versions**; Desktop remains 5.20.0.
 
-- Repaired and regression-tested Desktop findings: **BF-001, BF-002, BF-003, BF-004, BF-007,
-  BF-009, BF-010, BF-014, BF-026, BF-028, BF-043, BF-051, BF-095, BF-104, BF-105, BF-106,
-  BF-108, BF-109**. This is **18/106 (16.98%)** by finding count, not effort or release readiness.
+- Repaired and regression-tested findings (Desktop and/or Mobile, as catalogued): **BF-001,
+  BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-014, BF-016, BF-026, BF-028, BF-043,
+  BF-051, BF-076, BF-078, BF-079, BF-095, BF-104, BF-105, BF-106, BF-108, BF-109**.
+  This is **22/106 (20.75%)** by finding count, not effort or release readiness.
 - Quick and guided deliveries share full-set filesystem preflight, immutable flushed backups,
   exact preview hashes and reverse rollback on file or state-save exceptions. Guided acceptance
   commits with integration; Restore is retryable and preserves later user edits. Empty files are
@@ -31,18 +32,24 @@ These are repair-stage targets, **not released application versions**; Desktop r
 - S5 GUI harness cancels timers through their registering widgets, with permanent ownership tests.
 - All Desktop answer routes now share staging and smart checks (including Companion and classic import).
   Partial repair publishes complete files before excluding them from the next request; troubleshooting
-  retains good payloads and detects missing code. BF-078/079 remain OPEN for their unchanged Mobile halves.
+  retains good payloads and detects missing code. Mobile now uses the same lifecycle contracts: standalone
+  and guided intake stage/check once, keep cut-off continuation prompts, preserve partial/retained files,
+  refuse stale preview hashes and roll back file publication if acceptance/state publication fails.
+- Desktop settings recovery now preserves undecodable input byte-for-byte in unique flushed backups
+  and starts with defaults instead of raising UnicodeDecodeError; repeated failures do not clobber backups.
 - Build Center preferences stay with the originating project/binding. Sync & Build captures project,
   repository, task revision and attempt, independently checks local HEAD/branch/origin on completion,
   and never applies A's CI evidence to active project B or to every task. Legacy operations or operations
   without an explicitly identifiable V2 task intentionally create no automatic task evidence.
-- Final source unit suite: **959 tests OK, 10 skipped**; static gate: **0 undefined names**.
-  No GUI was run in session 31 (xvfb-run absent); session 30 Tk results are historical, not a final-source
-  GUI gate. Details are in [session notes](docs/roadmap/SESSION_NOTES.md).
-- **88 independent findings remain OPEN** (4 S1 / 33 S2 / 51 S3). Actual Windows and Android/Kotlin gates,
-  BF-008 cross-platform validation, Mobile BF-076/078/079, settings recovery BF-016, and other roadmap
-  lifecycle/intake/persistence/UI findings remain. No Mobile source was changed this session.
-  The program is not claimed bug-free.
+- Final-source suites: **961 Desktop tests OK, 10 skipped**; **108 Mobile Kotlin/JVM tests OK**;
+  static gate: **0 undefined names**. Run `python3 tools/test_mobile_jvm.py` (Python 3.11+, JDK 17+)
+  for the SDK-independent JVM gate; Maven dependencies are checksum-pinned and compiler output is temporary.
+  This is NOT Android lint, APK compilation, instrumentation, Activity rendering or an on-device gate.
+  No GUI was run in session 32; historical GUI results are not a final-source gate.
+- **84 independent findings remain OPEN** (0 S1 / 33 S2 / 51 S3). Zero catalogued open S1 does not
+  guarantee no undiscovered data-loss defects or platform issues. BF-008 actual Windows/Android validation,
+  full frozen-source GUI, remaining lifecycle/intake/persistence/UI repairs and integrated release gates
+  remain. The roadmap is not complete and the program is not claimed bug-free.
 - No tag, release or deployment was performed. Existing installed releases do not receive these
   source repairs until a later release passes its gates. Use the local test commands below;
   real GitHub dispatch/create/release endpoints were not used for reproductions.
