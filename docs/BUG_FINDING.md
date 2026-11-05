@@ -27,11 +27,11 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
-| S2 | 31 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 10 (BF-001, BF-014, BF-026, BF-033, BF-035, BF-051, BF-105, BF-106, BF-108, BF-109) |
-| S3 | 50 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 4 (BF-028, BF-057, BF-095, BF-104) |
+| S2 | 29 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-039, BF-041, BF-042, BF-045, BF-046, BF-053, BF-054, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 12 (BF-001, BF-014, BF-026, BF-033, BF-035, BF-048, BF-051, BF-055, BF-105, BF-106, BF-108, BF-109) |
+| S3 | 49 (BF-006, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 5 (BF-012, BF-028, BF-057, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
-**Remaining top risks:** BF-008 actual Windows/Android gates; remaining lifecycle, intake, persistence and UI findings. Session-33 fixes have Desktop unit and real Kotlin/JVM regression evidence, NOT an Android APK/device/instrumentation or frozen full GUI pass. File exception rollback is not a database/filesystem power-loss transaction; backups/journals remain for manual recovery.
+**Remaining top risks:** BF-008 actual Windows/Android gates; remaining lifecycle, intake, persistence and UI findings. Session-34 fixes have Desktop unit and real Kotlin/JVM regression evidence, NOT an Android APK/device/instrumentation or frozen full GUI pass. File exception rollback is not a database/filesystem power-loss transaction; backups/journals remain for manual recovery.
 
 ## Findings
 
@@ -267,7 +267,9 @@ same task again without being told what is wrong, so it usually sends the same f
 next prompt has a section *"Your last delivery failed the user's tests: <note> — fix that"* (like the repair /
 troubleshooting prompts), and the old *"tests pass"* claim is shown as contradicted.
 
-### BF-012 · S3 · OPEN — the "answer was cut off — ask to continue" step outlives the prompt it belongs to
+### BF-012 · S3 · FIXED (77b18a25) — the "answer was cut off — ask to continue" step outlives the prompt it belongs to
+
+**Repair evidence — session 34 / V5.23–V5.24:** Desktop and Mobile Home now project a continuation only while its handoff is open, its task is nonterminal and it still belongs to the active attempt. Closed, missing and replaced prompts no longer expose Copy/Paste-the-rest actions. Projection is read-only: legacy saved partial answers remain inspectable rather than being deleted. Actual guided cut-off -> Drop reproductions failed before repair on both platforms; tests now verify hidden stale cards, stale action refusal without mutation, accepted/rejected/superseded/missing legacy handoffs and a newer attempt. Mobile counterpart a4dc6ae4; tests b518b152/73f3d711.
 
 **Where:** `aiwb/v2/guide.py` `steps()` shows `settings.guide.continue` (rank 0, top of Home) without checking that
 its `for` handoff is still open; `abandon` / `reject_handoff` / `troubleshoot` do not clear it.
@@ -1077,7 +1079,9 @@ user is asked a question that was already answered.
 [text] (the form then offers it pre-selected, plus *Other answer…*). For `recommendation` sentences use
 `choices.parse_options()` to split "X because …" into option *X* + rationale.
 
-### BF-048 · S2 · OPEN — end of the roadmap: "nothing left" written in words is refused, and the correction prompt forces the PM to **invent work**
+### BF-048 · S2 · FIXED (c4698f29) — end of the roadmap: "nothing left" written in words is refused, and the correction prompt forces the PM to **invent work**
+
+**Repair evidence — session 34 / V5.23–V5.24:** Desktop and Mobile recognize whole unambiguous completion statements (nothing/nothing left/complete/completed/done/No, the project is complete), case and terminal punctuation, and empty arrays. Shared fixture cca8c072 also rejects ambiguous negatives such as not done, no tests yet and nothing left except testing. No arbitrary no-prefix inference is used. Desktop correction prompt e2244e1d offers actual operations OR operations: [] with roadmap_remaining: false and explicitly forbids inventing work; Mobile refusal 194d0ed8 gives the same recovery contract. Unknown/missing decisions remain unknown, and existing open tasks still prevent completion. Real proposal import/review tests on both platforms verify completion reaches F26 without task mutation; unknown decision refusal does not write state. Mobile parser 00a01d45.
 
 **Where:** `aiwb/v2/report.py` `parse_remaining()` knows only `true/yes/y/1` and `false/no/n/0/none`; anything else
 (`"nothing left"`, `"No, the project is complete"`, `"nothing"`, `[]`, missing field) is `None`. `proposals.import_data()`
@@ -1246,7 +1250,9 @@ text back to the model as the project's truth.
 and outside JSON string values); keep ZWNJ / ZWJ / NBSP inside bodies and strings. A leading BOM of the whole answer
 may still be removed. If a body ever has to be changed, say so per file.
 
-### BF-055 · S2 · OPEN — custom team (wizard): a task whose owner was removed / disabled, or that has no owner, is sent to the **project manager's** chat
+### BF-055 · S2 · FIXED (780fda13) — custom team (wizard): a task whose owner was removed / disabled, or that has no owner, is sent to the **project manager's** chat
+
+**Repair evidence — session 34 / V5.23–V5.24:** Desktop dispatch, Home and direct task starts now share enabled-owner resolution; Mobile mirrors it (0858ced6/6dc92c5b/ec990505). Explicit enabled owners remain binding. Orphaned owners fall back to the least-busy enabled implementer, else another enabled worker, with deterministic ID tie-break; never to a manager or disabled template by fallback. If no worker exists, dispatch omits the task, Home offers assignment/replanning guidance instead of an impossible Prepare action, and direct start refuses without state mutation. Team editor/start form require explicit reassignment of open tasks before removal (efac9a3d/0a02cd29); the error names tasks and directs the user to their task editor. Historical agents remain disabled, not deleted. Start-form preflight runs before brief writes. Tests reproduce manager fallback and unguarded removal, drive custom-team direct starts/Home, exercise missing/disabled/empty owners, no-worker recovery, explicit-owner/load ranking, terminal history and injected save failure preserving state. No Mobile team-editor API exists in core; no such port is claimed.
 
 **Where:** `aiwb/v2/waves.py` `_owner()` and `aiwb/v2/guide.py` `_owner()`: when the owner is missing or disabled they
 fall back to `"agent-implementer"` if it exists, else `next(iter(agents))`. Since 5.9.0 a wizard project has **no**
