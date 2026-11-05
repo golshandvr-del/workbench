@@ -93,6 +93,19 @@ class LedgerTests(Base):
 
 
 class ResourceTests(Base):
+    def test_bf061_editing_old_chat_does_not_select_it(self):
+        from unittest.mock import patch
+        acc = self.p.resources.add_account({"display_name": "Account"})
+        with patch("aiwb.v2.resources.now_utc", return_value="2026-01-01T00:00:00Z"):
+            old = self.p.resources.bind_chat("agent-implementer", acc["account_profile_id"], chat_name="old")
+        with patch("aiwb.v2.resources.now_utc", return_value="2026-01-02T00:00:00Z"):
+            new = self.p.resources.bind_chat("agent-implementer", acc["account_profile_id"], chat_name="new")
+        self.p.resources.update_binding(old["chat_binding_id"], {"note": "archived"})
+        current = self.p.resources.current_binding("agent-implementer")
+        self.assertEqual(current["chat_binding_id"], new["chat_binding_id"])
+        self.p.resources.confirm_binding(old["chat_binding_id"])
+        self.assertEqual(self.p.resources.current_binding("agent-implementer")["chat_binding_id"], old["chat_binding_id"])
+
     def test_account_profile_without_credentials(self):
         acc = self.p.resources.add_account({"display_name": "GPT paid — work", "provider": "GPT", "plan": "paid"})
         self.assertTrue(acc["self_declared"])
