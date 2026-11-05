@@ -549,7 +549,10 @@ class Project(val store: ProjectStore) {
                     var msg = "Answer linked to $hid (${h["status"]}, ${Json.str(h["outcome"]).ifEmpty { "no outcome" }})."
                     val errors = problems.filter { it.severity == "error" }
                     if (errors.isNotEmpty()) msg += " Smart check found problems: " + errors.joinToString("; ") { it.code } + "."
-                    val report = Normalize.truncationReport(src)
+                    val detected = Normalize.truncationReport(src)
+                    // The structural report can consider all markers closed while a file fence is still broken.
+                    val report = if (!detected.truncated && problems.any { it.code == "truncated" })
+                        Normalize.Truncation(true, "unclosed_fence") else detected
                     store.transaction("routed answer continuation") { s ->
                         val guide = Json.obj(Json.obj(s["settings"]).getOrPut("guide") { LinkedHashMap<String, Any?>() })
                         if (report.truncated) {
