@@ -97,11 +97,38 @@ class ProjectStore:
         try:
             data = json.loads(text)
         except ValueError as exc:
-            raise StoreError(f"V2 state file is corrupt ({exc}); a backup is kept next to it. "
-                             "Restore a backup from .workbench/v2/backups or move the file away.") from exc
+            # BF-005: only name copies that really exist; the last good copy is state.json.prev (rotated on every write)
+            if self._prev_is_valid():
+                hint = ("The last good copy (state.json.prev) is intact: call restore_last_good() / choose "
+                        "'Restore the last good copy'.")
+            else:
+                hint = "No usable backup exists; move the file away only if you accept starting an empty project."
+            raise StoreError(f"V2 state file is corrupt ({exc}). {hint}") from exc
         if not isinstance(data, dict):
             raise StoreError("V2 state file is not a JSON object")
         return data
+
+    @property
+    def prev_path(self) -> Path:
+        return self.dir / "state.json.prev"
+
+    def _prev_is_valid(self) -> bool:
+        try:
+            return isinstance(json.loads(self.prev_path.read_text(encoding="utf-8")), dict)
+        except (OSError, ValueError):
+            return False
+
+    def restore_last_good(self) -> bool:
+        """BF-005: replace a damaged state.json with the last good copy; the damaged file is kept aside."""
+        with self._lock:
+            if not self._prev_is_valid():
+                return False
+            if self.path.exists():
+                bad = self.dir / f"state.corrupt-{now_utc().replace(':', '').replace('-', '')}.json"
+                shutil.copy2(self.path, bad)
+            shutil.copy2(self.prev_path, self.path)
+            _CACHE.pop(str(self.path), None)
+            return True
 
     def load(self) -> dict[str, Any]:
         """Return a deep copy of the current state (migrated in memory if needed; never written here)."""
@@ -142,6 +169,12 @@ class ProjectStore:
                 json.dump(data, fh, ensure_ascii=False, indent=1, sort_keys=True)
                 fh.flush()
                 os.fsync(fh.fileno())
+            if self.path.exists() and self.path.stat().st_size > 0:
+                try:  # BF-005: keep the previous (readable) state as the last good copy
+                    json.loads(self.path.read_text(encoding="utf-8"))
+                    shutil.copy2(self.path, self.prev_path)
+                except (OSError, ValueError):
+                    pass
             os.replace(tmp, self.path)
         except BaseException:
             try:
