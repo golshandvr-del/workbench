@@ -28,7 +28,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
 | S2 | 39 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106) | 0 |
-| S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 104) | 0 |
+| S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 104, 107) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
@@ -2314,6 +2314,16 @@ re-plan, like the classic apply.
 **Impact:** two legitimate artifacts with long shared prefixes cannot coexist; selecting the first row can operate on the second archive while still displaying the first row's saved verification metadata. Concurrent attempts also share a temporary path. This is independent of BF-105: both downloads here pass all integrity checks.
 
 **Expected:** sanitize/truncate only the human-readable stem, reserve space for `-<artifact_id>.zip`, and keep the ID/extension unconditionally. Use unique attempt temporary names and verify existing stored paths before claiming cached verification or extraction provenance. Add two-long-name-artifact and extraction-target regression cases.
+
+### BF-107 · S3 · OPEN — a pending paste debounce erases ZIP-specific skipped-file warnings immediately after Load ZIP
+
+**Where:** `aiwb/ui/paste_box.py`: `_modified()` schedules `after(DEBOUNCE_MS, refresh)`. `load_zip()` replaces the text, clears its modified flag and displays `preview_zip()`'s source diagnostics, but does not cancel that already queued refresh. `refresh()` later diagnoses only the canonical text, which no longer contains the skipped ZIP entries. ZIP source warnings/fixes are not retained with `zip_text`.
+
+**Reproduced locally:** create a real `PastePanel`, insert `"previous answer"` into the Text widget, and `root.update()` so `_after` is set. Before the 250ms debounce fires, load a temporary ZIP containing `src/a.py` = `print(1)` and `../secret.txt`. Immediately: **"ZIP ✓ · 1 file from answer.zip · 1 skipped item"**, problems contains **"../secret.txt is an unsafe path — skipped"**. Pump events for 0.5s without editing the loaded text: status changes to **"Files ✓ · 1 file · AIWB file blocks"**, `preview.problems == []`; the unsafe-entry warning and ZIP source summary have vanished. Safe-path filtering itself remains correct.
+
+**Impact:** warning visibility depends on timing. A user choosing a ZIP while a normal text refresh is pending may never notice that files were dropped. Quick mode's later `read_answer()` also only sees the canonical text, so that skipped-entry evidence is not reconstructed there. Existing original-ZIP warning tests inspect the immediate state and miss this delayed replacement.
+
+**Expected:** cancel pending refreshes on explicit ZIP loads and retain source preview diagnostics while the current text equals the canonical ZIP text; merge/recompute deliberately when it actually changes. Cancel owned timers on widget destruction as well. Cover loading over recently edited text and inspect status both immediately and after debounce.
 
 ## Checked and OK
 
