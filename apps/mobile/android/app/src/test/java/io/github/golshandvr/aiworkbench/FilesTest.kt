@@ -88,6 +88,80 @@ class FilesTest {
         assertFalse(File(p.store.root, "evil.py").exists())
     }
 
+    @Test fun bf076DirectRouteStagesAndDiagnosesBeforeAccepting() {
+        val (p, tid) = project()
+        val g = Guide(p)
+        g.perform("task:$tid", "prepare")
+        val routed = p.routeAnswer(answer(p, tid))
+        assertEquals("handoff", routed.kind)
+        val h = State.require(p.state(), "handoffs", routed.ref)
+        assertEquals(2, Json.list(h["staged_files"]).size)
+        assertTrue("diagnosis" in h)
+        assertEquals("old\n", Files.read(p.store, "src/calc.py"))
+        g.perform("handoff:${routed.ref}", "accept_handoff")
+        assertEquals("X = 1\n", Files.read(p.store, "src/util/__init__.py"))
+    }
+
+    @Test fun bf078RepairWritesPartialFilesBeforeExcludingThem() {
+        val (p, tid) = project()
+        val g = Guide(p)
+        g.perform("task:$tid", "prepare")
+        val key = g.steps().first { it.key.startsWith("handoff:") }.key
+        g.perform(key, "paste", mapOf("text" to answer(p, tid).replace("\"complete\"", "\"partial\"")))
+        val out = g.perform(key, "repair")
+        assertTrue(out.prompt, "src/calc.py" in out.prompt)
+        assertEquals("X = 1\n", Files.read(p.store, "src/util/__init__.py"))
+        val h = State.require(p.state(), "handoffs", key.substringAfter(":"))
+        assertEquals("accepted", h["status"])
+        assertEquals(2, Json.list(h["integrated_files"]).size)
+    }
+
+    @Test fun bf079TroubleshootKeepsGoodFilesForManifestOnlyCorrection() {
+        val (p, tid) = project()
+        val g = Guide(p)
+        g.perform("task:$tid", "prepare")
+        val key = g.steps().first { it.key.startsWith("handoff:") }.key
+        g.perform(key, "paste", mapOf("text" to answer(p, tid, b = "README.md")))
+        val out = g.perform(key, "troubleshoot")
+        assertTrue(out.prompt, "src/calc.py" in out.prompt)
+        val next = g.steps().first { it.key.startsWith("handoff:") }
+        val h = State.require(p.state(), "handoffs", next.ref)
+        val manifest = "<<<AIWB_HANDOFF>>>\n" + Json.stringify(linkedMapOf<String, Any?>(
+            "schema_version" to "1.0", "handoff_id" to next.ref, "task_id" to tid,
+            "task_revision" to h["task_revision"], "attempt_id" to h["attempt_id"],
+            "outcome" to "complete", "summary" to "Removed out-of-scope README")) + "\n<<<AIWB_END_HANDOFF>>>\n"
+        g.perform(next.key, "paste", mapOf("text" to manifest))
+        g.perform(next.key, "accept_handoff")
+        assertTrue("return a + b" in Files.read(p.store, "src/calc.py"))
+        assertFalse(File(Files.dir(p.store), "README.md").exists())
+    }
+
+    @Test fun bf079ManifestOnlyFileTaskIsNotCleanAcceptance() {
+        val (p, tid) = project()
+        val g = Guide(p)
+        g.perform("task:$tid", "prepare")
+        val key = g.steps().first { it.key.startsWith("handoff:") }.key
+        val text = answer(p, tid).substringAfter("<<<AIWB_HANDOFF>>>")
+        g.perform(key, "paste", mapOf("text" to "<<<AIWB_HANDOFF>>>" + text))
+        val h = State.require(p.state(), "handoffs", key.substringAfter(":"))
+        assertTrue(Json.list(h["diagnosis"]).any { Json.obj(it)["code"] == "missing_deliverable" })
+    }
+
+    @Test fun integrationFailureDoesNotAcceptOrDiscardPayload() {
+        val (p, tid) = project()
+        val g = Guide(p)
+        g.perform("task:$tid", "prepare")
+        val key = g.steps().first { it.key.startsWith("handoff:") }.key
+        g.perform(key, "paste", mapOf("text" to answer(p, tid)))
+        // A backup destination which is a file must fail before publishing any file.
+        File(p.store.root, "backups").writeText("locked")
+        val before = p.state()
+        try { g.perform(key, "accept_handoff"); fail("integration succeeded with blocked backup") } catch (_: Exception) { }
+        assertEquals(before, p.state())
+        assertEquals("old\n", Files.read(p.store, "src/calc.py"))
+        assertFalse(File(Files.dir(p.store), "src/util/__init__.py").exists())
+    }
+
     @Test fun zipRoundTripAndZipSlip() {
         val (p, _) = project()
         File(Files.dir(p.store), "README.md").writeText("# hi\n")
