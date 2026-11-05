@@ -792,8 +792,7 @@ class Guide:
             return {"message": "Review prompt ready for a reviewer AI (its answer is advice; you decide).",
                     "prompt": review_prompt(c.state(), ref)}
         if action in ("validation_passed", "validation_failed"):
-            inp = {**inp, "result": "passed" if action == "validation_passed" else "failed",
-                   "run_id": str(inp.get("run_id", "")).strip() or str(inp.get("note", "")).strip()[:100]}
+            inp = {**inp, "result": "passed" if action == "validation_passed" else "failed"}
             action = "record_validation"
         if action == "waive_validation":
             out = self.waive_validation(ref, str(inp.get("reason", "")))
@@ -803,8 +802,10 @@ class Guide:
             if result not in ("passed", "failed"):
                 raise ModelError("result must be 'passed' or 'failed' (or use the 'passed' / 'failed' buttons)")
             run = str(inp.get("run_id", "")).strip() or "manual-" + now_utc()
+            task = c.state()["tasks"][ref]
             self.p.evidence.record(type="test_run", subject_type="task", subject_id=ref, source_kind="user",
-                                   result=result, run_id=run, summary="recorded in the guided loop")
+                                   result=result, run_id=run, attempt_id=task.get("active_attempt_id", ""),
+                                   summary=str(inp.get("note", "")) or "recorded in the guided loop")
             out = self.p.evidence.evaluate_task(ref, current_commit=c.base_commit())
             c._dirty("validation recorded")
             return {"message": f"Validation {result} recorded → {ref} {out['status']}."}
