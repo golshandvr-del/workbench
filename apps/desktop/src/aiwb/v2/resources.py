@@ -19,8 +19,11 @@ from .store import ProjectStore, emit, next_id, require
 PLANS = ("free", "paid", "team", "unknown")
 PROVIDERS = ("GPT", "Gemini", "Claude", "Other")
 USAGE_TAGS = ("planning", "architecture", "coding", "review", "research", "tests")
+# BF-062: words such as "token" or "session" are ordinary labels; only a key=value whose VALUE looks random is refused.
+PREFIX_RE = re.compile(r"(ghp_|github_pat_|gho_|sk-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|xox[abp]-)", re.I)
 SECRET_RE = re.compile(r"(ghp_|github_pat_|gho_|sk-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|xox[abp]-|"
-                       r"(?:password|passwd|token|cookie|session|api[_ -]?key)\s*[:=]|[A-Za-z0-9+/]{40,}={0,2}|[0-9a-f]{40,})",
+                       r"(?:password|passwd|token|cookie|session|api[_ -]?key)\s*[:=]\s*[A-Za-z0-9_+/.-]{20,}|"
+                       r"[A-Za-z0-9+/]{40,}={0,2}|[0-9a-f]{40,})",
                        re.I)
 FORBIDDEN_KEYS = ("password", "token", "cookie", "session", "api_key", "apikey", "secret", "credential")
 
