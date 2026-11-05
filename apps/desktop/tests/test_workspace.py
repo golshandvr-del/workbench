@@ -106,6 +106,16 @@ class ResourceTests(Base):
         self.p.resources.confirm_binding(old["chat_binding_id"])
         self.assertEqual(self.p.resources.current_binding("agent-implementer")["chat_binding_id"], old["chat_binding_id"])
 
+    def test_bf062_ordinary_labels_with_token_or_session_are_accepted(self):
+        acc = self.p.resources.add_account({"display_name": "Gemini — session: work", "note": "token: 32k context"})
+        self.assertEqual(acc["display_name"], "Gemini — session: work")
+        b = self.p.resources.bind_chat("agent-implementer", acc["account_profile_id"], chat_name="Session: Monday planning",
+                                       link="https://aistudio.google.com/app/prompts/1aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789abcd")
+        self.assertTrue(b["link"].startswith("https://aistudio.google.com/"))
+        for bad in ("token: abcdefghijklmnopqrstuvwxyz0123", "ghp_abcdefghijklmnop"):
+            with self.assertRaises(Exception):
+                self.p.resources.add_account({"display_name": bad})
+
     def test_account_profile_without_credentials(self):
         acc = self.p.resources.add_account({"display_name": "GPT paid — work", "provider": "GPT", "plan": "paid"})
         self.assertTrue(acc["self_declared"])
