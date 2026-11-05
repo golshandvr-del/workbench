@@ -1484,6 +1484,12 @@ class ProjectManagerCoreTests(unittest.TestCase):
             wb.create_project_folder(self.parent, "existing")
         self.assertEqual(marker.read_text(encoding="utf-8"), "keep")
 
+    def test_bf098_create_project_refuses_empty_or_relative_parent(self) -> None:
+        for bad in (Path(""), Path("."), Path("relative/dir")):
+            with self.assertRaises(wb.WorkbenchError):
+                wb.create_project_folder(bad, "NoWhere")
+        self.assertFalse((Path.cwd() / "NoWhere").exists())
+
     def test_project_profile_templates(self) -> None:
         python_profile = wb.profile_for_project_template("Python desktop application")
         self.assertEqual(python_profile["gui_framework"], "PySide6 (Qt)")
