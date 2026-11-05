@@ -462,7 +462,7 @@ class Project(val store: ProjectStore) {
         return store.transaction("prepare handoff") { s ->
             val task = State.require(s, "tasks", taskId)
             val previous = State.coll(s, "handoffs").values.map { Json.obj(it) }
-                .filter { it["task_id"] == taskId && it["status"] == "accepted" }.maxByOrNull { Json.str(it["handoff_id"]) }
+                .filter { it["task_id"] == taskId && it["status"] in setOf("accepted", "rejected") }.maxByOrNull { Json.str(it["handoff_id"]) }
             val attId = newAttemptId(); val now = State.nowUtc()
             val prev = Json.str(task["active_attempt_id"])
             val attempts = State.coll(s, "attempts")
@@ -744,13 +744,13 @@ class Project(val store: ProjectStore) {
 
     // ---------------------------------------------------------------- evidence
 
-    fun recordEvidence(type: String, taskId: String, result: String, summary: String = "", runId: String = ""): Obj =
+    fun recordEvidence(type: String, taskId: String, result: String, summary: String = "", runId: String = "", attemptId: String = ""): Obj =
         store.transaction("record evidence") { s ->
             if ((type == "test_run" || type == "build_run") && runId.isBlank()) throw ModelError("$type evidence needs the run ID or commit it was observed for")
             val t = State.require(s, "tasks", taskId)
             val eid = State.nextId(s, "evidence")
             val e: Obj = linkedMapOf("schema_version" to State.SCHEMA_VERSION, "evidence_id" to eid, "type" to type, "subject_type" to "task",
-                "subject_id" to taskId, "attempt_id" to "", "task_revision" to Json.int(t["task_revision"]).toLong(),
+                "subject_id" to taskId, "attempt_id" to attemptId, "task_revision" to Json.int(t["task_revision"]).toLong(),
                 "source" to linkedMapOf<String, Any?>("kind" to "user", "run_id" to runId.take(120), "commit_sha" to ""),
                 "result" to result, "verified" to true, "verification_method" to "user", "summary" to summary.take(2000),
                 "observed_at_utc" to State.nowUtc(), "state_revision" to (Json.int(s["state_revision"]) + 1).toLong(),
@@ -805,9 +805,10 @@ class Project(val store: ProjectStore) {
         return evaluateTask(taskId)
     }
 
-    fun recordValidation(taskId: String, passed: Boolean, runId: String): Pair<String, List<String>> {
-        recordEvidence("test_run", taskId, if (passed) "passed" else "failed", "recorded in the guided loop",
-            runId.ifBlank { "manual-" + State.nowUtc() })
+    fun recordValidation(taskId: String, passed: Boolean, runId: String, note: String = ""): Pair<String, List<String>> {
+        val task = State.require(state(), "tasks", taskId)
+        recordEvidence("test_run", taskId, if (passed) "passed" else "failed", note.ifEmpty { "recorded in the guided loop" },
+            runId.ifBlank { "manual-" + State.nowUtc() }, Json.str(task["active_attempt_id"]))
         return evaluateTask(taskId)
     }
 
