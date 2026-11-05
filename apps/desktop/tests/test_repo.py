@@ -54,6 +54,7 @@ class FakeHub(FakeGitHub):
             if t in self.tags:
                 return ApiResult(422, {"message": "Reference already exists"}, {})
             self.tags[t] = json.loads(body)["sha"]
+            self.refs[t] = self.tags[t]
             self.calls.append((method, "/git/refs"))
             return ApiResult(201, {}, {})
         if url.endswith("/releases") and method == "POST":
