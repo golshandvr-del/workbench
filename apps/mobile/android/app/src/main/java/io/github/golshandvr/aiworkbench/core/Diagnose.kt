@@ -13,7 +13,8 @@ object Diagnose {
 
     data class Result(val acceptable: Boolean, val problems: List<Problem>)
 
-    data class FileBlock(val path: String, val body: String, val fenced: Boolean, val fenceBalanced: Boolean)
+    data class FileBlock(val path: String, val body: String, val fenced: Boolean, val fenceBalanced: Boolean,
+        val action: String = "write", val complete: Boolean = true)
 
     const val TROUBLESHOOT_ATTEMPTS = 3
 
@@ -31,28 +32,34 @@ object Diagnose {
         ".cs", ".swift", ".rb", ".php", ".gradle", ".yml", ".yaml")
     val SEVERITY = mapOf("truncated" to "error", "no_manifest" to "error", "wrong_attempt" to "error", "unsafe_path" to "error",
         "out_of_scope" to "error", "empty_file" to "error", "missing_deliverable" to "error", "failed_outcome" to "error",
-        "copy_damage" to "warning", "unverified_test_claim" to "warning")
+        "unsupported_action" to "error", "copy_damage" to "warning", "unverified_test_claim" to "warning")
 
     /** AIWB file blocks, and whether the last block was left open. */
     fun parseFiles(text: String): Pair<List<FileBlock>, Boolean> {
         val files = ArrayList<FileBlock>()
         var path: String? = null
+        var attrs = emptyMap<String, String>()
         var lines = ArrayList<String>()
+        var incomplete = false
         for (line in text.replace("\r\n", "\n").split("\n")) {
-            if (path == null) {
-                val m = FILE_HEAD.find(line) ?: continue
-                path = ATTR.findAll(m.groupValues[1]).associate { it.groupValues[1] to it.groupValues[2] }["path"] ?: ""
+            val m = FILE_HEAD.find(line)
+            if (m != null) {
+                if (path != null) { files.add(close(path, lines, attrs, false)); incomplete = true }
+                attrs = ATTR.findAll(m.groupValues[1]).associate { it.groupValues[1] to it.groupValues[2] }
+                path = attrs["path"] ?: ""
                 lines = ArrayList()
-                continue
+            } else if (path != null) {
+                if (line.trim() == FILE_END) { files.add(close(path, lines, attrs, true)); path = null }
+                else lines.add(line)
             }
-            if (line.trim() == FILE_END) { files.add(close(path, lines)); path = null } else lines.add(line)
         }
-        val open = path != null
-        if (path != null) files.add(close(path, lines))
-        return files to open
+        if (path != null) files.add(close(path, lines, attrs, false))
+        return files to (incomplete || path != null)
     }
 
-    private fun close(path: String, raw: List<String>): FileBlock {
+    private fun close(path: String, raw: List<String>, attrs: Map<String, String>, complete: Boolean): FileBlock {
+        val action = (attrs["action"] ?: "write").trim().lowercase(java.util.Locale.ROOT)
+        if (attrs["body"].equals("raw", true)) return FileBlock(path, raw.joinToString("\n"), false, true, action, complete)
         var lines = raw.dropWhile { it.isBlank() }.dropLastWhile { it.isBlank() }
         val m = lines.firstOrNull()?.let { FENCE.find(it) }
         var balanced = true
@@ -61,7 +68,7 @@ object Diagnose {
             balanced = lines.size > 1 && lines.last().trim() == mark
             lines = if (balanced) lines.subList(1, lines.size - 1) else lines.drop(1)
         }
-        return FileBlock(path, lines.joinToString("\n"), m != null, balanced)
+        return FileBlock(path, lines.joinToString("\n"), m != null, balanced, action, complete)
     }
 
     /** Where a task may write: `allowed_paths` plus `scope.include` (empty = not restricted). */
@@ -74,7 +81,8 @@ object Diagnose {
     fun inScope(path: String, allowed: List<String>): Boolean {
         if (allowed.isEmpty()) return true
         for (raw in allowed) {
-            val a = raw.trim()
+            var a = raw.trim().replace('\\', '/')
+            while (a.startsWith("./")) a = a.substring(2)
             val base = a.trimEnd('*').trimEnd('/')
             if (base.isEmpty() || path == base || path.startsWith("$base/") || (a.endsWith("*") && path.startsWith(a.trimEnd('*')))) return true
         }
@@ -118,7 +126,8 @@ object Diagnose {
         if (attemptId.isNotEmpty() && claimed.isNotEmpty() && claimed != attemptId)
             add("wrong_attempt", "the answer is for attempt $claimed, this prompt was $attemptId")
         for (f in files) {
-            val p = f.path
+            if (f.action != "write") { add("unsupported_action", "${f.path}: ${f.action} is not supported; perform it manually", f.path); continue }
+            val p = Files.safePath(f.path)
             if (unsafe(p)) { add("unsafe_path", "unsafe file path '$p'", p); continue }
             if (!inScope(p, allowedPaths)) add("out_of_scope", "$p is outside this task's allowed paths (${allowedPaths.joinToString(", ")})", p)
             if (f.fenced && !f.fenceBalanced && !openFile) add("truncated", "the code fence in $p was never closed", p)
@@ -129,8 +138,8 @@ object Diagnose {
             else if (low.endsWith(".py") && pythonIndentLost(f.body))
                 add("copy_damage", "$p lost its indentation (a block line is not followed by an indented line)", p)
         }
-        val delivered = files.map { it.path }.toSet()
-        for (p in expectedPaths) if (p !in delivered) add("missing_deliverable", "expected file $p was not delivered", p)
+        val delivered = files.filter { it.action == "write" }.map { Files.safePath(it.path) }.toSet()
+        for (p in expectedPaths) if (Files.safePath(p) !in delivered) add("missing_deliverable", "expected file $p was not delivered", p)
         val outcome = man?.get("outcome")?.toString().orEmpty()
         if (outcome == "failed" || outcome == "blocked") add("failed_outcome", "the AI reports the outcome '$outcome'")
         if (Json.list(man?.get("validation_claims")).isNotEmpty() || TEST_CLAIM.containsMatchIn(t))
