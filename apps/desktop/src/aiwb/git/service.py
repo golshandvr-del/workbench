@@ -147,7 +147,7 @@ class GitCommandRunner:
         exe = self.executable()
         if not exe:
             raise GitCommandError("Git was not found. Use the Install Git control in the Git / GitHub tab, or install Git for Windows and restart the app.")
-        command = [exe, "-C", root_arg, *args]
+        command = [exe, "-c", "core.quotepath=false", "-C", root_arg, *args]
         env = dict(self._env_provider())
         env["GIT_TERMINAL_PROMPT"] = "0"
         try:
