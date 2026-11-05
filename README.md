@@ -18,11 +18,15 @@ The active plan is [V5.21–V5.30](ROADMAP.md), replacing the completed V5.16–
 preserved verbatim in `docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Short_FA.md`.
 These are repair-stage targets, **not released application versions**; Desktop remains 5.20.0.
 
-- Repaired and regression-tested findings (Desktop and/or Mobile, as catalogued): **BF-001,
-  BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-011, BF-012, BF-013, BF-014, BF-016, BF-017,
-  BF-026, BF-028, BF-033,
-  BF-035, BF-043, BF-048, BF-051, BF-055, BF-057, BF-076, BF-078, BF-079, BF-095, BF-104, BF-105,
-  BF-106, BF-108, BF-109**. This is **31/106 (29.25%)** by finding count, not effort or release readiness.
+- Repaired and regression-tested findings (Desktop and/or Mobile, as catalogued): **
+  BF-001, BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-011,
+  BF-012, BF-013, BF-014, BF-015, BF-016, BF-017, BF-024, BF-026,
+  BF-027, BF-028, BF-031, BF-032, BF-033, BF-035, BF-039, BF-042,
+  BF-043, BF-044, BF-047, BF-048, BF-051, BF-052, BF-053, BF-054,
+  BF-055, BF-057, BF-061, BF-063, BF-064, BF-065, BF-066, BF-076,
+  BF-078, BF-079, BF-081, BF-089, BF-091, BF-092, BF-093, BF-094,
+  BF-095, BF-104, BF-105, BF-106, BF-108, BF-109**.
+  This is **54/106 (50.94%)** by finding count, not effort or release readiness.
 - Quick and guided deliveries share full-set filesystem preflight, immutable flushed backups,
   exact preview hashes and reverse rollback on file or state-save exceptions. Guided acceptance
   commits with integration; Restore is retryable and preserves later user edits. Empty files are
@@ -64,14 +68,22 @@ These are repair-stage targets, **not released application versions**; Desktop r
   its full stored note, separate run ID and attempt identity. Failed validation contradicts the prior
   delivery's model claims. Rejected delivery lineage and user reason survive project restart and reach
   the next self-contained prompt rather than being called the first handoff.
-- Final-source suites: **981 Desktop tests OK, 10 skipped**; **115 Mobile Kotlin/JVM tests OK**;
+- Session 36 protects raw file fences and Unicode payloads, refuses unsupported file operations, isolates
+  missing block boundaries, repairs JSON without corrupting literal quotes, accepts safe ZIP/path aliases,
+  preserves readable source context (including empty/UTF-16 files), and refuses lossy helper-prefix rewrites.
+  Manager rescue preserves decision choices and Persian title identity; old-chat metadata edits do not
+  change current chat. Architecture status/severity validation and Unicode Git display have regressions.
+- **23 additional findings were closed this session, not 50.** BF-045/046/098 are partial repairs and
+  remain OPEN: new-task prerequisite resolution, role/comment handling and the project-creation service
+  boundary still need work. The latest owner request ended new subtasks for this checkpoint.
+- Final-source suites: **1009 Desktop tests OK, 10 skipped**; **120 Mobile Kotlin/JVM tests OK**;
   static gate: **0 undefined names**. Run `python3 tools/test_mobile_jvm.py` (Python 3.11+, JDK 17+)
   for the SDK-independent JVM gate; Maven dependencies are checksum-pinned and compiler output is temporary.
   This is NOT Android lint, APK compilation, instrumentation, Activity rendering or an on-device gate.
-  Session 35 real Tk helper smoke passes under Xvfb with injected Save/Remove failures, unchanged
+  Historical session 35 real Tk helper smoke passed under Xvfb with injected Save/Remove failures, unchanged
   disk state, successful retries and normal helper workflow against a local fake API. This is only
-  the helper scenario, not the full frozen-source GUI release gate. Native Windows was not tested.
-- **75 independent findings remain OPEN** (0 S1 / 26 S2 / 49 S3). Zero catalogued open S1 does not
+  the helper scenario, not the full frozen-source GUI release gate. Session 36 ran no new GUI gate. Native Windows was not tested.
+- **52 independent findings remain OPEN** (0 S1 / 18 S2 / 34 S3). Zero catalogued open S1 does not
   guarantee no undiscovered data-loss defects or platform issues. BF-008 actual Windows/Android validation,
   full frozen-source GUI, remaining lifecycle/intake/persistence/UI repairs and integrated release gates
   remain. The roadmap is not complete and the program is not claimed bug-free.
