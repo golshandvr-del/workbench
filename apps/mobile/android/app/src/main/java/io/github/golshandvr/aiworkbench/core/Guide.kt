@@ -467,7 +467,9 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         val rep = Normalize.truncationReport(text)
         val r = project.routeAnswer(text)
         if (r.kind in setOf("proposal", "handoff", "charter_rejected")) {
-            setGuide(st.key == "manager_update" || st.key == "charter", "continue" to null)
+            val continuation = if (r.kind == "handoff")
+                Json.obj(Json.obj(project.state()["settings"])["guide"])["continue"] else null
+            setGuide(st.key == "manager_update" || st.key == "charter", "continue" to continuation)
             var msg = r.message
             if (r.kind == "handoff") {
                 val probs = Json.list(State.require(project.state(), "handoffs", r.ref)["diagnosis"]).map {
