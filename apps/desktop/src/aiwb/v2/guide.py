@@ -107,10 +107,8 @@ def _copied(state: dict[str, Any], h: dict[str, Any]) -> bool:
 
 
 def _owner(state: dict[str, Any], t: dict[str, Any]) -> str:
-    o = t.get("owner_agent_id") or ""
-    if o and (state["agents"].get(o) or {}).get("enabled", True) and o in state["agents"]:
-        return o
-    return "agent-implementer" if "agent-implementer" in state["agents"] else next(iter(state["agents"]), "")
+    from .waves import _owner as dispatch_owner
+    return dispatch_owner(state, t)
 
 
 # -- prompts ---------------------------------------------------------------------------------------
@@ -398,6 +396,12 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                               _a("waive_validation", "I can't run tests — accept on review…", "reason"),
                               _a("record_validation", "Record the result (passed/failed)…", "result", "run_id")], ref=tid, rank=14))
         elif s_ in ("ready", "in_progress"):
+            if not _owner(st, t):
+                out.append(_step(f"task:{tid}", "decision", f"Assign an enabled worker to {name}",
+                                 "No enabled worker is available. Edit the team and assign an AI; "
+                                 "implementation work will not be sent to the project manager by default.",
+                                 [_a("manager_prompt", "Ask the project manager to re-plan")], ref=tid, rank=38))
+                continue
             if tid not in desk["next"]:
                 continue  # waits for a free chat or for its wave (roadmap 4.1.0, dispatch desk)
             who = _owner(st, t)
