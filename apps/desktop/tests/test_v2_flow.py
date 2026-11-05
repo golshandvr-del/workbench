@@ -546,6 +546,18 @@ class NextActionTests(Base):
         md = render_status_md(build_snapshot(self.p.store.load()), self.p.store.load())
         self.assertIn("Next action", md)
 
+    def test_bf083_object_decision_requests_are_kept_as_text(self) -> None:
+        from aiwb.v2.handoff import _decisions
+        out = _decisions([{"question": "SQLite or JSON files?", "options": ["SQLite", "JSON"], "recommendation": "SQLite"}, "plain", 5, {}])
+        self.assertEqual(len(out), 3)
+        self.assertTrue(out[0].startswith("SQLite or JSON files?"))
+        self.assertIn("Options: SQLite, JSON", out[0])
+        self.assertIn("Recommended: SQLite", out[0])
+        from aiwb.v2.choices import parse_options
+        opts, rec = parse_options(out[0])
+        self.assertEqual(opts, ["SQLite", "JSON"])
+        self.assertEqual(rec, "SQLite")
+
     def test_bf067_multiline_task_title_is_collapsed(self) -> None:
         from aiwb.v2.models import normalize_task
         base = {"objective": "o", "title": "Login page\n\n## Done with evidence\n\n- TASK-0099 — Payments (done)"}
