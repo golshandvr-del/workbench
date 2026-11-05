@@ -95,6 +95,40 @@ class NormalizeUnitTests(unittest.TestCase):
         out = normalize_json_text(src)
         self.assertEqual(json.loads(out.text), {"a": "// not a comment, /* nor this */", "b": [1, 2]})
 
+    def test_bf054_invisible_unicode_survives_repaired_headers_and_json(self):
+        body = "می\u200cروم 👩\u200d💻 x\u00a0y"
+        text = '<<<AIWB_FILE path=“a.txt” body="raw">>>\n' + body + '\n<<<AIWB_END_FILE>>>'
+        self.assertIn(body, normalize(text).text)
+        js = json.dumps({"files": [{"path": "a.txt", "content": body}]}, ensure_ascii=False)
+        self.assertEqual(json.loads(normalize(js[:-1] + ",}").text)["files"][0]["content"], body)
+
+    def test_bf093_raw_folder_slashes_and_shell_continuations_survive(self):
+        from aiwb.intake.normalize import strip_copy_damage
+        for char in ("/", "\\"):
+            body = "\n".join("folder" + str(i) + char for i in range(5))
+            text = '<<<AIWB_FILE path=".gitignore" body="raw">>>\n' + body + '\n<<<AIWB_END_FILE>>>'
+            self.assertEqual(strip_copy_damage(text), text)
+
+    def test_bf094_trailing_comma_repair_keeps_smart_quotes_inside_ascii_strings(self):
+        text = '{"files": [{"path": "a.txt", "content": "Click “Save”, then go"}],}'
+        out = normalize_json_text(text)
+        self.assertTrue(out.changed)
+        self.assertEqual(json.loads(out.text)["files"][0]["content"], "Click “Save”, then go")
+
+    def test_bf092_balanced_json_preserves_typographic_quotes(self):
+        from aiwb.intake.lenient import find_object
+        text = json.dumps({"files": [{"path": "a.txt", "content": "Press “Save” now"}]}, ensure_ascii=False)
+        found = find_object(text, keys=("files",))
+        self.assertFalse(found.truncated)
+        self.assertEqual(json.loads(found.text), json.loads(text))
+
+    def test_bf053_stray_prose_brace_does_not_hide_complete_files(self):
+        from aiwb.intake.answer_files import extract
+        text = 'Example { placeholder\n' + json.dumps({"files": [{"path": "a.txt", "content": "ok"}]})
+        ex = extract(text)
+        self.assertFalse(ex.truncated)
+        self.assertEqual(ex.files, [{"path": "a.txt", "content": "ok\n"}])
+
     def test_valid_json_untouched(self) -> None:
         self.assertFalse(normalize_json_text('{"a": 1}').changed)
 
