@@ -159,6 +159,59 @@ class EditTeam(Base):
         self.assertFalse(st["agents"]["agent-bob"]["enabled"])
         self.assertEqual([x["agent_id"] for x in ts.team_rows(st)], ["agent-project-manager", "agent-alice"])
 
+    def test_bf055_removal_with_open_work_requires_explicit_reassignment(self) -> None:
+        from unittest.mock import patch
+        task = self.p.tasks.create({"title": "Owned work", "objective": "core", "owner_agent_id": "agent-bob",
+                                    "acceptance_criteria": ["works"]}, status="ready")
+        r = ts.team_rows(self.p.store.load())[:2]
+        before = self.p.store.load()
+        with self.assertRaisesRegex(ModelError, "[Rr]eassign.*" + task["task_id"]):
+            ts.save_team(self.p.store, r)
+        self.assertEqual(self.p.store.load(), before)
+        self.p.tasks.update(task["task_id"], {"owner_agent_id": "agent-alice"})
+        reassigned = self.p.store.load()
+        with patch.object(self.p.store, "_write", side_effect=OSError("disk full")):
+            with self.assertRaises(OSError):
+                ts.save_team(self.p.store, r)
+        self.assertEqual(self.p.store.load(), reassigned)
+        ts.save_team(self.p.store, r)
+        self.assertEqual(self.p.tasks.get(task["task_id"])["owner_agent_id"], "agent-alice")
+
+    def test_bf055_missing_owner_never_falls_back_to_manager(self) -> None:
+        from aiwb.v2 import waves
+        from aiwb.v2.controller import ProjectsController
+        from aiwb.v2.guide import Guide, _owner
+        c = ProjectsController(self.root)
+        for old_owner in ("", "agent-bob", "agent-missing"):
+            with self.subTest(owner=old_owner):
+                task = self.p.tasks.create({"title": "Core", "objective": "core", "acceptance_criteria": ["works"]}, status="ready")
+                tid = task["task_id"]
+                with self.p.store.transaction("legacy ownership fixture") as s:
+                    s["agents"]["agent-bob"]["enabled"] = False
+                    s["tasks"][tid]["owner_agent_id"] = old_owner
+                st = self.p.store.load()
+                self.assertEqual(waves._owner(st, st["tasks"][tid]), "agent-alice")
+                self.assertEqual(_owner(st, st["tasks"][tid]), "agent-alice")
+                step = Guide(c).find(f"task:{tid}")
+                self.assertEqual(step["agent_id"], "agent-alice")
+                h = c.start_task(tid)
+                self.assertEqual(h["to_agent_id"], "agent-alice")
+                c.resolve_handoff(h["handoff_id"], False, "next fixture")
+                self.p.tasks.transition(tid, "cancelled")
+        # No worker: an actionable decision card replaces the impossible Prepare button.
+        task = self.p.tasks.create({"title": "No worker", "objective": "core", "acceptance_criteria": ["works"]}, status="ready")
+        with self.p.store.transaction("no enabled workers") as s:
+            s["agents"]["agent-alice"]["enabled"] = False
+        before = c.state()
+        self.assertEqual(waves._owner(before, task), "")
+        self.assertNotIn(task["task_id"], waves.dispatch(before)["next"])
+        step = Guide(c).find(f"task:{task['task_id']}")
+        self.assertNotIn("prepare", [a["id"] for a in step["actions"]])
+        self.assertIn("manager_prompt", [a["id"] for a in step["actions"]])
+        with self.assertRaisesRegex(ModelError, "enabled worker"):
+            c.start_task(task["task_id"])
+        self.assertEqual(c.state(), before)
+
     def test_every_user_ai_keeps_its_lane(self) -> None:
         self.p.tasks.create({"title": "core", "owner_agent_id": "agent-alice", "objective": "core",
                              "acceptance_criteria": ["works"]})
