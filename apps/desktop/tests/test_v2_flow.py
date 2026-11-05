@@ -360,6 +360,62 @@ class ProposalTests(Base):
             with self.assertRaises(ModelError):
                 self.p.proposals.import_text(missing)
 
+    def test_bf002_emergency_cycle_is_skipped_and_preview_matches_review(self):
+        from aiwb.v2.tasks import validate_graph
+        x = self.ready_task("X")
+        p = self.p.proposals.import_text(self.block(self.p.store.revision, [
+            {"operation": "create_task", "temporary_ref": "hotfix", "title": "Hotfix",
+             "depends_on_refs": [x["task_id"]]}],
+            emergency_tasks=[{"ref": "hotfix", "blocks": [x["task_id"]]}]))
+        before = self.p.store.load()
+        preview = self.p.proposals.preview(p["proposal_id"], [0])
+        self.assertEqual(self.p.store.load(), before, "preview changed persistent state")
+        out = self.p.proposals.review(p["proposal_id"], [0])["result"]
+        self.assertEqual(validate_graph(self.p.store.load()["tasks"]), [])
+        self.assertEqual(self.p.tasks.get(x["task_id"])["status"], "ready")
+        self.assertEqual(self.p.tasks.get(x["task_id"])["depends_on"], [])
+        self.assertTrue(out["decision"]["skipped_blocks"])
+        self.assertEqual(preview["decision"]["skipped_blocks"], out["decision"]["skipped_blocks"])
+        self.assertIn("cycle", " ".join(out["decision"]["skipped_blocks"]))
+
+    def test_bf003_reject_invalid_existing_graph_never_changes_tasks(self):
+        a = self.ready_task("A")
+        b = self.ready_task("B")
+        with self.p.store.transaction("legacy cyclic graph") as s:
+            s["tasks"][a["task_id"]]["depends_on"] = [b["task_id"]]
+            s["tasks"][b["task_id"]]["depends_on"] = [a["task_id"]]
+        p = self.p.proposals.import_text(self.block(self.p.store.revision, [
+            {"operation": "report_risk", "description": "re-plan needed"}],
+            emergency_tasks=[{"ref": a["task_id"], "blocks": [b["task_id"]]}]))
+        tasks_before = self.p.store.load()["tasks"]
+        self.assertEqual(self.p.proposals.preview(p["proposal_id"], [])["errors"], [])
+        out = self.p.proposals.review(p["proposal_id"], [], note="Please break the cycle")
+        self.assertEqual(out["status"], "rejected")
+        self.assertEqual(out["result"]["note"], "Please break the cycle")
+        self.assertEqual(self.p.store.load()["tasks"], tasks_before)
+        self.assertNotIn("last_decision", self.p.store.load()["settings"].get("flow", {}))
+
+    def test_bf004_remove_last_dependency_refreshes_existing_task(self):
+        a = self.ready_task("A")
+        b = self.p.tasks.create({"title": "B", "objective": "b", "depends_on": [a["task_id"]]})
+        self.p.tasks.transition(b["task_id"], "blocked", "waiting for " + a["task_id"])
+        manual = self.ready_task("Manual")
+        self.p.tasks.transition(manual["task_id"], "blocked", "waiting for user sign-off")
+        # A manual block with different wording must not be cleared by refresh.
+        with self.p.store.transaction("manual reason") as s:
+            s["tasks"][manual["task_id"]]["blocked_reason"] = "user sign-off needed"
+        p = self.p.proposals.import_text(self.block(self.p.store.revision, [
+            {"operation": "remove_dependency", "task_id": b["task_id"], "depends_on_task_id": a["task_id"]}]))
+        self.p.proposals.review(p["proposal_id"], [0])
+        self.assertEqual(self.p.tasks.get(b["task_id"])["status"], "ready")
+        self.assertEqual(self.p.tasks.get(b["task_id"])["blocked_reason"], "")
+        self.assertEqual(self.p.tasks.get(manual["task_id"])["status"], "blocked")
+        # Same invariant through the direct TaskService API, not only proposals.
+        self.p.tasks.update(b["task_id"], {"depends_on": [a["task_id"]]})
+        self.assertEqual(self.p.tasks.get(b["task_id"])["status"], "blocked")
+        self.p.tasks.update(b["task_id"], {"depends_on": []})
+        self.assertEqual(self.p.tasks.get(b["task_id"])["status"], "ready")
+
     def test_prompts_and_probe(self):
         pp = planning_prompt({"goal": "Build a todo app"}, self.p.agents.list())
         self.assertIn("AIWB_MANAGER_PROPOSAL", pp)
