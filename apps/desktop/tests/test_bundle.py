@@ -151,5 +151,18 @@ class BundleTests(unittest.TestCase):
         self.assertEqual(ctl.state()["tasks"]["TASK-0001"]["status"], "in_progress")
 
 
+class SafeProjectIdTests(unittest.TestCase):
+    def test_bf021_any_folder_name_exports_an_importable_bundle(self) -> None:
+        for name in ("My Project", "پروژه من", "app (copy)", "x" * 200, "..", "todo"):
+            with self.subTest(name=name):
+                st = {"project_id": name, "state_revision": 1, "tasks": {}, "events": []}
+                b = bundle.export_bundle(st, name=name)
+                self.assertTrue(bundle.PROJECT_ID.match(b["project"]["project_id"]))
+                _, state = bundle.read_bundle(bundle.dumps(b))
+                self.assertEqual(state["project_id"], b["project"]["project_id"])
+        self.assertEqual(bundle.safe_project_id("todo"), "todo")
+        self.assertNotEqual(bundle.safe_project_id("My Project"), bundle.safe_project_id("My  Project!"))
+
+
 if __name__ == "__main__":
     unittest.main()
