@@ -46,6 +46,8 @@ def suggest_route(state: dict[str, Any], task_id: str, request: str) -> dict[str
         route, why = "new_task", "adds an independent capability"
     else:
         route, why = "revise" if in_scope else "new_task", "closest match by the task's scope words"
+    if route == "revise" and t["status"] in ("done", "cancelled", "superseded"):
+        route, why = "new_task", f"task is {t['status']}; create a follow-up instead of revising terminal work"
     ambiguous = sum(hits.values()) != 1
     return {"route": route, "why": why, "ambiguous": ambiguous, "in_scope": in_scope,
             "done": t["status"] == "done"}
@@ -63,7 +65,7 @@ def apply_route(project: Any, task_id: str, route: str, request: str, *, title: 
     if not req:
         raise ModelError("describe the change first")
     if route == "revise":
-        if t["status"] in ("cancelled", "superseded"):
+        if t["status"] in ("done", "cancelled", "superseded"):
             raise ModelError(f"{task_id} is {t['status']}; create a new task instead")
         crit = list(t.get("acceptance_criteria", [])) + [f"Change request: {req[:500]}"]
         out = project.tasks.update(task_id, {"acceptance_criteria": crit}, reason=f"change request: {req[:200]}")
