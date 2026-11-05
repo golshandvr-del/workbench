@@ -88,12 +88,17 @@ def clean_path(value: str) -> str:
 
 def safe_path(path: str) -> str:
     """Relative, no ``..``, no drive letter, nothing under ``.git`` / ``.workbench``; "" when unsafe."""
-    p = (path or "").strip().replace("\\", "/")
-    if not p or p.startswith("/") or re.match(r"^[A-Za-z]:", p) or "\x00" in p:
+    p = (path or "").replace("\\", "/")
+    if not p or p.startswith("/") or re.match(r"^[A-Za-z]:", p):
         return ""
     parts = [x for x in p.split("/") if x not in ("", ".")]
-    if not parts or any(x == ".." for x in parts) or parts[0] in (".git", ".workbench"):
+    if not parts or parts[0].casefold() in (".git", ".workbench"):
         return ""
+    for part in parts:
+        if (part == ".." or part.endswith((".", " "))
+                or any(ord(c) < 32 or c in '<>:"|?*' for c in part)
+                or re.match(r"^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\.|$)", part, re.I)):
+            return ""
     return "/".join(parts)
 
 
