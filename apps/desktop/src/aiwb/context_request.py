@@ -316,7 +316,7 @@ def _expand_folders(items: list[RequestedItem], root: Path, out: list[ResolvedIt
             if inside:
                 for f in sorted(base.rglob("*")):
                     parts = f.relative_to(root).parts
-                    if f.is_file() and not any(p in {".git", ".workbench"} for p in parts):
+                    if f.is_file() and not any(p in {".git", ".workbench", "__pycache__"} for p in parts):
                         found.append("/".join(parts))
         if not found:
             out.append(ResolvedItem(it.path, FOLDER_MODE, "missing", "the folder does not exist or is empty",
