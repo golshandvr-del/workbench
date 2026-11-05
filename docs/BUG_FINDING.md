@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 39 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106) | 0 |
+| S2 | 40 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106, 108) | 0 |
 | S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 104, 107) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
@@ -2324,6 +2324,16 @@ re-plan, like the classic apply.
 **Impact:** warning visibility depends on timing. A user choosing a ZIP while a normal text refresh is pending may never notice that files were dropped. Quick mode's later `read_answer()` also only sees the canonical text, so that skipped-entry evidence is not reconstructed there. Existing original-ZIP warning tests inspect the immediate state and miss this delayed replacement.
 
 **Expected:** cancel pending refreshes on explicit ZIP loads and retain source preview diagnostics while the current text equals the canonical ZIP text; merge/recompute deliberately when it actually changes. Cancel owned timers on widget destruction as well. Cover loading over recently edited text and inspect status both immediately and after debounce.
+
+### BF-108 · S2 · OPEN — Build Center from project A persists its selected workflow into project B after the active project changes
+
+**Where:** `AI_Workbench.py` `open_build_center()` (~12215–12280): the window is created for a captured binding A (owner/repo/branch/token/local HEAD). Its `select_workflow` callback instead resolves `current = self._binding_for_active_project() or binding`, so it writes to whichever project is active later. The singleton reuse check only tests whether an existing window is open; it does not match binding/account/repository/project identity. The window is non-modal.
+
+**Reproduced without network or settings writes:** invoke the real `WorkbenchApp.open_build_center()` on a small recording app adapter with two valid `RepositoryBinding` records for o/a and o/b. Replace only `BuildCenterWindow` with a callback-capturing adapter and the settings save with a recorder; keep real `update_binding_preferences()` and `upsert_binding()`. Open while A is active, switch the adapter's active binding to B, invoke the captured `on_select_workflow(".github/workflows/from-a.yml")`, then request Build Center again. Observed: only **one** window is constructed (still owner/repo **o/a**); recorded A retains **a.yml**, B is changed from **b.yml** to **from-a.yml**; status says **"Main Build workflow for o/b: .github/workflows/from-a.yml"**.
+
+**User path / impact:** open A's Build Center, switch to B in the main app, then select A's workflow and press Use selected as main Build workflow. B's saved build configuration is silently corrupted; the workflow may not exist in B, causing a stale binding or wrong workflow selection next time. Opening Build Center for B merely lifts A's old window, and its Run/Cancel/Artifacts actions remain scoped to A, not the newly active project. The title identifies A, so this is not evidence of an invisible remote mutation; the wrong-project metadata write is the confirmed defect.
+
+**Expected:** key windows by stable binding/project identity, or close/recreate them on a project change. Persist workflow selection only to the binding that owns the displayed workflow; resolve the latest record by captured binding ID and reject deletion/relinking mismatches. Test switching projects while non-modal repository windows remain open.
 
 ## Checked and OK
 
