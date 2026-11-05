@@ -134,7 +134,8 @@ class HandoffService:
             raise ModelError(f"target agent {to_agent_id} does not exist or is disabled")
         if task["status"] in ("draft", "proposed", "blocked", "cancelled", "superseded", "done"):
             raise ModelError(f"{task_id} is {task['status']}; it must be ready or in progress for a handoff")
-        prev = [h for h in state["handoffs"].values() if h["task_id"] == task_id and h["status"] == "accepted"]
+        prev = [h for h in state["handoffs"].values() if h["task_id"] == task_id
+                and h["status"] in ("accepted", "rejected")]
         previous = sorted(prev, key=lambda h: h["handoff_id"])[-1] if prev else None
         att = self.attempts.create(task_id, agent_id=to_agent_id, kind="handoff", expected_paths=expected_paths,
                                    base_revision=base_revision,
@@ -372,15 +373,35 @@ def build_prompt(s: dict[str, Any], h: dict[str, Any], previous: dict[str, Any] 
                       + [f"- REJECTED {d['decision_id']} {d['title']}: {d['rationale']} — do not propose it again"
                          for d in rejected])
     lines += _section("5. Prerequisites and their outputs", dep_lines)
+    validations = [e for e in s["evidence"].values() if e.get("subject_type") == "task"
+                   and e.get("subject_id") == h["task_id"] and e.get("task_revision") == t["task_revision"]
+                   and e.get("verified") and e.get("type") in ("test_run", "build_run")]
+    latest = max(validations, key=lambda e: e.get("state_revision", 0), default=None)
+    contradicted = bool(latest and latest["result"] == "failed" and previous
+                        and (not latest.get("attempt_id") or latest["attempt_id"] == previous["attempt_id"]))
+    claim_label = "CONTRADICTED by recorded failed validation" if contradicted else "Claimed (NOT verified)"
     if previous:
         lines += _section(f"6. Previous handoff {previous['handoff_id']} ({previous['outcome'] or 'n/a'})",
                           [f"- Summary: {previous['summary'] or '(none)'}"]
                           + [f"- Done: {x}" for x in previous["completed_items"]]
                           + [f"- Open: {x}" for x in previous["unresolved_items"]]
                           + [f"- Assumption: {x}" for x in previous["assumptions"]]
-                          + [f"- Claimed (NOT verified): {x}" for x in previous["validation_claims"]])
+                          + [f"- {claim_label}: {x}" for x in previous["validation_claims"]])
+        if previous.get("status") == "rejected":
+            reason = (previous.get("resolution") or {}).get("reason") or "(no reason recorded)"
+            lines += [f"- Your previous delivery ({previous['handoff_id']}) was rejected by the user: {reason}",
+                      "- Address that feedback; the listed delivered items were NOT accepted."]
     else:
         lines += _section("6. Previous handoff", ["- This is the first handoff for this task."])
+    if latest:
+        source = latest.get("source") or {}
+        lines += _section("Recorded user validation — current task revision", [
+            f"- {latest['evidence_id']}: {latest['type']} {latest['result']} "
+            f"(run {source.get('run_id') or '(not supplied)'}, attempt {latest.get('attempt_id') or '(legacy)'})",
+            f"- {latest.get('summary') or '(no note recorded)'}",
+            "- The last delivery failed recorded tests/build: fix the reported problem before resubmitting."
+            if latest["result"] == "failed" else
+            "- This is historical evidence, not verification of changes you make next."])
     lines += _section("7. Relevant files", [f"- {p}" for p in t.get("context_refs", [])]
                       + CONTEXT_REQUEST_RULES)
     lines += _section("8. Conflicts / do not assume", (t.get("flags") or [])
