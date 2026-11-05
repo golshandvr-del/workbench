@@ -73,6 +73,15 @@ class PreviewTests(unittest.TestCase):
         self.assertFalse(p.ok)
         self.assertIn("continue", p.line)
 
+    def test_bf040_manager_proposal_check_uses_the_real_reader(self):
+        cut = preview('<<<AIWB_MANAGER_PROPOSAL>>>\n{"base_state_revision": 1, "operations": [')
+        self.assertFalse(cut.ok)
+        self.assertIn("✗", cut.line)
+        empty = preview('<<<AIWB_MANAGER_PROPOSAL>>>\n{"base_state_revision": 1, "operations": []}\n<<<AIWB_END_MANAGER_PROPOSAL>>>')
+        self.assertFalse(empty.ok)
+        good = preview('<<<AIWB_MANAGER_PROPOSAL>>>\n{"base_state_revision": 1, "operations": [{"operation": "create_task"}]}\n<<<AIWB_END_MANAGER_PROPOSAL>>>')
+        self.assertTrue(good.ok)
+
     def test_unknown_text(self):
         p = preview("Thanks! I will start tomorrow.")
         self.assertEqual(p.kind, "unknown")
