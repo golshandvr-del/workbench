@@ -541,8 +541,14 @@ class Project(val store: ProjectStore) {
                     val hid = matchHandoff(src)
                     if (hid.isEmpty()) return Routed("rejected", "This answer names a task/attempt this project is not waiting for. Nothing was changed.")
                     val hashes = try { Intake.parse(src).fileMap().mapValues { sha256(it.value) } } catch (_: Exception) { emptyMap() }
-                    val h = ingest(hid, rid, src, hashes)
+                    ingest(hid, rid, src, hashes)
+                    // Standalone paste and the guided card share one canonical delivery boundary.
+                    Files.stage(store, hid, src)
+                    val problems = Guide(this).diagnoseInto(hid, src)
+                    val h = State.require(state(), "handoffs", hid)
                     var msg = "Answer linked to $hid (${h["status"]}, ${Json.str(h["outcome"]).ifEmpty { "no outcome" }})."
+                    val errors = problems.filter { it.severity == "error" }
+                    if (errors.isNotEmpty()) msg += " Smart check found problems: " + errors.joinToString("; ") { it.code } + "."
                     val open = Json.strs(h["unresolved_items"])
                     if (open.isNotEmpty()) msg += " Still open: " + open.take(5).joinToString("; ")
                     Routed("handoff", msg, hid)
@@ -651,6 +657,11 @@ class Project(val store: ProjectStore) {
 
     /** Accepting a delivery never applies files and never marks the task done. */
     fun resolveHandoff(handoffId: String, accept: Boolean, reason: String = ""): Obj = store.transaction("resolve handoff") { s ->
+        resolveHandoffState(s, handoffId, accept, reason)
+    }
+
+    /** Shared lifecycle mutation, also used inside the file integration transaction. */
+    internal fun resolveHandoffState(s: Obj, handoffId: String, accept: Boolean, reason: String): Obj {
         val h = State.require(s, "handoffs", handoffId)
         if (accept && h["status"] in setOf("stale", "reconciliation_required")) {
             if (reason.isBlank()) throw ModelError("accepting a stale handoff needs an explicit reconciliation note")
@@ -681,7 +692,7 @@ class Project(val store: ProjectStore) {
             State.emit(s, "task_status", "task_id" to t["task_id"], "old" to "in_progress", "new" to t["status"], "why" to "handoff outcome")
         }
         State.emit(s, "handoff_$target", "handoff_id" to handoffId)
-        h
+        return h
     }
 
     // ---------------------------------------------------------------- evidence
