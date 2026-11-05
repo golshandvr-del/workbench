@@ -52,13 +52,40 @@ def _strip_invisible(s: str, fixes: list[str]) -> str:
     if out.startswith("\ufeff"):
         out = out.lstrip("\ufeff")
         fixes.append("bom")
-    zw = sum(out.count(c) for c in ZERO_WIDTH)
+    # Invisible Unicode is legitimate data in Persian, emoji and source literals.
+    # Repair transport whitespace only outside file bodies and JSON strings.
+    lines = out.split("\n")
+    in_file = in_string = escaped = False
+    zw = nb = 0
+    for i, line in enumerate(lines):
+        marker = _fix_marker_line(line)
+        if in_file and not marker.startswith("<<<AIWB_END_FILE>>>"):
+            continue
+        cleaned = []
+        for c in line:
+            if not in_string and c in ZERO_WIDTH:
+                zw += 1
+                continue
+            if not in_string and c in NBSP:
+                nb += 1
+                c = " "
+            cleaned.append(c)
+            if escaped:
+                escaped = False
+            elif in_string and c == "\\":
+                escaped = True
+            elif c == '"':
+                in_string = not in_string
+        lines[i] = "".join(cleaned)
+        if marker.startswith("<<<AIWB_FILE "):
+            in_file = True
+            in_string = escaped = False
+        elif marker.startswith("<<<AIWB_END_FILE>>>"):
+            in_file = False
+    out = "\n".join(lines)
     if zw:
-        out = out.translate({ord(c): None for c in ZERO_WIDTH})
         fixes.append(f"zero_width:{zw}")
-    nb = sum(out.count(c) for c in NBSP)
     if nb:
-        out = out.translate({ord(c): " " for c in NBSP})
         fixes.append(f"nbsp:{nb}")
     if "\r" in out:
         out = out.replace("\r\n", "\n").replace("\r", "\n")
@@ -117,13 +144,23 @@ def strip_copy_damage(text: str, fixes: list[str] | None = None) -> str:
         return s
     lines = s.split("\n")
     fenced = _regions(lines)
-    outside = [i for i, f in enumerate(lines) if not fenced[i]]
+    protected = set()
+    in_body = False
+    for i, line in enumerate(lines):
+        marker = _fix_marker_line(line)
+        if marker.startswith("<<<AIWB_END_FILE>>>"):
+            in_body = False
+        elif in_body:
+            protected.add(i)
+        elif marker.startswith("<<<AIWB_FILE "):
+            in_body = True
+    outside = [i for i, f in enumerate(lines) if not fenced[i] and i not in protected]
     ch = _damaged_ending(lines, outside)
     n_end = 0
     if ch:
         # only text outside fences and the fence lines themselves: a chat copies code blocks verbatim, and a
         # fenced shell script legitimately ends lines with "\\"
-        targets = set(outside) | {i for i, line in enumerate(lines) if _FENCE_LOOSE.match(line)}
+        targets = set(outside) | {i for i, line in enumerate(lines) if i not in protected and _FENCE_LOOSE.match(line)}
         for i in sorted(targets):
             r = lines[i].rstrip()
             if r.endswith(ch):
@@ -267,6 +304,7 @@ def _scan_json(body: str, fixes: list[str]) -> str:
     out: list[str] = []
     i, n = 0, len(body)
     in_str = False
+    smart_open = False
     quote_fix = comment_fix = comma_fix = literal_fix = 0
     while i < n:
         c = body[i]
@@ -275,7 +313,7 @@ def _scan_json(body: str, fixes: list[str]) -> str:
                 out.append(body[i:i + 2]); i += 2; continue
             if c == '"':
                 in_str = False; out.append(c); i += 1; continue
-            if c in "\u201c\u201d":
+            if smart_open and c in "\u201c\u201d":
                 # A smart quote closing a string that was opened by a smart quote.
                 nxt = body[i + 1:i + 40].lstrip()
                 if nxt[:1] in (":", ",", "}", "]", ""):
@@ -286,6 +324,7 @@ def _scan_json(body: str, fixes: list[str]) -> str:
         if c == '"' or c in "\u201c\u201d\u201e":
             if c != '"':
                 quote_fix += 1
+            smart_open = c != '"'
             in_str = True; out.append('"'); i += 1; continue
         if c == "/" and body[i + 1:i + 2] == "/":
             j = body.find("\n", i)
@@ -378,7 +417,7 @@ def truncation_report(text: str) -> TruncationReport:
             name = pm.group(1) if pm else "?"
             if re.search(r"(?m)^\s*<<<AIWB_END_(?:FILE|COMMAND)>>>\s*$", seg):
                 done.append(name)
-            elif i == len(heads) - 1:
+            elif not open_path:
                 open_path = name
         if open_path:
             return TruncationReport(True, "unclosed_block", done[-1] if done else "", open_path, done)
