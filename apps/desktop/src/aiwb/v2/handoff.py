@@ -254,7 +254,7 @@ class HandoffService:
                      completed_items=_list(manifest.get("completed_items")),
                      unresolved_items=_list(manifest.get("unresolved_items")),
                      assumptions=_list(manifest.get("assumptions")),
-                     decision_requests=_list(manifest.get("decision_requests")),
+                     decision_requests=_decisions(manifest.get("decision_requests")),
                      validation_claims=_list(manifest.get("validation_claims")),
                      recommended_next_action=str(manifest.get("recommended_next_action", ""))[:1000],
                      updated_at=now_utc())
