@@ -118,7 +118,8 @@ class GuideDeskTests(unittest.TestCase):
                             "operations": [{"operation": "close_or_cancel_task", "task_id": ids[0], "reason": "not wanted"}]})
                         p.proposals.review(proposal["proposal_id"], accept=[0])
                     elif route == "guide":
-                        Guide(c).perform((f"handoff:{hid}" if received else f"task:{ids[0]}"), "cancel")
+                        p.tasks.transition(ids[0], "blocked", "cancel unwanted work")
+                        Guide(c).perform(f"task:{ids[0]}", "cancel", reason="not wanted")
                     else:
                         p.tasks.transition(ids[0], "superseded" if route == "supersede" else "cancelled", "not wanted")
                     st = c.state()
