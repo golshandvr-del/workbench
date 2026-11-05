@@ -12304,8 +12304,11 @@ class WorkbenchApp:
         if account is None:
             messagebox.showerror("Sync & Build", "The GitHub account linked to this project is no longer configured.")
             return
+        identity = (binding.binding_id, binding.account_id, binding.repository_id, binding.full_name,
+                    binding.project_path, binding.local_git_root, binding.project_subpath,
+                    binding.working_branch or binding.default_branch, binding.workflow_file)
         existing = getattr(self, "_sync_build_window", None)
-        if existing is not None and not existing.closed:
+        if existing is not None and not existing.closed and getattr(existing, "binding_identity", None) == identity:
             try:
                 existing.win.lift()
                 return
@@ -12328,6 +12331,19 @@ class WorkbenchApp:
                     resume_id = g.get("operation_id")
                 break
         state = load_task_state(self.workspace) if self.workspace else {}
+        evidence_context: dict[str, Any] = {}
+        project_root = Path(binding.project_path).resolve()
+        if (project_root / ".workbench/v2/state.json").is_file():
+            from aiwb.v2 import V2Project
+            captured = V2Project(project_root).store.load()
+            task_id = str(state.get("task_id", "") or "")
+            task = captured["tasks"].get(task_id) or {}
+            evidence_context = {"project_root": str(project_root), "project_id": captured["project_id"],
+                                "binding_id": binding.binding_id, "account_id": binding.account_id,
+                                "repository_id": binding.repository_id, "repository": binding.full_name,
+                                "branch": binding.working_branch or binding.default_branch,
+                                "task_id": task_id, "task_revision": task.get("task_revision"),
+                                "attempt_id": task.get("active_attempt_id", "")}
         api = self.github_account_service.api_client
         actions_service = GitHubActionsService(api)
 
@@ -12343,6 +12359,7 @@ class WorkbenchApp:
                 artifact_pattern=binding.artifact_pattern, get_token=lambda: self.github_account_service.get_api_token(binding.account_id),
                 store=store, in_scope=lambda path: bool(repository_binding_service.classify_scoped_paths(project_subpath, [path])[0]),
                 is_sensitive=is_sensitive_path, operation_id=resume_id, task_id=str(state.get("task_id", "") or "")[:40],
+                evidence_context=evidence_context,
             )
         except Exception as exc:
             messagebox.showerror("Sync & Build", redact_github_text(exc))
@@ -12352,19 +12369,42 @@ class WorkbenchApp:
             self.root, orchestrator, default_message="workbench: " + summary, redact=redact_github_text,
             on_finished=self._sync_build_finished,
         )
+        self._sync_build_window.binding_identity = identity
 
     def _sync_build_finished(self, orchestrator: Any) -> None:
         """Refresh Git and turn the real Actions run into V2 build evidence (never from model text)."""
         self.refresh_git(silent=True)
-        root = self.workspace
-        if root is None or not (Path(root) / ".workbench" / "v2" / "state.json").exists():
+        context = getattr(orchestrator.git, "evidence_context", None)
+        if not isinstance(context, dict) or not context.get("project_root"):
+            return  # Legacy/unscoped operations cannot auto-validate any task.
+        root = Path(context["project_root"])
+        if not (root / ".workbench/v2/state.json").is_file():
             return
         try:
+            binding = repository_binding_service.find_binding(
+                self.settings_data.get("github_repository_bindings", []), root)
+            if (binding is None or binding.binding_id != context.get("binding_id")
+                    or binding.account_id != context.get("account_id")
+                    or binding.repository_id != context.get("repository_id")
+                    or binding.full_name != context.get("repository")
+                    or (binding.working_branch or binding.default_branch) != context.get("branch")):
+                return
+            git_root = Path(binding.local_git_root)
+            head = git_run(git_root, ["rev-parse", "HEAD"], timeout=10)
+            branch = git_run(git_root, ["branch", "--show-current"], timeout=10)
+            remote = git_run(git_root, ["remote", "get-url", "origin"], timeout=10)
+            if any(r.returncode != 0 for r in (head, branch, remote)):
+                return
+            parsed_remote = repository_binding_service.parse_github_remote(remote.stdout.strip())
+            if parsed_remote is None or "/".join(parsed_remote).casefold() != binding.full_name.casefold():
+                return
             from aiwb.v2 import V2Project
             from aiwb.v2.ledger import record_build_evidence
-            project = V2Project(Path(root))
+            project = V2Project(root)
             project.open()
-            added = record_build_evidence(project, orchestrator.git, orchestrator.build)
+            added = record_build_evidence(project, orchestrator.git, orchestrator.build,
+                                          current_commit=head.stdout.strip(), repository=binding.full_name,
+                                          branch=branch.stdout.strip())
             if added:
                 self.set_status(f"Build result recorded as verified evidence for {len(added)} task(s).")
         except Exception as exc:  # noqa: BLE001 - evidence recording never breaks Sync & Build
