@@ -549,6 +549,15 @@ class Project(val store: ProjectStore) {
                     var msg = "Answer linked to $hid (${h["status"]}, ${Json.str(h["outcome"]).ifEmpty { "no outcome" }})."
                     val errors = problems.filter { it.severity == "error" }
                     if (errors.isNotEmpty()) msg += " Smart check found problems: " + errors.joinToString("; ") { it.code } + "."
+                    val report = Normalize.truncationReport(src)
+                    store.transaction("routed answer continuation") { s ->
+                        val guide = Json.obj(Json.obj(s["settings"]).getOrPut("guide") { LinkedHashMap<String, Any?>() })
+                        if (report.truncated) {
+                            guide["continue"] = linkedMapOf<String, Any?>("prompt" to Normalize.continuePrompt(report, Json.str(h["attempt_id"])),
+                                "agent_id" to h["to_agent_id"], "for" to "handoff:$hid", "at" to State.nowUtc())
+                        } else guide.remove("continue")
+                    }
+                    if (report.truncated) msg += " The answer was cut off; a continue prompt is ready on Home."
                     val open = Json.strs(h["unresolved_items"])
                     if (open.isNotEmpty()) msg += " Still open: " + open.take(5).joinToString("; ")
                     Routed("handoff", msg, hid)
