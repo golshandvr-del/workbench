@@ -1,6 +1,6 @@
 # BUG FINDING — AI Workbench desktop (from 5.20.0)
 
-Living document. Updated continuously during the bug hunt (each edit is its own checkpoint commit).
+Living document. Discovery baseline and repair evidence (each edit is its own checkpoint commit). Session 29 entered root-cause repair under ROADMAP V5.21–V5.30.
 Goal: find problems **before** the owner shows the app to friends — especially places where the app can
 **get stuck** (dead ends, crashes, lost data, misleading steps).
 
@@ -26,17 +26,18 @@ Goal: find problems **before** the owner shows the app to friends — especially
 
 | Severity | Open | Fixed |
 |---|---|---|
-| S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 41 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106, 108, 109) | 0 |
-| S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 104, 107) | 0 |
+| S1 | 8 (BF-007, 009, 010, 016, 043, 076, 078, 079) | 3 (BF-002, BF-003, BF-004) |
+| S2 | 37 (BF-005, 008, 011, 013, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 108, 109) | 4 (BF-001, BF-014, BF-105, BF-106) |
+| S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 107) | 1 (BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
-**Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
-BF-007 / BF-009 (any locked or invalid file on Windows — see BF-008).
+**Remaining top risks:** BF-007 / BF-009 half-written files, BF-008 Windows path aliases, BF-043 / BF-076 / BF-078 / BF-079 missing deliveries, and BF-108 / BF-109 cross-project configuration/evidence. Desktop graph findings BF-001…004 now have regression-backed repairs, not a claim that all graph behavior is bug-free.
 
 ## Findings
 
-### BF-001 · S2 · OPEN — a task whose prerequisite was cancelled: the offered button always fails
+### BF-001 · S2 · FIXED (8e322986) — a task whose prerequisite was cancelled: the offered button always fails
+
+**Repair evidence — session 29 / V5.22–V5.23:** Desktop repair: dead prerequisites now offer a manager re-plan and explicit dependency removal, not a known-failing Approve/Unblock. Guide regression covers draft and blocked variants, the generated prompt, and successful removal without reviving cancelled work. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/v2/guide.py` `steps()` (task branches `draft/proposed` and `blocked`), `aiwb/v2/tasks.py`
 `readiness()` / `_transition_in()`.
@@ -55,7 +56,9 @@ waiting for you". No button removes the dead dependency.
 **Expected:** a dead prerequisite gets its own step: *Drop the dead prerequisite and continue* / *Ask the project
 manager to re-plan* / *Cancel…* — and never a button that is known to fail.
 
-### BF-002 · S1 · OPEN — an emergency task can deadlock the whole project silently
+### BF-002 · S1 · FIXED (d10a0538, c7935b2c, 8e322986) — an emergency task can deadlock the whole project silently
+
+**Repair evidence — session 29 / V5.22–V5.23:** Desktop repair: emergency edges are checked against the cumulative graph before retention; unsafe edges are skipped with a user-visible note. Preview and review share emergency application and final validation. Existing corrupt graphs are visible on Home and in the manager report. Tests cover cycle refusal, preview non-mutation and legacy-cycle recovery. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/v2/report.py` `apply_decision()` (emergency `blocks`), `aiwb/v2/proposals.py` `review()`.
 
@@ -75,7 +78,9 @@ no code. Exactly the kind of "stuck" the friends hit on 5.15.
 **Expected:** a `blocks` edge that would make a cycle is skipped (with a note), and any dependency cycle among open
 tasks is shown as a step (and reported to the PM as stuck).
 
-### BF-003 · S1 · OPEN — when the task graph is already invalid, a plan cannot even be rejected
+### BF-003 · S1 · FIXED (c7935b2c) — when the task graph is already invalid, a plan cannot even be rejected
+
+**Repair evidence — session 29 / V5.22–V5.23:** Desktop repair: rejecting a nonempty proposal exits before graph validation/readiness/emergency mutation. Tests check unchanged task records in cyclic state, stored rejection note and real guided Ask for changes. Accepting a plan still requires a valid resulting graph; this does not silently permit unrelated graph corruption. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/v2/proposals.py` `review()` → `_apply()` runs `validate_graph(s["tasks"])` on the **whole** graph
 even when `accept == []` (reject / *Ask for changes…*), and raises.
@@ -90,7 +95,9 @@ accepts something they did not want.
 
 **Expected:** reject never validates or changes the graph; accepting only fails for problems the plan **adds**.
 
-### BF-004 · S1 · OPEN — removing a task's last prerequisite leaves it "blocked: waiting for …" forever (invisible)
+### BF-004 · S1 · FIXED (a2f3dcc3, c7935b2c) — removing a task's last prerequisite leaves it "blocked: waiting for …" forever (invisible)
+
+**Repair evidence — session 29 / V5.22–V5.23:** Desktop repair: readiness no longer skips empty dependency lists; proposal application uses the shared TaskService refresh for existing tasks. Regression covers proposal removal, direct update and preservation of manual blocks. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/v2/tasks.py` `_refresh_readiness()` skips every task with an empty `depends_on`
 (`... or not t.get("depends_on"): continue`); `aiwb/v2/proposals.py` `_apply()` (`remove_dependency`) never
@@ -285,7 +292,9 @@ same mistake. The user has to retype the reason by hand into the chat.
 **Expected:** the next prompt for the task includes *"Your previous delivery (HO-…) was rejected by the user:
 <reason>"* (and a short list of what it delivered), like the repair / troubleshooting prompts do.
 
-### BF-014 · S2 · OPEN — a plan may depend on (or edit) a cancelled task; it is accepted without a word and lands in BF-001
+### BF-014 · S2 · FIXED (4fd728bf) — a plan may depend on (or edit) a cancelled task; it is accepted without a word and lands in BF-001
+
+**Repair evidence — session 29 / V5.22–V5.23:** Desktop repair: shared import/review reference guard rejects edits/dependencies involving cancelled or superseded tasks, including raw depends_on and update changes. Review checks current state again; confirm_stale cannot bypass the guard. Removing invalid edges remains possible. Tests cover cancellation before and after import. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/v2/proposals.py` `import_data()`: an operation is only marked invalid for an **unknown** task id
 (`r not in state["tasks"]`); the status of the referenced task is never looked at. `review()` / `apply` then create the
@@ -2283,7 +2292,9 @@ re-plan, like the classic apply.
 
 **Expected:** associate results with a run-ID/attempt selection generation, discard stale results, and schedule a fetch for the latest selection after the current worker finishes. Clear the cached jobs with the displayed rows. Cover run changes and workflow changes during a pending request.
 
-### BF-104 · S3 · OPEN — Extract artifact lets CRC/decompression errors escape instead of reporting a refused extraction
+### BF-104 · S3 · FIXED (a6778e48) — Extract artifact lets CRC/decompression errors escape instead of reporting a refused extraction
+
+**Repair evidence — session 29 / V5.22–V5.23:** Extraction boundary normalizes CRC, zlib, EOF and unsupported-compression failures to UnsafeArchiveError after staging cleanup. Unit tests include a valid directory with a corrupted member after a good member; real Tk smoke confirms a refusal message, no callback exception and no extraction leftovers. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/github/build_center_dialogs.py:275–292`. Initial `inspect_zip()` validates directory metadata, not member CRCs. `safe_extract_zip()` subsequently reads members and may raise `zipfile.BadZipFile`, `zlib.error`, or unsupported-compression errors; the UI only catches `UnsafeArchiveError` and `OSError`. `BadZipFile` is not an OSError. The extractor correctly cleans its staging directory but re-raises the original exception.
 
@@ -2293,7 +2304,9 @@ re-plan, like the classic apply.
 
 **Expected:** normalize ZIP/CRC/decompression failures into UnsafeArchiveError at the service boundary (with a safe message) or catch them explicitly in the UI. Keep atomic cleanup and test metadata-valid/payload-corrupt ZIPs, not only invalid ZIP headers and unsafe names.
 
-### BF-105 · S2 · OPEN — failed artifact integrity check deletes a previously valid download because replacement precedes digest verification
+### BF-105 · S2 · FIXED (a6778e48) — failed artifact integrity check deletes a previously valid download because replacement precedes digest verification
+
+**Repair evidence — session 29 / V5.22–V5.23:** All size/ZIP/SHA-256 checks precede os.replace; cleanup owns only a uniquely created temporary file and never final. Regression injects digest, size, format, cancellation, stream and publish failures with a pre-existing valid final; its bytes remain unchanged and no attempt files remain. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/github/artifacts.py` `download_artifact()`: after size/ZIP checks, `os.replace(part, final)` overwrites the existing target. SHA-256 is compared with the reference **afterwards**. On mismatch it unlinks `final`, which is now the replacement; the old target has already been destroyed. The UI asks for a folder, not permission to replace an existing file, and offers no backup.
 
@@ -2303,7 +2316,9 @@ re-plan, like the classic apply.
 
 **Expected:** perform every integrity check on the temporary file before publishing it. On any failure delete only that attempt's temporary file and leave an existing final target byte-for-byte unchanged. Decide replacement policy explicitly and use unique temporary filenames for simultaneous attempts. Add a regression case with a pre-existing valid final file.
 
-### BF-106 · S2 · OPEN — long artifact names truncate away the unique ID and .zip suffix, so different artifacts overwrite each other and cached verification becomes false
+### BF-106 · S2 · FIXED (a6778e48, 979b6597, 8ecc7738) — long artifact names truncate away the unique ID and .zip suffix, so different artifacts overwrite each other and cached verification becomes false
+
+**Repair evidence — session 29 / V5.22–V5.23:** Only the human-readable stem is truncated, with a 180-byte UTF-8 budget reserving immutable ID and .zip; attempt paths are unique. DownloadResult.assert_current rechecks bounded-stream size/hash before extraction and after confirmation; row text describes historical download verification. Unit tests cover ASCII/Persian/invalid long stems, two IDs coexisting and extraction targets; Tk smoke covers replacement during confirmation and a missing file. Original reproduction below is retained as historical evidence. Linux regression validated; Windows release gate is still pending.
 
 **Where:** `aiwb/github/artifacts.py`: `download_artifact()` passes `f"{artifact.name}-{artifact.artifact_id}.zip"` into `sanitize_filename()`, which returns `cleaned[:180]`. A long name consumes the entire limit, removing the disambiguating ID and ZIP extension. Names up to 256 characters are retained by `list_artifacts()`. Both final and .part names then collide. `ArtifactsDialog.downloads` indexes results by ID, but their paths can be identical.
 
@@ -2344,6 +2359,13 @@ re-plan, like the classic apply.
 **User path / impact:** start A's Sync & Build, switch to B while CI runs, then A finishes. B receives false verified build evidence and may close tasks/unblock dependencies although B was never built. A does not receive its result. Related window reuse also lifts the old A window when B requests Sync & Build. This is distinct from BF-108's workflow-preference write: it contaminates the task/evidence ledger and changes status.
 
 **Expected:** capture and persist the originating project/binding identity in the operation and completion callback; write evidence only there, independent of UI focus. Verify repository/ref/commit against that project and restrict task evidence to explicitly covered tasks/attempts. Never treat a run from another project as validation of all active tasks. Test switching projects during CI, including success and failure outcomes.
+
+## Session 29 validation (2026-11-05)
+
+- Final unit suite: **933 tests, OK, 10 skipped**; 12 new tests above the 921 baseline. Existing ResourceWarning and timeout-server BrokenPipe stderr remain visible, not counted as test failures.
+- Full GUI suite after the initial repair checkpoints: **62/62 passed**, including permanent S5 owner-aware timer cancellation and unsuppressed timer-command destruction regression. Artifact Tk smoke was also rerun after the final provenance changes and passed. A final full GUI rerun is being collected; see SESSION_NOTES for its outcome.
+- Scope: **8 catalogued desktop defects fixed; 98 independent OPEN remain**. No release/tag/deploy; no Android implementation or Windows release validation in this session.
+- Previous session results below are historical baselines, not the current S5 status.
 
 ## Checked and OK
 
