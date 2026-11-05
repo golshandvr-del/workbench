@@ -56,6 +56,55 @@ class WavesTest {
         assertEquals(listOf("T-3"), d.queued)
     }
 
+    @Test fun bf035CancellationRetiresPromptsAndRefusesLatePublication() {
+        for (route in listOf("direct", "proposal", "supersede")) for (received in listOf(false, true)) {
+            val root = Files.createTempDirectory("aiwb-cancel").toFile()
+            try {
+                val p = Project(ProjectStore(File(root, "w")))
+                p.installTemplates()
+                p.setMaxParallelChats(1)
+                val ids = (0..1).map { i -> Json.str(p.createTask(linkedMapOf("title" to "Part $i", "objective" to "test",
+                    "owner_agent_id" to "agent-implementer", "allowed_paths" to arrayListOf<Any?>("src/p$i/"),
+                    "acceptance_criteria" to arrayListOf<Any?>("works")), "ready")["task_id"]) }
+                val h = p.startTask(ids[0])
+                val hid = Json.str(h["handoff_id"])
+                val answer = "AIWB_ATTEMPT_ID: ${h["attempt_id"]}\n" +
+                    "<<<AIWB_FILE path=\"src/p0/new.py\" action=\"write\">>>\n````\nVALUE = 1\n````\n<<<AIWB_END_FILE>>>\n" +
+                    "<<<AIWB_HANDOFF>>>\n" + io.github.golshandvr.aiworkbench.core.StrictJson.stringify(linkedMapOf<String, Any?>(
+                        "handoff_id" to hid, "task_id" to ids[0], "attempt_id" to h["attempt_id"], "outcome" to "complete")) +
+                    "\n<<<AIWB_END_HANDOFF>>>"
+                if (received) assertEquals("handoff", p.routeAnswer(answer).kind)
+                if (route == "proposal") {
+                    val pid = p.importProposalData(linkedMapOf("base_state_revision" to p.state()["state_revision"],
+                        "operations" to arrayListOf<Any?>(linkedMapOf<String, Any?>("operation" to "close_or_cancel_task",
+                            "task_id" to ids[0], "reason" to "not wanted"))))
+                    p.reviewProposal(pid, listOf(0))
+                } else p.transition(ids[0], if (route == "supersede") "superseded" else "cancelled", "not wanted")
+                val st = p.state()
+                assertEquals("superseded", Json.obj(Json.obj(st["handoffs"])[hid])["status"])
+                assertEquals("abandoned", Json.obj(Json.obj(st["attempts"])[h["attempt_id"]])["status"])
+                assertTrue(Json.str(Json.obj(Json.obj(st["tasks"])[ids[0]])["active_attempt_id"]).isEmpty())
+                assertEquals(listOf(ids[1]), Waves.dispatch(st).next)
+                assertTrue(Guide(p).steps().none { it.key == "handoff:$hid" })
+                p.ingest(hid, "late-response", answer)
+                io.github.golshandvr.aiworkbench.core.Files.stage(p.store, hid, answer)
+                assertTrue("late-response" in Json.strs(Json.obj(Json.obj(p.state()["attempts"])[h["attempt_id"]])["response_ids"]))
+                val before = p.state()
+                try {
+                    io.github.golshandvr.aiworkbench.core.Files.integrate(p.store, hid)
+                    org.junit.Assert.fail("cancelled payload published")
+                } catch (_: io.github.golshandvr.aiworkbench.core.ModelError) { }
+                try {
+                    p.resolveHandoff(hid, true, "accept anyway")
+                    org.junit.Assert.fail("cancelled delivery accepted")
+                } catch (_: io.github.golshandvr.aiworkbench.core.ModelError) { }
+                assertEquals(before, p.state())
+                assertTrue(!File(io.github.golshandvr.aiworkbench.core.Files.dir(p.store), "src/p0/new.py").exists())
+                assertEquals(listOf(ids[1]), Waves.dispatch(p.state()).next)
+            } finally { root.deleteRecursively() }
+        }
+    }
+
     @Test fun prepareAllOpensOneChatPerTaskWithinTheLimit() {
         val p = Project(ProjectStore(File(Files.createTempDirectory("aiwb").toFile(), "w")))
         p.installTemplates()
