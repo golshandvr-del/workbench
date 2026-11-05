@@ -120,5 +120,29 @@ class StoreBudgetTest(unittest.TestCase):
             self.assertLess(per, 15.0, f"cached load took {per:.1f} ms")
 
 
+class LastGoodCopyTest(StoreCacheTest):
+    def test_bf005_corrupt_state_offers_and_restores_last_good_copy(self) -> None:
+        with self.store.transaction("second") as s:
+            s["settings"]["goal"] = "calc v2"
+            emit(s, "second")
+        self.store.path.write_text('{"state_revision": ', encoding="utf-8")
+        fresh = ProjectStore(self.root)
+        with self.assertRaises(S.StoreError) as ctx:
+            fresh.load()
+        self.assertIn("state.json.prev", str(ctx.exception))
+        self.assertNotIn("backups", str(ctx.exception))
+        self.assertTrue(fresh.restore_last_good())
+        self.assertEqual(fresh.load()["settings"]["goal"], "calc")
+        self.assertTrue(any(p.name.startswith("state.corrupt-") for p in fresh.dir.iterdir()))
+
+    def test_bf005_without_any_copy_the_message_does_not_invent_a_backup(self) -> None:
+        self.store.prev_path.unlink(missing_ok=True)
+        self.store.path.write_text("", encoding="utf-8")
+        with self.assertRaises(S.StoreError) as ctx:
+            ProjectStore(self.root).load()
+        self.assertIn("No usable backup", str(ctx.exception))
+        self.assertFalse(ProjectStore(self.root).restore_last_good())
+
+
 if __name__ == "__main__":
     unittest.main()
