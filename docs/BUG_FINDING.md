@@ -28,7 +28,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
 | S2 | 36 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101) | 0 |
-| S3 | 52 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100) | 0 |
+| S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
@@ -2260,6 +2260,16 @@ re-plan, like the classic apply.
 **User impact:** when release's workflow adds a required input, changes options, or uses a different default, the UI cannot collect the right fields. GitHub can reject the stale payload with HTTP 422; if it accepts the same names/options, the explicit main-branch defaults can override the intended release-branch defaults. Changing back/retrying never reloads the schema. Closing and reopening from the unchanged project branch loads main again.
 
 **Expected:** invalidate and reload the workflow schema when ref changes, retain its ref alongside the form, disable submission while stale/loading, and only validate/dispatch a form associated with the exact submitted ref. Preserve still-valid entered values deliberately rather than silently reusing unrelated defaults.
+
+### BF-102 · S3 · OPEN — workflow dispatch form has unbounded input rows and unwrapped descriptions, exceeding the screen in both dimensions
+
+**Where:** `aiwb/github/build_center_dialogs.py:71–86,105–123`: each workflow input and its description is gridded into `inputs_frame`. Description labels have no `wraplength`; neither a scroll container nor screen-fit geometry is installed. Status and Run/Close buttons follow the entire list.
+
+**Measured locally:** Tk 8.6, Xvfb 1366×768; load a `DispatchForm(True, tuple(DispatchInput(f"input_{i}", description="Description " + "x"*250) for i in range(25)))`. The dialog requests **2271×839px**. The parser permits up to 25 inputs (`MAX_INPUTS`) and retains descriptions up to 300 characters, so this is within the application's accepted schema, not an over-limit form. The problem can also occur horizontally with far fewer inputs and a long single-line description.
+
+**Impact:** part of the form and/or the Run/Close bar is outside the visible desktop. A window manager may constrain the window instead, but there is no content scrolling to recover the clipped controls. Manual window movement/resizing is an awkward workaround and does not solve the missing layout bounds. This is a separate dialog from BF-099/BF-100, with the same unbounded-layout family plus an independent horizontal-width issue.
+
+**Expected:** wrap descriptions, bound the dialog to the work area, scroll the input region in both necessary directions, and keep status and Run/Close outside it. Add GUI coverage for maximum supported inputs and long descriptions on laptop-size displays.
 
 ## Checked and OK
 
