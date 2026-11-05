@@ -78,5 +78,17 @@ class TroubleshootLoopTests(unittest.TestCase):
         self.assertIn("task_escalated", types)
 
 
+class ManifestPathClaimTests(unittest.TestCase):
+    def test_bf080_completed_item_path_without_file_block_is_missing(self) -> None:
+        text = ("Here is the code:\n```python\nprint(1)\n```\n<<<AIWB_HANDOFF>>>\n" + json.dumps({
+            "outcome": "complete", "summary": "s", "completed_items": ["src/core/lib.py", "Unit tests written"],
+            "unresolved_items": []}) + "\n<<<AIWB_END_HANDOFF>>>\n")
+        r = diagnose(text, allowed_paths=["src/core/**"])
+        codes = [(p["code"], p["path"]) for p in r["problems"]]
+        self.assertIn(("missing_deliverable", "src/core/lib.py"), codes)
+        self.assertEqual(len([c for c in codes if c[0] == "missing_deliverable"]), 1)
+        self.assertFalse(r["acceptable"])
+
+
 if __name__ == "__main__":
     unittest.main()
