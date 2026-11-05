@@ -25,10 +25,13 @@ object Files {
 
     /** The normalised relative path, or "" when it must never be written. */
     fun safePath(path: String?): String {
-        val p = path.orEmpty().trim().replace('\\', '/')
-        if (p.isEmpty() || p.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(p) || '\u0000' in p) return ""
+        val p = path.orEmpty().replace('\\', '/')
+        if (p.isEmpty() || p.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(p)) return ""
         val parts = p.split("/").filter { it.isNotEmpty() && it != "." }
-        if (parts.isEmpty() || parts.any { it == ".." } || parts[0] in RESERVED) return ""
+        if (parts.isEmpty() || parts[0].lowercase(java.util.Locale.ROOT) in RESERVED) return ""
+        val device = Regex("^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\\.|$)", RegexOption.IGNORE_CASE)
+        if (parts.any { part -> part == ".." || part.endsWith(".") || part.endsWith(" ") ||
+                part.any { it.code < 32 || it in "<>:\"|?*" } || device.containsMatchIn(part) }) return ""
         return parts.joinToString("/")
     }
 
