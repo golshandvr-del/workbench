@@ -187,7 +187,7 @@ def current_binding(st: dict[str, Any], agent_id: str) -> dict[str, Any] | None:
     live = [b for b in st.get("chat_bindings", {}).values()
             if b["agent_id"] == agent_id and b.get("enabled", True)
             and accs.get(b["account_profile_id"], {}).get("enabled", True) and b["account_profile_id"] in accs]
-    return max(live, key=lambda b: (b.get("updated_at", ""), b["chat_binding_id"])) if live else None
+    return max(live, key=lambda b: (b.get("confirmed_at") or b.get("created_at", ""), b["chat_binding_id"])) if live else None
 
 
 def binding_readiness(st: dict[str, Any], agent_id: str) -> dict[str, Any]:
