@@ -188,7 +188,7 @@ def normalize_task(data: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(deps, list) or not all(isinstance(d, str) for d in deps):
         raise ModelError("depends_on must be a list of task IDs")
     return {
-        "title": _text(data.get("title"), "title", True, 200),
+        "title": " ".join(_text(data.get("title"), "title", True, 200).split()) or _text(None, "title", True),
         "objective": _text(data.get("objective"), "objective", True, 4000),
         "task_type": _text(data.get("task_type") or "implementation", "task_type", False, 60),
         "owner_agent_id": _text(data.get("owner_agent_id"), "owner_agent_id", False, 64),
