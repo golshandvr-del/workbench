@@ -41,7 +41,7 @@ class RepositoryWindowOwnershipTests(unittest.TestCase):
             def binding(path, number):
                 context = NS(project_path=path, local_git_root=path, project_subpath=".", current_branch="work")
                 return update_binding_preferences(make_binding(context, str(uuid.uuid4()), repo(number, name=path.name)),
-                                                  working_branch="work", workflow_file=f"{path.name}.yml",
+                                                  working_branch="work", workflow_file=f".github/workflows/{path.name}.yml",
                                                   artifact_pattern="", release_channel="dev")
             a, b = binding(aroot, 1), binding(broot, 2)
             active = [a]
@@ -62,15 +62,15 @@ class RepositoryWindowOwnershipTests(unittest.TestCase):
             with patch.object(wb, "BuildCenterWindow", side_effect=window):
                 wb.WorkbenchApp.open_build_center(app)
                 active[0] = b
-                windows[0].callback("from-a.yml")
+                windows[0].callback(".github/workflows/from-a.yml")
                 rows = app.settings_data["github_repository_bindings"]
-                self.assertEqual(find_binding(rows, aroot).workflow_file, "from-a.yml")
-                self.assertEqual(find_binding(rows, broot).workflow_file, "b.yml")
+                self.assertEqual(find_binding(rows, aroot).workflow_file, ".github/workflows/from-a.yml")
+                self.assertEqual(find_binding(rows, broot).workflow_file, ".github/workflows/b.yml")
                 wb.WorkbenchApp.open_build_center(app)
                 self.assertEqual(len(windows), 2)
                 app.settings_data["github_repository_bindings"] = [b.to_dict()]
                 with self.assertRaises(RepositoryBindingError):
-                    windows[0].callback("deleted.yml")
+                    windows[0].callback(".github/workflows/deleted.yml")
 
 
 class BindingModelTests(unittest.TestCase):
