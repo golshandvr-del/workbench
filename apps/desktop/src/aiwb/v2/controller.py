@@ -399,7 +399,10 @@ class ProjectsController:
         t = self.project.tasks.get(task_id)
         if t is None:
             raise ModelError(f"task {task_id} does not exist")
-        agent = agent_id or t.get("owner_agent_id") or "agent-implementer"
+        from .waves import _owner
+        agent = agent_id or _owner(self.state(), t)
+        if not agent:
+            raise ModelError("Assign an enabled worker in the team before preparing this task")
         h = self.project.handoffs.prepare(task_id, agent, base_commit_sha=self.base_commit())
         self._dirty("handoff prepared")
         return h
