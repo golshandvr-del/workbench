@@ -219,7 +219,12 @@ class QuickWindow:
         from_zip = zip_name and text == getattr(self.paste, "zip_text", "")  # not a later paste over the ZIP's text
         if from_zip and a["files"]:  # the ZIP was turned into file blocks by the paste panel: name its real source
             a["label"] = f"GPT ZIP · {zip_name}"
-        self.items = quick.plan(self.root, a["files"]) if a["files"] else []
+        try:
+            self.items = quick.plan(self.root, a["files"]) if a["files"] else []
+        except quick.QuickError as exc:
+            # Filesystem/path conflicts are expected input problems, not Tk bugs.
+            self.items = []
+            a["problems"].append(str(exc))
         self.tree.delete(*self.tree.get_children())
         for i in self.items:
             self.tree.insert("", "end", iid=i["path"], text=i["path"],
