@@ -208,6 +208,10 @@ class ChangeRouteTests(unittest.TestCase):
         self.assertEqual(r.kind, "rejected")
         self.assertEqual(self.ctl.state()["state_revision"], rev)
 
+    def test_bf006_lone_surrogate_does_not_crash_paste(self):
+        r = self.ctl.route_answer("half emoji \ud83d broken")
+        self.assertIsNotNone(r.kind)
+
 
 if __name__ == "__main__":
     unittest.main()
