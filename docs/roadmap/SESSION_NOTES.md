@@ -3,7 +3,15 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 29 / repair phase (2026-11-05)
+## Current resume checkpoint — session 30 / recovery and V5.22 (2026-11-05)
+
+- Read the uploaded session-29 transcript to its end (some historical tool outputs in that transcript are abbreviated). Managed GitHub authentication succeeded. Verified clean main=origin/main=a84b54d7, no unpushed work.
+- Session 29 ended on a credit interruption BEFORE final notes were updated. Actual catalog/roadmap: 8 FIXED Desktop findings (001/002/003/004/014/104/105/106), 98 OPEN (8 S1 / 37 S2 / 53 S3); 8/106 = 7.55% count-based progress, NOT effort or release readiness. S5 timer harness repaired separately.
+- Inherited unit result: 933 tests OK, 10 skipped; earlier full GUI 62/62, but final-source rerun was NOT collected. Do not claim its result. Application remains 5.20.0, no repair release/tag.
+- Continue without pausing at release/report milestones. Every source/document/test file change must be added, committed and successfully pushed BEFORE anything else, including tests. Use PYTHONDONTWRITEBYTECODE=1 and temporary directories for tests.
+- NEXT: shared preflight/transaction boundary for Quick and guided writes, BF-007/008/009/026/028/051/095; tests first, durable unique backups, rollback on file/state failure, no accepted handoff before successful writes. Then remaining ROADMAP stages. Check git log for newer per-file checkpoints.
+
+## Previous resume checkpoint — session 29 / repair phase (2026-11-05)
 
 - Owner explicitly ended discovery-only mode: implement root-cause repairs for all catalogued findings under new V5.x roadmap. Continue on main with ONE file change -> add -> commit -> push before tests or next edit.
 - Read complete uploaded session-28 transcript and BUG_FINDING catalog; verified clean HEAD=origin/main=19270b74 using managed GitHub credentials. Never copy the exposed transcript token into repository or logs.
