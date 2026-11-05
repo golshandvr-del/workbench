@@ -28,7 +28,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
 | S2 | 37 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103) | 0 |
-| S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102) | 0 |
+| S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102, 104) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
@@ -2280,6 +2280,16 @@ re-plan, like the classic apply.
 **Impact:** failed steps and the double-click log target belong to run A while run B remains selected. This can send the user debugging the wrong commit/run. The status names A, but the selected row and other run actions still target B. Reselecting B after the request finishes is a workaround; later polling may also repair it.
 
 **Expected:** associate results with a run-ID/attempt selection generation, discard stale results, and schedule a fetch for the latest selection after the current worker finishes. Clear the cached jobs with the displayed rows. Cover run changes and workflow changes during a pending request.
+
+### BF-104 · S3 · OPEN — Extract artifact lets CRC/decompression errors escape instead of reporting a refused extraction
+
+**Where:** `aiwb/github/build_center_dialogs.py:275–292`. Initial `inspect_zip()` validates directory metadata, not member CRCs. `safe_extract_zip()` subsequently reads members and may raise `zipfile.BadZipFile`, `zlib.error`, or unsupported-compression errors; the UI only catches `UnsafeArchiveError` and `OSError`. `BadZipFile` is not an OSError. The extractor correctly cleans its staging directory but re-raises the original exception.
+
+**Reproduced locally:** create a ZIP_STORED archive in BytesIO with `a.txt` = `b"hello"`, then flip one payload byte at offset `30 + len("a.txt")` without updating CRC. Save it in a TemporaryDirectory and register that path as the selected artifact's downloaded ZIP in a real `ArtifactsDialog` with loading suppressed and confirmation returning True. `inspect_zip()` accepts one member. Calling `extract()` raises **BadZipFile: Bad CRC-32 for file 'a.txt'** past the UI boundary; status stays **"1 artifact(s). Expired artifacts cannot be downloaded."** instead of a refusal reason. No destination or staging leftovers remain. No network involved.
+
+**Impact:** corrupted/unsupported ZIP content yields the global callback-error path rather than the actionable extraction message. This does **not** demonstrate a whole-app crash, unsafe extraction or partial output: staging cleanup was verified. A locally altered archive, or a consistently corrupt archive without a reference digest, can reach this path; a detected download digest mismatch is already refused earlier.
+
+**Expected:** normalize ZIP/CRC/decompression failures into UnsafeArchiveError at the service boundary (with a safe message) or catch them explicitly in the UI. Keep atomic cleanup and test metadata-valid/payload-corrupt ZIPs, not only invalid ZIP headers and unsafe names.
 
 ## Checked and OK
 
