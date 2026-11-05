@@ -63,6 +63,7 @@ object Normalize {
             out = out.trimStart('\ufeff'); fixes.add("bom")
         }
         var inFile = false
+        var quote = '"'
         var inString = false
         var escaped = false
         var zw = 0
@@ -79,7 +80,8 @@ object Normalize {
                     clean.append(c)
                     if (escaped) escaped = false
                     else if (inString && c == '\\') escaped = true
-                    else if (c == '"') inString = !inString
+                    else if (inString && c == quote) inString = false
+                    else if (!inString && c in "\"“") { inString = true; quote = if (c == '"') '"' else '”' }
                 }
                 if (marker.startsWith("<<<AIWB_FILE ")) { inFile = true; inString = false; escaped = false }
                 else if (marker.startsWith("<<<AIWB_END_FILE>>>")) inFile = false
