@@ -42,10 +42,10 @@ def _balanced_end(s: str, start: int) -> int:
             if c == "\\":
                 i += 2
                 continue
-            if c == quote or (quote == '"' and c in "\u201d"):
+            if c == quote:
                 in_str = False
         elif c in "\"\u201c":
-            in_str, quote = True, '"'
+            in_str, quote = True, ('"' if c == '"' else "\u201d")
         elif c == "{":
             depth += 1
         elif c == "}":
@@ -67,7 +67,6 @@ def find_object(text: str, *, keys: tuple[str, ...] = (), start: int = 0) -> Fou
             body = s[i:]
             if all(re.search(r"[\"\u201c\u201d]" + re.escape(k) + r"[\"\u201c\u201d]\s*:", body) for k in keys):
                 truncated = True
-                break
             i = s.find("{", i + 1)
             continue
         body = s[i:end]
