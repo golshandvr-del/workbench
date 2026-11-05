@@ -11,6 +11,8 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest.mock import patch
+import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
@@ -246,6 +248,63 @@ class ArtifactTests(unittest.TestCase):
             self.assertEqual(cm.exception.category, "integrity")
             self.assertEqual(list(Path(d).iterdir()), [])
 
+    def test_bf105_failures_preserve_previous_download(self) -> None:
+        old = make_zip([("a.txt", b"hello")])
+        incoming = make_zip([("a.txt", b"jello")])
+        for failure in ("digest", "size", "format", "cancel", "network", "publish"):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as d:
+                final = Path(d) / "setup-11.zip"
+                final.write_bytes(old)
+                data = b"not zip" if failure == "format" else incoming
+                meta = self.artifacts_payload(
+                    size_in_bytes=len(data) + (1 if failure == "size" else 0),
+                    digest="sha256:" + hashlib.sha256(old if failure == "digest" else data).hexdigest())
+                svc = self.service(data, payload=meta)
+                (a,) = svc.list_artifacts(TOKEN, "o", "r", 50)
+                if failure == "network":
+                    def broken_stream(*args):
+                        yield b"PK"
+                        raise OSError("disconnected")
+                    svc._stream = broken_stream
+                with patch.object(ar.os, "replace", side_effect=OSError("locked")) if failure == "publish" else __import__("contextlib").nullcontext():
+                    with self.assertRaises((GitHubApiError, OSError)):
+                        svc.download_artifact(TOKEN, "o", "r", a, Path(d), cancel=lambda: failure == "cancel")
+                self.assertTrue(final.exists(), "failed retry deleted the previous good copy")
+                self.assertEqual(final.read_bytes(), old)
+                self.assertEqual(list(Path(d).iterdir()), [final])
+
+    def test_bf106_long_names_keep_identity_extension_and_bytes(self) -> None:
+        for name in ("x" * 256, "پ" * 256, "con", "a/b:c" * 40):
+            with self.subTest(name=name[:10]), tempfile.TemporaryDirectory() as d:
+                results = []
+                for aid, content in ((11, b"first"), (12, b"other")):
+                    data = make_zip([("a.txt", content)])
+                    svc = self.service(data, payload=self.artifacts_payload(
+                        id=aid, name=name, size_in_bytes=len(data), digest="sha256:" + hashlib.sha256(data).hexdigest()))
+                    (a,) = svc.list_artifacts(TOKEN, "o", "r", 50)
+                    result = svc.download_artifact(TOKEN, "o", "r", a, Path(d), run=run())
+                    self.assertTrue(result.path.name.endswith(f"-{aid}.zip"))
+                    self.assertLessEqual(len(result.path.name.encode("utf-8")), 180)
+                    results.append(result)
+                self.assertNotEqual(results[0].path, results[1].path)
+                for result in results:
+                    self.assertEqual(hashlib.sha256(result.path.read_bytes()).hexdigest(), result.sha256)
+                    target = result.path.with_suffix("")
+                    self.assertNotEqual(target, result.path)
+                    ar.safe_extract_zip(result.path, target)
+
+    def test_download_attempt_does_not_touch_foreign_part_file(self) -> None:
+        data = make_zip([("a.txt", b"ok")])
+        svc = self.service(data)
+        (a,) = svc.list_artifacts(TOKEN, "o", "r", 50)
+        with tempfile.TemporaryDirectory() as d:
+            foreign = Path(d) / "setup-11.zip.part"
+            foreign.write_bytes(b"another attempt")
+            result = svc.download_artifact(TOKEN, "o", "r", a, Path(d))
+            self.assertEqual(foreign.read_bytes(), b"another attempt")
+            self.assertEqual(result.path.read_bytes(), data)
+            self.assertEqual(len(list(Path(d).iterdir())), 2)
+
     def test_refusals(self) -> None:
         data = make_zip([("a.txt", b"x")])
         with tempfile.TemporaryDirectory() as d:
@@ -351,6 +410,21 @@ class SafeExtractTests(unittest.TestCase):
         with self.assertRaises((ar.UnsafeArchiveError, zipfile.BadZipFile)):
             self.extract(bytes(data), max_ratio=1e9)
         self.assertFalse((Path(self.tmp.name) / "out").exists())
+
+    def test_bf104_crc_corruption_is_domain_error_and_atomic(self) -> None:
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_STORED) as zf:
+            zf.writestr("good.txt", b"good")
+            zf.writestr("bad.txt", b"hello")
+        data = bytearray(buf.getvalue())
+        header = data.find(b"PK\x03\x04", 4)
+        data[header + 30 + len("bad.txt")] ^= 1
+        self.assertRejected(bytes(data), "corrupt|unsupported")
+
+    def test_bf104_decompression_errors_are_normalized(self) -> None:
+        for exc in (zlib.error("invalid stream"), NotImplementedError("compression"), EOFError("short")):
+            with self.subTest(error=type(exc).__name__), patch.object(zipfile.ZipExtFile, "read", side_effect=exc):
+                self.assertRejected(make_zip([("a.txt", b"hello")]), "corrupt|unsupported")
 
     def test_existing_dest_refused_and_not_zip(self) -> None:
         with tempfile.TemporaryDirectory() as d:
