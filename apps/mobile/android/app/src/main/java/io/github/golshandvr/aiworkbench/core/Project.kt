@@ -115,7 +115,10 @@ class Project(val store: ProjectStore) {
         val ops = data["operations"] as? List<*>
         val remaining = Report.parseRemaining(data["roadmap_remaining"])
         // a pure decision "nothing left" may come without operations (roadmap 4.4.0, F25 → F26)
-        if (ops == null || (ops.isEmpty() && !(remaining == false && charter == null))) throw ModelError("the proposal has no operations")
+        if (ops == null || (ops.isEmpty() && !(remaining == false && charter == null)))
+            throw ModelError("the proposal has no operations. Either list actual changes, or, if nothing is left, " +
+                "send \"operations\": [], \"roadmap_remaining\": false with the current base_state_revision. " +
+                "Do not invent work; clarify what remains if completion is unknown.")
         if (ops.size > MAX_OPS) throw ModelError("too many operations (${ops.size} > $MAX_OPS); ask the manager to split the proposal")
         val base = (data["base_state_revision"] as? Number)?.toInt()
             ?: throw ModelError("base_state_revision (integer) is required so Workbench can detect stale proposals")
