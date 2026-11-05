@@ -16,6 +16,7 @@ limit; errors become one clear sentence (and never contain the key).
 from __future__ import annotations
 
 import json
+import http.client
 import socket
 import threading
 import urllib.error
@@ -26,7 +27,7 @@ from typing import Any, Callable
 SETTINGS_KEY = "helper_ai"
 DEFAULT_TIMEOUT = 60
 MIN_TIMEOUT, MAX_TIMEOUT = 5, 300
-MAX_ANSWER_CHARS = 60000          # what is sent of a pasted answer (the rest is cut, and the helper is told so)
+MAX_ANSWER_CHARS = 60000          # refuse longer answers; never send a silently truncated prefix
 MAX_REPLY_CHARS = 200000
 USER_AGENT = "AI-Workbench-HelperAI"
 
@@ -72,7 +73,7 @@ def chat(base_url: str, model: str, messages: list[dict[str, str]], *, api_key: 
     open_ = opener or urllib.request.urlopen
     try:
         with open_(req, timeout=timeout) as resp:
-            raw = resp.read(MAX_REPLY_CHARS * 4 + 1)
+            raw = resp.read(MAX_REPLY_CHARS * 12 + 65537)
     except urllib.error.HTTPError as exc:
         code = exc.code
         if code in (401, 403):
@@ -91,9 +92,11 @@ def chat(base_url: str, model: str, messages: list[dict[str, str]], *, api_key: 
             raise HelperAIError(f"The helper AI did not answer within {int(timeout)} seconds.") from None
         raise HelperAIError("The helper AI could not be reached. Check the address and your internet connection.") \
             from None
-    except OSError:
+    except (OSError, http.client.HTTPException):
         raise HelperAIError("The helper AI could not be reached. Check the address and your internet connection.") \
             from None
+    if len(raw) > MAX_REPLY_CHARS * 12 + 65536:
+        raise HelperAIError("The helper AI answer is too long. Ask for a smaller answer and retry.")
     try:
         data = json.loads(raw.decode("utf-8", errors="replace"))
         content = data["choices"][0]["message"]["content"]
@@ -104,7 +107,9 @@ def chat(base_url: str, model: str, messages: list[dict[str, str]], *, api_key: 
         content = "".join(str(p.get("text", "")) for p in content if isinstance(p, dict))
     if not isinstance(content, str) or not content.strip():
         raise HelperAIError("The helper AI sent an empty answer.")
-    return _redact(content, api_key)[:MAX_REPLY_CHARS]
+    if len(content) > MAX_REPLY_CHARS:
+        raise HelperAIError("The helper AI answer is too long. Nothing was replaced; ask for a smaller answer.")
+    return _redact(content, api_key)
 
 
 # --------------------------------------------------------------------------------------------------------- prompts
@@ -152,8 +157,9 @@ def expected_for(step_key: str) -> str:
 
 def fix_messages(answer: str, problem: str = "", expected: str = "") -> list[dict[str, str]]:
     text = str(answer or "")
-    cut = len(text) > MAX_ANSWER_CHARS
-    text = text[:MAX_ANSWER_CHARS]
+    if len(text) > MAX_ANSWER_CHARS:
+        raise HelperAIError(f"This answer has {len(text):,} characters; the helper limit is {MAX_ANSWER_CHARS:,}. "
+                            "Nothing was sent or replaced. Split the answer into complete files and retry.")
     system = ("You convert an AI chat answer into the exact format AI Workbench reads. Never invent anything: keep "
               "every file, every line of code and every statement of the answer; change only the shape. Do not add "
               "explanations. Output only the converted answer.")
@@ -162,8 +168,6 @@ def fix_messages(answer: str, problem: str = "", expected: str = "") -> list[dic
         parts.append(f"Workbench expects here: {expected}.")
     if problem:
         parts.append(f"Workbench reported: {str(problem)[:1500]}")
-    if cut:
-        parts.append("The answer below was cut to its first part; convert only what is there.")
     parts += ["", "The answer to convert:", "-----", text, "-----"]
     return [{"role": "system", "content": system}, {"role": "user", "content": "\n".join(parts)}]
 
