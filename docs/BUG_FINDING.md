@@ -28,8 +28,8 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
 | S2 | 39 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106) | 0 |
-| S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102, 104) | 0 |
-| — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
+| S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 104) | 0 |
+| — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
 BF-007 / BF-009 (any locked or invalid file on Windows — see BF-008).
@@ -2032,7 +2032,9 @@ in every prompt as *"validated"*.
 complete"*; accept only `low` / `medium` / `high` for severity (case-insensitive), or turn the placeholder into
 `medium` with a note.
 
-### BF-090 · S3 · OPEN — Mobile Companion: approving a device after the 10-minute code expiry adds an *active* device that the phone can never use; desktop says *"Device approved."*, phone says *"The pairing code expired or was already used"*
+### BF-090 · S3 · DUPLICATE (of BF-069) — Mobile Companion: approving a device after the 10-minute code expiry adds an *active* device that the phone can never use; desktop says *"Device approved."*, phone says *"The pairing code expired or was already used"*
+
+**Catalog reconciliation (session 28):** this repeats BF-069: the same `decide()` expiry omission, late approval at 620s, active orphan device and `pair_status` 403. The later report adds UI button-state detail, not a distinct root cause. Preserve its evidence below, track the fix under BF-069, and do not count BF-090 as another open defect.
 
 **Where:** `aiwb/companion/service.py`: `handle()` refuses every `pair-…` request once `clock() > pairing["expires"]`
 (`403 pairing_expired`) — including the phone's `pair_status` poll that must fetch the new `device_id`. But
