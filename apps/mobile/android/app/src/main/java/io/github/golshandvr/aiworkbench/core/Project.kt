@@ -453,7 +453,8 @@ class Project(val store: ProjectStore) {
     fun startTask(taskId: String, agentId: String = ""): Obj {
         val st = state()
         val t = State.require(st, "tasks", taskId)
-        val agent = agentId.ifEmpty { Json.str(t["owner_agent_id"]).ifEmpty { "agent-implementer" } }
+        val agent = agentId.ifEmpty { Waves.owner(st, t) }
+        if (agent.isEmpty()) throw ModelError("Assign an enabled worker in the team before preparing this task")
         val a = State.coll(st, "agents")[agent] as? Map<*, *>
         if (a == null || a["enabled"] == false) throw ModelError("target agent $agent does not exist or is disabled")
         if (t["status"] in setOf("draft", "proposed", "blocked", "cancelled", "superseded", "done"))
