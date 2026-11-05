@@ -15,6 +15,22 @@ from scenario_driver import Driver, charter_to_first_prompt, guided_answer, new_
 
 
 def main() -> None:
+    # V5.21 regression: cancellation must remove commands from their real owners.
+    # Keep destruction unsuppressed here: Driver.restart intentionally tolerates a
+    # window already destroyed by on_close and would otherwise hide this failure.
+    probe = tk.Tk()
+    child = tk.Frame(probe)
+    nested = tk.Frame(child)
+    child_job = child.after(60000, lambda: None)
+    nested_job = nested.after_idle(lambda: None)
+    commands = [probe.tk.call("after", "info", job)[0] for job in (child_job, nested_job)]
+    probe.after(60000, lambda: None)
+    probe.tk.call("after", 60000, "set timer_probe 1")  # Tcl callback, no Python owner
+    Driver._cancel_timers(probe)
+    assert not probe.tk.call("after", "info"), "a timer survived cancellation"
+    assert not any(c in (w._tclCommands or ()) for w in (child, nested) for c in commands)
+    probe.destroy()
+
     with scenario_home("s5"):
         d = Driver(tk.Tk(), "s5")
         try:
