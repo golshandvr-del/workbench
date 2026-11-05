@@ -240,6 +240,12 @@ def _write_team(s: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, list
             changes = {"name": str(row.get("name", "")).strip()[:120], "role": role,
                        "preferred_model_label": str(row.get("model", "") or "").strip()[:80], "enabled": True}
             if any(cur.get(k) != v for k, v in changes.items()):
+                if cur.get("role") != role:
+                    # BF-056: a new role brings the new role's purpose, rules and task types
+                    fresh = _agent_data(aid, row)
+                    for k in ("purpose", "instructions", "allowed_task_types", "review_policy", "escalation_rules"):
+                        if k in fresh:
+                            changes[k] = fresh[k]
                 merged = normalize_agent({**cur, **changes})
                 merged["revision"] = int(cur.get("revision", 1)) + 1
                 merged["created_at"] = cur.get("created_at", merged["created_at"])
