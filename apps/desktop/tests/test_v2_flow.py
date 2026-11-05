@@ -181,14 +181,65 @@ class BuildEvidenceTests(Base):
         a = self.ready_task("A", acceptance_policy="evidence_required", required_approvals=["validation"])
         self.p.attempts.create(a["task_id"])
         self.p.tasks.transition(a["task_id"], "validation_pending")
-        git = NS(commit_sha="f" * 40)
-        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=None, outcome="success")), [])
-        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=5, outcome="in_progress")), [])
-        added = record_build_evidence(self.p, git, NS(run_id=7, outcome="success"))
+        task = self.p.tasks.get(a["task_id"])
+        context = {"project_root": str(self.root), "project_id": self.p.store.load()["project_id"],
+                   "task_id": a["task_id"], "task_revision": task["task_revision"],
+                   "attempt_id": task["active_attempt_id"], "repository": "o/a", "branch": "work"}
+        git = NS(commit_sha="f" * 40, operation_id="op-A", repository="o/a", branch="work", pushed=True,
+                 task_id=a["task_id"], evidence_context=context)
+        build = NS(run_id=7, outcome="success", head_sha="f" * 40, operation_id="op-A")
+        checked = {"current_commit": "f" * 40, "repository": "o/a", "branch": "work"}
+        for key, wrong in (("current_commit", "a" * 40), ("repository", "o/b"), ("branch", "other")):
+            with self.subTest(mismatch=key):
+                self.assertEqual(record_build_evidence(self.p, git, build, **{**checked, key: wrong}), [])
+        for key, wrong in (("project_id", "other"), ("task_id", "TASK-OTHER"),
+                           ("task_revision", 999), ("attempt_id", "other-attempt")):
+            original = context[key]
+            context[key] = wrong
+            self.assertEqual(record_build_evidence(self.p, git, build, **checked), [])
+            context[key] = original
+        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=None, outcome="success"), **checked), [])
+        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=5, outcome="in_progress"), **checked), [])
+        added = record_build_evidence(self.p, git, build, **checked)
         self.assertEqual([(e["source"]["kind"], e["verified"], e["result"]) for e in added],
                          [("github_actions", True, "passed")])
+        self.assertEqual(added[0]["attempt_id"], task["active_attempt_id"])
         self.assertEqual(self.p.tasks.get(a["task_id"])["status"], "done")
-        self.assertEqual(record_build_evidence(self.p, git, NS(run_id=7, outcome="success")), [], "idempotent")
+        self.assertEqual(record_build_evidence(self.p, git, build, **checked), [], "idempotent")
+
+    def test_bf109_completion_targets_captured_project_after_active_project_switch(self):
+        from types import SimpleNamespace as NS
+        from unittest.mock import patch
+        import uuid
+        import AI_Workbench as wb
+        from aiwb.github.repository_binding import RepositoryBinding
+        a = self.ready_task("A", acceptance_policy="evidence_required", required_approvals=["validation"])
+        self.p.attempts.create(a["task_id"])
+        self.p.tasks.transition(a["task_id"], "validation_pending")
+        task = self.p.tasks.get(a["task_id"])
+        binding = RepositoryBinding(str(uuid.uuid4()), str(self.root), str(self.root), ".", str(uuid.uuid4()),
+                                    1, "o", "a", "o/a", "https://github.com/o/a", "main", "work", "now")
+        context = {"project_root": str(self.root), "project_id": self.p.store.load()["project_id"],
+                   "binding_id": binding.binding_id, "account_id": binding.account_id, "repository_id": 1,
+                   "repository": "o/a", "branch": "work", "task_id": a["task_id"],
+                   "task_revision": task["task_revision"], "attempt_id": task["active_attempt_id"]}
+        other = V2Project(self.root / "other", "other")
+        other.open()
+        before = other.store.load()
+        app = NS(workspace=other.store.root, refresh_git=lambda **kw: None, set_status=lambda text: None,
+                 settings_data={"github_repository_bindings": [binding.to_dict()]})
+        operation = NS(git=NS(commit_sha="f" * 40, operation_id="op-A", repository="o/a", branch="work", pushed=True,
+                              task_id=a["task_id"], evidence_context=context),
+                       build=NS(run_id=7, outcome="success", head_sha="f" * 40, operation_id="op-A"))
+        def run(root, args, **kw):
+            self.assertEqual(Path(root), self.root)
+            value = {"rev-parse": "f" * 40, "branch": "work", "remote": "https://github.com/o/a.git"}[args[0]]
+            return NS(returncode=0, stdout=value)
+        with patch.object(wb, "git_run", side_effect=run):
+            wb.WorkbenchApp._sync_build_finished(app, operation)
+        self.assertEqual(self.p.tasks.get(a["task_id"])["status"], "done")
+        self.assertEqual(other.store.load(), before)
+        self.assertEqual(len(self.p.evidence.list(a["task_id"])), 1)
 
 
 class FakeGitHub:
