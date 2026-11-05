@@ -128,6 +128,33 @@ class ReportTest {
         assertTrue(Guide(p).steps().isNotEmpty())
     }
 
+    @Test fun bf048CompletionWordingAndUnknownDecisionRecovery() {
+        setUp()
+        try {
+            p.store.transaction("finished work fixture") { s ->
+                for (t in State.coll(s, "tasks").values) Json.obj(t)["status"] = "done"
+            }
+            for (value in listOf<Any>("nothing left", "No, the project is complete", "completed", JSONArray())) {
+                val before = State.coll(p.state(), "tasks")
+                val out = pasteAndAccept(block(JSONArray(), value))
+                assertEquals("complete", Json.obj(Json.obj(out["result"])["decision"])["route"])
+                assertEquals(before, State.coll(p.state(), "tasks"))
+                assertEquals("F26", p.flow().id)
+            }
+            for (value in listOf(null, "maybe", "not done", "no tests yet")) {
+                val before = p.state()
+                val r = p.routeAnswer(block(JSONArray(), value))
+                assertEquals("rejected", r.kind)
+                assertTrue(r.message, "roadmap_remaining" in r.message && "false" in r.message)
+                assertTrue(r.message, "Do not invent" in r.message)
+                assertEquals(before, p.state())
+            }
+            p.store.transaction("unfinished work fixture") { s -> State.require(s, "tasks", a)["status"] = "ready" }
+            val out = pasteAndAccept(block(JSONArray(), "done"))
+            assertEquals("next_stage", Json.obj(Json.obj(out["result"])["decision"])["route"])
+        } finally { p.store.root.parentFile.deleteRecursively() }
+    }
+
     @Test fun emptyPlanWithoutDecisionIsRefused() {
         setUp()
         val r = try { p.routeAnswer(block(JSONArray(), true)).kind } catch (e: Exception) { "error" }
