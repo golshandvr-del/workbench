@@ -110,7 +110,9 @@ object Prompts {
     /** Ask the same AI only for what delivery [h] is missing; [n] is the fresh handoff the answer must name. */
     fun repair(state: Obj, h: Obj, n: Obj = h): String {
         val t = Json.obj(State.coll(state, "tasks")[h["task_id"]])
-        val done = Json.list(h["artifact_refs"]).map { Json.str(Json.obj(it)["logical_path"]) }.ifEmpty { Json.strs(h["completed_items"]) }
+        val done = Json.list(h["staged_files"]).map { Json.str(Json.obj(it)["path"]) }.ifEmpty {
+            Json.list(h["artifact_refs"]).map { Json.str(Json.obj(it)["logical_path"]) }.ifEmpty { Json.strs(h["completed_items"]) }
+        }
         val missing = Json.strs(h["unresolved_items"])
         val lines = mutableListOf("AIWB_ATTEMPT_ID: ${n["attempt_id"]}", "(Repeat the line above as the first line of your answer.)", "",
             "# AI Workbench — repair request for ${h["handoff_id"]} (${t["task_id"]} ${t["title"]})",
