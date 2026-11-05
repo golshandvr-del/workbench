@@ -3,7 +3,12 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 32 / Mobile delivery and settings repairs saved (2026-11-05)
+## Current resume checkpoint — session 33 / lifecycle continuation (2026-11-05)
+
+- Managed GitHub authorization recovered; restored clean main=origin/main=d31f6155 after sandbox reset. Read the entire supplied transcript (1835 displayed lines, some historical tool output abbreviated). Inherited verified catalog: 22/106 FIXED (20.75%), 84 OPEN; Desktop 961 tests OK / 10 skipped; Mobile JVM 108 tests OK. These are inherited results, not a new validation run.
+- NEXT: V5.23 BF-033 completed-task change routing and BF-035 cancellation/prompt lifecycle, including proposal and guided/direct routes and Mobile equivalents where present. Keep every file change immediately committed/pushed BEFORE testing or editing another file. Windows/Android device and full final-source GUI gates remain unpassed; no release permitted on this evidence alone.
+
+## Previous resume checkpoint — session 32 / Mobile delivery and settings repairs saved (2026-11-05)
 
 - Read the complete uploaded session-31 transcript (1687 lines), recovered clean main=origin/main=d5b63357 via managed GitHub authentication. Never copied the exposed transcript credential into source, logs or remotes. Owner requested code-first continuation; latest instruction explicitly requests wrapping up without starting new subtasks.
 - **Current catalog: 22/106 FIXED (20.75% count-based), 84 independent OPEN (0 S1 / 33 S2 / 51 S3), 3 duplicate headings.** Newly fixed BF-016/076/078/079 with unit/JVM evidence. Zero catalogued open S1 is NOT proof of no undiscovered bugs, release readiness or platform correctness.
