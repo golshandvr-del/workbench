@@ -235,32 +235,62 @@ class HelperService:
         c.update(base_url=url, model=model)
         if timeout is not None:
             c["timeout"] = max(MIN_TIMEOUT, min(MAX_TIMEOUT, int(timeout)))
-        if api_key is not None:
-            key = api_key.strip()
-            ref = str(c.get("credential_ref") or "")
-            if key:
-                if self.store is None:
-                    raise HelperAIError("No secure key storage is available on this computer.")
-                ref = ref or "helper-ai:" + str(uuid.uuid4())
-                self._secret("set", ref, key)
-                c["credential_ref"] = ref
-            elif ref:
-                self._secret("delete", ref)
-                c.pop("credential_ref", None)
-        self.settings[SETTINGS_KEY] = c
-        if self._save is not None:
-            self._save()
+        self._persist_config(c, api_key)
 
     def clear(self) -> None:
-        ref = str(self.config.get("credential_ref") or "")
-        if ref:
-            try:
+        self._persist_config(None, "")
+
+    def _persist_config(self, config: dict[str, Any] | None, api_key: str | None) -> None:
+        """Exception rollback across settings and credentials; not a power-loss transaction.
+
+        Keep the old secret until it can be restored if settings persistence fails. Callbacks may
+        replace the settings dict, so rollback must target the current dict, not a stale snapshot.
+        Legacy save callbacks return None on success; only explicit False means failure.
+        """
+        present = SETTINGS_KEY in self.settings
+        previous = self.settings.get(SETTINGS_KEY)
+        old_ref = str(self.config.get("credential_ref") or "")
+        ref, old_key = old_ref, ""
+        change_key = api_key is not None and bool(api_key.strip() or old_ref)
+        if change_key:
+            if self.store is None:
+                raise HelperAIError("No secure key storage is available on this computer.")
+            if old_ref:
+                old_key = self._secret("get", old_ref)
+            key = api_key.strip()
+            if key:
+                ref = old_ref or "helper-ai:" + str(uuid.uuid4())
+                self._secret("set", ref, key)
+                if config is not None:
+                    config["credential_ref"] = ref
+            else:
                 self._secret("delete", ref)
-            except HelperAIError:
-                pass
-        self.settings.pop(SETTINGS_KEY, None)
-        if self._save is not None:
-            self._save()
+                if config is not None:
+                    config.pop("credential_ref", None)
+        if config is None:
+            self.settings.pop(SETTINGS_KEY, None)
+        else:
+            self.settings[SETTINGS_KEY] = config
+        try:
+            if self._save is not None and self._save() is False:
+                raise HelperAIError("Settings could not be saved.")
+        except Exception:
+            if present:
+                self.settings[SETTINGS_KEY] = previous
+            else:
+                self.settings.pop(SETTINGS_KEY, None)
+            if change_key:
+                try:
+                    if old_ref:
+                        self._secret("set", old_ref, old_key)
+                    else:
+                        self._secret("delete", ref)
+                except HelperAIError:
+                    raise HelperAIError("Helper AI settings could not be saved, and key rollback failed. "
+                                        "Check secure key storage before retrying.") from None
+            # Do not echo arbitrary callback exceptions: they may contain the API key.
+            raise HelperAIError("Helper AI settings could not be saved. Previous settings were restored; "
+                                "check settings file permissions and try again.") from None
 
     def _secret(self, op: str, ref: str, value: str = "") -> str:
         try:
