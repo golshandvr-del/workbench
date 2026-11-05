@@ -682,8 +682,9 @@ class Guide:
         if action == "accept_handoff":
             from .files import integrate
             reason = str(inp.get("reason", "")).strip()
-            c.resolve_handoff(ref, True, reason or "accepted in the guided loop")
-            written = integrate(self.p.store, c.root, ref)
+            written = integrate(self.p.store, c.root, ref,
+                                accept_reason=reason or "accepted in the guided loop")
+            c._dirty("handoff integrated and accepted")
             added = f" {len(written)} file(s) added to the project files." if written else ""
             tid = (self.p.handoffs.get(ref) or {}).get("task_id", "")
             if not reason and tid and (self.p.tasks.get(tid) or {}).get("status") == "in_review":
