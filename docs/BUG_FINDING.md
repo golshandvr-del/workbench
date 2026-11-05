@@ -28,7 +28,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
 | S2 | 35 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096) | 0 |
-| S3 | 51 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099) | 0 |
+| S3 | 52 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
 **Top risk for the friends' demo:** the "stuck" family BF-001…004 (planning graph) and the half-written files family
@@ -2240,6 +2240,16 @@ re-plan, like the classic apply.
 **Why it matters:** the user cannot accept the plan from this dialog at all. The only way out is closing the window (treated as *Cancel*, so nothing is applied). The modal grab blocks the main window meanwhile. Laptops at 125 % scaling hit this with even fewer operations.
 
 **Expected:** put the operation list in a scrollable frame (or a `Treeview` with check marks) with a bounded height, keep the button bar outside it, bind `<Return>` = *Apply selected* and `<Escape>` = *Cancel*, and add *Select all / none*.
+
+### BF-100 · S3 · OPEN — decision form: a long question hides OK, rationale and validation feedback below the clipped window
+
+**Where:** `aiwb/ui/action_form.py:50–77`: the full question, all radio options, rationale, error label and button bar are packed into one non-scrollable body. `place_dialog()` caps the window at the available screen height; `choices.form_spec()` does not cap the question.
+
+**Reproduced again in session 28:** Tk 8.6, Xvfb 1366×768, `ActionForm(..., modal=False)`, six options and a rationale field. Use question `("The architect proposes two storage designs for the history feature. " * n).strip()` and six option labels `Option {i}: store history in format {i} with sync`. After `top.update()`, n=14 (951 characters): body 655px, window 663px, OK mapped. n=18 (1223 characters): body 735px, window capped at 696px, OK **not mapped**. n=22 (1495 characters): body 795px, window 696px, both OK and error label **not mapped**. Inspect `f.ok_btn.winfo_ismapped()` and `f.error_label.winfo_ismapped()`.
+
+**Impact:** users cannot see the confirmation button; with longer questions the rationale / Other answer field and validation feedback also disappear. Enter and Escape remain workarounds, so this is not a total deadlock. The missing error feedback makes a rejected submission look unresponsive.
+
+**Expected:** bound or scroll the question/form content; keep confirmation, cancellation and error feedback outside the scroll area. The previous session's attempted BF-100 checkpoint did not reach GitHub; this entry recovers it after a fresh reproduction.
 
 ## Checked and OK
 
