@@ -142,6 +142,34 @@ class BranchTests(unittest.TestCase):
         self.assertEqual(out["result"]["decision"]["route"], "complete")
         self.assertEqual(self.g.flow()["node"], "F26")
 
+    def test_bf048_completion_words_do_not_invent_tasks(self):
+        with self.c.project.store.transaction("finished work fixture") as s:
+            for t in s["tasks"].values():
+                t["status"] = "done"
+        for value in ("nothing left", "No, the project is complete", "completed", []):
+            with self.subTest(value=value):
+                before = self.c.state()["tasks"]
+                pid = self._paste(_block(self.c.state()["state_revision"], [], roadmap_remaining=value))
+                self.assertEqual(self._accept(pid)["result"]["decision"]["route"], "complete")
+                self.assertEqual(self.c.state()["tasks"], before)
+                self.assertEqual(self.g.flow()["node"], "F26")
+
+    def test_bf048_unknown_completion_correction_offers_both_routes(self):
+        from aiwb.v2.proposals import NoOperations
+        for value in (None, "maybe", "not done", "nothing left except testing"):
+            before = self.c.state()
+            with self.subTest(value=value), self.assertRaises(NoOperations) as caught:
+                self.c.project.proposals.import_data({"base_state_revision": before["state_revision"],
+                    "operations": [], "roadmap_remaining": value})
+            prompt = caught.exception.fix_prompt
+            self.assertIn('"operations": [], "roadmap_remaining": false', prompt)
+            self.assertIn("Do not invent", prompt)
+            self.assertNotIn("must list at least one change", prompt)
+            self.assertEqual(self.c.state(), before)
+        # A model's completion claim cannot bypass unfinished Workbench tasks.
+        pid = self._paste(_block(self.c.state()["state_revision"], [], roadmap_remaining="done"))
+        self.assertEqual(self._accept(pid)["result"]["decision"]["route"], "next_stage")
+
     def test_empty_plan_without_decision_is_refused(self):
         rev = self.c.state()["state_revision"]
         r = self.c.route_answer(_block(rev, [], roadmap_remaining=True))
