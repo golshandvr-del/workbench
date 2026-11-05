@@ -302,5 +302,18 @@ class PipelineTests(unittest.TestCase):
         self.assertTrue(buf.getvalue())
 
 
+class RepairPromptGateTests(PipelineTests):
+    def test_bf085_clean_parse_gives_no_false_repair_prompt(self) -> None:
+        from types import SimpleNamespace
+        from aiwb.inbox.inbox_window import InboxWindow
+        cap = self.pipe.capture_text(block("src/a.py", "print(1)"))
+        rid = cap.response.response_id
+        fake = SimpleNamespace(selected_id=lambda: rid, last={}, pipe=self.pipe, task_text=lambda: "")
+        self.assertEqual(InboxWindow.repair_text(fake), "")
+        broken = self.pipe.capture_text(block("src/b.py", "print(2)", end=False))
+        fake2 = SimpleNamespace(selected_id=lambda: broken.response.response_id, last={}, pipe=self.pipe, task_text=lambda: "")
+        self.assertNotEqual(InboxWindow.repair_text(fake2), "")
+
+
 if __name__ == "__main__":
     unittest.main()
