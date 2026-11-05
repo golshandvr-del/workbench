@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 40 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106, 108) | 0 |
+| S2 | 41 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106, 108, 109) | 0 |
 | S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 104, 107) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
@@ -2334,6 +2334,16 @@ re-plan, like the classic apply.
 **User path / impact:** open A's Build Center, switch to B in the main app, then select A's workflow and press Use selected as main Build workflow. B's saved build configuration is silently corrupted; the workflow may not exist in B, causing a stale binding or wrong workflow selection next time. Opening Build Center for B merely lifts A's old window, and its Run/Cancel/Artifacts actions remain scoped to A, not the newly active project. The title identifies A, so this is not evidence of an invisible remote mutation; the wrong-project metadata write is the confirmed defect.
 
 **Expected:** key windows by stable binding/project identity, or close/recreate them on a project change. Persist workflow selection only to the binding that owns the displayed workflow; resolve the latest record by captured binding ID and reject deletion/relinking mismatches. Test switching projects while non-modal repository windows remain open.
+
+### BF-109 · S2 · OPEN — Sync & Build completion records project A's CI as verified evidence in newly active project B and can mark B's unrelated task done
+
+**Where:** `AI_Workbench.py` `_sync_build_finished()` (~12345): uses `root = self.workspace` at callback time rather than the project captured when the orchestrator was created. The non-modal window receives `on_finished=self._sync_build_finished`. `aiwb/v2/ledger.py` `record_build_evidence()` takes every in_progress / in_review / validation_pending task in that project; it does not check git.repository, git.task_id, project identity, binding, or the project's actual HEAD. It passes the foreign commit SHA as `current_commit`, effectively checking evidence against itself.
+
+**Reproduced locally using real V2Project and callback:** create a temporary project B with an `evidence_required` task, required approvals `["validation"]`, create its attempt and transition it to `validation_pending`. Use a recording app adapter with `workspace=B`. Supply an orchestrator with `GitOperationRecord("op-A", "o/project-A", "work", task_id="TASK-FROM-A", commit_sha="a"*40, pushed=True)` and `BuildRunRecord("op-A", run_id=991, head_sha="a"*40, outcome="success")`. Call the real `WorkbenchApp._sync_build_finished(app, orchestrator)`. B's unrelated task changes **validation_pending → done**, with evidence source **github_actions**, run **991**, foreign SHA, **verified=True / passed**. Status: **"Build result recorded as verified evidence for 1 task(s)."** No GitHub calls or actual CI execution are involved; the callback input models an already completed A operation.
+
+**User path / impact:** start A's Sync & Build, switch to B while CI runs, then A finishes. B receives false verified build evidence and may close tasks/unblock dependencies although B was never built. A does not receive its result. Related window reuse also lifts the old A window when B requests Sync & Build. This is distinct from BF-108's workflow-preference write: it contaminates the task/evidence ledger and changes status.
+
+**Expected:** capture and persist the originating project/binding identity in the operation and completion callback; write evidence only there, independent of UI focus. Verify repository/ref/commit against that project and restrict task evidence to explicitly covered tasks/attempts. Never treat a run from another project as validation of all active tasks. Test switching projects during CI, including success and failure outcomes.
 
 ## Checked and OK
 
