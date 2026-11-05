@@ -51,6 +51,11 @@ def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
             problems.append({"code": code, "message": message, "path": path, "severity": severity})
         for f in files:
             p = safe_path(f["path"])
+            if f.get("action", "write") != "write" or not f.get("complete", True) or not f["fence_balanced"]:
+                code = "unsupported_action" if f.get("action", "write") != "write" else "truncated"
+                problem(code, f"{f['path']}: unsupported operation or incomplete file; resend a complete write", f["path"])
+                staged = [x for x in staged if x["path"] != p]
+                continue
             body = f["body"] + ("\n" if f["body"] and not f["body"].endswith("\n") else "")
             size = len(body.encode("utf-8"))
             if not p:
@@ -110,7 +115,7 @@ def integrate(store: Any, root: Path, handoff_id: str, *, accept_reason: str | N
     if h.get("source_response_id") and "staged_files" not in h:
         raise ModelError("The files of this answer were not staged — paste the answer again before accepting it")
     blocking = [p for p in h.get("staging_problems") or []
-                if p.get("severity") == "error" and p.get("code") in ("too_large", "total_too_large", "file_conflict")]
+                if p.get("severity") == "error" and p.get("code") in ("too_large", "total_too_large", "file_conflict", "unsupported_action", "truncated")]
     if blocking:
         raise ModelError("Cannot integrate an incomplete/conflicting delivery: " + "; ".join(p["message"] for p in blocking))
     staged = [x for x in h.get("staged_files") or [] if x.get("content") is not None]
