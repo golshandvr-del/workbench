@@ -192,26 +192,58 @@ class EvidenceService:
                     "reported": t["evaluation"]["reported"]}
 
 
-def record_build_evidence(project: Any, git: Any, build: Any) -> list[dict[str, Any]]:
-    """Turn a finished Sync & Build operation (real GitHub Actions run) into verified build
-    evidence for every task that is waiting for validation. Model text is never involved;
-    returns the new evidence records."""
+def record_build_evidence(project: Any, git: Any, build: Any, *, current_commit: str = "",
+                          repository: str = "", branch: str = "") -> list[dict[str, Any]]:
+    """Record CI only for its captured project/task/revision/attempt.
+
+    The caller independently reads the originating repository's current HEAD,
+    remote and branch; a run SHA is never used as its own validation baseline.
+    Legacy operations without captured identity remain observable in Build Center
+    but cannot automatically validate tasks.
+    """
+    from pathlib import Path
+    import re
+    context = getattr(git, "evidence_context", None)
+    if not isinstance(context, dict) or not context.get("project_root"):
+        return []
     outcome = str(getattr(build, "outcome", "") or "")
     run_id = getattr(build, "run_id", None)
     sha = str(getattr(git, "commit_sha", "") or "")
-    if not run_id or outcome not in ("success", "failure", "cancelled", "timed_out"):
+    operation = getattr(git, "operation_id", "")
+    if (not run_id or outcome not in ("success", "failure", "cancelled", "timed_out")
+            or not re.fullmatch(r"[0-9a-fA-F]{40}", sha) or current_commit != sha
+            or getattr(build, "head_sha", "") != sha or not operation
+            or getattr(build, "operation_id", "") != operation or not getattr(git, "pushed", False)
+            or not repository or repository != getattr(git, "repository", "")
+            or repository != context.get("repository") or not branch
+            or branch != getattr(git, "branch", "") or branch != context.get("branch")):
         return []
-    result = "passed" if outcome == "success" else "failed"
-    out = []
-    for t in project.tasks.list():
-        if t["status"] not in ("validation_pending", "in_review", "in_progress"):
-            continue
+    if Path(context["project_root"]).resolve() != project.store.root.resolve():
+        return []
+    # Reentrant store lock keeps revision/attempt checks and evidence insertion
+    # together against other local task edits and duplicate completion callbacks.
+    with project.store._lock:
+        state = project.store.load()
+        tid = str(getattr(git, "task_id", "") or "")
+        t = state["tasks"].get(tid)
+        attempt = context.get("attempt_id")
+        if (context.get("project_id") != state["project_id"] or not t
+                or context.get("task_id") != tid or context.get("task_revision") != t["task_revision"]
+                or not attempt or t.get("active_attempt_id") != attempt
+                or (state["attempts"].get(attempt) or {}).get("task_id") != tid
+                or t["status"] not in ("validation_pending", "in_review", "in_progress")):
+            return []
         if any(e["type"] == "build_run" and e["source"].get("run_id") == str(run_id)
-               for e in project.evidence.list(t["task_id"])):
-            continue
-        out.append(project.evidence.record(type="build_run", subject_type="task", subject_id=t["task_id"],
-                                           source_kind="github_actions", result=result, run_id=str(run_id),
-                                           commit_sha=sha, summary=f"GitHub Actions run {run_id}: {outcome}"))
+               and e.get("details", {}).get("repository") == repository
+               for e in project.evidence.list(tid)):
+            return []
+        result = "passed" if outcome == "success" else "failed"
+        evidence = project.evidence.record(
+            type="build_run", subject_type="task", subject_id=tid, attempt_id=attempt,
+            source_kind="github_actions", result=result, run_id=str(run_id), commit_sha=sha,
+            summary=f"GitHub Actions run {run_id}: {outcome}",
+            details={"repository": repository, "branch": branch, "operation_id": operation,
+                     "binding_id": context.get("binding_id", ""), "project_id": state["project_id"]})
         if t["status"] == "validation_pending":
-            project.evidence.evaluate_task(t["task_id"], current_commit=sha)
-    return out
+            project.evidence.evaluate_task(tid, current_commit=current_commit)
+        return [evidence]
