@@ -308,8 +308,9 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                 } else { p.resolveDecision(ref, action == "decide", i("choice"), why); Outcome("Decision $ref recorded.") }
             }
             "accept_handoff" -> {
-                p.resolveHandoff(ref, true, i("reason").ifEmpty { "accepted in the guided loop" })
-                val written = Files.integrate(p.store, ref)
+                val written = Files.integrate(p.store, ref) { s ->
+                    p.resolveHandoffState(s, ref, true, i("reason").ifEmpty { "accepted in the guided loop" })
+                }
                 Outcome("Delivery $ref accepted." + (if (written.isNotEmpty()) " ${written.size} file(s) added to the project files." else "") +
                     " Next: review the task.")
             }
@@ -317,7 +318,9 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
             "repair" -> {
                 val h = State.require(p.state(), "handoffs", ref)
                 val tid = Json.str(h["task_id"])
-                p.resolveHandoff(ref, true, "partial delivery accepted; repair requested for the missing items")
+                val written = Files.integrate(p.store, ref) { s ->
+                    p.resolveHandoffState(s, ref, true, "partial delivery accepted; repair requested for the missing items")
+                }
                 if (State.require(p.state(), "tasks", tid)["status"] == "in_review") p.transition(tid, "in_progress", "repair requested")
                 val nh = p.startTask(tid, Json.str(h["to_agent_id"]))
                 val nid = Json.str(nh["handoff_id"])
@@ -325,7 +328,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                     val n = State.require(s, "handoffs", nid)
                     Prompts.repair(s, h, n).also { n["prompt"] = it; n["repair_of"] = ref }
                 }
-                Outcome("Repair prompt for $tid ready (only the missing items).", prompt)
+                Outcome("Repair prompt for $tid ready (only the missing items). ${written.size} delivered file(s) kept on disk.", prompt)
             }
             "troubleshoot" -> {
                 val h = State.require(p.state(), "handoffs", ref)
@@ -342,6 +345,12 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                     n = Json.int(tr[tid]) + 1; tr[tid] = n.toLong()
                     val nn = State.require(s, "handoffs", nid)
                     State.emit(s, "troubleshooting_prompt", "task_id" to tid, "handoff_id" to nid, "attempt" to n.toLong(), "codes" to ArrayList<Any?>(codes))
+                    val badPaths = problems.filter { it["severity"] == "error" }.map { Json.str(it["path"]) }.toSet()
+                    val globalConflict = problems.any { it["code"] == "file_conflict" }
+                    nn["retained_files"] = ArrayList<Any?>(if (globalConflict) emptyList() else
+                        Json.list(h["staged_files"]).map { Json.obj(it) }.filter {
+                            it["content"] is String && Json.str(it["path"]) !in badPaths
+                        }.map { LinkedHashMap(it) })
                     Diagnose.troubleshootPrompt(s, h, nn, problems, n).also { nn["prompt"] = it; nn["troubleshoot_of"] = ref }
                 }
                 Outcome("Troubleshooting prompt $n for $tid ready (only the problems found). Copy it into ${h["to_agent_id"]}'s chat.", prompt)
@@ -427,17 +436,30 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
     }
 
     /** F13/F14: run the smart check on a linked answer and keep the problems on the handoff. */
-    private fun diagnoseInto(handoffId: String, text: String): List<Diagnose.Problem> {
+    internal fun diagnoseInto(handoffId: String, text: String): List<Diagnose.Problem> {
         val st = project.state()
         val h = Json.obj(State.coll(st, "handoffs")[handoffId])
         if (h.isEmpty()) return emptyList()
         val t = Json.obj(State.coll(st, "tasks")[h["task_id"]])
         val att = Json.obj(State.coll(st, "attempts")[h["attempt_id"]])
         val res = Diagnose.diagnose(text, Json.str(h["attempt_id"]), Diagnose.taskPaths(t), Json.strs(att["expected_paths"]))
-        project.store.transaction("diagnose answer") { s ->
-            State.require(s, "handoffs", handoffId)["diagnosis"] = ArrayList<Any?>(res.problems.map { it.toMap() })
+        val stagedPaths = Json.list(h["staged_files"]).map { Json.str(Json.obj(it)["path"]) }.toSet()
+        val problems = res.problems.filterNot { it.code == "missing_deliverable" && it.path in stagedPaths }.toMutableList()
+        val published = State.coll(st, "handoffs").values.map { Json.obj(it) }.any {
+            it["task_id"] == h["task_id"] && it["task_revision"] == h["task_revision"] &&
+                it["status"] == "accepted" && Json.list(it["integrated_files"]).isNotEmpty()
         }
-        return res.problems
+        if (Diagnose.taskPaths(t).isNotEmpty() && stagedPaths.isEmpty() && !published)
+            problems.add(Diagnose.Problem("missing_deliverable", "error", "No files were delivered for this file-scoped task"))
+        for (raw in Json.list(h["staging_problems"])) {
+            val x = Json.obj(raw)
+            val prob = Diagnose.Problem(Json.str(x["code"]), Json.str(x["severity"]), Json.str(x["message"]), Json.str(x["path"]))
+            if (problems.none { it.code == prob.code && it.path == prob.path }) problems.add(prob)
+        }
+        project.store.transaction("diagnose answer") { s ->
+            State.require(s, "handoffs", handoffId)["diagnosis"] = ArrayList<Any?>(problems.map { it.toMap() })
+        }
+        return problems
     }
 
     private fun paste(st: Step, text: String): Outcome {
@@ -448,8 +470,10 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
             setGuide(st.key == "manager_update" || st.key == "charter", "continue" to null)
             var msg = r.message
             if (r.kind == "handoff") {
-                Files.stage(project.store, r.ref, text)
-                val probs = diagnoseInto(r.ref, text)
+                val probs = Json.list(State.require(project.state(), "handoffs", r.ref)["diagnosis"]).map {
+                    val x = Json.obj(it)
+                    Diagnose.Problem(Json.str(x["code"]), Json.str(x["severity"]), Json.str(x["message"]), Json.str(x["path"]))
+                }
                 val errs = probs.filter { it.severity == "error" }
                 msg += when {
                     errs.isNotEmpty() -> " Smart check found problems: " + errs.joinToString("; ") { it.code } + ". A troubleshooting prompt can be built."
