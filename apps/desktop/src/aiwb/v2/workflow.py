@@ -85,7 +85,10 @@ def task_stage(state: dict[str, Any], task_id: str) -> dict[str, Any]:
     elif st in ("draft", "proposed"):
         stage, why = "planned", f"task {st}"
     elif att is None:
-        stage, why = ("ready_to_prepare", "no attempt yet") if st == "ready" else ("planned", f"task {st}")
+        stage, why = ("ready_to_prepare", "no active attempt") if st in ("ready", "in_progress") else ("planned", f"task {st}")
+    elif st in ("ready", "in_progress") and ((h and h["status"] in ("rejected", "superseded")) or
+                                             att["status"] in ("rejected", "abandoned")):
+        stage, why = "ready_to_prepare", "previous prompt closed; prepare a new attempt"
     else:
         a = att["status"]
         if wf.get("context_request") and not wf.get("context_prepared_at"):
@@ -148,6 +151,9 @@ class WorkflowService:
         st = self.store.load()
         t = require(st, "tasks", task_id)
         a = st["attempts"].get(t.get("active_attempt_id") or "")
+        h = _active_handoff(st, t)
+        if t["status"] in ("cancelled", "superseded", "done") or (h and h["status"] in ("rejected", "superseded")):
+            return ""
         if a and a["status"] in ("created", "prompt_ready", "exported", "waiting_response", "response_received"):
             sent = (a.get("workflow") or {}).get("sent_confirmed_at")
             return (f"{task_id} already has attempt {a['attempt_id']} ({a['status']}"
