@@ -95,6 +95,20 @@ class TypedOperationTests(unittest.TestCase):
 
 
 class ArchitecturePlanTests(unittest.TestCase):
+    def test_bf089_status_and_severity_are_field_validated(self):
+        for status in ([], {}, 1, None):
+            plan = architecture_plan.new_plan("Plan", "Goal")
+            plan["status"] = status
+            with self.assertRaisesRegex(architecture_plan.ArchitecturePlanError, "status"):
+                architecture_plan.validate_plan(plan)
+        plan = architecture_plan.new_plan("Plan", "Goal")
+        plan["risks"] = [{"description": "Risk", "severity": "HIGH"}]
+        self.assertEqual(architecture_plan.validate_plan(plan)["risks"][0]["severity"], "high")
+        plan["risks"][0]["severity"] = "banana"
+        with self.assertRaisesRegex(architecture_plan.ArchitecturePlanError, "severity"):
+            architecture_plan.validate_plan(plan)
+        architecture_plan.parse_plan(architecture_plan.schema_contract())
+
     def test_schema_round_trip_and_atomic_project_storage(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
