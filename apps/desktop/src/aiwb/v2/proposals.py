@@ -58,8 +58,26 @@ def find_block(text: str) -> dict[str, Any] | None:
 
 
 def _op_task_refs(op: dict[str, Any]) -> list[str]:
-    refs = [op.get("task_id", "")] + list(op.get("depends_on_refs", []) or []) + [op.get("depends_on_task_id", "")]
+    changes = op.get("changes") if isinstance(op.get("changes"), dict) else {}
+    refs = ([op.get("task_id", ""), op.get("depends_on_task_id", ""), op.get("depends_on_ref", "")]
+            + list(op.get("depends_on_refs", []) or []) + list(op.get("depends_on", []) or [])
+            + list(changes.get("depends_on", []) or []))
     return [r for r in refs if isinstance(r, str) and r.startswith("TASK-")]
+
+
+def _task_reference_problem(op: dict[str, Any], state: dict[str, Any]) -> str:
+    """Shared import/review guard; confirming a stale plan cannot revive cancelled work."""
+    for ref in _op_task_refs(op):
+        task = state["tasks"].get(ref)
+        if task is None:
+            # Removing a dangling edge is precisely how an old graph is repaired.
+            if op.get("operation") == "remove_dependency" and ref != op.get("task_id"):
+                continue
+            return f"unknown task {ref}"
+        if task.get("status") in ("cancelled", "superseded") and op.get("operation") not in (
+                "remove_dependency", "report_risk", "request_more_evidence"):
+            return f"task {ref} is {task['status']}; re-plan without editing or depending on it"
+    return ""
 
 
 class ProposalService:
@@ -132,9 +150,9 @@ class ProposalService:
                     entry.update(valid=False, problem=f"duplicate temporary_ref {ref}")
                 temp_refs.add(ref)
                 entry["temporary_ref"] = ref
-            for r in _op_task_refs(op):
-                if r not in state["tasks"]:
-                    entry.update(valid=False, problem=f"unknown task {r}")
+            reference_problem = _task_reference_problem(op, state)
+            if reference_problem:
+                entry.update(valid=False, problem=reference_problem)
             normalized.append(entry)
         team = check_team(data, ops, state)
         for idx, msg in team["op_errors"].items():
@@ -231,6 +249,9 @@ class ProposalService:
                 errors.append(f"#{op['index'] + 1} {name}: {op['problem']}")
                 continue
             try:
+                reference_problem = _task_reference_problem(raw, s)
+                if reference_problem:
+                    raise ModelError(reference_problem)
                 if name in ("create_task", "split_task"):
                     deps = [resolve(r) for r in list(raw.get("depends_on_refs") or []) + list(raw.get("depends_on") or [])]
                     pending_refs = [r for r in deps if not r.startswith("TASK-")]
