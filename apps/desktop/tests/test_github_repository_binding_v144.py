@@ -29,6 +29,49 @@ def repo(repo_id: int, owner: str = "octocat", name: str = "demo", default_branc
                             f"https://github.com/{owner}/{name}", True)
 
 
+class RepositoryWindowOwnershipTests(unittest.TestCase):
+    def test_bf108_selection_stays_with_originating_binding_and_windows_are_keyed(self):
+        from types import SimpleNamespace as NS
+        from unittest.mock import patch
+        import AI_Workbench as wb
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            aroot, broot = root / "a", root / "b"
+            aroot.mkdir(); broot.mkdir()
+            def binding(path, number):
+                context = NS(project_path=path, local_git_root=path, project_subpath=".", current_branch="work")
+                return update_binding_preferences(make_binding(context, str(uuid.uuid4()), repo(number, name=path.name)),
+                                                  working_branch="work", workflow_file=f"{path.name}.yml")
+            a, b = binding(aroot, 1), binding(broot, 2)
+            active = [a]
+            windows = []
+            app = NS(root=None, settings_data={"github_repository_bindings": [a.to_dict(), b.to_dict()]},
+                     _binding_for_active_project=lambda: active[0],
+                     github_account_service=NS(list_accounts=lambda: [NS(account_id=a.account_id), NS(account_id=b.account_id)],
+                                               api_client=None),
+                     _render_github_repository_binding_status=lambda: None, set_status=lambda text: None)
+            def save(rows):
+                app.settings_data["github_repository_bindings"] = rows
+                return True
+            app._save_github_repository_binding_metadata = save
+            def window(*args, **kw):
+                result = NS(closed=False, win=NS(lift=lambda: None), callback=kw["on_select_workflow"])
+                windows.append(result)
+                return result
+            with patch.object(wb, "BuildCenterWindow", side_effect=window):
+                wb.WorkbenchApp.open_build_center(app)
+                active[0] = b
+                windows[0].callback("from-a.yml")
+                rows = app.settings_data["github_repository_bindings"]
+                self.assertEqual(find_binding(rows, aroot).workflow_file, "from-a.yml")
+                self.assertEqual(find_binding(rows, broot).workflow_file, "b.yml")
+                wb.WorkbenchApp.open_build_center(app)
+                self.assertEqual(len(windows), 2)
+                app.settings_data["github_repository_bindings"] = [b.to_dict()]
+                with self.assertRaises(RepositoryBindingError):
+                    windows[0].callback("deleted.yml")
+
+
 class BindingModelTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="aiwb-binding-v144-")
