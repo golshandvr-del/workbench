@@ -390,12 +390,11 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                     "failed", "fail", "no", "red", "failure", "n" -> "failed"
                     else -> throw ModelError("result must be 'passed' or 'failed' (or use the 'passed' / 'failed' buttons)")
                 }
-                Outcome("Validation $r recorded → $ref ${p.recordValidation(ref, r == "passed", i("run_id")).first}.")
+                Outcome("Validation $r recorded → $ref ${p.recordValidation(ref, r == "passed", i("run_id"), i("note")).first}.")
             }
             "validation_passed", "validation_failed" -> {
                 val ok = action == "validation_passed"
-                val run = i("run_id").ifEmpty { i("note").take(100) }
-                Outcome("Validation ${if (ok) "passed" else "failed"} recorded → $ref ${p.recordValidation(ref, ok, run).first}.")
+                Outcome("Validation ${if (ok) "passed" else "failed"} recorded → $ref ${p.recordValidation(ref, ok, i("run_id"), i("note")).first}.")
             }
             "waive_validation" -> Outcome("$ref accepted on review without tests (NOT RUN) → ${p.waiveValidation(ref, i("reason")).first}.")
             "make_ready" -> { p.transition(ref, "ready", "approved in the guided loop"); Outcome("$ref approved.") }
