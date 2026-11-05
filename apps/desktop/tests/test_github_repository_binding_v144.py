@@ -41,7 +41,8 @@ class RepositoryWindowOwnershipTests(unittest.TestCase):
             def binding(path, number):
                 context = NS(project_path=path, local_git_root=path, project_subpath=".", current_branch="work")
                 return update_binding_preferences(make_binding(context, str(uuid.uuid4()), repo(number, name=path.name)),
-                                                  working_branch="work", workflow_file=f"{path.name}.yml")
+                                                  working_branch="work", workflow_file=f"{path.name}.yml",
+                                                  artifact_pattern="", release_channel="dev")
             a, b = binding(aroot, 1), binding(broot, 2)
             active = [a]
             windows = []
