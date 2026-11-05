@@ -164,6 +164,47 @@ class HelperClientTests(unittest.TestCase):
         with self.assertRaises(CredentialStoreError):
             self.store.get_secret(ref2)
 
+    def test_bf017_failed_settings_save_restores_config_and_secret(self) -> None:
+        from copy import deepcopy
+        for failure in (False, OSError("disk full")):
+            for operation in ("initial", "replace", "keep", "remove_key", "clear"):
+                with self.subTest(failure=failure, operation=operation):
+                    settings = {"other": "untouched"}
+                    store = MemoryCredentialStore()
+                    svc = h.HelperService(settings, store=store)
+                    if operation != "initial":
+                        svc.configure(self.srv.url, "old-model", api_key=KEY)
+                    before = deepcopy(settings)
+                    secrets = dict(store._secrets)
+
+                    def fail_save():
+                        if isinstance(failure, Exception):
+                            raise failure
+                        return failure
+
+                    svc._save = fail_save
+                    with self.assertRaises(h.HelperAIError) as caught:
+                        if operation == "clear":
+                            svc.clear()
+                        else:
+                            key = {"initial": "new-key", "replace": "new-key", "keep": None,
+                                   "remove_key": ""}[operation]
+                            svc.configure(self.srv.url, "new-model", api_key=key)
+                    self.assertIn("could not be saved", str(caught.exception))
+                    self.assertNotIn(KEY, str(caught.exception))
+                    self.assertEqual(settings, before)
+                    self.assertEqual(store._secrets, secrets)
+
+    def test_bf017_failed_key_deletion_keeps_reachable_configuration(self) -> None:
+        from unittest.mock import patch
+        self.svc.configure(self.srv.url, "m", api_key=KEY)
+        before = dict(self.svc.config)
+        with patch.object(self.store, "delete_secret", side_effect=CredentialStoreError("locked")):
+            with self.assertRaises(h.HelperAIError):
+                self.svc.clear()
+        self.assertEqual(self.svc.config, before)
+        self.assertEqual(self.svc.api_key(), KEY)
+
     def test_fix_answer_round_trip(self) -> None:
         self.srv.reply = ("```\n<<<AIWB_FILE path=\"index.html\" action=\"write\">>>\n````\n<p>hi</p>\n````\n"
                           "<<<AIWB_END_FILE>>>\n```")
