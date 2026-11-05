@@ -102,6 +102,11 @@ class NormalizeUnitTests(unittest.TestCase):
         js = json.dumps({"files": [{"path": "a.txt", "content": body}]}, ensure_ascii=False)
         self.assertEqual(json.loads(normalize(js[:-1] + ",}").text)["files"][0]["content"], body)
 
+    def test_bf054_smart_delimited_json_keeps_joiners(self):
+        body = "می\u200cروم 👩\u200d💻 x\u00a0y"
+        text = '{“content”: “' + body + '”,}'
+        self.assertEqual(json.loads(normalize(text).text)["content"], body)
+
     def test_bf093_raw_folder_slashes_and_shell_continuations_survive(self):
         from aiwb.intake.normalize import strip_copy_damage
         for char in ("/", "\\"):
