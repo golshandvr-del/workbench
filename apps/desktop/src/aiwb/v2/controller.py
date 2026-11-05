@@ -462,6 +462,10 @@ class ProjectsController:
         if self.make_pipeline is not None:
             cap = self.make_pipeline(self.root).capture_text(text, source="v2-projects")
             rid = cap.response.response_id if cap.response else ""
+            if cap.response is None and cap.issue is not None and cap.issue.code == "too_large":
+                # BF-084: never invent a response id or say "kept in the Inbox" for an answer that was not stored
+                return RouteResult("rejected", message="The answer is larger than the 12 MB limit and was not stored. "
+                                   "Nothing was linked or changed; ask the AI to split it into smaller answers.")
         rid = rid or "resp-" + hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
         try:
             from .charter import has_charter
