@@ -4,7 +4,12 @@
   "remaining": [
     {"in": true, "out": true}, {"in": false, "out": false}, {"in": "yes", "out": true}, {"in": "No", "out": false},
     {"in": "true", "out": true}, {"in": "false", "out": false}, {"in": 1, "out": true}, {"in": 0, "out": false},
-    {"in": null, "out": null}, {"in": "maybe", "out": null}, {"in": "", "out": null}
+    {"in": null, "out": null}, {"in": "maybe", "out": null}, {"in": "", "out": null},
+    {"in": "nothing", "out": false}, {"in": " Nothing left. ", "out": false},
+    {"in": "complete", "out": false}, {"in": "COMPLETED!", "out": false}, {"in": "done", "out": false},
+    {"in": "No, the project is complete", "out": false}, {"in": [], "out": false},
+    {"in": "not done", "out": null}, {"in": "no tests yet", "out": null},
+    {"in": "nothing left except testing", "out": null}, {"in": ["stage 2"], "out": null}, {"in": {}, "out": null}
   ],
   "emergency": [
     {"in": null, "out": []},
