@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 35 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096) | 0 |
+| S2 | 36 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101) | 0 |
 | S3 | 52 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
@@ -2250,6 +2250,16 @@ re-plan, like the classic apply.
 **Impact:** users cannot see the confirmation button; with longer questions the rationale / Other answer field and validation feedback also disappear. Enter and Escape remain workarounds, so this is not a total deadlock. The missing error feedback makes a rejected submission look unresponsive.
 
 **Expected:** bound or scroll the question/form content; keep confirmation, cancellation and error feedback outside the scroll area. The previous session's attempted BF-100 checkpoint did not reach GitHub; this entry recovers it after a fresh reproduction.
+
+### BF-101 · S2 · OPEN — Run workflow: changing Branch / tag keeps the input schema and defaults from the original ref
+
+**Where:** `aiwb/github/build_center_dialogs.py:75–87,100–143`. `dispatch_form(..., ref=ref)` runs only in the constructor. The ref Entry remains editable but has no refresh/trace binding. `submit()` validates against `self.form` and sends that same form with the newly typed ref. `GitHubDispatchService.dispatch()` validates the supplied form; it does not reload the file at the new ref.
+
+**Reproduction (local Tk probe, no real dispatch):** replace `_Worker.run` with a synchronous adapter that invokes `done(work("FAKE"))`; a recording service's `dispatch_form()` returns a required `channel` choice, default `beta`, options beta/stable. Open with ref `main`, set `d.ref_var.set("release")`, then `d.submit()`. Observed schema reads: **["main"]**; submitted ref: **release**; submitted inputs: **{"channel": "beta"}**, using the unchanged main form. The recording service returns a synthetic confirmed result so lookup/polling is not involved.
+
+**User impact:** when release's workflow adds a required input, changes options, or uses a different default, the UI cannot collect the right fields. GitHub can reject the stale payload with HTTP 422; if it accepts the same names/options, the explicit main-branch defaults can override the intended release-branch defaults. Changing back/retrying never reloads the schema. Closing and reopening from the unchanged project branch loads main again.
+
+**Expected:** invalidate and reload the workflow schema when ref changes, retain its ref alongside the form, disable submission while stale/loading, and only validate/dispatch a form associated with the exact submitted ref. Preserve still-valid entered values deliberately rather than silently reusing unrelated defaults.
 
 ## Checked and OK
 
