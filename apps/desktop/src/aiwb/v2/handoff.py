@@ -305,6 +305,13 @@ class HandoffService:
                 att["status"] = "rejected"
             elif att["status"] in ("ready_for_review", "stale", "reconciliation_required"):
                 att["status"] = "accepted" if accept else "rejected"
+        if not accept:
+            if att and att["status"] not in ("accepted", "rejected", "abandoned"):
+                from .models import MACHINES
+                status = "rejected" if "rejected" in MACHINES["attempt"][att["status"]] else "abandoned"
+                AttemptService._move(s, att["attempt_id"], status, f"handoff {handoff_id} rejected")
+            if task.get("active_attempt_id") == h["attempt_id"]:
+                task["active_attempt_id"] = ""
         for other in s["handoffs"].values():
             if accept and other["task_id"] == h["task_id"] and other["handoff_id"] != handoff_id \
                     and other["status"] == "accepted":
