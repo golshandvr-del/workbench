@@ -3,7 +3,15 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 28 (2026-11-05)
+## Current resume checkpoint — session 29 / repair phase (2026-11-05)
+
+- Owner explicitly ended discovery-only mode: implement root-cause repairs for all catalogued findings under new V5.x roadmap. Continue on main with ONE file change -> add -> commit -> push before tests or next edit.
+- Read complete uploaded session-28 transcript and BUG_FINDING catalog; verified clean HEAD=origin/main=19270b74 using managed GitHub credentials. Never copy the exposed transcript token into repository or logs.
+- Archived old ROADMAP verbatim at docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Short_FA.md (8bc560a7). New ROADMAP V5.21-V5.30 (22c5aefc) assigns every independent BF to a repair stage and acceptance gate. These are target stages, NOT published releases; app version remains 5.20.0.
+- Baseline inherited: 106 OPEN (11 S1 / 41 S2 / 54 S3); unit 921 OK / 10 skipped; GUI 61/62 (S5 harness timer-owner defect). No BF fixed yet in this session.
+- NEXT: V5.21 permanent owner-aware S5 harness cancellation, then V5.22 artifact regressions/fixes BF-104/105/106; V5.23 graph S1 next. Check latest git log as per-file checkpoints may be newer than these notes.
+
+## Previous resume checkpoint — session 28 (2026-11-05)
 
 - Phase remains **bug discovery and evidence recording**, not production fixes; no release/deploy was performed.
 - Managed GitHub setup succeeded for `golshandvr-del/workbench`; use its credential helper, never put a PAT in source, logs or remote URLs.
