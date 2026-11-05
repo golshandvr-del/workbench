@@ -119,7 +119,9 @@ def repair_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str, Any] 
     fresh handoff/attempt the answer must name (defaults to ``h``)."""
     t = state["tasks"][h["task_id"]]
     n = new or h
-    done = [a["logical_path"] for a in h.get("artifact_refs", [])] or list(h.get("completed_items", []))
+    done = ([f["path"] for f in h.get("staged_files", [])]
+            or [a["logical_path"] for a in h.get("artifact_refs", [])]
+            or list(h.get("completed_items", [])))
     missing = [x for x in h.get("unresolved_items", [])]
     lines = [f"AIWB_ATTEMPT_ID: {n['attempt_id']}", "(Repeat the line above as the first line of your answer.)", "",
              f"# AI Workbench — repair request for {h['handoff_id']} ({t['task_id']} {t['title']})",
