@@ -717,6 +717,13 @@ class Guide:
                 new = s["handoffs"][nh["handoff_id"]]
                 new["prompt"] = prompt = troubleshoot_prompt(s, h, new, problems, n)
                 new["troubleshoot_of"] = ref
+                bad_paths = {p.get("path", "") for p in problems if p.get("severity") == "error"}
+                # A global preflight conflict makes the whole set suspect. Other
+                # path-specific errors must not discard unrelated complete files.
+                global_conflict = any(p.get("code") == "file_conflict" for p in problems)
+                new["retained_files"] = ([] if global_conflict else
+                    [dict(f) for f in h.get("staged_files") or []
+                     if f.get("content") is not None and f["path"] not in bad_paths])
                 from .store import emit
                 emit(s, "troubleshooting_prompt", task_id=h["task_id"], handoff_id=nh["handoff_id"], attempt=n,
                      codes=sorted({x["code"] for x in problems}))
@@ -901,6 +908,18 @@ class Guide:
         att = st["attempts"].get(h["attempt_id"]) or {}
         res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=task_paths(t),
                        expected_paths=list(att.get("expected_paths") or []))
+        # Diagnose the effective delivery, including files retained from a
+        # troubleshooting attempt. A manifest alone cannot silently satisfy a
+        # file-producing task unless an accepted repair already published files.
+        staged_paths = {f["path"] for f in h.get("staged_files") or []}
+        res["problems"] = [p for p in res["problems"]
+                           if not (p["code"] == "missing_deliverable" and p.get("path") in staged_paths)]
+        published = any(old.get("task_id") == h["task_id"] and old.get("task_revision") == h["task_revision"]
+                        and old.get("status") == "accepted" and old.get("integrated_files")
+                        for old in st["handoffs"].values())
+        if task_paths(t) and not staged_paths and not published:
+            res["problems"].append({"code": "missing_deliverable", "severity": "error", "path": "",
+                                    "message": "No files were delivered for this file-scoped task"})
         # Persist every omission/conflict discovered by the actual staging boundary.
         existing = {(p["code"], p.get("path", "")) for p in res["problems"]}
         res["problems"].extend(p for p in h.get("staging_problems") or []
