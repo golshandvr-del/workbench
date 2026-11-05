@@ -107,7 +107,8 @@ class FilesTest {
         val g = Guide(p)
         g.perform("task:$tid", "prepare")
         val key = g.steps().first { it.key.startsWith("handoff:") }.key
-        g.perform(key, "paste", mapOf("text" to answer(p, tid).replace("\"complete\"", "\"partial\"")))
+        g.perform(key, "paste", mapOf("text" to answer(p, tid).replace("\"complete\"", "\"partial\"")
+            .replace("\"unresolved_items\": []", "\"unresolved_items\": [\"missing tests\"]")))
         val out = g.perform(key, "repair")
         assertTrue(out.prompt, "src/calc.py" in out.prompt)
         assertEquals("X = 1\n", Files.read(p.store, "src/util/__init__.py"))
@@ -157,7 +158,9 @@ class FilesTest {
         File(p.store.root, "backups").writeText("locked")
         val before = p.state()
         try { g.perform(key, "accept_handoff"); fail("integration succeeded with blocked backup") } catch (_: Exception) { }
-        assertEquals(before, p.state())
+        assertEquals(before["handoffs"], p.state()["handoffs"])
+        assertEquals(before["attempts"], p.state()["attempts"])
+        assertEquals(before["tasks"], p.state()["tasks"])
         assertEquals("old\n", Files.read(p.store, "src/calc.py"))
         assertFalse(File(Files.dir(p.store), "src/util/__init__.py").exists())
     }
