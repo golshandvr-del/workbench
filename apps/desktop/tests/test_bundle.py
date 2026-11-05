@@ -164,5 +164,18 @@ class SafeProjectIdTests(unittest.TestCase):
         self.assertNotEqual(bundle.safe_project_id("My Project"), bundle.safe_project_id("My  Project!"))
 
 
+class GoalOnlyImportTests(unittest.TestCase):
+    def test_bf023_goal_only_project_is_not_silently_replaced(self) -> None:
+        local = {"project_id": "todo", "state_revision": 3, "settings": {"goal": "track my todos"},
+                 "tasks": {}, "events": []}
+        incoming = {"project_id": "shop", "state_revision": 2, "settings": {"goal": "sell things"},
+                    "tasks": {}, "events": []}
+        plan = bundle.plan_import(local, incoming)
+        self.assertFalse(plan["safe"])
+        self.assertEqual(plan["kind"], "other_project")
+        empty = bundle.plan_import({"project_id": "todo", "state_revision": 1, "settings": {}, "tasks": {}}, incoming)
+        self.assertEqual(empty["kind"], "new")
+
+
 if __name__ == "__main__":
     unittest.main()
