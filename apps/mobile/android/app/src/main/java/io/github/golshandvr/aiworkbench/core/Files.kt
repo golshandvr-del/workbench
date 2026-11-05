@@ -37,52 +37,160 @@ object Files {
 
     private fun sha(b: ByteArray) = MessageDigest.getInstance("SHA-256").digest(b).joinToString("") { "%02x".format(it) }
 
-    /** Keep the safe, in-scope files of a pasted answer on the handoff (replacing earlier staging). */
+    /** Refuse links (including dangling links), case aliases, directories and parent-file conflicts. */
+    private fun target(root: File, path: String): File {
+        if (safePath(path) != path || path.isEmpty()) throw ModelError("unsafe path '$path'")
+        if (root.absoluteFile != root.canonicalFile) throw ModelError("linked file root")
+        if (root.exists() && !root.isDirectory) throw ModelError("file root is not a directory")
+        var at = root.absoluteFile
+        val parts = path.split('/')
+        for ((i, part) in parts.withIndex()) {
+            val alias = at.list()?.firstOrNull { it.equals(part, ignoreCase = true) && it != part }
+            if (alias != null) throw ModelError("case alias at $path: $alias")
+            at = File(at, part)
+            if (at.absoluteFile != at.canonicalFile) throw ModelError("linked path '$path'")
+            if (at.exists() && (if (i == parts.lastIndex) !at.isFile else !at.isDirectory))
+                throw ModelError("file/directory conflict at '$path'")
+        }
+        return at
+    }
+
+    private fun preflight(root: File, staged: List<Obj>) {
+        val paths = staged.map { Json.str(it["path"]) }
+        val folded = paths.map { it.lowercase(java.util.Locale.ROOT) }
+        if (folded.toSet().size != paths.size || folded.any { a -> folded.any { b -> a != b && b.startsWith("$a/") } })
+            throw ModelError("case or file/directory collision in delivery")
+        for (f in staged) {
+            val p = Json.str(f["path"])
+            val dest = target(root, p)
+            val actual = if (dest.isFile) sha(dest.readBytes()) else ""
+            if ("base_sha256" in f && Json.str(f["base_sha256"]) != actual)
+                throw ModelError("$p changed since preview; paste the answer again")
+        }
+    }
+
+    /** Keep complete safe files and explicit diagnostics for every omission; preserve retained preview hashes. */
     fun stage(store: ProjectStore, handoffId: String, text: String): List<String> = store.transaction("stage files") { s ->
         val h = State.require(s, "handoffs", handoffId)
         val allowed = Diagnose.taskPaths(Json.obj(State.coll(s, "tasks")[h["task_id"]]))
         val staged = LinkedHashMap<String, Obj>()
-        var total = 0
-        for (f in Diagnose.parseFiles(text).first) {
+        val problems = ArrayList<Any?>()
+        fun problem(code: String, message: String, path: String = "", severity: String = "error") {
+            problems.add(Diagnose.Problem(code, severity, message, path).toMap())
+        }
+        for (raw in Json.list(h["retained_files"])) {
+            val f = Json.obj(raw); val p = Json.str(f["path"])
+            if (p.isNotEmpty() && safePath(p) == p && Diagnose.inScope(p, allowed) && f["content"] is String)
+                staged[p] = LinkedHashMap(f)
+        }
+        val parsed = Diagnose.parseFiles(text)
+        val seen = HashSet<String>()
+        for ((index, f) in parsed.first.withIndex()) {
             val p = safePath(f.path)
+            if (p.isEmpty()) { problem("unsafe_path", "unsafe file path '${f.path}'", f.path); continue }
+            if (!Diagnose.inScope(p, allowed)) { problem("out_of_scope", "$p is outside this task's allowed paths", p); continue }
+            if (!seen.add(p)) problem("duplicate_path", "$p was sent twice — the last complete version is used", p, "warning")
+            // A broken replacement must not silently fall back to a retained old version.
+            staged.remove(p)
+            if (!f.fenceBalanced || (parsed.second && index == parsed.first.lastIndex)) {
+                problem("truncated", "$p is incomplete; send the complete file", p); continue
+            }
             val body = f.body + if (f.body.isNotEmpty() && !f.body.endsWith("\n")) "\n" else ""
             val bytes = body.toByteArray(Charsets.UTF_8)
-            if (p.isEmpty() || !Diagnose.inScope(p, allowed) || body.isBlank() || bytes.size > MAX_FILE || total + bytes.size > MAX_TOTAL) continue
-            total += bytes.size
-            staged.remove(p)
+            if (bytes.size > MAX_FILE) { problem("too_large", "$p exceeds the per-file limit", p); continue }
             staged[p] = linkedMapOf("path" to p, "sha256" to sha(bytes), "size" to bytes.size.toLong(), "content" to body)
         }
-        h["staged_files"] = ArrayList<Any?>(staged.values)
+        val values = staged.values.toList()
+        if (values.sumOf { Json.str(it["content"]).toByteArray(Charsets.UTF_8).size.toLong() } > MAX_TOTAL)
+            problem("total_too_large", "Delivery exceeds the total file limit")
+        try {
+            preflight(dir(store), values)
+            for (f in values) if ("base_sha256" !in f) {
+                val dest = target(dir(store), Json.str(f["path"]))
+                f["base_sha256"] = if (dest.isFile) sha(dest.readBytes()) else ""
+            }
+        } catch (e: Exception) { problem("file_conflict", e.message ?: "File preflight failed") }
+        h["staged_files"] = ArrayList<Any?>(values)
+        h["staging_problems"] = problems
         staged.keys.toList()
     }
 
-    /** F17: write the staged files of an accepted handoff into the project's file space. */
-    fun integrate(store: ProjectStore, handoffId: String): List<String> {
-        val root = dir(store).apply { mkdirs() }.canonicalFile
-        val h = Json.obj(State.coll(store.load(), "handoffs")[handoffId])
-        val staged = Json.list(h["staged_files"]).map { Json.obj(it) }.filter { it["content"] is String }
-        if (staged.isEmpty()) return emptyList()
-        val backup = File(store.root, "backups/$handoffId")
-        val written = ArrayList<String>()
-        for (f in staged) {
-            val p = safePath(Json.str(f["path"]))
-            if (p.isEmpty()) continue
-            val target = File(root, p).canonicalFile
-            if (!target.path.startsWith(root.path + File.separator)) continue
-            target.parentFile?.mkdirs()
-            if (target.isFile) File(backup, p).apply { parentFile?.mkdirs() }.writeBytes(target.readBytes())
-            val tmp = File(target.parentFile, target.name + ".aiwb-tmp")
-            tmp.writeText(Json.str(f["content"]), Charsets.UTF_8)
-            if (!tmp.renameTo(target)) { target.delete(); tmp.renameTo(target) }
-            written.add(p)
+    /** Flush complete bytes and replace without deleting the previous destination on rename failure. */
+    private fun atomicWrite(dest: File, bytes: ByteArray) {
+        val parent = dest.parentFile ?: throw ModelError("missing parent")
+        if (!parent.isDirectory && !parent.mkdirs()) throw ModelError("cannot create ${parent.name}")
+        val tmp = File.createTempFile(".aiwb-", ".tmp", parent)
+        try {
+            java.io.FileOutputStream(tmp).use { it.write(bytes); it.fd.sync() }
+            if (!tmp.renameTo(dest)) throw ModelError("cannot replace ${dest.name}")
+        } finally { tmp.delete() }
+    }
+
+    /** Exception-atomic files + acceptance. Not a power-loss transaction or hostile concurrent-writer guarantee. */
+    fun integrate(store: ProjectStore, handoffId: String, accept: ((Obj) -> Unit)? = null): List<String> {
+        val h = State.require(store.load(), "handoffs", handoffId)
+        if (h["source_response_id"] != null && "staged_files" !in h)
+            throw ModelError("The files of this answer were not staged; paste it again")
+        val blocking = Json.list(h["staging_problems"]).map { Json.obj(it) }.filter {
+            it["severity"] == "error" && it["code"] in setOf("too_large", "total_too_large", "file_conflict", "truncated")
         }
-        store.transaction("integrate files") { s ->
-            val hh = State.require(s, "handoffs", handoffId)
-            hh["staged_files"] = ArrayList<Any?>(Json.list(hh["staged_files"]).map { LinkedHashMap(Json.obj(it)).apply { remove("content") } })
-            hh["integrated_files"] = ArrayList<Any?>(written)
-            hh["integrated_at"] = State.nowUtc()
-            State.emit(s, "files_integrated", "handoff_id" to handoffId, "task_id" to hh["task_id"],
-                "paths" to ArrayList<Any?>(written.take(50)), "count" to written.size.toLong(), "importance" to "major")
+        if (blocking.isNotEmpty()) throw ModelError("Cannot integrate: " + blocking.joinToString("; ") { Json.str(it["message"]) })
+        val staged = Json.list(h["staged_files"]).map { Json.obj(it) }.filter { it["content"] is String }
+        val root = dir(store).absoluteFile
+        preflight(root, staged)
+        val originals = staged.associate { f ->
+            val p = Json.str(f["path"]); val dest = target(root, p)
+            p to if (dest.isFile) dest.readBytes() else null
+        }
+        // Fresh exclusive backup per attempt, never overwrite an earlier recovery copy.
+        val backupRoot = File(store.root, "backups").absoluteFile
+        if (backupRoot != backupRoot.canonicalFile || (backupRoot.exists() && !backupRoot.isDirectory))
+            throw ModelError("unsafe backup directory")
+        if (!backupRoot.isDirectory && !backupRoot.mkdirs()) throw ModelError("cannot create backups")
+        if (!Regex("HO-[0-9]+").matches(handoffId)) throw ModelError("unsafe handoff backup name")
+        var backup = File(backupRoot, handoffId)
+        if (!backup.mkdir()) {
+            backup = File(backupRoot, "$handoffId-${java.util.UUID.randomUUID()}")
+            if (!backup.mkdir()) throw ModelError("cannot create exclusive backup")
+        }
+        for ((p, bytes) in originals) if (bytes != null) atomicWrite(File(backup, p), bytes)
+        atomicWrite(File(backup, "integration.json"), StrictJson.stringify(linkedMapOf<String, Any?>(
+            "handoff_id" to handoffId, "original_paths" to originals.filterValues { it != null }.keys.toList(),
+            "new_paths" to originals.filterValues { it == null }.keys.toList())).toByteArray(Charsets.UTF_8))
+        val written = ArrayList<String>()
+        try {
+            preflight(root, staged)
+            for (f in staged) {
+                val p = Json.str(f["path"])
+                atomicWrite(target(root, p), Json.str(f["content"]).toByteArray(Charsets.UTF_8))
+                written.add(p)
+            }
+            store.transaction("integrate files") { s ->
+                val hh = State.require(s, "handoffs", handoffId)
+                if (hh["staged_files"] != h["staged_files"] || hh["source_response_id"] != h["source_response_id"])
+                    throw ModelError("delivery changed during integration")
+                accept?.invoke(s)
+                hh["staged_files"] = ArrayList<Any?>(staged.map { LinkedHashMap(it).apply { remove("content") } })
+                hh.remove("retained_files")
+                hh["integrated_files"] = ArrayList<Any?>(written)
+                hh["integration_backup"] = backup.relativeTo(store.root).invariantSeparatorsPath
+                hh["integrated_at"] = State.nowUtc()
+                State.emit(s, "files_integrated", "handoff_id" to handoffId, "task_id" to hh["task_id"],
+                    "paths" to ArrayList<Any?>(written.take(50)), "count" to written.size.toLong(), "importance" to "major")
+            }
+        } catch (e: Exception) {
+            val failed = ArrayList<String>()
+            for (p in written.asReversed()) try {
+                val dest = target(root, p)
+                val expected = staged.first { it["path"] == p }
+                if (!dest.isFile || sha(dest.readBytes()) != expected["sha256"])
+                    throw ModelError("newer edit preserved")
+                val old = originals[p]
+                if (old == null) { if (!dest.delete()) throw ModelError("cannot remove new file") }
+                else atomicWrite(dest, old)
+            } catch (_: Exception) { failed.add(p) }
+            if (failed.isNotEmpty()) throw ModelError("Integration failed; rollback incomplete for ${failed.joinToString()}; backups: ${backup.path}. ${e.message}")
+            throw ModelError("Integration failed; original files restored. ${e.message}")
         }
         return written
     }
