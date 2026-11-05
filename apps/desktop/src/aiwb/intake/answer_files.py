@@ -472,6 +472,8 @@ def to_aiwb_text(ex: Extracted, *, original: str = "") -> str:
 def canonical(text: str) -> tuple[str, Extracted]:
     """``(text the guided loop reads, what was found)``. AIWB answers come back unchanged (unless repaired)."""
     ex = extract(text)
+    if ex.truncated:
+        return text, ex  # never manufacture closing markers for incomplete payloads
     if ex.format == "aiwb" and not ex.fixes:
         return text, ex
     if not ex.files:
