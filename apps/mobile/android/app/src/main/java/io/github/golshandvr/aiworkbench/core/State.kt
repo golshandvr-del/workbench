@@ -191,12 +191,15 @@ class ProjectStore(val root: File, projectId: String = "") {
 
     fun write(state: Obj) {
         root.mkdirs()
-        val tmp = File(root, ".state-${System.nanoTime()}.tmp")
-        tmp.writeText(pretty(state))
-        if (!tmp.renameTo(path)) {
-            path.delete()
-            if (!tmp.renameTo(path)) { tmp.delete(); throw ModelError("could not write ${path.name}") }
-        }
+        val tmp = File.createTempFile(".state-", ".tmp", root)
+        try {
+            java.io.FileOutputStream(tmp).use { out ->
+                out.write(pretty(state).toByteArray(Charsets.UTF_8))
+                out.fd.sync()
+            }
+            // Android/Linux rename replaces atomically. Never delete the last good state on failure.
+            if (!tmp.renameTo(path)) throw ModelError("could not write ${path.name}; previous state preserved")
+        } finally { tmp.delete() }
     }
 
     fun backup(label: String): File? {
