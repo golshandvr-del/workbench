@@ -185,6 +185,32 @@ class SaveReleaseTests(Base):
         self.assertEqual(release_needed(st), [])
 
 
+class IdempotentRetryTests(Base):
+    def test_bf019_release_retry_after_release_failure_reuses_tag(self):
+        self.connect()
+        self.integrated()
+        a = self.svc.prepare("save")
+        self.svc.confirm(a["action_id"])
+        v = self.ready_version()
+        a = self.svc.prepare("release", version_id=v["version_id"])
+        self.gh.fail_release_once = True
+        with self.assertRaises(ModelError) as ctx:
+            self.svc.confirm(a["action_id"])
+        self.assertIn("502", str(ctx.exception))
+        self.assertIn("v1.0.0", self.gh.tags)
+        self.svc.confirm(a["action_id"])  # retry: tag exists, Release is created now
+        self.assertEqual(self.gh.releases[-1]["tag_name"], "v1.0.0")
+        rv = self.p.store.load()["versions"][v["version_id"]]
+        self.assertEqual(rv["status"], "released")
+
+    def test_bf019_create_retry_reuses_existing_repository(self):
+        self.gh.repo_exists = True
+        a = self.svc.prepare("create", owner="o", name="r")
+        self.svc.confirm(a["action_id"])
+        self.assertEqual(self.gh.created, [], "an existing repository is reused, not created twice")
+        self.assertEqual(repo_mod.repo_info(self.p.store.load())["full_name"], "o/r")
+
+
 class ManualModeTests(Base):
     def setUp(self):
         super().setUp()
