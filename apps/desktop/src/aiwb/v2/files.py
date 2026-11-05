@@ -100,9 +100,13 @@ def integrate(store: Any, root: Path, handoff_id: str, *, accept_reason: str | N
     root = Path(root).resolve()
     if safe_path(handoff_id) != handoff_id or "/" in handoff_id:
         raise ModelError("Invalid handoff backup identity")
-    h = store.load()["handoffs"].get(handoff_id)
+    state = store.load()
+    h = state["handoffs"].get(handoff_id)
     if h is None:
         raise ModelError(f"Unknown handoff {handoff_id}")
+    task = state["tasks"].get(h["task_id"]) or {}
+    if task.get("status") in ("cancelled", "superseded") or h["status"] in ("rejected", "superseded"):
+        raise ModelError("This delivery is closed or its task is cancelled/superseded; create a new task instead")
     if h.get("source_response_id") and "staged_files" not in h:
         raise ModelError("The files of this answer were not staged — paste the answer again before accepting it")
     blocking = [p for p in h.get("staging_problems") or []
