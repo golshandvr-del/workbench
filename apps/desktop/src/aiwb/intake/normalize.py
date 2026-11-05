@@ -79,7 +79,7 @@ def _strip_invisible(s: str, fixes: list[str]) -> str:
                 in_string = False
             elif not in_string and c in '\"“':
                 in_string = True
-                quote = '"' if c == '"' else '”' 
+                quote = '"' if c == '"' else '”'
         lines[i] = "".join(cleaned)
         if marker.startswith("<<<AIWB_FILE "):
             in_file = True
