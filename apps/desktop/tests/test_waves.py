@@ -90,6 +90,57 @@ class GuideDeskTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def test_bf035_cancellation_retires_prompts_and_refuses_late_publication(self):
+        import json
+        from aiwb.v2 import files
+        from aiwb.v2.models import ModelError
+        for route in ("direct", "guide", "proposal", "supersede"):
+            for received in (False, True):
+                with self.subTest(route=route, received=received), tempfile.TemporaryDirectory() as tmp:
+                    c = ProjectsController(Path(tmp), make_pipeline=wb.make_inbox_pipeline)
+                    p = c.project
+                    with p.store.transaction("one chat") as s:
+                        s["settings"]["goal"] = "test cancellation"
+                        s["settings"].setdefault("team", {})["max_parallel_chats"] = 1
+                    ids = [p.tasks.create({"title": f"Part {i}", "objective": "test", "owner_agent_id": "agent-implementer",
+                            "allowed_paths": [f"src/p{i}/"], "acceptance_criteria": ["works"]}, status="ready")["task_id"]
+                           for i in range(2)]
+                    h = c.start_task(ids[0])
+                    hid = h["handoff_id"]
+                    answer = (f'AIWB_ATTEMPT_ID: {h["attempt_id"]}\n'
+                              '<<<AIWB_FILE path="src/p0/new.py" action="write">>>\n````\nVALUE = 1\n````\n<<<AIWB_END_FILE>>>\n'
+                              '<<<AIWB_HANDOFF>>>\n' + json.dumps({"handoff_id": hid, "task_id": ids[0],
+                              "attempt_id": h["attempt_id"], "outcome": "complete"}) + '\n<<<AIWB_END_HANDOFF>>>')
+                    if received:
+                        self.assertEqual(c.route_answer(answer).kind, "handoff")
+                    if route == "proposal":
+                        proposal = p.proposals.import_data({"base_state_revision": c.state()["state_revision"],
+                            "operations": [{"operation": "close_or_cancel_task", "task_id": ids[0], "reason": "not wanted"}]})
+                        p.proposals.review(proposal["proposal_id"], accept=[0])
+                    elif route == "guide":
+                        Guide(c).perform((f"handoff:{hid}" if received else f"task:{ids[0]}"), "cancel")
+                    else:
+                        p.tasks.transition(ids[0], "superseded" if route == "supersede" else "cancelled", "not wanted")
+                    st = c.state()
+                    self.assertEqual(st["handoffs"][hid]["status"], "superseded")
+                    self.assertEqual(st["attempts"][h["attempt_id"]]["status"], "abandoned")
+                    self.assertFalse(st["tasks"][ids[0]].get("active_attempt_id"))
+                    self.assertEqual(waves.dispatch(st)["next"], [ids[1]])
+                    self.assertFalse(any(x["key"] == f"handoff:{hid}" for x in Guide(c).steps()))
+                    # A reply arriving after cancellation is retained, but cannot revive or publish unwanted work.
+                    p.handoff.ingest(hid, "late-response", answer)
+                    files.stage(p.store, hid, answer)
+                    self.assertIn("late-response", c.state()["attempts"][h["attempt_id"]]["response_ids"])
+                    for reason in (None, "accept anyway"):
+                        before = c.state()
+                        with self.assertRaises(ModelError):
+                            files.integrate(p.store, p.store.root, hid, accept_reason=reason)
+                        self.assertEqual(c.state(), before)
+                    with self.assertRaises(ModelError):
+                        p.handoff.resolve(hid, True, "accept anyway")
+                    self.assertFalse((p.store.root / "src/p0/new.py").exists())
+                    self.assertEqual(waves.dispatch(c.state())["next"], [ids[1]])
+
     def test_prepare_all_opens_one_chat_per_task_within_the_limit(self):
         steps = self.g.steps()
         desk = next(s for s in steps if s["key"] == "dispatch")
