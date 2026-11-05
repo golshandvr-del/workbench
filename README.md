@@ -19,9 +19,9 @@ preserved verbatim in `docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Shor
 These are repair-stage targets, **not released application versions**; Desktop remains 5.20.0.
 
 - Repaired and regression-tested findings (Desktop and/or Mobile, as catalogued): **BF-001,
-  BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-014, BF-016, BF-026, BF-028, BF-043,
-  BF-051, BF-076, BF-078, BF-079, BF-095, BF-104, BF-105, BF-106, BF-108, BF-109**.
-  This is **22/106 (20.75%)** by finding count, not effort or release readiness.
+  BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-014, BF-016, BF-026, BF-028, BF-033,
+  BF-035, BF-043, BF-051, BF-057, BF-076, BF-078, BF-079, BF-095, BF-104, BF-105, BF-106,
+  BF-108, BF-109**. This is **25/106 (23.58%)** by finding count, not effort or release readiness.
 - Quick and guided deliveries share full-set filesystem preflight, immutable flushed backups,
   exact preview hashes and reverse rollback on file or state-save exceptions. Guided acceptance
   commits with integration; Restore is retryable and preserves later user edits. Empty files are
@@ -41,12 +41,18 @@ These are repair-stage targets, **not released application versions**; Desktop r
   repository, task revision and attempt, independently checks local HEAD/branch/origin on completion,
   and never applies A's CI evidence to active project B or to every task. Legacy operations or operations
   without an explicitly identifiable V2 task intentionally create no automatic task evidence.
-- Final-source suites: **961 Desktop tests OK, 10 skipped**; **108 Mobile Kotlin/JVM tests OK**;
+- Terminal-task change requests now suggest a follow-up task rather than silently revising finished work.
+  Cancellation/supersession closes open prompts and unfinished attempts in the same state transaction on
+  Desktop and Mobile, releases chat slots and preserves history. Late unwanted deliveries cannot be accepted
+  or written, even with an override reason; create a new task if that work is wanted after all.
+- Dropping/rejecting prompts closes their attempts and detaches only their own active pointer. Home,
+  Desktop workflow/dashboard and restart warnings agree on preparing a fresh prompt, including legacy states.
+- Final-source suites: **966 Desktop tests OK, 10 skipped**; **110 Mobile Kotlin/JVM tests OK**;
   static gate: **0 undefined names**. Run `python3 tools/test_mobile_jvm.py` (Python 3.11+, JDK 17+)
   for the SDK-independent JVM gate; Maven dependencies are checksum-pinned and compiler output is temporary.
   This is NOT Android lint, APK compilation, instrumentation, Activity rendering or an on-device gate.
-  No GUI was run in session 32; historical GUI results are not a final-source gate.
-- **84 independent findings remain OPEN** (0 S1 / 33 S2 / 51 S3). Zero catalogued open S1 does not
+  No GUI was run in session 33; historical GUI results are not a final-source gate.
+- **81 independent findings remain OPEN** (0 S1 / 31 S2 / 50 S3). Zero catalogued open S1 does not
   guarantee no undiscovered data-loss defects or platform issues. BF-008 actual Windows/Android validation,
   full frozen-source GUI, remaining lifecycle/intake/persistence/UI repairs and integrated release gates
   remain. The roadmap is not complete and the program is not claimed bug-free.
