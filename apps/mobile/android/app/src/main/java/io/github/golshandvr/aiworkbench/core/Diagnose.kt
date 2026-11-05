@@ -102,8 +102,7 @@ object Diagnose {
         return try { Json.parseObj(body) to false } catch (_: Exception) { LinkedHashMap<String, Any?>() to false }
     }
 
-    private fun unsafe(p: String): Boolean = p.isEmpty() || p.startsWith("/") || p.startsWith("\\") ||
-        Regex("^[A-Za-z]:").containsMatchIn(p) || ".." in p.replace('\\', '/').split("/")
+    private fun unsafe(p: String): Boolean = Files.safePath(p).isEmpty()
 
     fun diagnose(text: String?, attemptId: String = "", allowedPaths: List<String> = emptyList(),
                  expectedPaths: List<String> = emptyList()): Result {
@@ -148,6 +147,10 @@ object Diagnose {
             "Your previous answer could not be accepted. Fix ONLY these problems and send the corrected files " +
                 "completely; do not change anything else.", "", "## Problems found")
         lines += errs.map { "- [${it["code"]}] ${it["message"]}" }
+        val retained = Json.list(n["retained_files"]).map { Json.str(Json.obj(it)["path"]) }
+        if (retained.isNotEmpty()) lines += listOf("", "## Files retained for the next delivery (not yet applied)",
+            "These complete files are kept locally and will be included when the corrected delivery is accepted. " +
+                "Send a complete replacement only if you need to change one:") + retained.map { "- $it" }
         val warns = problems.filter { it["severity"] == "warning" && it !in errs }
         if (warns.isNotEmpty()) lines += listOf("", "## Also check") + warns.map { "- [${it["code"]}] ${it["message"]}" }
         val allowed = taskPaths(t)
