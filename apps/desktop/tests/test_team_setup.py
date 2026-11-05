@@ -149,7 +149,8 @@ class EditTeam(Base):
         self.assertEqual(st["settings"]["team"]["max_parallel_chats"], 2)
 
     def test_agent_with_work_is_disabled_not_deleted(self) -> None:
-        self.p.tasks.create({"title": "core", "owner_agent_id": "agent-bob", "objective": "core", "acceptance_criteria": ["works"]})
+        task = self.p.tasks.create({"title": "core", "owner_agent_id": "agent-bob", "objective": "core", "acceptance_criteria": ["works"]})
+        self.p.tasks.transition(task["task_id"], "cancelled", "historical work")
         r = ts.team_rows(self.p.store.load())
         self.assertTrue(next(x for x in r if x["agent_id"] == "agent-bob")["has_work"])
         out = ts.save_team(self.p.store, r[:2])
