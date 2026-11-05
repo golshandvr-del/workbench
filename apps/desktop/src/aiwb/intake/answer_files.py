@@ -162,7 +162,7 @@ def _comment_path(first: str) -> str:
 def _aiwb_files(text: str) -> tuple[list[dict[str, str]], bool]:
     from ..v2.diagnose import parse_files
     files, open_last = parse_files(text)
-    return [{"path": f["path"], "content": f["body"]} for f in files], open_last
+    return [{"path": f["path"], "content": f["body"], "action": f.get("action", "write")} for f in files], open_last
 
 
 # --------------------------------------------------------------------------- Markdown
@@ -250,8 +250,8 @@ def _json_file_items(files: Any, fixes: list[str], problems: list[str]) -> list[
             continue
         path = next((str(it[k]) for k in _PATH_KEYS if isinstance(it.get(k), str) and it[k].strip()), "")
         action = str(it.get("action") or it.get("op") or "write").lower()
-        if action in ("delete", "remove", "rm"):
-            problems.append(f"{path or f'files[{n}]'}: delete is not applied by the guided loop — skipped")
+        if action != "write":
+            problems.append(f"{path or f'files[{n}]'}: {action} is not applied by the guided loop — skipped")
             continue
         content: Any = None
         for k in _CONTENT_KEYS:
@@ -324,11 +324,11 @@ def zip_files(data: bytes, *, name: str = "answer.zip") -> Extracted:
         noise = len([i for i in z.infolist() if not i.is_dir()]) - len(infos)
         if noise:
             ex.fixes.append(f"{noise} system file(s) (__MACOSX, .DS_Store…) ignored")
-        unsafe = [i for i in infos if not safe_path(i.filename) or safe_path(i.filename) != i.filename.replace("\\", "/")]
+        unsafe = [i for i in infos if not safe_path(i.filename)]
         for i in unsafe:
             ex.problems.append(f"{i.filename} is an unsafe path — skipped")
         infos = [i for i in infos if i not in unsafe]
-        names = [i.filename.replace("\\", "/") for i in infos]
+        names = [safe_path(i.filename) for i in infos]
         # one top folder that is itself the project root (it holds README/package.json/…) → strip it
         tops = {n.split("/", 1)[0] for n in names}
         strip = ""
@@ -422,7 +422,10 @@ def extract(text: str) -> Extracted:
         except Exception:  # noqa: BLE001 - extraction must never fail
             pass
     if files:
-        ex.files, ex.format, ex.truncated = files, "aiwb", open_last
+        ex.files = [{"path": f["path"], "content": f["content"]} for f in files if f.get("action", "write") == "write"]
+        ex.problems += [f"{f['path']}: {f['action']} is not applied by the guided loop — skipped"
+                        for f in files if f.get("action", "write") != "write"]
+        ex.format, ex.truncated = "aiwb", open_last
         if not ex.attempt_id:
             am = ATTEMPT_RE.search(cand)
             ex.attempt_id = am.group(1) if am else ""
