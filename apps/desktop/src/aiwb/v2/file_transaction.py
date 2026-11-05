@@ -12,6 +12,7 @@ import json
 import os
 import stat
 import tempfile
+import uuid
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Iterator
@@ -58,6 +59,7 @@ def checked_path(root: Path, relative: str, *, internal: bool = False) -> Path:
 def preflight(root: Path, changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Capture exact bytes and enforce preview hashes, duplicates and prefix conflicts."""
     paths: set[str] = set()
+    components: dict[str, str] = {}
     rows = []
     for change in changes:
         rel = change["path"]
@@ -65,6 +67,12 @@ def preflight(root: Path, changes: list[dict[str, Any]]) -> list[dict[str, Any]]
         if key in paths or any(key.startswith(p + "/") or p.startswith(key + "/") for p in paths):
             raise FileTransactionError(f"Conflicting delivered paths: {rel}")
         paths.add(key)
+        parts = rel.split("/")
+        for index in range(1, len(parts) + 1):
+            prefix = "/".join(parts[:index])
+            previous = components.setdefault(prefix.casefold(), prefix)
+            if previous != prefix:
+                raise FileTransactionError(f"Conflicting Windows path spelling: {previous} / {prefix}")
         target = checked_path(root, rel)
         if target.exists() and not target.is_file():
             raise FileTransactionError(f"Destination is not a regular file: {rel}")
@@ -124,7 +132,10 @@ def transaction(root: Path, changes: list[dict[str, Any]], backup: Path) -> Iter
                     os.fsync(f.fileno())
         manifest = {"schema_version": 1, "status": "prepared", "files": [
             {k: r[k] for k in ("path", "existed", "before_sha", "after_sha")} for r in rows]}
-        with (backup / "transaction.json").open("x", encoding="utf-8") as f:
+        # The delivered project may itself contain transaction.json (or any fixed
+        # journal name); choose metadata outside the delivered namespace by identity.
+        journal = backup / (".aiwb-transaction-" + uuid.uuid4().hex + ".json")
+        with journal.open("x", encoding="utf-8") as f:
             json.dump(manifest, f, ensure_ascii=False, indent=2)
             f.flush()
             os.fsync(f.fileno())
