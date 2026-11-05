@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 37 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103) | 0 |
+| S2 | 38 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105) | 0 |
 | S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102, 104) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
@@ -2290,6 +2290,16 @@ re-plan, like the classic apply.
 **Impact:** corrupted/unsupported ZIP content yields the global callback-error path rather than the actionable extraction message. This does **not** demonstrate a whole-app crash, unsafe extraction or partial output: staging cleanup was verified. A locally altered archive, or a consistently corrupt archive without a reference digest, can reach this path; a detected download digest mismatch is already refused earlier.
 
 **Expected:** normalize ZIP/CRC/decompression failures into UnsafeArchiveError at the service boundary (with a safe message) or catch them explicitly in the UI. Keep atomic cleanup and test metadata-valid/payload-corrupt ZIPs, not only invalid ZIP headers and unsafe names.
+
+### BF-105 · S2 · OPEN — failed artifact integrity check deletes a previously valid download because replacement precedes digest verification
+
+**Where:** `aiwb/github/artifacts.py` `download_artifact()`: after size/ZIP checks, `os.replace(part, final)` overwrites the existing target. SHA-256 is compared with the reference **afterwards**. On mismatch it unlinks `final`, which is now the replacement; the old target has already been destroyed. The UI asks for a folder, not permission to replace an existing file, and offers no backup.
+
+**Reproduced locally using existing test transports:** import `ArtifactTests, make_zip, TOKEN, run` from `tests/test_github_artifacts.py`. Build old=`make_zip([("a.txt", b"hello")])` and incoming=`make_zip([("a.txt", b"jello")])` (same length). Configure `ArtifactTests().service(incoming, payload=artifacts_payload(size_in_bytes=len(incoming), digest="sha256:" + sha256(old).hexdigest()))`. List its artifact, pre-create destination `setup-11.zip` with old's valid bytes, then call `download_artifact(..., run=run())`. It raises category **integrity** as expected, but the pre-existing valid ZIP **no longer exists** and the destination directory is empty. All transports are fake; no network.
+
+**Impact:** a failed retry destroys the user's earlier valid copy rather than leaving it intact. Re-downloading the original artifact may recover it while GitHub retains it, hence S2, but the filesystem loss is real. This does not require bypassing the integrity check: the check detects the error but commits/destructively cleans up in the wrong order.
+
+**Expected:** perform every integrity check on the temporary file before publishing it. On any failure delete only that attempt's temporary file and leave an existing final target byte-for-byte unchanged. Decide replacement policy explicitly and use unique temporary filenames for simultaneous attempts. Add a regression case with a pre-existing valid final file.
 
 ## Checked and OK
 
