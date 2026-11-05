@@ -45,7 +45,11 @@ def save_candidate(root: Path, *, name: str, payload: dict[str, Any], raw_respon
     if not isinstance(payload,dict) or not isinstance(raw_response,str): raise CandidateStoreError("Candidate payload/response is invalid.")
     if len(raw_response.encode("utf-8",errors="replace"))>MAX_CANDIDATE_BYTES: raise CandidateStoreError("Candidate response is too large.")
     base=_base(root); base.mkdir(parents=True,exist_ok=True)
-    if len(list_candidates(root))>=MAX_CANDIDATES: raise CandidateStoreError(f"At most {MAX_CANDIDATES} candidates are retained per project; remove one before saving another.")
+    # BF-086: at the limit the oldest candidates are dropped (the UI has no remove button), never a dead end
+    existing=list_candidates(root)
+    while len(existing)>=MAX_CANDIDATES:
+        oldest=existing.pop()
+        delete_candidate(root, str(oldest.get("id","")))
     clean_name=" ".join(str(name or "").split())[:160] or "Candidate"
     candidate_id=uuid.uuid4().hex
     created=datetime.now().astimezone().isoformat(timespec="seconds")
