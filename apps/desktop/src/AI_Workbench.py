@@ -12243,8 +12243,11 @@ class WorkbenchApp:
         if account is None:
             messagebox.showerror("Build Center", "The GitHub account linked to this project is no longer configured. Add it again or relink the project.")
             return
+        identity = (binding.binding_id, binding.account_id, binding.repository_id, binding.full_name,
+                    binding.project_path, binding.local_git_root, binding.project_subpath,
+                    binding.working_branch or binding.default_branch)
         existing = getattr(self, "_build_center_window", None)
-        if existing is not None and not existing.closed:
+        if existing is not None and not existing.closed and getattr(existing, "binding_identity", None) == identity:
             try:
                 existing.win.lift()
                 return
@@ -12261,7 +12264,14 @@ class WorkbenchApp:
             return value if len(value) == 40 else None
 
         def select_workflow(path: str) -> None:
-            current = self._binding_for_active_project() or binding
+            current = repository_binding_service.find_binding(
+                self.settings_data.get("github_repository_bindings", []), Path(binding.project_path))
+            current_identity = ((current.binding_id, current.account_id, current.repository_id, current.full_name,
+                                 current.project_path, current.local_git_root, current.project_subpath,
+                                 current.working_branch or current.default_branch) if current else None)
+            if current_identity != identity:
+                raise repository_binding_service.RepositoryBindingError(
+                    "This Build Center's project was unlinked or relinked. Reopen Build Center before saving a workflow.")
             updated = repository_binding_service.update_binding_preferences(
                 current, working_branch=current.working_branch, workflow_file=path,
                 artifact_pattern=current.artifact_pattern, release_channel=current.release_channel,
@@ -12279,6 +12289,7 @@ class WorkbenchApp:
             workflow_file=binding.workflow_file, local_head_sha=local_head_sha,
             on_select_workflow=select_workflow, redact=redact_github_text,
         )
+        self._build_center_window.binding_identity = identity
 
     def open_sync_build(self) -> None:
         """v1.14.8 One-click Sync & Build: review → commit → push → exact CI run → verified artifacts."""
