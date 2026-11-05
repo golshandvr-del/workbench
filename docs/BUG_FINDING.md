@@ -2329,9 +2329,17 @@ re-plan, like the classic apply.
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
 
-- **Unit suite** 921 tests OK (10 skipped) · **GUI suite** 61/62 — the one failure `gui_scenario_s5_reopen_smoke`
-  (`TclError: can't delete Tcl command` inside `root.destroy()` of the 2nd Tk in one process) is a known
-  sandbox/xvfb artefact: it passes on CI (Linux Py3.10 + 3.13, Windows). Real users never create two Tk roots. NOT A BUG.
+- **Unit suite** session 28: 921 tests OK (10 skipped). **GUI suite** previously 61/62; S5 failure investigated further in session 28.
+  `gui_scenario_s5_reopen_smoke` fails with `TclError: can't delete Tcl command` during destruction of the **first** root,
+  before the second Tk is created. The earlier explanation that this was caused by the second root / Xvfb was too broad.
+  `tests/gui/scenario_driver.py:restart()` cancels every interpreter timer through `old.after_cancel(job)`, including timers
+  registered by child widgets. Tkinter removes the Tcl command through the wrong widget, leaving its name in the child's
+  `_tclCommands`; child destruction later tries deleting it again. Minimal reproduction with no app: create root and
+  `ttk.Frame(root)`, `job=child.after(60000, lambda: None)`, `root.after_cancel(job)`, `root.destroy()` => same error.
+  A **diagnostic in-memory** adapter routing cancellation to the widget whose `_tclCommands` owns the callback makes S5 pass
+  (10 clicks + 2 pastes; one cross-widget cancellation corrected). No test or production file was patched for that run.
+  This isolates a **test harness timer-ownership defect**, not evidence of lost project state or a production second-root bug.
+  Keep the unmodified suite's S5 failure visible until the harness itself is corrected; a diagnostic rerun is not a clean suite pass.
 - **pyflakes**: no undefined names; only unused locals and one f-string without placeholders (`artifacts.py:521`). Harmless.
 - **Guide random walk** (30 projects × 150 actions): 0 unexpected exceptions, 0 states without a step, every step
   has ≥1 action and exactly one primary (apart from BF-001…004, which are logic dead ends, not crashes).
