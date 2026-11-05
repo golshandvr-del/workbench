@@ -32,17 +32,40 @@ class FakeHub(FakeGitHub):
     def __init__(self):
         super().__init__()
         self.releases, self.created = [], []
+        self.repo_exists = True
+        self.tags: dict[str, str] = {}
+        self.fail_release_once = False
 
     def __call__(self, method, url, headers, body):
         if url.endswith("/user/repos") and method == "POST":
             self.calls.append((method, "/user/repos"))
             self.created.append(json.loads(body)["name"])
+            self.repo_exists = True
             return ApiResult(201, {"html_url": "https://github.com/o/r", "default_branch": "main"}, {})
+        if "/git/ref/tags/" in url and method == "GET":
+            t = url.split("/git/ref/tags/", 1)[1]
+            return ApiResult(200, {"object": {"sha": self.tags[t]}}, {}) if t in self.tags else ApiResult(404, {}, {})
+        if "/releases/tags/" in url and method == "GET":
+            t = url.split("/releases/tags/", 1)[1]
+            hit = [r for r in self.releases if r.get("tag_name") == t]
+            return ApiResult(200, {"html_url": "https://github.com/o/r/releases/tag/" + t}, {}) if hit else ApiResult(404, {}, {})
+        if method == "POST" and url.endswith("/git/refs") and json.loads(body)["ref"].startswith("refs/tags/"):
+            t = json.loads(body)["ref"][len("refs/tags/"):]
+            if t in self.tags:
+                return ApiResult(422, {"message": "Reference already exists"}, {})
+            self.tags[t] = json.loads(body)["sha"]
+            self.calls.append((method, "/git/refs"))
+            return ApiResult(201, {}, {})
         if url.endswith("/releases") and method == "POST":
+            if self.fail_release_once:
+                self.fail_release_once = False
+                return ApiResult(502, {}, {})
             self.calls.append((method, "/releases"))
             self.releases.append(json.loads(body))
             return ApiResult(201, {"html_url": "https://github.com/o/r/releases/tag/x"}, {})
         if method == "GET" and url.endswith("/repos/o/r"):
+            if not self.repo_exists:
+                return ApiResult(404, {}, {})
             self.calls.append((method, ""))
             return ApiResult(200, {"default_branch": self.default, "html_url": "https://github.com/o/r"}, {})
         path = url.split("/repos/o/r", 1)[1]
@@ -119,6 +142,7 @@ class HandshakeTests(Base):
         self.assertIsNone(self.svc.pending())
 
     def test_create_is_private(self):
+        self.gh.repo_exists = False
         a = self.svc.prepare("create", owner="o", name="r")
         self.svc.confirm(a["action_id"])
         self.assertEqual(self.gh.created, ["r"])
