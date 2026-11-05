@@ -285,8 +285,10 @@ def fix_prompt(problem: str, state: dict[str, Any] | None = None, leftover: list
              '"acceptance_criteria": ["…"]},',
              ' {"operation": "propose_decision", "title": "…", "options": ["…", "…"], "recommendation": "…"}]}',
              "<<<AIWB_END_MANAGER_PROPOSAL>>>",
-             "- `operations` must list at least one change (only these names: create_task, update_task, "
-             "add_dependency, propose_decision, close_or_cancel_task, report_risk …).",
+             "- Either list the actual changes in `operations` (create_task, update_task, add_dependency, "
+             "propose_decision, close_or_cancel_task, report_risk …), or, if nothing is left, use "
+             '\"operations\": [], \"roadmap_remaining\": false in the same block with the base_state_revision above.',
+             "- Do not invent work to fill the list. If completion is unknown, clarify what remains instead of claiming completion.",
              "- Files are never part of a proposal: they come in the task's own answer (files + AIWB_HANDOFF)."]
     if acc:
         lines.append("- FINAL decisions — do not decide them again: "
