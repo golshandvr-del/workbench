@@ -47,10 +47,23 @@ def sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def safe_project_id(raw: Any) -> str:
+    """BF-021: a bundle-valid project id for any folder name (spaces, Persian letters, brackets, long names)."""
+    raw = str(raw or "").strip()
+    if PROJECT_ID.match(raw):
+        return raw
+    slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", raw).strip("-._")[:60]
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:8]
+    if not slug or not slug[0].isalnum():
+        return "project-" + digest
+    return f"{slug}-{digest}"[:80]
+
+
 def export_bundle(state: dict[str, Any], *, name: str = "", app: str = DESKTOP_APP, version: str = "") -> dict[str, Any]:
     """Build a bundle from a V2 state document (nothing is removed; the state is the source of truth)."""
     st = {k: v for k, v in state.items() if not k.startswith("_pending")}
-    pid = str(st.get("project_id") or "project")
+    name = name or str(st.get("project_id") or "")
+    st["project_id"] = pid = safe_project_id(st.get("project_id") or "project")
     text = json.dumps(st, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     return {"schema_version": "1.0", "bundle_type": BUNDLE_TYPE, "bundle_version": BUNDLE_VERSION,
             "created_at": now_utc(), "producer": {"app": app, "version": version or "0"},
