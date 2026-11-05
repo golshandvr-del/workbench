@@ -87,7 +87,7 @@ class ResolvedItem:
 
     @property
     def deliverable(self) -> bool:
-        return self.status in ("ready", "stale") and bool(self.content)
+        return self.status in ("ready", "stale")
 
 
 def _int(v: Any, name: str) -> int:
@@ -316,7 +316,7 @@ def _expand_folders(items: list[RequestedItem], root: Path, out: list[ResolvedIt
             if inside:
                 for f in sorted(base.rglob("*")):
                     parts = f.relative_to(root).parts
-                    if f.is_file() and not any(p in SKIP_DIRS for p in parts):
+                    if f.is_file() and not any(p in {".git", ".workbench"} for p in parts):
                         found.append("/".join(parts))
         if not found:
             out.append(ResolvedItem(it.path, FOLDER_MODE, "missing", "the folder does not exist or is empty",
@@ -341,7 +341,13 @@ def resolve(req: ContextRequest, root: Path, *, path_problem: Callable[[str], st
         if _structurally_unsafe(it.path):
             r.status, r.detail = "refused_unsafe", "path must be relative, inside the project, without '..'"
             continue
-        if is_sensitive(it.path):
+        alias = "/".join(part.rstrip(" .") for part in it.path.split("/"))
+        target = root / it.path
+        try:
+            relative = target.resolve().relative_to(root.resolve()).as_posix()
+        except (OSError, ValueError):
+            relative = it.path
+        if is_sensitive(it.path) or is_sensitive(alias) or is_sensitive(relative):
             if it.path not in allow_sensitive:
                 r.status, r.detail = "refused_sensitive", "sensitive file (secrets/keys/.env); needs an explicit separate decision"
                 continue
@@ -358,16 +364,37 @@ def resolve(req: ContextRequest, root: Path, *, path_problem: Callable[[str], st
             r.status, r.detail = "refused_unsafe", "path cannot be resolved"
             continue
         target = root / it.path
+        at = root
+        linked = False
+        for part in Path(it.path).parts:
+            at = at / part
+            linked = linked or at.is_symlink()
+        if linked:
+            r.status, r.detail = "refused_unsafe", "linked paths are not included in a context pack"
+            continue
         if not target.is_file():
             r.status, r.detail = "missing", "file does not exist in the project"
             continue
-        data = target.read_bytes()
+        try:
+            data = target.read_bytes()
+        except OSError:
+            r.status, r.detail = "missing", "file could not be read; check permissions and retry"
+            continue
         if len(data) > MAX_FILE_BYTES:
             r.status, r.detail = "too_large", f"{len(data):,} bytes; request a range or symbol instead"
             continue
         r.sha256 = hashlib.sha256(data).hexdigest()
-        text = data.decode("utf-8", errors="replace")
-        lines = text.splitlines()
+        try:
+            encoding = "utf-16" if data.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
+            text = data.decode(encoding)
+            if "\x00" in text:
+                raise UnicodeError("binary NUL")
+        except UnicodeError:
+            r.status, r.detail = "unsupported_encoding", "binary or unsupported text encoding; convert to UTF-8 before sharing"
+            continue
+        lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+        if lines and not lines[-1]:
+            lines.pop()
         if it.mode == "full_file":
             spans = [(1, max(1, len(lines)))]
         elif it.mode == "range":
