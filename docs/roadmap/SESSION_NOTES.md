@@ -3,7 +3,15 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 37 / nine more findings repaired in code (2026-11-05)
+## Current resume checkpoint — session 38 / eight more findings repaired in code (2026-11-05)
+
+- Recovery: read the session-37 transcript, restored main=origin/main=2db2f0bf via the git credential store (token never in source). Every change is one add -> commit -> push.
+- Repaired in code with regression tests (catalog headings/counts NOT yet updated; update BUG_FINDING.md, README.md, ROADMAP.md one file per checkpoint): BF-085 (no false repair prompt for clean parse), BF-080 (manifest path claims without file block -> missing_deliverable), BF-005 (state.json.prev + restore_last_good + honest message), BF-021 (safe_project_id on export), BF-023 (goal/settings count as local work in plan_import), BF-019 (idempotent create-repo / tag / release retries), BF-030 (Quick prompt refuses secret files and outside links).
+- Not run this session: full Desktop suite after the last change (targeted suites OK), Mobile JVM, GUI/Windows/Android gates.
+- Expected catalog after updating: about 70/106 FIXED (BF-006/040/056/062/067/083/084/086/098 from session 37 plus the above), BF-045/046 partial.
+- Resume: verify clean HEAD=origin/main, run full Desktop suite, update catalog counts, then continue with BF-096, 097, 101, 103, 107, 008, 025, 029, 034, 036, 037, 038, 041, 058, 059, 069-077.
+
+## Previous resume checkpoint — session 37 / nine more findings repaired in code (2026-11-05)
 
 - Recovery: read the whole session-36 transcript; restored main=origin/main=75d8a976 using the owner token in the git credential store only (never in source). Every change below is its own single-file add -> commit -> push.
 - Repaired in code with regression tests (catalog headings and counts NOT yet updated; update BUG_FINDING.md, README.md and ROADMAP.md counts next, one file per checkpoint): BF-006 (lone surrogates replaced in route_answer), BF-040 (paste box checks a manager proposal with the real reader), BF-056 (role change rebuilds purpose/instructions/task types), BF-062 (secret filter matches random-looking values only; long ids allowed in chat links), BF-067 (task title line breaks collapsed), BF-083 (object decision_requests kept as text; Mobile Project.kt NOT done), BF-084 (over-12MB answer refused honestly), BF-086 (oldest candidate dropped at the 30 limit), BF-098 (create_project_folder refuses empty/relative parent, now fully closed).
