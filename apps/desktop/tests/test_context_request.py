@@ -75,6 +75,41 @@ class ResolveTests(unittest.TestCase):
         r = cr.parse_request(req_text(files, **kw))
         return r, cr.resolve(r, self.root, path_problem=path_problem_for(self.root), is_sensitive=wb.is_sensitive_path)
 
+    def test_empty_files_are_deliverable(self):
+        (self.root / "empty.py").write_bytes(b"")
+        req, items = self.resolve([{"path": "empty.py"}])
+        self.assertTrue(items[0].deliverable)
+        self.assertIn("empty.py", cr.pack_inline(req, items))
+        self.assertNotIn("Not provided", cr.pack_inline(req, items))
+
+    def test_line_ranges_do_not_split_unicode_separators(self):
+        body = 'label = "a\u2028b"\nsecond = 2\n'
+        (self.root / "lines.py").write_text(body, encoding="utf-8")
+        _, items = self.resolve([{"path": "lines.py", "mode": "range", "start_line": 2, "end_line": 2}])
+        self.assertEqual(items[0].content, "2: second = 2")
+
+    def test_binary_and_unsupported_encoding_are_refused_utf16_is_decoded(self):
+        for data in (b"abc\x00def", b"\x80bad"):
+            (self.root / "data.txt").write_bytes(data)
+            _, items = self.resolve([{"path": "data.txt"}])
+            self.assertFalse(items[0].deliverable)
+            self.assertEqual(items[0].status, "unsupported_encoding")
+        (self.root / "data.txt").write_bytes("سلام".encode("utf-16"))
+        _, items = self.resolve([{"path": "data.txt"}])
+        self.assertIn("سلام", items[0].content)
+
+    def test_explicit_build_folder_is_not_silently_ignored(self):
+        (self.root / "build").mkdir()
+        (self.root / "build/readme.txt").write_text("needed")
+        _, items = self.resolve([{"path": "build/"}])
+        self.assertTrue(any(i.path == "build/readme.txt" and i.deliverable for i in items))
+
+    def test_link_to_sensitive_file_is_not_shared(self):
+        (self.root / "public.txt").symlink_to(self.root / ".env")
+        _, items = self.resolve([{"path": "public.txt"}])
+        self.assertFalse(items[0].deliverable)
+        self.assertNotIn("secret", items[0].content)
+
     def test_modes_and_statuses(self):
         _, items = self.resolve([
             {"path": "m.py"}, {"path": "m.py", "mode": "range", "ranges": [{"start_line": 3, "end_line": 4}]},
