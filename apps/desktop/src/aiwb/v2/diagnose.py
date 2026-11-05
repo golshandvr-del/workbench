@@ -177,6 +177,14 @@ def diagnose(text: str, *, attempt_id: str = "", allowed_paths: list[str] | None
     for p in expected_paths or []:
         if safe_path(p) not in delivered:
             add("missing_deliverable", f"expected file {p} was not delivered", p)
+    # BF-080: a path-looking completed item that did not arrive as a file block means the code is elsewhere
+    seen_expected = {safe_path(p) for p in expected_paths or []}
+    for item in (man or {}).get("completed_items") or []:
+        cand = str(item).strip().strip("`")
+        if re.fullmatch(r"[\w.\-]+(?:/[\w.\-]+)+\.\w{1,8}", cand) and safe_path(cand) and safe_path(cand) not in delivered \
+                and safe_path(cand) not in seen_expected:
+            seen_expected.add(safe_path(cand))
+            add("missing_deliverable", f"the manifest lists {cand} as completed but no file block delivered it", cand)
     outcome = str((man or {}).get("outcome", ""))
     if outcome in ("failed", "blocked"):
         add("failed_outcome", f"the AI reports the outcome '{outcome}'")
