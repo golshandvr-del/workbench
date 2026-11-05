@@ -27,9 +27,11 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
-| S2 | 26 (BF-005, BF-008, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-039, BF-041, BF-042, BF-045, BF-046, BF-053, BF-054, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 15 (BF-001, BF-011, BF-013, BF-014, BF-017, BF-026, BF-033, BF-035, BF-048, BF-051, BF-055, BF-105, BF-106, BF-108, BF-109) |
-| S3 | 49 (BF-006, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 5 (BF-012, BF-028, BF-057, BF-095, BF-104) |
+| S2 | 18 (BF-005, BF-008, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-041, BF-045, BF-046, BF-072, BF-074, BF-077, BF-080, BF-096, BF-101, BF-103) | 23 (BF-001, BF-011, BF-013, BF-014, BF-017, BF-026, BF-032, BF-033, BF-035, BF-039, BF-042, BF-048, BF-051, BF-053, BF-054, BF-055, BF-081, BF-091, BF-092, BF-105, BF-106, BF-108, BF-109) |
+| S3 | 34 (BF-006, BF-018, BF-020, BF-022, BF-034, BF-036, BF-037, BF-038, BF-040, BF-056, BF-058, BF-059, BF-060, BF-062, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 20 (BF-012, BF-015, BF-024, BF-027, BF-028, BF-031, BF-044, BF-047, BF-052, BF-057, BF-061, BF-063, BF-064, BF-065, BF-066, BF-089, BF-093, BF-094, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
+
+**Session 36 checkpoint:** 23 additional catalogued findings repaired; 54/106 FIXED (50.94% count-based), 52 OPEN (0 S1 / 18 S2 / 34 S3). BF-045/046/098 have partial work and remain OPEN. This is not 50 bugs fixed in this session. Final source 66ccc8a3: 1009 Desktop tests OK (10 skipped), 120 Mobile JVM tests OK, zero undefined names. No GUI/native Windows/Android APK/device gate or release was run this session.
 
 **Remaining top risks:** BF-008 actual Windows/Android gates; remaining lifecycle, intake, persistence and UI findings. Session-34 fixes have Desktop unit and real Kotlin/JVM regression evidence, NOT an Android APK/device/instrumentation or frozen full GUI pass. File exception rollback is not a database/filesystem power-loss transaction; backups/journals remain for manual recovery.
 
@@ -332,7 +334,9 @@ message even promises that prompts can be generated.
 problem (*"TASK-X is cancelled"*), is shown as invalid on the card and is not accepted by *Accept*; the repair prompt
 for the PM lists those tasks as cancelled so the next plan does not repeat it.
 
-### BF-015 · S3 · OPEN — helper AI: two network edge cases give a misleading message
+### BF-015 · S3 · FIXED (af421197) — helper AI: two network edge cases give a misleading message
+
+**Repair evidence — session 36:** Helper HTTP reads allow escaped Persian JSON up to the declared character limit, report a byte/character overflow explicitly, and classify HTTPException/IncompleteRead as a connection problem. Fake-server and injected-opener regressions cover 150,000 Persian characters, interrupted bodies and oversized content. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/helper_ai.py` `chat()`: the reply is read with `resp.read(MAX_REPLY_CHARS * 4 + 1)` (800 001 **bytes**)
 and then parsed; `http.client.IncompleteRead` (an `HTTPException`, not an `OSError`) is not caught.
@@ -545,7 +549,9 @@ replacing anything, and the project silently takes another project's identity.
 **Expected:** check `other_project` first; treat a non-empty goal / changed settings / `state_revision` > 1 as local
 work so `older` / `diverged` apply; say *"This replaces the goal '…'"*.
 
-### BF-024 · S3 · OPEN — "Commit completed" dialog shows Persian / non-ASCII file names as `\331\276\330\261…`
+### BF-024 · S3 · FIXED (e277840d) — "Commit completed" dialog shows Persian / non-ASCII file names as `\331\276\330\261…`
+
+**Repair evidence — session 36:** The shared Git command runner passes -c core.quotepath=false, preserving readable Unicode paths in commit/output dialogs. Command-contract regression updated; actual Windows dialog rendering remains untested. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `AI_Workbench.py` `commit_changes()` → `work()` returns `committed.stdout` of `git commit -m …` as the
 dialog text; Git's default `core.quotepath=true` writes every non-ASCII path byte as an octal escape inside quotes.
@@ -609,7 +615,9 @@ least technical users.
 through a link to outside the project"*) any path whose resolved location is not inside the resolved root, or any
 link component.
 
-### BF-027 · S3 · OPEN — a ZIP answer whose entries start with `./` is refused completely ("unsafe path")
+### BF-027 · S3 · FIXED (f8bf23cc) — a ZIP answer whose entries start with `./` is refused completely ("unsafe path")
+
+**Repair evidence — session 36:** ZIP entries are validated then normalized by safe_path; safe ./ and backslash aliases are accepted, while traversal remains refused. Regression verifies ./README.md and ./src/app.py alongside rejected ./../bad.py. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/intake/answer_files.py` `zip_files()`: an entry is unsafe when
 `safe_path(name) != name.replace("\\", "/")`. `safe_path("./src/a.py")` is `src/a.py` (a valid normalisation), so
@@ -696,7 +704,9 @@ this.
 *"secret — not sent"*), refuse them in `build_prompt` (listed under *Not included: … (secret file)*), run
 `scan_for_secrets` / `redact` over included bodies, and refuse paths whose resolved location is outside the root.
 
-### BF-031 · S3 · OPEN — guided context request: the "sensitive file" refusal can be bypassed by an alias (`.env ` / `id_rsa.` on Windows, or a link to the secret)
+### BF-031 · S3 · FIXED (6814ae4b) — guided context request: the "sensitive file" refusal can be bypassed by an alias (`.env ` / `id_rsa.` on Windows, or a link to the secret)
+
+**Repair evidence — session 36:** Context resolution checks sensitive Windows aliases and resolved names, and refuses linked file/parent paths. A link named public.txt to .env cannot deliver its secret; explicit sensitive-file consent remains supported. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/context_request.py` `resolve()`: `is_sensitive(it.path)` is checked on the **raw** requested name,
 then the file is read from `root / it.path`. `context_step.is_sensitive` matches exact names; `_path_problem`
@@ -719,7 +729,9 @@ reaches the chat without *"an explicit separate decision"*; the user trusts it a
 to the root; refuse names ending in a space or dot (BF-008); optionally run `scan_for_secrets` on the prepared text
 and warn before copying.
 
-### BF-032 · S2 · OPEN — guided smart check: a correct delivery written as `./src/app.py` or `src\app.py` is flagged "out of scope / expected file not delivered" and pushed into troubleshooting
+### BF-032 · S2 · FIXED (307bd806) — guided smart check: a correct delivery written as `./src/app.py` or `src\app.py` is flagged "out of scope / expected file not delivered" and pushed into troubleshooting
+
+**Repair evidence — session 36:** Smart diagnosis normalizes delivered and expected paths through safe_path, and normalizes allowed-path separators and ./ prefixes. Mobile 225be7e0 matches this rule; unit/JVM tests cover src\app.py and ./src aliases. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/diagnose.py` `diagnose()` checks scope (`_in_scope`) and `missing_deliverable` on the **raw**
 path from the file block; `aiwb/v2/files.py` `stage()` normalises the same path with `safe_path()` (`./` removed,
@@ -864,7 +876,9 @@ card; dropped ones do not.)
 dropped. Use it for TASK-0001 instead of HO-0002?"* — offering to link it to the task's open handoff (as a stale answer with
 *Accept anyway…*), or keep it in the Inbox only. Never report "linked" for a handoff that cannot take it.
 
-### BF-039 · S2 · OPEN — charter repair turns "Lead developer", "Tech lead", "Code owner", "Release manager" into a second **project manager**
+### BF-039 · S2 · FIXED (323b33c8) — charter repair turns "Lead developer", "Tech lead", "Code owner", "Release manager" into a second **project manager**
+
+**Repair evidence — session 36:** Technical leadership is classified before the broad manager fallback: Lead developer, Code owner and Release manager are implementers; Tech lead is architect. Explicit Project manager remains PM. Regression covers these reported roles. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/charter_repair.py` `role_of()` checks `_ROLE_RULES` in order, and the `project_manager` rule
 comes first with the keys `lead`, `owner`, `manager`, `coordinator`, `planner`; every key longer than 3 letters
@@ -936,7 +950,9 @@ reviews and approves incomplete work, or rejects it without knowing why it is in
 accepted) and record the context request on the handoff, so the card offers *Send the files … asked for* first;
 at least add a diagnosis *"the AI also asked for: src/x.py"* to the delivery card.
 
-### BF-042 · S2 · OPEN — an `AIWB_FILE … action="delete"` (or `"move"`) block is read as "write an empty file": Quick mode empties the file, guided mode drops it and approves the task
+### BF-042 · S2 · FIXED (57224e90) — an `AIWB_FILE … action="delete"` (or `"move"`) block is read as "write an empty file": Quick mode empties the file, guided mode drops it and approves the task
+
+**Repair evidence — session 36:** AIWB parsing retains action; non-write actions never become extracted write content. JSON also refuses unknown/move/rename actions rather than treating them as writes. Guided routing rejects unsupported operations visibly before reconciliation; direct staging/integration blocks them, including Mobile. Unit/JVM action matrix and guided existing-file preservation regression pass. Quick legacy typed operations remain separate. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/diagnose.py` `parse_files()` (used by `answer_files._aiwb_files`) keeps only the `path`
 attribute of the block header; `action` / `from` are thrown away, so every block becomes `{path, content: ""}`.
@@ -993,7 +1009,9 @@ and nothing in the app says so (the message even says it was approved). Same cla
 same way; at least, when a handoff with files in its response has no `staged_files`, the card should re-stage from
 the stored response or refuse *Accept* with *"the files of this answer were not read — paste it here again"*.
 
-### BF-044 · S3 · OPEN — `body="raw"` is ignored: a raw file that starts with a code fence loses it (Markdown snippets, docs), and a raw file that opens a fence and goes on with prose is flagged "truncated"
+### BF-044 · S3 · FIXED (3fdd40ff) — `body="raw"` is ignored: a raw file that starts with a code fence loses it (Markdown snippets, docs), and a raw file that opens a fence and goes on with prose is flagged "truncated"
+
+**Repair evidence — session 36:** body=raw preserves literal fences, boundary blank lines and Unicode rather than unwrapping a Markdown wrapper or reporting a false unclosed fence. Desktop and Mobile parser regressions cover Markdown plus trailing prose and blank bodies. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/diagnose.py` `parse_files()` keeps only the `path` attribute (same root cause as BF-042);
 `_close()` always treats a first line that looks like a fence as the block's wrapper and drops it, plus the
@@ -1016,6 +1034,8 @@ troubleshooting round.
 final newline normalised), never strip fences; keep the current unwrap only for blocks without `body="raw"`.
 
 ### BF-045 · S2 · OPEN — rescued proposal: a task assessment that names tasks by **title** creates **duplicate tasks**
+
+**Partial repair — session 36 (not counted fixed):** 9db49bb6 resolves existing task title/short-ID assessments without creating duplicates and retains unresolved prerequisite warnings. Still OPEN: dependencies on new tasks from this same answer and full ambiguity/identity recovery need further implementation and tests.
 
 **Where:** `aiwb/v2/rescue.py` `_task_ops()` treats an item as an update only when it carries an id starting with
 `TASK-`; everything else with a `title` becomes `create_task`. `UPDATE_KEYS` (`task_assessment`, `task_updates`,
@@ -1042,6 +1062,8 @@ Resolve `depends_on` titles against existing tasks and the new tasks of the same
 
 ### BF-046 · S2 · OPEN — rescued assessment overwrites the task's **objective** with the PM's comment ("Looks good so far, no change needed")
 
+**Partial repair — session 36 (not counted fixed):** 9db49bb6 no longer maps free-text assessment description/goal/files/outputs to objective/deliverables; explicit changes remain supported. Still OPEN: owner_role normalization and preserving all comments as operation reasons are unfinished.
+
 **Where:** `aiwb/v2/rescue.py` `FIELD_SYNONYMS` maps `description` and `goal` → `objective` (and `files` / `outputs`
 → `deliverables`). In `_task_ops()` an item of `task_assessment` / `task_updates` is read field by field with `_changes()`
 — the *whole item*, not only a `changes` object — so the assessment's free-text comment becomes a new objective.
@@ -1064,7 +1086,9 @@ objective can only be restored by hand (Edit task). It happens with the most com
 assessment onto `objective` / `deliverables` (keep them as the operation's `reason`). Match `owner_role` through
 `charter_repair.role_of()` (case-insensitive), and list an unknown role in the review card instead of dropping it.
 
-### BF-047 · S3 · OPEN — rescued decisions: a decision written as text loses the PM's choice; a recommendation *sentence* becomes the only option
+### BF-047 · S3 · FIXED (9db49bb6) — rescued decisions: a decision written as text loses the PM's choice; a recommendation *sentence* becomes the only option
+
+**Repair evidence — session 36:** Plain-text PM decisions retain the stated choice as recommendation and option. A recommendation such as SQLite because it is simple uses SQLite as its option label while retaining the explanatory recommendation sentence. Rescue regressions cover both shapes. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/rescue.py` `_decision_ops()`. A string item (`"decision": "Use SQLite"`, `"decisions": ["Use SQLite
 for storage", "Use React"]`) becomes `{"title": text}` → `recommendation` empty, `options` empty. A dict with only
@@ -1186,7 +1210,9 @@ the user is told everything is fine and either loses the earlier body without kn
 (*"src/a.py was sent twice — the last version is used"*); flag case-insensitive twins and file-vs-folder conflicts
 (within the answer and against the disk) as errors **before** *Accept* is offered.
 
-### BF-052 · S3 · OPEN — "an accepted decision is final" does not hold for Persian titles written with Arabic letters or without the half-space
+### BF-052 · S3 · FIXED (9db49bb6) — "an accepted decision is final" does not hold for Persian titles written with Arabic letters or without the half-space
+
+**Repair evidence — session 36:** Comparable decision titles unify Arabic/Persian letters and both digit sets, remove joiners/tatweel/diacritics, and normalize Persian inter-word spacing. Regression prevents re-proposing an accepted title across the reported keyboard variants. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/rescue.py` `norm()` lower-cases and keeps `0-9a-z` + U+0600–U+06FF, turning everything else
 (including ZWNJ U+200C) into a space. It does not unify Arabic `ي`/`ك` with Persian `ی`/`ک`, does not treat a missing
@@ -1204,7 +1230,9 @@ the owner's users write Persian.
 **Expected:** in `norm()` map `ي→ی`, `ك→ک`, `ة→ه`, `ۀ→ه`, drop ZWNJ / tatweel / diacritics (U+064B–U+065F) before
 comparing, convert Persian/Arabic digits to ASCII; reuse it wherever titles are compared.
 
-### BF-053 · S2 · OPEN — one stray `{` in the prose before a marker-free JSON answer → "Cut off ✗", the complete answer is never read
+### BF-053 · S2 · FIXED (e2e6bdf5) — one stray `{` in the prose before a marker-free JSON answer → "Cut off ✗", the complete answer is never read
+
+**Repair evidence — session 36:** The JSON locator skips an unclosed prose brace and searches for a later complete object. A genuinely truncated JSON root is not replaced by a balanced nested section (42828f1a). Files regression and existing charter/corpus truncation gates pass. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/intake/lenient.py` `find_object()`: it scans from the **first** `{`; when `_balanced_end()` reaches the
 end of the text without closing it and the rest of the text contains the wanted keys (`"files"` / `"tasks"`), it stops
@@ -1228,7 +1256,9 @@ same answer (with the same sentence), and the loop never ends. Nothing on screen
 object with the keys; report `truncated` only when **no** later balanced candidate exists (and ideally only when the
 unclosed `{` is followed by `"key":` close to it, i.e. it really is the JSON).
 
-### BF-054 · S2 · OPEN — any auto-repair of a damaged answer silently deletes every Persian half-space (ZWNJ), emoji joiner (ZWJ) and NBSP **inside the delivered files**
+### BF-054 · S2 · FIXED (03e11215) — any auto-repair of a damaged answer silently deletes every Persian half-space (ZWNJ), emoji joiner (ZWJ) and NBSP **inside the delivered files**
+
+**Repair evidence — session 36:** Transport normalization preserves ZWNJ, ZWJ and NBSP inside AIWB bodies and ASCII/smart-delimited JSON strings; only structural transport whitespace is repaired. Mobile be43bdcf mirrors quote-aware preservation. Tests cover damaged headers, Persian and joined emoji, JSON trailing commas and smart-delimited literals. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/intake/normalize.py` `_strip_invisible()` (called first by `normalize()`) removes `ZERO_WIDTH =
 "\u200b\u200c\u200d\u2060\ufeff\u00ad"` and replaces `NBSP` with a space in the **whole** text, file bodies included.
@@ -1392,7 +1422,9 @@ checks only `rank_text` / `ask`, so the gap is not caught.
 (`stage_label(stage, lang)` and FA versions of the fixed phrases); extend the FA test to scan `shell.py` for
 `text="[A-Za-z]` literals outside `tr((`.
 
-### BF-061 · S3 · OPEN — editing an **old** chat binding (note, name, link) makes it the AI's current chat again; the next prompt is recorded against the old chat
+### BF-061 · S3 · FIXED (ef7c9efe) — editing an **old** chat binding (note, name, link) makes it the AI's current chat again; the next prompt is recorded against the old chat
+
+**Repair evidence — session 36:** Current chat selection uses confirmation/creation time, not metadata updated_at. Editing an old note no longer selects that chat; explicit confirm still can. Regression freezes two creation times then edits and confirms the historical binding. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/resources.py` `current_binding()` picks the enabled binding with the greatest
 `(updated_at, chat_binding_id)`. `update_binding()` (any field, e.g. only `note`) and `confirm_binding()` refresh
@@ -1437,7 +1469,9 @@ AI Studio users cannot record their chat link at all.
 when the value itself looks random, e.g. ≥ 20 chars of `[A-Za-z0-9_-]`), allow long ids in the **path** of an
 `https://` link (keep the query-parameter check), and name the matched fragment in the message.
 
-### BF-063 · S3 · OPEN — context pack: line numbers and *symbol* slices are shifted when a file contains a form feed, U+2028 / U+2029, NEL or a lone vertical tab
+### BF-063 · S3 · FIXED (6814ae4b) — context pack: line numbers and *symbol* slices are shifted when a file contains a form feed, U+2028 / U+2029, NEL or a lone vertical tab
+
+**Repair evidence — session 36:** Context line spans split only CR/LF source line endings, not Python splitlines Unicode/form-feed separators. Regression verifies U+2028 inside source does not shift requested line 2; AST symbol line numbering uses the same source text. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/context_request.py` `resolve()` numbers lines with `text.splitlines()`, which also breaks on
 `\x0b \x0c \x1c \x1d \x1e \x85 \u2028 \u2029`. Editors, `ast` (`python_symbol_lines()`), the model and every later
@@ -1457,7 +1491,9 @@ for follow-up ranges by them, so it reasons about the wrong code (or a truncated
 **Expected:** split with `text.split("\n")` (after normalising `\r\n` / `\r`), the same rule `ast` and editors use;
 add a test file with `\x0c` and `\u2028`.
 
-### BF-064 · S3 · OPEN — context pack: an **empty** requested file (e.g. `__init__.py`) is listed under *"Not provided"* as *"ready — "* and left out of the ZIP
+### BF-064 · S3 · FIXED (6814ae4b) — context pack: an **empty** requested file (e.g. `__init__.py`) is listed under *"Not provided"* as *"ready — "* and left out of the ZIP
+
+**Repair evidence — session 36:** A ready/stale context item is deliverable even when content is empty. Empty files remain in inline/ZIP selection instead of being classified Not provided. Empty-file inline regression passes. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/context_request.py` `resolve()` gives an existing empty file status `ready` with `content = ""`;
 `ResolvedItem.deliverable` is `status in ("ready", "stale") and bool(self.content)` → `False`. `pack_inline()` then
@@ -1476,7 +1512,9 @@ The user sees "required but unavailable" for a file that exists.
 **Expected:** `deliverable` should depend on the status only; show an empty file as `## pkg/__init__.py (full_file,
 lines 0, sha256 e3b0…) — (empty file)` and write the empty entry into the ZIP.
 
-### BF-065 · S3 · OPEN — context pack: binary, UTF-16 and Windows-1252 files are pasted as garbage (U+FFFD, NUL bytes) and presented as "ready"
+### BF-065 · S3 · FIXED (6814ae4b) — context pack: binary, UTF-16 and Windows-1252 files are pasted as garbage (U+FFFD, NUL bytes) and presented as "ready"
+
+**Repair evidence — session 36:** Context decoding is strict UTF-8-sig, with explicit BOM-detected UTF-16 support. Binary NULs and unsupported encodings are refused with a convert-to-UTF-8 explanation instead of replacement garbage. Tests cover binary, invalid bytes and Persian UTF-16. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/context_request.py` `resolve()` reads every file with `data.decode("utf-8", errors="replace")` — no
 binary check, no BOM / UTF-16 detection, no Windows-1252 fallback (Quick-mode ZIP import does all three, see
@@ -1497,7 +1535,9 @@ that holds images (`assets/`, `static/`) is common.
 instead` (the ZIP path already copies raw bytes); decode UTF-8-BOM / UTF-16 (BOM) properly and fall back to
 Windows-1252 with a note, as Quick ZIP import does.
 
-### BF-066 · S3 · OPEN — context request for a folder named `build/`, `dist/`, `venv/` … is answered *"the folder does not exist or is empty"*; sub-folders with those names are dropped silently
+### BF-066 · S3 · FIXED (6814ae4b) — context request for a folder named `build/`, `dist/`, `venv/` … is answered *"the folder does not exist or is empty"*; sub-folders with those names are dropped silently
+
+**Repair evidence — session 36:** Explicit requested build/dist/venv-like folders are no longer silently filtered by generic project-scan exclusions. Protected .git/.workbench and bytecode caches remain excluded. Regression reads build/readme.txt, and the existing folder/noise regression still passes. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/context_request.py` `_expand_folders()` skips every file whose relative path contains a part in
 `SKIP_DIRS` (`.git .workbench node_modules __pycache__ .venv venv dist build .idea .vscode`) — including the folder the
@@ -1875,7 +1915,9 @@ code is not in AIWB file blocks"*), with a troubleshooting / salvage prompt; com
 paths with the delivered files (`missing_deliverable`); fill `expected_paths` from `deliverables`; say *"0 files"*
 on the card.
 
-### BF-081 · S2 · OPEN — *Fix with helper AI* silently sends only the first 60 000 characters of a long answer; the rewritten answer that goes back into the paste box has lost the last files and the manifest, and the card only says *"The helper AI rewrote the answer"*
+### BF-081 · S2 · FIXED (af421197) — *Fix with helper AI* silently sends only the first 60 000 characters of a long answer; the rewritten answer that goes back into the paste box has lost the last files and the manifest, and the card only says *"The helper AI rewrote the answer"*
+
+**Repair evidence — session 36:** Helper fixes over 60,000 characters are refused before any request with Nothing was sent or replaced and instructions to split complete files. Boundary-size answers remain complete. Replies over the response limit are rejected rather than silently sliced; the existing paste text is not replaced on error. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/helper_ai.py` `fix_messages()` cuts the answer to `MAX_ANSWER_CHARS = 60000` and tells only the
 helper (*"The answer below was cut to its first part; convert only what is there."*). `aiwb/ui/next_card.py`
@@ -2064,7 +2106,9 @@ that changing a shared module affects nothing. A false *"no dependents"* is wors
 **Expected:** do not strip dots from path-style references (only from Python module names); normalise `parent / ref`
 with `posixpath.normpath`, and keep `..` that would leave the project as unresolved.
 
-### BF-089 · S3 · OPEN — architecture plan: a non-text `status` fails with the raw *"unhashable type: 'list'"*; `severity` is never checked, so the schema's placeholder `"low|medium|high"` is saved as a real value
+### BF-089 · S3 · FIXED (b2dff985) — architecture plan: a non-text `status` fails with the raw *"unhashable type: 'list'"*; `severity` is never checked, so the schema's placeholder `"low|medium|high"` is saved as a real value
+
+**Repair evidence — session 36:** Architecture status type is validated before enum membership, giving field-specific errors for list/object/null/non-string input. Risk severity is low/medium/high (case normalized), invalid values rejected; the schema example uses medium and round-trips. Regression covers status variants, HIGH, banana and the schema example. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/architecture_plan.py` `validate_plan()`: `if status not in {"draft", …}` with `status = ["proposed"]`
 or `{}` raises `TypeError: unhashable type: 'list'` (not `ArchitecturePlanError`). The editor (`AI_Workbench.py`
@@ -2111,7 +2155,9 @@ consumed at the request, and users read the warning text first.
 `pair_request` only), or make `decide()` refuse after expiry and clear `pending` when the code expires, so the window
 disables Approve and says *"The request expired; pair again"*.
 
-### BF-091 · S2 · OPEN — a file block whose `<<<AIWB_END_FILE>>>` is missing swallows the **next** file: the marker line and the next file's text are written into the first file, the next file is lost, and the smart check says nothing
+### BF-091 · S2 · FIXED (307bd806) — a file block whose `<<<AIWB_END_FILE>>>` is missing swallows the **next** file: the marker line and the next file's text are written into the first file, the next file is lost, and the smart check says nothing
+
+**Repair evidence — session 36:** A new file header terminates an earlier unclosed block as explicitly incomplete, rather than swallowing the next file. Staging refuses incomplete blocks and integration cannot override them. Mobile mirrors per-block completeness. c058de55 prevents canonical repair from manufacturing end markers for cut-off payloads; parser and repaired-cutoff regressions pass. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/v2/diagnose.py` `parse_files()` (used by `v2/files.py` `stage()` and by `diagnose()`): while a block is
 open, every line — including a new `<<<AIWB_FILE …>>>` header — is appended to the open block's body until the next
@@ -2137,7 +2183,9 @@ open block and records a `truncated` / `missing_end_marker` **error** for it ("t
 <<<AIWB_END_FILE>>>; the next file started inside it"). Never stage a body that contains an AIWB header line.
 `truncation_report()` should check every block, not only the last.
 
-### BF-092 · S2 · OPEN — a valid JSON answer (files or marker-free charter) whose text contains a typographic quote `“Save”` is reported as *"Cut off ✗"* / *"never closed"*; the complete answer is never read
+### BF-092 · S2 · FIXED (e2e6bdf5) — a valid JSON answer (files or marker-free charter) whose text contains a typographic quote `“Save”` is reported as *"Cut off ✗"* / *"never closed"*; the complete answer is never read
+
+**Repair evidence — session 36:** Balanced-object scanning tracks the actual opening quote, so typographic quotes inside an ASCII JSON string remain data. A complete files answer containing Press “Save” is extracted without false truncation; existing corpus gates pass. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/intake/lenient.py` `_balanced_end()`: inside a string opened by a straight `"` it also ends the string
 on U+201D (`if c == quote or (quote == '"' and c in "\u201d")`). In valid JSON, `”` inside a string is an ordinary
@@ -2168,7 +2216,9 @@ on screen points at the quote.
 at `”` or `"`. Track the opening character instead of treating `”` as closing every string. Add a test with `“…”` inside
 a straight-quoted JSON value.
 
-### BF-093 · S3 · OPEN — "copied as rendered text" repair strips every line-end `\` or `/` from **raw (unfenced) file bodies**: a `.gitignore` loses its folder slashes, a shell script / Dockerfile loses its line continuations
+### BF-093 · S3 · FIXED (2e507150) — "copied as rendered text" repair strips every line-end `\` or `/` from **raw (unfenced) file bodies**: a `.gitignore` loses its folder slashes, a shell script / Dockerfile loses its line continuations
+
+**Repair evidence — session 36:** Rendered-copy hard-break stripping excludes all raw AIWB file body lines, including lines ending in legitimate slash/backslash characters. Regression checks multi-line folder rules and continuation characters for both endings. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/intake/normalize.py` `strip_copy_damage()`: the line-end removal targets every line **outside code
 fences** (`outside = [i for i … if not fenced[i]]`). The `in_file` guard (lines inside an AIWB file block) is applied only
@@ -2197,7 +2247,9 @@ as *changed* against an identical file on disk.
 **Expected:** never apply the line-end repair inside an AIWB file block (from header to `<<<AIWB_END_FILE>>>`), the same
 as the escape step. Count only prose lines when deciding whether the answer was copied as rendered text.
 
-### BF-094 · S3 · OPEN — JSON auto-repair gives up when a value contains `“…”,` (typographic quote then a comma): an answer with one trailing comma becomes *"Nothing Workbench can read yet"*
+### BF-094 · S3 · FIXED (2e507150) — JSON auto-repair gives up when a value contains `“…”,` (typographic quote then a comma): an answer with one trailing comma becomes *"Nothing Workbench can read yet"*
+
+**Repair evidence — session 36:** JSON repair only interprets typographic closing quotes when the string was opened with a smart delimiter. Literal “Save”, inside an ASCII string survives trailing-comma repair. Desktop and Mobile regressions pass. Unit/JVM source evidence only; no new release or native device gate claimed.
 
 **Where:** `aiwb/intake/normalize.py` `_scan_json()`: inside a string opened by a **straight** `"`, a `“` or `”` is taken
 as the closing quote when the next non-space character is `:` `,` `}` `]` or the end (*"A smart quote closing a string
@@ -2281,6 +2333,8 @@ re-plan, like the classic apply.
 **Expected:** in `check()`, if the recorded commit is not pushed and HEAD differs from it, say so and offer *"Use the new HEAD {sha} instead"* (adopt it after the same ahead-of-remote checks; update `base_remote_sha` from the fresh plan), or mark the record superseded and start a new operation. Also, do not offer *Resume?* for a record whose commit is no longer HEAD or an ancestor of HEAD.
 
 ### BF-098 · S3 · OPEN — New Project wizard: an empty *Parent folder* is accepted and the project is created in the app's current working directory (on Windows often the install folder or `C:\Windows\System32`)
+
+**Partial repair — session 36 (not counted fixed):** d048bf6a rejects empty/relative parent in the wizard, with a no-display regression. Still OPEN: create_project_folder itself still resolves relative parents; the independent service-boundary guard and actual Windows GUI gate remain.
 
 **Where:** `aiwb/ui/project_wizard.py` `problems()` step 0: `Path(self.vars["parent"].get().strip() or ".").expanduser().is_dir()`. The `or "."` turns an empty field into the current directory, which always exists, so the check passes. `AI_Workbench._create_from_wizard()` → `create_project_folder(Path(d["parent"]).expanduser(), …)` with `d["parent"] == ""` → `Path("")` resolves to the process CWD. Neither layer refuses an empty parent.
 
