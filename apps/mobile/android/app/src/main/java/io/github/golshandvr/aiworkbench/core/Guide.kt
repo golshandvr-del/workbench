@@ -42,6 +42,14 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         val tasks = State.coll(st, "tasks")
         closeoutSteps(st).takeIf { it.isNotEmpty() }?.let { return it }  // F26–F28 (mobile 1.7.0) replace every other step
         (gd["continue"] as? Map<*, *>)?.let { c ->
+            val target = Json.str(c["for"])
+            if (target.startsWith("handoff:")) {
+                val h = Json.obj(State.coll(st, "handoffs")[target.substringAfter(':')])
+                val t = Json.obj(tasks[h["task_id"]])
+                val active = Json.str(t["active_attempt_id"])
+                if (h["status"] !in Waves.OPEN_HANDOFF || t["status"] in State.TERMINAL_TASK ||
+                    (active.isNotEmpty() && active != h["attempt_id"])) return@let
+            }
             out.add(step("continue", "prompt", "The last answer was cut off — ask to continue",
                 "The pasted answer ended before it finished. Copy this prompt into the same chat; it asks for the rest only. Then paste the new answer.",
                 listOf(a("copy", "Copy continue prompt"), a("paste", "Paste the rest", "text"), a("dismiss", "Ignore the cut-off answer")),
