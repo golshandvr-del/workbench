@@ -168,7 +168,11 @@ def build_helper_card(parent: tk.Misc, service: helper_ai.HelperService, *, on_c
         runner.run(service.test, done)
 
     def remove() -> None:
-        service.clear()
+        try:
+            service.clear()
+        except helper_ai.HelperAIError as exc:
+            status_var.set(str(exc))
+            return
         url_var.set("")
         model_var.set("")
         key_var.set("")
