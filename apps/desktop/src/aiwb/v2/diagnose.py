@@ -62,6 +62,8 @@ def parse_files(text: str) -> tuple[list[dict[str, Any]], bool]:
 
 def _close(cur: dict[str, Any]) -> dict[str, Any]:
     lines = list(cur["lines"])
+    if cur.get("raw"):
+        return {"path": cur["path"], "body": "\n".join(lines), "fenced": False, "fence_balanced": True}
     while lines and not lines[0].strip():
         lines.pop(0)
     while lines and not lines[-1].strip():
