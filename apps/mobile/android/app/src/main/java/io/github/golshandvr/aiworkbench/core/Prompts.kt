@@ -85,12 +85,34 @@ object Prompts {
         lines += section("4. Accepted decisions (binding)", accepted.map { "- ${it["decision_id"]} ${it["title"]}: ${it["decision"]}" } +
             rejected.map { "- REJECTED ${it["decision_id"]} ${it["title"]}: ${it["rationale"]} — do not propose it again" })
         lines += section("5. Prerequisites and their outputs", depLines)
+        val latest = State.coll(s, "evidence").values.map { Json.obj(it) }.filter {
+            it["subject_type"] == "task" && it["subject_id"] == taskId &&
+                Json.int(it["task_revision"]) == Json.int(t["task_revision"]) && it["verified"] == true &&
+                it["type"] in setOf("test_run", "build_run")
+        }.maxByOrNull { Json.int(it["state_revision"]) }
+        val contradicted = latest?.get("result") == "failed" && previous != null &&
+            (Json.str(latest["attempt_id"]).isEmpty() || latest["attempt_id"] == previous["attempt_id"])
+        val claimLabel = if (contradicted) "CONTRADICTED by recorded failed validation" else "Claimed (NOT verified)"
         if (previous != null) {
             lines += section("6. Previous handoff ${previous["handoff_id"]} (${Json.str(previous["outcome"]).ifEmpty { "n/a" }})",
                 listOf("- Summary: ${Json.str(previous["summary"]).ifEmpty { "(none)" }}") +
                     Json.strs(previous["completed_items"]).map { "- Done: $it" } + Json.strs(previous["unresolved_items"]).map { "- Open: $it" } +
-                    Json.strs(previous["assumptions"]).map { "- Assumption: $it" } + Json.strs(previous["validation_claims"]).map { "- Claimed (NOT verified): $it" })
+                    Json.strs(previous["assumptions"]).map { "- Assumption: $it" } + Json.strs(previous["validation_claims"]).map { "- $claimLabel: $it" })
+            if (previous["status"] == "rejected") {
+                val reason = Json.str(Json.obj(previous["resolution"])["reason"]).ifEmpty { "(no reason recorded)" }
+                lines += "- Your previous delivery (${previous["handoff_id"]}) was rejected by the user: $reason"
+                lines += "- Address that feedback; the listed delivered items were NOT accepted."
+            }
         } else lines += section("6. Previous handoff", listOf("- This is the first handoff for this task."))
+        if (latest != null) {
+            val source = Json.obj(latest["source"])
+            lines += section("Recorded user validation — current task revision", listOf(
+                "- ${latest["evidence_id"]}: ${latest["type"]} ${latest["result"]} " +
+                    "(run ${Json.str(source["run_id"]).ifEmpty { "(not supplied)" }}, attempt ${Json.str(latest["attempt_id"]).ifEmpty { "(legacy)" }})",
+                "- ${Json.str(latest["summary"]).ifEmpty { "(no note recorded)" }}",
+                if (latest["result"] == "failed") "- The last delivery failed recorded tests/build: fix the reported problem before resubmitting."
+                else "- This is historical evidence, not verification of changes you make next."))
+        }
         lines += section("7. Relevant files", Json.strs(t["context_refs"]).map { "- $it" } +
             "- If you need a file that is not here, answer ONLY with an AIWB_CONTEXT_REQUEST.")
         lines += section("8. Conflicts / do not assume", Json.strs(t["flags"]) +
