@@ -19,7 +19,7 @@ import zipfile
 import uuid
 
 from aiwb.intake.answer_files import safe_path
-from .file_transaction import FileTransactionError, transaction
+from .file_transaction import FileTransactionError, preflight, transaction
 from .models import ModelError
 from pathlib import Path
 from typing import Any
@@ -40,17 +40,44 @@ def stage(store: Any, handoff_id: str, text: str) -> list[dict[str, Any]]:
         h = s["handoffs"][handoff_id]
         allowed = task_paths(s["tasks"].get(h["task_id"]) or {})
         staged: list[dict[str, Any]] = []
-        total = 0
+        problems: list[dict[str, Any]] = []
+        def problem(code: str, message: str, path: str, severity: str = "error") -> None:
+            problems.append({"code": code, "message": message, "path": path, "severity": severity})
         for f in files:
             p = safe_path(f["path"])
             body = f["body"] + ("\n" if f["body"] and not f["body"].endswith("\n") else "")
             size = len(body.encode("utf-8"))
-            if not p or not _in_scope(p, allowed) or not body.strip() or size > MAX_FILE or total + size > MAX_TOTAL:
+            if not p:
+                problem("unsafe_path", f"Not a valid Windows/project file path: {f['path']!r}", f["path"])
                 continue
-            total += size
+            if not _in_scope(p, allowed):
+                problem("out_of_scope", f"{p} is outside this task's allowed paths", p)
+                continue
+            if any(x["path"] == p for x in staged):
+                problem("duplicate_path", f"{p} was sent twice — the last version is used", p, "warning")
             staged = [x for x in staged if x["path"] != p]
             staged.append({"path": p, "sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(), "size": size,
                            "content": body})
+        total = 0
+        kept = []
+        for item in staged:
+            p, size = item["path"], item["size"]
+            if size > MAX_FILE:
+                problem("too_large", f"{p} exceeds the {MAX_FILE}-byte file limit; nothing can be accepted until it is fixed", p)
+                continue
+            if total + size > MAX_TOTAL:
+                problem("total_too_large", f"{p} exceeds the {MAX_TOTAL}-byte delivery limit", p)
+                continue
+            total += size
+            kept.append(item)  # Empty files are real deliverables, not missing content.
+        staged = kept
+        try:
+            snapshots = preflight(store.root, staged)
+            for item, snapshot in zip(staged, snapshots):
+                item["before_sha"] = snapshot["before_sha"]
+        except (OSError, FileTransactionError) as exc:
+            problem("file_conflict", str(exc), "")
+        h["staging_problems"] = problems
         h["staged_files"] = staged
         return [{k: v for k, v in x.items() if k != "content"} for x in staged]
 
@@ -68,6 +95,10 @@ def integrate(store: Any, root: Path, handoff_id: str, *, accept_reason: str | N
     h = store.load()["handoffs"].get(handoff_id)
     if h is None:
         raise ModelError(f"Unknown handoff {handoff_id}")
+    blocking = [p for p in h.get("staging_problems") or []
+                if p.get("severity") == "error" and p.get("code") in ("too_large", "total_too_large", "file_conflict")]
+    if blocking:
+        raise ModelError("Cannot integrate an incomplete/conflicting delivery: " + "; ".join(p["message"] for p in blocking))
     staged = [x for x in h.get("staged_files") or [] if x.get("content") is not None]
     if not staged and accept_reason is None:
         return []
