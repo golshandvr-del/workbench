@@ -200,6 +200,44 @@ class IntegrateTests(unittest.TestCase):
         self.assertEqual(self.c.state()["handoffs"], before["handoffs"])
         self.assertEqual((self.root / "src/calc.py").read_bytes(), b"old\n")
 
+    def test_bf079_troubleshoot_keeps_good_files_for_manifest_only_fix(self) -> None:
+        self.g.perform(f"task:{self.tid}", "prepare")
+        bad = self.answer().replace('path="src/util/__init__.py"', 'path="README.md"')
+        self.g.perform(self.step()["key"], "paste", text=bad)
+        out = self.g.perform(self.step()["key"], "troubleshoot")
+        nh = self.c.state()["handoffs"][out["handoff_id"]]
+        fix = (f"AIWB_ATTEMPT_ID: {nh['attempt_id']}\n<<<AIWB_HANDOFF>>>\n" + json.dumps({
+            "schema_version": "1.0", "handoff_id": nh["handoff_id"], "task_id": self.tid,
+            "task_revision": nh["task_revision"], "attempt_id": nh["attempt_id"],
+            "outcome": "complete", "summary": "Removed out-of-scope README", "unresolved_items": []})
+            + "\n<<<AIWB_END_HANDOFF>>>\n")
+        self.g.perform(self.step()["key"], "paste", text=fix)
+        h = self.c.state()["handoffs"][nh["handoff_id"]]
+        self.assertEqual([f["path"] for f in h["staged_files"]], ["src/calc.py"])
+        out = self.g.perform(self.step()["key"], "accept_handoff")
+        self.assertEqual(out["files"], ["src/calc.py"])
+        self.assertIn(b"return a + b", (self.root / "src/calc.py").read_bytes())
+        self.assertFalse((self.root / "README.md").exists())
+
+    def test_bf079_manifest_only_code_delivery_is_not_clean_acceptance(self) -> None:
+        self.g.perform(f"task:{self.tid}", "prepare")
+        text = self.answer()
+        text = text[:text.index("<<<AIWB_FILE")] + text[text.index("<<<AIWB_HANDOFF>>>"):]
+        self.g.perform(self.step()["key"], "paste", text=text)
+        h = self.c.state()["handoffs"][self.step()["ref"]]
+        self.assertIn("missing_deliverable", [p["code"] for p in h.get("diagnosis", [])])
+        action = next(a for a in self.step()["actions"] if a["id"] == "accept_handoff")
+        self.assertIn("reason", action.get("inputs", []))
+
+    def test_bf043_unstaged_legacy_delivery_refuses_acceptance(self) -> None:
+        from aiwb.v2.models import ModelError
+        self.g.perform(f"task:{self.tid}", "prepare")
+        h = self.c.project.handoffs.get(self.step()["ref"])
+        self.c.project.handoffs.ingest(h["handoff_id"], "legacy-response", self.answer())
+        with self.assertRaisesRegex(ModelError, "not.*staged|not.*read"):
+            self.g.perform(self.step()["key"], "accept_handoff")
+        self.assertEqual(self.c.state()["handoffs"][h["handoff_id"]]["status"], "reconciled")
+
     def test_bf009_failure_keeps_delivery_open_and_rolls_back_then_retries(self) -> None:
         from unittest.mock import patch
         import os
