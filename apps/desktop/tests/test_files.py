@@ -149,6 +149,57 @@ class IntegrateTests(unittest.TestCase):
         self.assertEqual(ev[-1]["count"], 2)
         self.assertNotIn(".workbench/v2/state.json", [x["path"] for x in list_files(self.root)])
 
+    def test_bf043_direct_route_stages_checks_and_integrates(self) -> None:
+        self.g.perform(f"task:{self.tid}", "prepare")
+        routed = self.c.route_answer(self.answer())
+        self.assertEqual(routed.kind, "handoff")
+        h = self.c.state()["handoffs"][routed.reference_id]
+        self.assertEqual([f["path"] for f in h["staged_files"]],
+                         ["src/calc.py", "src/util/__init__.py"])
+        self.assertIn("diagnosis", h)
+        self.assertEqual((self.root / "src/calc.py").read_bytes(), b"old\n")
+        out = self.g.perform(self.step()["key"], "accept_handoff")
+        self.assertEqual(len(out["files"]), 2)
+        self.assertEqual((self.root / "src/util/__init__.py").read_bytes(), b"X = 1\n")
+
+    def test_bf043_direct_route_shows_scope_and_size_diagnostics(self) -> None:
+        from unittest.mock import patch
+        self.g.perform(f"task:{self.tid}", "prepare")
+        with patch("aiwb.v2.files.MAX_FILE", 20):
+            routed = self.c.route_answer(self.answer().replace('path="src/util/__init__.py"', 'path="README.md"'))
+        h = self.c.state()["handoffs"][routed.reference_id]
+        codes = {p["code"] for p in h.get("diagnosis", [])}
+        self.assertTrue({"too_large", "out_of_scope"}.issubset(codes), codes)
+        self.assertNotIn("accept_handoff", [a["id"] for a in self.step()["actions"]])
+
+    def test_bf078_repair_integrates_arrived_files_before_excluding_them(self) -> None:
+        self.g.perform(f"task:{self.tid}", "prepare")
+        text = self.answer().replace('"outcome": "complete"', '"outcome": "partial"').replace(
+            '"unresolved_items": []', '"unresolved_items": ["missing tests"]')
+        self.g.perform(self.step()["key"], "paste", text=text)
+        old = self.step()["ref"]
+        out = self.g.perform(self.step()["key"], "repair")
+        self.assertIn("src/calc.py", out["prompt"])
+        self.assertEqual((self.root / "src/util/__init__.py").read_bytes(), b"X = 1\n")
+        h = self.c.state()["handoffs"][old]
+        self.assertEqual(h["status"], "accepted")
+        self.assertEqual(len(h["integrated_files"]), 2)
+        self.assertEqual(len(out["files"]), 2)
+
+    def test_bf078_failed_repair_publication_keeps_partial_delivery_open(self) -> None:
+        from unittest.mock import patch
+        from aiwb.v2.models import ModelError
+        self.g.perform(f"task:{self.tid}", "prepare")
+        text = self.answer().replace('"outcome": "complete"', '"outcome": "partial"')
+        self.g.perform(self.step()["key"], "paste", text=text)
+        step = self.step()
+        before = self.c.state()
+        with patch("aiwb.v2.file_transaction.os.replace", side_effect=PermissionError("locked")):
+            with self.assertRaises(ModelError):
+                self.g.perform(step["key"], "repair")
+        self.assertEqual(self.c.state()["handoffs"], before["handoffs"])
+        self.assertEqual((self.root / "src/calc.py").read_bytes(), b"old\n")
+
     def test_bf009_failure_keeps_delivery_open_and_rolls_back_then_retries(self) -> None:
         from unittest.mock import patch
         import os
