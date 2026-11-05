@@ -713,6 +713,13 @@ class Project(val store: ProjectStore) {
             if (att["status"] == "parsed" && !accept) att["status"] = "rejected"
             else if (att["status"] in setOf("ready_for_review", "stale", "reconciliation_required")) att["status"] = if (accept) "accepted" else "rejected"
         }
+        if (!accept) {
+            if (att != null && att["status"] !in setOf("accepted", "rejected", "abandoned")) {
+                val next = if ("rejected" in ATTEMPT_FLOW[Json.str(att["status"])].orEmpty()) "rejected" else "abandoned"
+                moveAttempt(s, Json.str(att["attempt_id"]), next, "handoff $handoffId rejected")
+            }
+            if (task["active_attempt_id"] == h["attempt_id"]) task["active_attempt_id"] = ""
+        }
         for (raw in State.coll(s, "handoffs").values) {
             val o = Json.obj(raw)
             if (accept && o["task_id"] == h["task_id"] && o["handoff_id"] != handoffId && o["status"] == "accepted") o["status"] = "superseded"
