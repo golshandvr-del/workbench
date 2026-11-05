@@ -400,10 +400,9 @@ class ProposalTests(Base):
         b = self.p.tasks.create({"title": "B", "objective": "b", "depends_on": [a["task_id"]]})
         self.p.tasks.transition(b["task_id"], "blocked", "waiting for " + a["task_id"])
         manual = self.ready_task("Manual")
-        self.p.tasks.transition(manual["task_id"], "blocked", "waiting for user sign-off")
-        # A manual block with different wording must not be cleared by refresh.
-        with self.p.store.transaction("manual reason") as s:
-            s["tasks"][manual["task_id"]]["blocked_reason"] = "user sign-off needed"
+        # Manual blocks must use a manual reason, not the reserved dependency
+        # prefix (which transition's immediate readiness refresh may resolve).
+        self.p.tasks.transition(manual["task_id"], "blocked", "user sign-off needed")
         p = self.p.proposals.import_text(self.block(self.p.store.revision, [
             {"operation": "remove_dependency", "task_id": b["task_id"], "depends_on_task_id": a["task_id"]}]))
         self.p.proposals.review(p["proposal_id"], [0])
