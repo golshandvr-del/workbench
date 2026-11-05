@@ -13,6 +13,69 @@ from unittest.mock import patch
 import AI_Workbench as wb
 
 
+class SettingsPersistenceTests(unittest.TestCase):
+    def setUp(self) -> None:
+        from threading import RLock
+        from unittest.mock import Mock
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.app = wb.WorkbenchApp.__new__(wb.WorkbenchApp)
+        self.app._settings_io_lock = RLock()
+        self.app.settings_path = Path(self.temp.name) / "settings.json"
+        self.app.settings_data = {"ui_lang": "en"}
+        self.app.workspace = None
+        self.app.profile_vars = {}
+        self.app.custom_quick_instructions = []
+        self.app.output_format_var = Mock(get=lambda: "blocks")
+        self.app.root = Mock()
+        self.app.shell = Mock()
+        self.app.set_status = Mock()
+
+    def test_bf017_failed_save_warns_once_until_successful_retry(self) -> None:
+        # A real directory at settings.json reproduces a failed atomic replacement.
+        self.app.settings_path.mkdir()
+        with patch.object(wb.messagebox, "showwarning") as warn, patch.object(wb, "log_exception"):
+            self.assertFalse(self.app._save_settings())
+            self.assertFalse(self.app._save_settings())
+            warn.assert_called_once()
+            self.assertIn("could not be saved", warn.call_args.args[1])
+            self.assertIn("lost", warn.call_args.args[1])
+            self.assertIn("app.log", warn.call_args.args[1])
+            self.assertEqual(self.app.shell.statusbar.show_saved.call_args.args, ("",))
+            self.app.settings_path.rmdir()
+            self.assertTrue(self.app._save_settings())
+            self.assertEqual(json.loads(self.app.settings_path.read_text())["ui_lang"], "en")
+            self.assertFalse(self.app._settings_save_error)
+            with patch.object(wb, "atomic_write", side_effect=OSError("locked")):
+                self.assertFalse(self.app._save_settings())
+            self.assertEqual(warn.call_count, 2)
+
+    def test_bf017_toolbar_never_claims_saved_after_failed_write(self) -> None:
+        for workspace in (None, Path(self.temp.name)):
+            with self.subTest(workspace=workspace):
+                self.app.workspace = workspace
+                self.app.set_status.reset_mock()
+                self.app.settings_path.mkdir(exist_ok=True)
+                with patch.object(wb.messagebox, "showwarning"), patch.object(wb, "log_exception"):
+                    self.app.save_now()
+                self.assertIn("could not be saved", self.app.set_status.call_args.args[0])
+                self.assertEqual(self.app.shell.statusbar.show_saved.call_args.args, ("",))
+                self.app.settings_path.rmdir()
+                self.app.save_now()
+                self.assertIn("saved", self.app.set_status.call_args.args[0].lower())
+                self.app.settings_path.unlink()
+
+    def test_bf017_preference_save_reports_failure_and_retains_retryable_values(self) -> None:
+        self.app.settings_path.mkdir()
+        with patch.object(wb.messagebox, "showwarning") as warn, patch.object(wb, "log_exception"):
+            self.app._save_prefs({"ui_lang": "fa"})
+            warn.assert_called_once()
+        self.assertEqual(self.app.settings_data["ui_lang"], "fa")
+        self.app.settings_path.rmdir()
+        self.assertTrue(self.app._save_settings())
+        self.assertEqual(json.loads(self.app.settings_path.read_text())["ui_lang"], "fa")
+
+
 class ResponseValidationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
