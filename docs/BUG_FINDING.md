@@ -26,12 +26,12 @@ Goal: find problems **before** the owner shows the app to friends — especially
 
 | Severity | Open | Fixed |
 |---|---|---|
-| S1 | 5 (BF-016, BF-043, BF-076, BF-078, BF-079) | 6 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010) |
-| S2 | 35 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103, BF-108, BF-109) | 6 (BF-001, BF-014, BF-026, BF-051, BF-105, BF-106) |
+| S1 | 4 (BF-016, BF-076, BF-078, BF-079) | 7 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-043) |
+| S2 | 33 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 8 (BF-001, BF-014, BF-026, BF-051, BF-105, BF-106, BF-108, BF-109) |
 | S3 | 51 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 3 (BF-028, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
-**Remaining top risks:** BF-016 settings recovery, BF-043 / BF-076 / BF-078 / BF-079 missing deliveries, BF-108 / BF-109 cross-project configuration/evidence, and pending BF-008 cross-platform validation. File exception rollback is not a database/filesystem power-loss transaction; immutable journals/backups remain available for manual recovery after a crash. Concurrent hostile filesystem replacement is not claimed solved.
+**Remaining top risks:** BF-016 settings recovery; Mobile BF-076 and remaining Mobile halves of BF-078/BF-079; BF-008 Windows/Android gates; and the other catalogued lifecycle, intake, persistence and UI findings. File exception rollback is not a database/filesystem power-loss transaction; crash journals remain for manual recovery.
 
 ## Findings
 
@@ -949,7 +949,9 @@ operations (*"delete src/old.py"* in the plan, with backup) or refuse them visib
 (*"src/old.py: delete is not supported — delete it yourself"*) and never turn them into an empty write. Unknown
 actions should be a problem, not a write.
 
-### BF-043 · S1 · OPEN — an answer that comes in through the phone companion, the classic Projects window or Workbench "Import" is never staged: *Accept the delivery* approves the task and writes **no file**
+### BF-043 · S1 · FIXED (c8cee295) — an answer that comes in through the phone companion, the classic Projects window or Workbench "Import" is never staged: *Accept the delivery* approves the task and writes **no file**
+
+**Repair evidence — session 31 / Desktop:** Every Desktop route_answer caller now stages and diagnoses the canonical handoff response, including Companion and classic import callers. Guide consumes the same persisted result instead of taking a second preview. Integration refuses legacy/unprocessed responses without staged_files. Direct-route regressions prove both files are written only on acceptance and scope/size errors reach the card; legacy unstaged acceptance is refused. Checkpoints: c8cee295, 1a6c444c, 55976ace. Original reproduction below is historical.
 
 **Where:** staging (`aiwb/v2/files.stage`) and the smart check (`guide._diagnose`) run only inside
 `guide._paste()` (the Next-step card's *Paste the answer*). The other entry points call
@@ -1767,6 +1769,8 @@ request whose phone stopped polling, or show *"waiting since …"* next to it.
 
 ### BF-078 · S1 · OPEN — *Ask only for what is missing* (repair) accepts the partial delivery but never writes its files, while the repair prompt tells the AI **not** to resend them: the files that did arrive are lost for good (desktop and phone)
 
+**Partial repair — session 31:** Desktop now integrates partial files and acceptance through the shared rollback boundary before asking only for missing items. The repair prompt names the actual retained paths. Tests verify on-disk bytes, integrated_files and refusal without closing the handoff when publication/state writes fail. Mobile Guide.kt remains unchanged: this cross-platform finding stays OPEN.
+
 **Where:** desktop `aiwb/v2/guide.py` `Guide.perform(..., "repair")` calls `c.resolve_handoff(ref, True, …)` (handoff →
 `accepted`) and builds `repair_prompt()`, but does not call `files.integrate()` — only `accept_handoff` does. The
 repair prompt lists the staged files under *"## Arrived complete (do NOT resend)"*. Afterwards the old handoff is
@@ -1791,6 +1795,8 @@ code, and the user blames the AI.
 (`test_v2_guide.py` takes the repair path but only checks the prompt text). Same fix in the phone's `Guide.kt`.
 
 ### BF-079 · S1 · OPEN — *Troubleshoot* drops the good files of the rejected answer; the prompt says *"Fix ONLY these problems … do not change anything else"*, so a correct fix answer carries no files and is approved with **nothing on disk** (desktop and phone)
+
+**Partial repair — session 31:** Desktop troubleshooting carries complete, safe staged payloads into the new handoff; corrected files replace matching retained paths. Original preview hashes remain checked and the prompt discloses retained files. Manifest-only file-scoped tasks without prior published repair files produce missing_deliverable rather than clean acceptance. Regression proves a manifest-only scope fix still writes the retained good code. Mobile equivalents remain unchanged, so this finding stays OPEN.
 
 **Where:** desktop `aiwb/v2/guide.py` `perform(..., "troubleshoot")` rejects the handoff (`resolve_handoff(ref, False, …)`),
 so its `staged_files` are never integrated. `diagnose.troubleshoot_prompt()` lists only the problems and says *"Fix
@@ -2356,7 +2362,9 @@ re-plan, like the classic apply.
 
 **Expected:** cancel pending refreshes on explicit ZIP loads and retain source preview diagnostics while the current text equals the canonical ZIP text; merge/recompute deliberately when it actually changes. Cancel owned timers on widget destruction as well. Cover loading over recently edited text and inspect status both immediately and after debounce.
 
-### BF-108 · S2 · OPEN — Build Center from project A persists its selected workflow into project B after the active project changes
+### BF-108 · S2 · FIXED (ff1ea5c9) — Build Center from project A persists its selected workflow into project B after the active project changes
+
+**Repair evidence — session 31 / Desktop:** Build Center reuse is keyed by project/binding/account/repository/root/subpath/branch identity. Workflow selection resolves the latest record for the captured project, never the active project, and refuses deletion/relinking. Real callback regression switches from A to B, preserves B preferences, constructs a separate B window and rejects a deleted A binding. Checkpoints: ff1ea5c9. Original reproduction below is historical.
 
 **Where:** `AI_Workbench.py` `open_build_center()` (~12215–12280): the window is created for a captured binding A (owner/repo/branch/token/local HEAD). Its `select_workflow` callback instead resolves `current = self._binding_for_active_project() or binding`, so it writes to whichever project is active later. The singleton reuse check only tests whether an existing window is open; it does not match binding/account/repository/project identity. The window is non-modal.
 
@@ -2366,7 +2374,9 @@ re-plan, like the classic apply.
 
 **Expected:** key windows by stable binding/project identity, or close/recreate them on a project change. Persist workflow selection only to the binding that owns the displayed workflow; resolve the latest record by captured binding ID and reject deletion/relinking mismatches. Test switching projects while non-modal repository windows remain open.
 
-### BF-109 · S2 · OPEN — Sync & Build completion records project A's CI as verified evidence in newly active project B and can mark B's unrelated task done
+### BF-109 · S2 · FIXED (c9b80c5d) — Sync & Build completion records project A's CI as verified evidence in newly active project B and can mark B's unrelated task done
+
+**Repair evidence — session 31 / Desktop:** Sync & Build persists captured project/binding/account/repository/task/revision/attempt context and refuses mismatched scoped resumes. Completion uses the originating root, rechecks the saved binding and reads actual local HEAD/branch/origin independently. Ledger rejects unscoped legacy operations, wrong repository/branch/HEAD/run SHA/operation/task revision/attempt and records only the explicitly captured task, never all active tasks. Tests reproduce foreign success/failure contamination and verify the real completion callback writes to A after UI focus switches to B. Operations without an explicitly identifiable V2 task intentionally produce no automatic task evidence; existing CI run/artifact viewing remains available. Checkpoints: c9b80c5d, 4ac06df7, 4b1d53e5. Original reproduction below is historical.
 
 **Where:** `AI_Workbench.py` `_sync_build_finished()` (~12345): uses `root = self.workspace` at callback time rather than the project captured when the orchestrator was created. The non-modal window receives `on_finished=self._sync_build_finished`. `aiwb/v2/ledger.py` `record_build_evidence()` takes every in_progress / in_review / validation_pending task in that project; it does not check git.repository, git.task_id, project identity, binding, or the project's actual HEAD. It passes the foreign commit SHA as `current_commit`, effectively checking evidence against itself.
 
@@ -2375,6 +2385,12 @@ re-plan, like the classic apply.
 **User path / impact:** start A's Sync & Build, switch to B while CI runs, then A finishes. B receives false verified build evidence and may close tasks/unblock dependencies although B was never built. A does not receive its result. Related window reuse also lifts the old A window when B requests Sync & Build. This is distinct from BF-108's workflow-preference write: it contaminates the task/evidence ledger and changes status.
 
 **Expected:** capture and persist the originating project/binding identity in the operation and completion callback; write evidence only there, independent of UI focus. Verify repository/ref/commit against that project and restrict task evidence to explicitly covered tasks/attempts. Never treat a run from another project as validation of all active tasks. Test switching projects during CI, including success and failure outcomes.
+
+## Session 31 validation (2026-11-05)
+
+- 18 Desktop findings FIXED, 88 independent OPEN (4 S1 / 33 S2 / 51 S3); 18/106 = 16.98% count-based, not effort or release readiness. Newly closed: BF-043/108/109. BF-078/079 have tested Desktop repairs but remain OPEN for Mobile.
+- Final source unit suite: 959 tests OK, 10 skipped. Static validator restored after sandbox reset: 0 undefined names. Existing socket ResourceWarning and timeout-server BrokenPipe output remain visible.
+- No GUI run in this session (xvfb-run is absent); no Windows/Android tests, tag, release or deployment. Platform and frozen-source GUI gates remain pending.
 
 ## Session 30 validation (2026-11-05)
 
