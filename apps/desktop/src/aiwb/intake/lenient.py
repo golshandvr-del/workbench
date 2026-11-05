@@ -67,6 +67,10 @@ def find_object(text: str, *, keys: tuple[str, ...] = (), start: int = 0) -> Fou
             body = s[i:]
             if all(re.search(r"[\"\u201c\u201d]" + re.escape(k) + r"[\"\u201c\u201d]\s*:", body) for k in keys):
                 truncated = True
+                # A real JSON object cut off mid-body must not be replaced by a
+                # balanced nested section. Only skip a stray prose opening brace.
+                if re.match(r'\{\s*["“}]', body):
+                    break
             i = s.find("{", i + 1)
             continue
         body = s[i:end]
