@@ -39,6 +39,22 @@ STATE = {"state_revision": 49,
 
 
 class TaskInstructionsTest(unittest.TestCase):
+    def test_bf039_technical_leadership_does_not_create_a_second_manager(self):
+        from aiwb.v2.charter_repair import role_of
+        for role in ("Lead developer", "Code owner", "Release manager"):
+            self.assertEqual(role_of(role), "implementer")
+        self.assertEqual(role_of("Tech lead"), "architect")
+        self.assertEqual(role_of("Project manager"), "project_manager")
+
+    def test_bf098_wizard_requires_explicit_parent(self):
+        from aiwb.ui.project_wizard import ProjectWizard
+        from unittest.mock import Mock
+        wizard = ProjectWizard.__new__(ProjectWizard)
+        wizard.mode = "create"
+        wizard.vars = {"name": Mock(get=lambda: "Calc"), "parent": Mock(get=lambda: "")}
+        wizard.goal = lambda: "Build calculator"
+        self.assertIn("Choose an existing parent folder.", wizard.problems(0))
+
     def test_pm_task_prompt_has_one_delivery_format(self) -> None:
         out = task_instructions(TEMPLATES["agent-project-manager"])
         self.assertIn(TASK_DELIVERY_RULE, out)
