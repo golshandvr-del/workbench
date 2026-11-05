@@ -2349,7 +2349,7 @@ re-plan, like the classic apply.
 
 _(areas reviewed with no problem found are listed here so they are not re-checked after a reset)_
 
-- **Unit suite** session 28: 921 tests OK (10 skipped). **GUI suite** previously 61/62; S5 failure investigated further in session 28.
+- **Unit suite** session 28: 921 tests OK (10 skipped). **GUI suite** session 28: **61/62** unmodified smoke scripts passed; S5 failure investigated as follows.
   `gui_scenario_s5_reopen_smoke` fails with `TclError: can't delete Tcl command` during destruction of the **first** root,
   before the second Tk is created. The earlier explanation that this was caused by the second root / Xvfb was too broad.
   `tests/gui/scenario_driver.py:restart()` cancels every interpreter timer through `old.after_cancel(job)`, including timers
