@@ -76,6 +76,21 @@ class PromptTests(Base):
         self.assertIn("Not included:", p)
         self.assertIn("missing.py", p)
 
+    def test_bf030_secret_files_and_outside_links_are_not_sent(self):
+        outside = Path(self.tmp.name) / "outside.txt"
+        outside.write_text("API_KEY=sk-live-secret\n", encoding="utf-8")
+        (self.root / ".env").write_text("TOKEN=abc\n", encoding="utf-8")
+        (self.root / "ok.py").write_text("X = 1\n", encoding="utf-8")
+        try:
+            (self.root / "cfg.txt").symlink_to(outside)
+        except (OSError, NotImplementedError):
+            pass
+        p = quick.build_prompt(self.root, "Fix", include=[".env", "cfg.txt", "ok.py"])
+        self.assertNotIn("TOKEN=abc", p)
+        self.assertNotIn("sk-live-secret", p)
+        self.assertIn("X = 1", p)
+        self.assertIn("not sent", p)
+
     def test_big_file_is_not_included(self):
         (self.root / "big.txt").write_text("x" * (quick.MAX_INCLUDE_BYTES + 1), encoding="utf-8")
         p = quick.build_prompt(self.root, "Read it", include=["big.txt"])
