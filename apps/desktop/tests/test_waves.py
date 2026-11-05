@@ -139,6 +139,42 @@ class GuideDeskTests(unittest.TestCase):
                     self.assertFalse((p.store.root / "src/p0/new.py").exists())
                     self.assertEqual(waves.dispatch(c.state())["next"], [ids[1]])
 
+    def test_bf035_cancellation_save_failure_keeps_entire_open_lifecycle(self):
+        from unittest.mock import patch
+        h = self.c.start_task(self.tid)
+        before = self.c.state()
+        with patch.object(self.c.project.store, "_write", side_effect=OSError("disk full")):
+            with self.assertRaises(OSError):
+                self.c.project.tasks.transition(self.tid, "cancelled", "not wanted")
+        self.assertEqual(self.c.state(), before)
+        self.c.project.tasks.transition(self.tid, "cancelled", "retry")
+        self.assertEqual(self.c.state()["handoffs"][h["handoff_id"]]["status"], "superseded")
+
+    def test_bf035_all_open_states_retire_without_erasing_accepted_history(self):
+        from aiwb.v2.models import MACHINES
+        p = self.c.project
+        h = self.c.start_task(self.tid)
+        hid, aid = h["handoff_id"], h["attempt_id"]
+        for status in ("prepared", "prompt_exported", "response_received", "parsed", "reconciled", "stale", "reconciliation_required"):
+            for attempt_status in MACHINES["attempt"]:
+                with self.subTest(handoff=status, attempt=attempt_status):
+                    with p.store.transaction("old lifecycle fixture") as s:
+                        s["tasks"][self.tid].update(status="in_progress", active_attempt_id=aid)
+                        s["handoffs"][hid]["status"] = status
+                        s["attempts"][aid]["status"] = attempt_status
+                    p.tasks.transition(self.tid, "cancelled", "not wanted")
+                    state = self.c.state()
+                    self.assertEqual(state["handoffs"][hid]["status"], "superseded")
+                    expected = attempt_status if attempt_status in ("accepted", "rejected", "abandoned") else "abandoned"
+                    self.assertEqual(state["attempts"][aid]["status"], expected)
+        with p.store.transaction("accepted historical delivery") as s:
+            s["tasks"][self.tid]["status"] = "in_progress"
+            s["handoffs"][hid]["status"] = "accepted"
+            s["attempts"][aid]["status"] = "accepted"
+        p.tasks.transition(self.tid, "cancelled", "not wanted")
+        self.assertEqual(self.c.state()["handoffs"][hid]["status"], "accepted")
+        self.assertEqual(self.c.state()["attempts"][aid]["status"], "accepted")
+
     def test_prepare_all_opens_one_chat_per_task_within_the_limit(self):
         steps = self.g.steps()
         desk = next(s for s in steps if s["key"] == "dispatch")
