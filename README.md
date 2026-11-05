@@ -18,15 +18,25 @@ The active plan is [V5.21–V5.30](ROADMAP.md), replacing the completed V5.16–
 preserved verbatim in `docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Short_FA.md`.
 These are repair-stage targets, **not released application versions**; Desktop remains 5.20.0.
 
-- Repaired and regression-tested Desktop findings: **BF-001, BF-002, BF-003, BF-004, BF-014,
-  BF-104, BF-105, BF-106** (dependency deadlocks/recovery and artifact integrity/provenance).
-- S5 GUI harness now cancels timers through their registering widgets; nested command ownership
-  and unsuppressed destruction are permanently tested, not patched only in memory.
-- Final unit suite: **933 tests OK, 10 skipped**. Full GUI suite in this session: **62/62 passed**;
-  final-source rerun results are recorded in [session notes](docs/roadmap/SESSION_NOTES.md).
-- **98 independent findings remain OPEN** (8 S1 / 37 S2 / 53 S3). The program is not claimed bug-free.
-  Next: transactional Quick/guided writes, Windows path validation, missing staged deliveries,
-  and project-scoped CI evidence. No Android changes or Windows release validation this session.
+- Repaired and regression-tested Desktop findings: **BF-001, BF-002, BF-003, BF-004, BF-007,
+  BF-009, BF-010, BF-014, BF-026, BF-028, BF-051, BF-095, BF-104, BF-105, BF-106**.
+  This is **15/106 (14.15%)** by finding count, not effort or release readiness.
+- Quick and guided deliveries share full-set filesystem preflight, immutable flushed backups,
+  exact preview hashes and reverse rollback on file or state-save exceptions. Guided acceptance
+  commits with integration; Restore is retryable and preserves later user edits. Empty files are
+  retained; staging limits and path collisions are reported and block incomplete acceptance.
+- Journals/backups are retained for recovery after interrupted operations. This is exception-atomic,
+  **not** a power-loss transaction across the filesystem and application state; hostile concurrent
+  path replacement is not claimed solved. New source module is `aiwb/v2/file_transaction.py`.
+- S5 GUI harness cancels timers through their registering widgets, with permanent ownership tests.
+- Final unit suite: **949 tests OK, 10 skipped**; static gate: **0 undefined names**. Final-source
+  Quick and guided S2 Tk scenarios PASS. Full GUI outcome and run timing are in
+  [session notes](docs/roadmap/SESSION_NOTES.md).
+- **91 independent findings remain OPEN** (5 S1 / 35 S2 / 51 S3). BF-008 stays OPEN: Desktop
+  Windows-path validation and the Mobile Files.safePath port were updated, but actual Windows
+  and Android/Kotlin validation are pending (no Android SDK/Kotlin compiler in this sandbox).
+  Next: those platform gates, missing staged deliveries/repair, remaining lifecycle findings,
+  and project-scoped CI configuration/evidence. The program is not claimed bug-free.
 - No tag, release or deployment was performed. Existing installed releases do not receive these
   source repairs until a later release passes its gates. Use the local test commands below;
   real GitHub dispatch/create/release endpoints were not used for reproductions.
