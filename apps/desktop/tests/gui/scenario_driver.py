@@ -134,17 +134,34 @@ class Driver:
         self.pump(600)
         return app
 
+    @staticmethod
+    def _cancel_timers(root: tk.Tk) -> None:
+        """Cancel through the registering widget, which owns Tkinter's command bookkeeping.
+
+        Calling root.after_cancel for a child's timer deletes its Tcl command but
+        leaves the name on the child; destroy then tries deleting it a second time.
+        Tcl-only callbacks have no Python owner: cancel their event without deleting
+        an unrelated command. Destruction will clean up any remaining widget commands.
+        """
+        owners = {name: widget for widget in (root, *walk(root))
+                  for name in (widget._tclCommands or ())}
+        for job in root.tk.splitlist(root.tk.call("after", "info")):
+            with contextlib.suppress(tk.TclError):
+                script = root.tk.call("after", "info", job)[0]
+                words = root.tk.splitlist(script)
+                owner = owners.get(words[0]) if words else None
+                if owner is not None:
+                    owner.after_cancel(job)
+                else:
+                    root.tk.call("after", "cancel", job)
+
     def restart(self, app: Any) -> Any:
         """Close the app the way the window's X does (on_close saves settings) and start it again in a new Tk."""
         old = self.root
-        # the old Tk's after() timers would fire in the shared Tcl event loop once it is gone (bgerror noise)
-        with contextlib.suppress(tk.TclError):
-            for job in old.tk.splitlist(old.tk.call("after", "info")):
-                old.after_cancel(job)
+        self._cancel_timers(old)
         app.on_close()
         with contextlib.suppress(tk.TclError):
-            for job in old.tk.splitlist(old.tk.call("after", "info")):
-                old.after_cancel(job)
+            self._cancel_timers(old)
             old.destroy()
         self.root = tk.Tk()
         self.root.geometry("1366x800+0+0")
