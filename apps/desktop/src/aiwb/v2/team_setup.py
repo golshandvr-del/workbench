@@ -193,6 +193,8 @@ def apply_start(store: Any, brief: dict[str, Any], rows: list[dict[str, Any]], a
     """
     from .flow import start_project
     _check_all(brief, rows, answer_format)
+    current = store.load()
+    _check_owner_removal(current, plan_ids(rows, set(current["agents"])))
     start_project(store, {**{k: brief.get(k, "") for k in ("goal", "name", "platform", "constraints")},
                           "ais": str(len(rows) - 1)})
     with store.transaction("team from the start form") as s:
@@ -213,17 +215,23 @@ def _check_all(brief: dict[str, Any], rows: list[dict[str, Any]], answer_format:
         raise ModelError("; ".join(errors))
 
 
-def _write_team(s: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, list[str]]:
-    """Inside a transaction: make the enabled team equal to ``rows`` (shared by the wizard, start form and editor)."""
-    out: dict[str, list[str]] = {"created": [], "updated": [], "removed": [], "disabled": []}
+def _check_owner_removal(s: dict[str, Any], ids: list[str]) -> None:
+    """Pure preflight, also run before the start form saves any brief fields."""
     agents = s["agents"]
-    ids = plan_ids(rows, set(agents))
     removing = {aid for aid, a in agents.items() if a.get("enabled", True) and aid not in ids and aid != PM_ID}
     orphaned = sorted(tid for tid, t in s["tasks"].items() if t.get("owner_agent_id") in removing
                       and t.get("status") not in ("done", "cancelled", "superseded"))
     if orphaned:
         raise ModelError("Reassign open tasks before removing their AI: " + ", ".join(orphaned)
                          + ". Choose an enabled worker in the task editor, then save the team again.")
+
+
+def _write_team(s: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, list[str]]:
+    """Inside a transaction: make the enabled team equal to ``rows`` (shared by the wizard, start form and editor)."""
+    out: dict[str, list[str]] = {"created": [], "updated": [], "removed": [], "disabled": []}
+    agents = s["agents"]
+    ids = plan_ids(rows, set(agents))
+    _check_owner_removal(s, ids)
     refs = _references(s)
     for aid, row in zip(ids, rows):
         if aid in agents:
