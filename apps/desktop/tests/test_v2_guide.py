@@ -123,7 +123,7 @@ class InvariantTests(GuideBase):
         p = self.c.project
         tid = p.tasks.create({"title": "Calculator", "objective": "fix calculator",
             "owner_agent_id": "agent-implementer", "allowed_paths": ["src/x/"],
-            "acceptance_criteria": ["tests pass"], "acceptance_policy": "tests_pass"}, status="ready")["task_id"]
+            "acceptance_criteria": ["tests pass"], "acceptance_policy": "evidence_required"}, status="ready")["task_id"]
         h = self.c.start_task(tid)
         self.g.perform(f"handoff:{h['handoff_id']}", "paste", text=answer_for(h))
         self.g.perform(f"handoff:{h['handoff_id']}", "accept_handoff")
