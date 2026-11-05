@@ -21,6 +21,7 @@ PROVIDERS = ("GPT", "Gemini", "Claude", "Other")
 USAGE_TAGS = ("planning", "architecture", "coding", "review", "research", "tests")
 # BF-062: words such as "token" or "session" are ordinary labels; only a key=value whose VALUE looks random is refused.
 PREFIX_RE = re.compile(r"(ghp_|github_pat_|gho_|sk-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|xox[abp]-)", re.I)
+KEYVAL_RE = re.compile(r"(?:password|passwd|token|cookie|session|api[_ -]?key)\s*[:=]\s*[A-Za-z0-9_+/.-]{20,}", re.I)
 SECRET_RE = re.compile(r"(ghp_|github_pat_|gho_|sk-[A-Za-z0-9]{8,}|AIza[0-9A-Za-z_-]{20,}|xox[abp]-|"
                        r"(?:password|passwd|token|cookie|session|api[_ -]?key)\s*[:=]\s*[A-Za-z0-9_+/.-]{20,}|"
                        r"[A-Za-z0-9+/]{40,}={0,2}|[0-9a-f]{40,})",
@@ -28,7 +29,7 @@ SECRET_RE = re.compile(r"(ghp_|github_pat_|gho_|sk-[A-Za-z0-9]{8,}|AIza[0-9A-Za-
 FORBIDDEN_KEYS = ("password", "token", "cookie", "session", "api_key", "apikey", "secret", "credential")
 
 
-def _clean(v: Any, name: str, limit: int, required: bool = False) -> str:
+def _clean(v: Any, name: str, limit: int, required: bool = False, allow_long_id: bool = False) -> str:
     if v is None or v == "":
         if required:
             raise ModelError(f"{name} is required")
@@ -36,7 +37,7 @@ def _clean(v: Any, name: str, limit: int, required: bool = False) -> str:
     if not isinstance(v, str):
         raise ModelError(f"{name} must be text")
     v = v.strip()[:limit]
-    if SECRET_RE.search(v):
+    if (PREFIX_RE.search(v) or KEYVAL_RE.search(v)) if allow_long_id else SECRET_RE.search(v):
         raise ModelError(f"{name} looks like a password, token or key. Workbench never stores model credentials; "
                          "use a plain label instead.")
     return v
@@ -49,7 +50,7 @@ def _no_secret_keys(data: dict[str, Any]) -> None:
 
 
 def _link(v: Any) -> str:
-    link = _clean(v, "link", 500)
+    link = _clean(v, "link", 500, allow_long_id=True)
     if link and not re.match(r"^https?://[^\s]+$", link):
         raise ModelError("link must be an http(s) address (it is only a note for you; Workbench never opens it)")
     if re.search(r"[?&](token|key|auth|sig|session)=", link, re.I):
