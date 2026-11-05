@@ -133,6 +133,22 @@ class HelperClientTests(unittest.TestCase):
                 h.chat(self.srv.url, "m", [{"role": "user", "content": "x"}], timeout=5)
             self.assertIn(word, str(cm.exception), mode)
 
+    def test_bf015_escaped_persian_reply_is_not_cut_by_byte_budget(self):
+        self.srv.reply = "س" * 150000
+        self.assertEqual(h.chat(self.srv.url, "m", [], timeout=5), self.srv.reply)
+
+    def test_bf015_interrupted_http_body_is_a_connection_error(self):
+        import http.client
+        def opener(*args, **kwargs):
+            raise http.client.IncompleteRead(b"partial", 100)
+        with self.assertRaisesRegex(h.HelperAIError, "could not be reached"):
+            h.chat(self.srv.url, "m", [], opener=opener)
+
+    def test_helper_never_returns_silently_truncated_reply(self):
+        self.srv.reply = "x" * (h.MAX_REPLY_CHARS + 1)
+        with self.assertRaisesRegex(h.HelperAIError, "too long"):
+            h.chat(self.srv.url, "m", [], timeout=5)
+
     def test_unreachable_address(self) -> None:
         with self.assertRaises(h.HelperAIError) as cm:
             h.chat("http://127.0.0.1:9/v1", "m", [{"role": "user", "content": "x"}], timeout=3)
@@ -281,10 +297,11 @@ class PureTests(unittest.TestCase):
             with self.assertRaises(CredentialStoreError):
                 _validate_ref(bad)
 
-    def test_long_answer_is_cut_and_said_so(self) -> None:
-        msgs = h.fix_messages("x" * (h.MAX_ANSWER_CHARS + 50))
-        self.assertIn("cut to its first part", msgs[1]["content"])
-        self.assertLess(len(msgs[1]["content"]), h.MAX_ANSWER_CHARS + 4000)
+    def test_bf081_long_answer_is_refused_without_lossy_network_call(self) -> None:
+        with self.assertRaisesRegex(h.HelperAIError, "Nothing was sent or replaced"):
+            h.fix_messages("x" * (h.MAX_ANSWER_CHARS + 50))
+        text = "x" * h.MAX_ANSWER_CHARS
+        self.assertIn(text, h.fix_messages(text)[1]["content"])
 
     def test_expected_and_fence(self) -> None:
         self.assertIn("AIWB_HANDOFF", h.expected_for("handoff:H-0001"))
