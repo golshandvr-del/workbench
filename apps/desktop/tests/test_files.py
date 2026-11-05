@@ -33,6 +33,74 @@ class SafePathTests(unittest.TestCase):
                 self.assertEqual(safe_path(c["input"]), c["expect"])
 
 
+class TransactionBoundaryTests(unittest.TestCase):
+    def test_state_commit_failure_rolls_back_exact_bytes_and_new_files(self) -> None:
+        from aiwb.v2.file_transaction import FileTransactionError, transaction
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.txt").write_bytes(b"old\r\n")
+            backup = root / ".workbench/backups/one"
+            with self.assertRaisesRegex(FileTransactionError, "state disk full"):
+                with transaction(root, [{"path": "a.txt", "content": "new"},
+                                        {"path": "src/b.txt", "content": "b"}], backup):
+                    raise OSError("state disk full")
+            self.assertEqual((root / "a.txt").read_bytes(), b"old\r\n")
+            self.assertFalse((root / "src").exists())
+            self.assertEqual((backup / "a.txt").read_bytes(), b"old\r\n")
+            self.assertEqual(len(list(backup.glob(".aiwb-transaction-*.json"))), 1)
+            with self.assertRaises(FileTransactionError):
+                with transaction(root, [{"path": "a.txt", "content": "retry"}], backup):
+                    pass
+            self.assertEqual((backup / "a.txt").read_bytes(), b"old\r\n")
+
+    def test_backup_failure_and_reserved_backup_links_never_publish(self) -> None:
+        from unittest.mock import patch
+        from aiwb.v2.file_transaction import FileTransactionError, transaction
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as outside:
+            root = Path(tmp)
+            (root / "a.txt").write_bytes(b"old")
+            with patch("aiwb.v2.file_transaction.os.fsync", side_effect=OSError("backup disk full")):
+                with self.assertRaises(FileTransactionError):
+                    with transaction(root, [{"path": "a.txt", "content": "new"}], root / ".workbench/backup"):
+                        self.fail("backup failure must precede publication")
+            self.assertEqual((root / "a.txt").read_bytes(), b"old")
+            link = root / ".workbench/link"
+            try:
+                link.symlink_to(outside, target_is_directory=True)
+            except OSError as exc:
+                self.skipTest(str(exc))
+            with self.assertRaisesRegex(FileTransactionError, "link"):
+                with transaction(root, [{"path": "a.txt", "content": "new"}], link / "backup"):
+                    self.fail("linked backup must never publish")
+            self.assertEqual(list(Path(outside).iterdir()), [])
+            self.assertEqual((root / "a.txt").read_bytes(), b"old")
+
+    def test_case_ancestors_and_journal_named_project_file(self) -> None:
+        from aiwb.v2.file_transaction import FileTransactionError, preflight, transaction
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for paths in (("Src/a.py", "src/b.py"), ("a", "a/b.py"), ("A.py", "a.py")):
+                with self.subTest(paths=paths), self.assertRaises(FileTransactionError):
+                    preflight(root, [{"path": p, "content": "x"} for p in paths])
+            (root / "transaction.json").write_bytes(b"original")
+            with transaction(root, [{"path": "transaction.json", "content": "updated"}],
+                             root / ".workbench/backup"):
+                pass
+            self.assertEqual((root / ".workbench/backup/transaction.json").read_bytes(), b"original")
+
+    def test_rollback_failure_reports_recovery_and_never_overwrites_newer_user_bytes(self) -> None:
+        from aiwb.v2.file_transaction import FileTransactionError, transaction
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "a.txt").write_bytes(b"original")
+            with self.assertRaisesRegex(FileTransactionError, "Rollback incomplete.*a.txt"):
+                with transaction(root, [{"path": "a.txt", "content": "AI"}], root / ".workbench/backup"):
+                    (root / "a.txt").write_bytes(b"concurrent user edit")
+                    raise OSError("state failed")
+            self.assertEqual((root / "a.txt").read_bytes(), b"concurrent user edit")
+            self.assertEqual((root / ".workbench/backup/a.txt").read_bytes(), b"original")
+
+
 class IntegrateTests(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
