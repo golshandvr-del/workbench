@@ -3,7 +3,12 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 31 / saved delivery and CI repairs (2026-11-05)
+## Current resume checkpoint — session 32 / Mobile delivery continuation (2026-11-05)
+
+- Read the entire supplied session-31 transcript (1687 lines); managed GitHub authentication recovered clean main=origin/main=d5b63357 with no unpushed commits. Inherited catalog: 18/106 FIXED (16.98% count-based), 88 OPEN; 959 Desktop tests OK / 10 skipped. No release readiness implied.
+- NEXT: Mobile BF-076/078/079, including shared staging/diagnosis, preserving partial and troubleshooting payloads, and refusing acceptance on integration failure; establish a real JVM Kotlin test gate rather than claim uncompiled edits are verified. Windows/Android platform gates remain separate. Continue one changed file -> add -> commit -> push before any next action.
+
+## Previous resume checkpoint — session 31 / saved delivery and CI repairs (2026-11-05)
 
 - Read the entire supplied session-30 transcript; recovered clean main=origin/main=4a0d6283 using managed GitHub credentials. Never copied the exposed transcript token into source, docs, remotes or commands. Owner requested code-only continuation; latest message explicitly requests wrap-up, without new subtasks.
 - **Current catalog: 18/106 FIXED (16.98% count-based), 88 independent OPEN (4 S1 / 33 S2 / 51 S3), 3 duplicate headings.** Newly closed Desktop BF-043/108/109. BF-078/079 have tested Desktop repairs but remain OPEN because Mobile counterparts are unchanged. Progress is not effort or release readiness.
