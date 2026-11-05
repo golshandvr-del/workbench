@@ -212,6 +212,8 @@ class TaskService:
                 raise ModelError(f"{task_id} is not ready: {why}")
         if new_status == "done":
             raise ModelError("tasks become done only through the evidence policy (EvidenceService.evaluate_task)")
+        if new_status in ("cancelled", "superseded"):
+            self._retire_work_in(s, task_id, new_status)
         if new_status == t["status"]:
             return
         old = t["status"]
@@ -220,6 +222,31 @@ class TaskService:
         if new_status == "blocked" and reason:
             t["blocked_reason"] = reason[:500]
         emit(s, "task_status", task_id=task_id, old=old, new=new_status, why=reason[:300])
+
+    @staticmethod
+    def _retire_work_in(s: dict[str, Any], task_id: str, why: str) -> None:
+        """Close unwanted work in the same transaction as task cancellation/supersession.
+
+        Preserve accepted/rejected history and staged payloads for inspection; never
+        let an obsolete prompt reserve a chat or publish into the project again.
+        """
+        from .attempts import AttemptService
+        from .models import MACHINES
+        for h in s["handoffs"].values():
+            if h["task_id"] == task_id and h["status"] not in ("accepted", "rejected", "superseded"):
+                check_transition("handoff", h["status"], "superseded")
+                h["status"] = "superseded"
+                h["updated_at"] = now_utc()
+                h["closed_reason"] = f"task {task_id} {why}"
+                emit(s, "handoff_superseded", handoff_id=h["handoff_id"], task_id=task_id, why=h["closed_reason"])
+        for a in s["attempts"].values():
+            if a["task_id"] != task_id or a["status"] in ("accepted", "rejected", "abandoned"):
+                continue
+            # Parsed/review-ready attempts have no direct abandon edge.
+            if "abandoned" not in MACHINES["attempt"][a["status"]]:
+                AttemptService._move(s, a["attempt_id"], "stale", f"task {why}")
+            AttemptService._move(s, a["attempt_id"], "abandoned", f"task {why}")
+        s["tasks"][task_id]["active_attempt_id"] = ""
 
     def clear_flag(self, task_id: str, flag: str) -> None:
         with self.store.transaction("clear task flag") as s:
