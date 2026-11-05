@@ -26,12 +26,12 @@ Goal: find problems **before** the owner shows the app to friends — especially
 
 | Severity | Open | Fixed |
 |---|---|---|
-| S1 | 8 (BF-007, 009, 010, 016, 043, 076, 078, 079) | 3 (BF-002, BF-003, BF-004) |
-| S2 | 37 (BF-005, 008, 011, 013, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 108, 109) | 4 (BF-001, BF-014, BF-105, BF-106) |
-| S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 093, 094, 095, 097, 098, 099, 100, 102, 107) | 1 (BF-104) |
+| S1 | 5 (BF-016, BF-043, BF-076, BF-078, BF-079) | 6 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010) |
+| S2 | 35 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103, BF-108, BF-109) | 6 (BF-001, BF-014, BF-026, BF-051, BF-105, BF-106) |
+| S3 | 51 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 3 (BF-028, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
-**Remaining top risks:** BF-007 / BF-009 half-written files, BF-008 Windows path aliases, BF-043 / BF-076 / BF-078 / BF-079 missing deliveries, and BF-108 / BF-109 cross-project configuration/evidence. Desktop graph findings BF-001…004 now have regression-backed repairs, not a claim that all graph behavior is bug-free.
+**Remaining top risks:** BF-016 settings recovery, BF-043 / BF-076 / BF-078 / BF-079 missing deliveries, BF-108 / BF-109 cross-project configuration/evidence, and pending BF-008 cross-platform validation. File exception rollback is not a database/filesystem power-loss transaction; immutable journals/backups remain available for manual recovery after a crash. Concurrent hostile filesystem replacement is not claimed solved.
 
 ## Findings
 
@@ -153,7 +153,9 @@ The message, though, says it is a bug and gives no way forward ("paste again wit
 **Expected:** pasted text is cleaned once at the entry point (`text.encode("utf-8", "replace").decode()` or
 replace lone surrogates with U+FFFD) and a note says *"1 broken character was replaced"*.
 
-### BF-007 · S1 · OPEN — Quick mode: an apply that fails half-way cannot be restored, and the retry destroys the original file
+### BF-007 · S1 · FIXED (d8af767c, d274ec4f) — Quick mode: an apply that fails half-way cannot be restored, and the retry destroys the original file
+
+**Repair evidence — session 30 / V5.22:** Quick uses the shared preflight/backup/publication boundary. Exact original bytes and a flushed, unique journal exist before the first write; write or application-state-save exceptions roll back in reverse. Failed backup IDs are never reused. Regression injects the second write and state-save failures, then retries and restores the original CRLF bytes. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/quick.py` `apply()`: files are written one by one; the apply record is saved (`_save`) only
 **after** the last write; the backup id is `A-{len(applies)+1}` — the same id again on the next try.
@@ -178,6 +180,8 @@ backup folder (unique id, refuse if the folder exists).
 
 ### BF-008 · S2 · OPEN — paths that are fine on Linux but break or misbehave on Windows are accepted
 
+**Partial repair — session 30 (still OPEN):** canonical Desktop intake/staging/diagnosis rejects Windows devices, ADS, invalid/control characters, trailing-dot/space aliases and case-insensitive protected roots (2a408c58, e55b500e, 02f020bf). The shared fixture was extended (5ce45730) and the Mobile Files.safePath port aligned (7eb0da98). Desktop fixture tests pass; no Kotlin compiler/Android SDK is available in this sandbox and no Android or actual Windows validation is claimed. Keep OPEN pending those cross-platform gates.
+
 **Where:** `aiwb/intake/answer_files.py` `safe_path()` and its copy `aiwb/v2/files.py` `safe_path()` (same rule,
 shared fixture `packages/contracts/fixtures/files/safe-paths.v1.json`). Only `/`, drive letter, `..`, NUL,
 `.git`, `.workbench` are refused.
@@ -195,7 +199,9 @@ thinks the change is in the project when it is not. `x.py.` silently overwrites 
 device name (with or without extension), contains `<>:"|?*` or control characters, or ends with a dot or space —
 on every OS, so a project made on Linux also opens on Windows. Add these cases to the shared fixture.
 
-### BF-009 · S1 · OPEN — guided mode: "Accept the delivery" that fails while writing files leaves the task "in review" with half the files and no retry
+### BF-009 · S1 · FIXED (27636e7a, e55b500e, 9e85aebb) — guided mode: "Accept the delivery" that fails while writing files leaves the task "in review" with half the files and no retry
+
+**Repair evidence — session 30 / V5.22:** Guided publication and acceptance share a filesystem rollback boundary and one state commit. A failed preflight/write leaves the task/handoff/attempt unchanged and staged bodies retryable. Tests reproduce an existing destination directory and a locked second file, assert exact rollback, no temporary leftovers, and successful retry with preserved original backups. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/guide.py` `_perform` → `accept_handoff`: `c.resolve_handoff(ref, True, …)` is committed
 **first**, then `files.integrate()` writes the files one by one with no error handling; `integrated_files` is only
@@ -220,7 +226,9 @@ delivered. With friends on Windows (OneDrive folders, editors keeping files open
 on an `OSError` restore the files already written from the backup, remove the `.aiwb-tmp`, keep the handoff open and
 show *"Could not write src/x/b.txt: … — close the program that uses it and press Accept again"*.
 
-### BF-010 · S1 · OPEN — guided mode silently drops delivered files (over 512 KB, over 8 MB in total, or empty) and still approves the task
+### BF-010 · S1 · FIXED (35ea6c24, b9db856b) — guided mode silently drops delivered files (over 512 KB, over 8 MB in total, or empty) and still approves the task
+
+**Repair evidence — session 30 / V5.22:** Desktop staging retains intentionally empty files. Per-file and total size omissions are persisted as error diagnostics; Home removes Accept for incomplete/conflicting staging and integration independently refuses it. Tests cover empty __init__.py on disk, both limits, visible codes and absent acceptance. Mobile staging is not changed or validated by this Desktop repair. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/files.py` `stage()`: `if not p or not _in_scope(...) or not body.strip() or size > MAX_FILE or
 total + size > MAX_TOTAL: continue` → no problem, no message. `_diagnose()` only knows about out-of-scope files.
@@ -568,7 +576,9 @@ BF-011 / BF-013. The owner's users will often print Persian text.
 optionally for shell commands); for other programs decode with `locale.getpreferredencoding()` / the OEM code page
 when the bytes are not valid UTF-8.
 
-### BF-026 · S2 · OPEN — Quick mode Apply / Restore write through a symbolic link or junction to files outside the project
+### BF-026 · S2 · FIXED (d8af767c, d274ec4f) — Quick mode Apply / Restore write through a symbolic link or junction to files outside the project
+
+**Repair evidence — session 30 / V5.22:** Shared destination and backup preflight rejects every symlink/reparse/junction component, escapes, Windows aliases and non-directory parents. Quick preview/apply/restore use it. Linux symlink test preserves external bytes even when a real project folder is replaced by a link before Restore. Actual Windows junction/OneDrive release validation remains pending. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/quick.py` `apply()` / `restore()`: the target is `root / path` with only `safe_path()` (text
 rules) checked; nothing resolves the path or refuses links. The classic importer (`AI_Workbench.py`
@@ -607,7 +617,9 @@ and work.)
 **Expected:** compare against the normalised path (strip a leading `./`, collapse `//` and `/./`), refusing only what
 `safe_path` really refuses (`..`, absolute, drive, `.git`, `.workbench`).
 
-### BF-028 · S3 · OPEN — Quick "Restore last apply" that fails half-way: "bug" dialog, and the retry says the files already restored were "edited by you"
+### BF-028 · S3 · FIXED (d274ec4f) — Quick "Restore last apply" that fails half-way: "bug" dialog, and the retry says the files already restored were "edited by you"
+
+**Repair evidence — session 30 / V5.22:** Restore preflights all destinations/backups, uses the shared rollback boundary including state save, reports failures as QuickError, and recognizes bytes already equal to their original backup. Retry after an injected locked second restore has no false edited-by-user entries. Newer user edits remain untouched. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/quick.py` `restore()`: files are restored one by one with no `OSError` handling; the record is
 marked `restored_at` only after the loop. On the retry, a file that was already restored no longer matches
@@ -1132,7 +1144,9 @@ what to do.
 on load (or in `export_bundle`, with the same mapping on import). At minimum, the export should refuse with a clear
 message instead of writing a file that cannot be read.
 
-### BF-051 · S2 · OPEN — conflicting paths inside **one** answer are never checked: same path twice, case twins, a file named like a folder (→ the BF-009 crash, from a single answer)
+### BF-051 · S2 · FIXED (98f3daa0, 35ea6c24, b9db856b, 02f020bf) — conflicting paths inside **one** answer are never checked: same path twice, case twins, a file named like a folder (→ the BF-009 crash, from a single answer)
+
+**Repair evidence — session 30 / V5.22:** Desktop normalized duplicate staging keeps the last version with a visible duplicate_path warning. Full-set preflight rejects case twins, differently cased ancestor spellings, file/folder prefix conflicts and incompatible existing destinations before writes. Conflicts are visible on Home, cannot be accepted, and are independently checked at integration. Quick uses the same filesystem boundary. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/files.py` `stage()` and `aiwb/v2/diagnose.py` look at each block on its own; the preview counts
 blocks. Nothing compares the paths of one answer with each other, or with folders that exist on disk.
@@ -2177,7 +2191,9 @@ user gets "nothing readable" with no hint why.
 **Expected:** remember the opening character of each string. Only a string opened by `“`/`„` (smart-quote damage) may be
 closed by `”`/`“`; a string opened by `"` closes only at an unescaped `"`. Same fix as BF-092; add a shared test.
 
-### BF-095 · S3 · OPEN — Quick mode *Apply* silently overwrites edits the user made **after** the preview (and a file created meanwhile under a "new" path); the classic apply refuses this
+### BF-095 · S3 · FIXED (d274ec4f) — Quick mode *Apply* silently overwrites edits the user made **after** the preview (and a file created meanwhile under a "new" path); the classic apply refuses this
+
+**Repair evidence — session 30 / V5.22:** Quick plan captures exact original-byte SHA-256 (or absence); apply rechecks all paths before backing up/publishing and checks again per write. Stale existing and newly-created destinations refuse the whole apply with a review-again message and no writes. Plans missing preview hashes are refused. Original reproduction below is historical. Desktop Linux regressions validated; Windows release gate remains pending. These are unreleased source checkpoints, not a release.
 
 **Where:** `aiwb/v2/quick.py` `apply()`: it trusts the `status` computed earlier by `plan()` (`new` / `changed`) and
 writes `i["content"]` without re-reading the target. Nothing compares the file on disk with what the diff was built
@@ -2359,6 +2375,13 @@ re-plan, like the classic apply.
 **User path / impact:** start A's Sync & Build, switch to B while CI runs, then A finishes. B receives false verified build evidence and may close tasks/unblock dependencies although B was never built. A does not receive its result. Related window reuse also lifts the old A window when B requests Sync & Build. This is distinct from BF-108's workflow-preference write: it contaminates the task/evidence ledger and changes status.
 
 **Expected:** capture and persist the originating project/binding identity in the operation and completion callback; write evidence only there, independent of UI focus. Verify repository/ref/commit against that project and restrict task evidence to explicitly covered tasks/attempts. Never treat a run from another project as validation of all active tasks. Test switching projects during CI, including success and failure outcomes.
+
+## Session 30 validation (2026-11-05)
+
+- **15 Desktop findings FIXED, 91 independent OPEN** (5 S1 / 35 S2 / 51 S3); 15/106 = 14.15% count-based progress. BF-008 is deliberately still OPEN with partial implementation evidence.
+- Final Desktop unit suite: **949 tests OK, 10 skipped**. `tools/check_undefined_names.py`: **0 undefined names** after installing its missing pyflakes dependency. Existing socket ResourceWarning and timeout-test BrokenPipe stderr remain visible.
+- Targeted final-source Tk Quick and guided S2 scenarios both PASS. Full GUI suite outcome is recorded in SESSION_NOTES after collection. No Android SDK/Kotlin compiler or actual Windows release gate; no tag/release/deploy.
+- Shared transaction tests cover backup fsync failure, linked backup rejection, immutable retry backups, original-byte rollback, caller state failure, ancestor case aliases, journal-name collision, and incomplete rollback reporting while preserving concurrent user edits.
 
 ## Session 29 validation (2026-11-05)
 
