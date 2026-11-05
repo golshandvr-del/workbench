@@ -285,6 +285,9 @@ class HandoffService:
     def resolve_state(s: dict[str, Any], handoff_id: str, accept: bool, reason: str = "") -> dict[str, Any]:
         """Same decision inside an existing transaction (file publication + state are one unit)."""
         h = require(s, "handoffs", handoff_id)
+        task = require(s, "tasks", h["task_id"])
+        if accept and task["status"] in ("cancelled", "superseded"):
+            raise ModelError(f"{task['task_id']} is {task['status']}; create a new task instead of accepting unwanted work")
         if accept and h["status"] in ("stale", "reconciliation_required"):
             if not reason.strip():
                 raise ModelError("accepting a stale handoff needs an explicit reconciliation note")
