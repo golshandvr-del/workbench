@@ -40,7 +40,10 @@ RISKS = ("low", "medium", "high")
 
 def norm(text: Any) -> str:
     """Comparable form of a title: lower case, letters and digits only."""
-    return re.sub(r"[^0-9a-z\u0600-\u06ff]+", " ", str(text or "").lower()).strip()
+    value = str(text or "").lower().translate(str.maketrans("يكۀة۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "یکهه01234567890123456789"))
+    value = re.sub(r"[\u200c\u200d\u0640\u064b-\u065f]", "", value)
+    value = re.sub(r"(?<=[\u0600-\u06ff])\s+(?=[\u0600-\u06ff])", "", value)
+    return re.sub(r"[^0-9a-z\u0600-\u06ff]+", " ", value).strip()
 
 
 def _text(v: Any) -> str:
@@ -116,7 +119,7 @@ def _decision_ops(items: list[Any], state: dict[str, Any] | None, fixes: list[st
     ops: list[dict[str, Any]] = []
     seen: set[str] = set()
     for it in items:
-        d = it if isinstance(it, dict) else {"title": _text(it)}
+        d = it if isinstance(it, dict) else {"title": _text(it), "decision": _text(it)}
         did = str(_first(d, "decision_id", "id") or "")
         chosen = _text(_first(d, "decision", "choice", "chosen", "chosen_option", "selected_option", "resolution",
                               "recommendation", "recommended", "answer") or "")
@@ -140,8 +143,10 @@ def _decision_ops(items: list[Any], state: dict[str, Any] | None, fixes: list[st
             continue
         seen.add(norm(title))
         options = _strs(_first(d, "options", "alternatives", "choices"))
-        if chosen and norm(chosen) not in {norm(o) for o in options}:
-            options = [chosen] + options if options else [chosen]
+        # A recommendation sentence is not itself an option label.
+        option = re.split(r"\s+(?:because|since|as it)\s+", chosen, maxsplit=1, flags=re.I)[0].strip()
+        if chosen and norm(option) not in {norm(o) for o in options}:
+            options = [option] + options if options else [option]
         affected = [t for t in _strs(_first(d, "affected_task_ids", "task_ids", "tasks", "task_id", "affects"))
                     if t in tasks]
         ops.append({"operation": "propose_decision", "title": title[:200],
@@ -187,7 +192,7 @@ def _changes(d: dict[str, Any]) -> dict[str, Any]:
 
 
 def _task_ops(items: list[Any], state: dict[str, Any] | None, fixes: list[str], leftover: list[str],
-              start: int) -> list[dict[str, Any]]:
+              start: int, *, allow_create: bool = True) -> list[dict[str, Any]]:
     tasks = (state or {}).get("tasks") or {}
     agents = (state or {}).get("agents") or {}
     ops: list[dict[str, Any]] = []
@@ -200,11 +205,31 @@ def _task_ops(items: list[Any], state: dict[str, Any] | None, fixes: list[str], 
             else:
                 continue
         tid = str(_first(it, "task_id", "id", "task") or "")
-        ch = _changes(it)
+        def resolve(ref: str) -> str:
+            if ref in tasks:
+                return ref
+            match = re.fullmatch(r"(?:task-)?0*(\d+)", ref, re.I)
+            if match and f"TASK-{int(match.group(1)):04d}" in tasks:
+                return f"TASK-{int(match.group(1)):04d}"
+            found = [key for key, row in tasks.items() if norm(row.get("title")) == norm(ref)] if ref else []
+            return found[0] if len(found) == 1 else ""
+        raw_tid = tid
+        tid = resolve(tid) if tid else ""
+        if not tid and not allow_create:
+            tid = resolve(_text(it.get("title")))
+        if not tid and not allow_create:
+            leftover.append(f"a change for unknown task {raw_tid or _text(it.get('title'))}")
+            continue
+        source = it
+        if not allow_create and not isinstance(it.get("changes"), dict):
+            source = {k: v for k, v in it.items() if k not in ("description", "goal", "files", "outputs")}
+        ch = _changes(source)
         if ch.get("owner_agent_id") and ch["owner_agent_id"] not in agents:
             ch.pop("owner_agent_id")
         if "depends_on" in ch:
-            ch["depends_on"] = [x for x in ch["depends_on"] if x in tasks]
+            refs = ch["depends_on"]
+            ch["depends_on"] = [resolve(x) for x in refs if resolve(x)]
+            leftover.extend(f"unresolved prerequisite {x}" for x in refs if not resolve(x))
         if tid.startswith("TASK-"):
             if tid not in tasks:
                 leftover.append(f"a change for unknown task {tid}")
@@ -249,11 +274,14 @@ def translate(data: dict[str, Any], state: dict[str, Any] | None = None) -> dict
     for k in DECISION_KEYS:
         if k in data:
             ops += _decision_ops(_items(data[k], "decision_id"), state, fixes, leftover)
+    for k in UPDATE_KEYS:
+        if k in data:
+            ops += _task_ops(_items(data[k], "task_id"), state, fixes, leftover, len(ops), allow_create=False)
     task_items: list[Any] = []
-    for k in UPDATE_KEYS + CREATE_KEYS:
+    for k in CREATE_KEYS:
         if k in data:
             task_items += _items(data[k], "task_id")
-    ops += _task_ops(task_items, state, fixes, leftover, 0)
+    ops += _task_ops(task_items, state, fixes, leftover, len(ops))
     useful = bool(ops)
     for k in RISK_KEYS:
         if k in data and useful:
