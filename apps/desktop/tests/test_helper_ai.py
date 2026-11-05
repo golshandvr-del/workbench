@@ -175,7 +175,7 @@ class HelperClientTests(unittest.TestCase):
                     if operation != "initial":
                         svc.configure(self.srv.url, "old-model", api_key=KEY)
                     before = deepcopy(settings)
-                    secrets = dict(store._secrets)
+                    secrets = dict(store._values)
 
                     def fail_save():
                         if isinstance(failure, Exception):
@@ -193,7 +193,7 @@ class HelperClientTests(unittest.TestCase):
                     self.assertIn("could not be saved", str(caught.exception))
                     self.assertNotIn(KEY, str(caught.exception))
                     self.assertEqual(settings, before)
-                    self.assertEqual(store._secrets, secrets)
+                    self.assertEqual(store._values, secrets)
 
     def test_bf017_failed_key_deletion_keeps_reachable_configuration(self) -> None:
         from unittest.mock import patch
