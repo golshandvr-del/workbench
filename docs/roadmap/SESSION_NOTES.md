@@ -3,7 +3,13 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 30 / V5.22 repairs saved (2026-11-05)
+## Current resume checkpoint — session 31 / V5.24 continuation (2026-11-05)
+
+- Read the entire supplied session-30 transcript. Managed GitHub authentication succeeded; clean main=origin/main=4a0d6283, no unpushed commits. Owner requests code-only continuation, no conversational reports or milestone pauses.
+- Inherited verified count remains 15/106 FIXED (14.15% count-based), 91 OPEN; 949 unit tests OK / 10 skipped. Windows/Android gates remain pending; do not substitute Linux tests for them.
+- NEXT: centralize staging/diagnosis for all Desktop route_answer entry points (BF-043), preserve partial repair files (BF-078), retain troubleshooting deliveries and detect missing files (BF-079); then Mobile equivalents and project-scoped CI BF-108/109. Each changed file must immediately add/commit/push before testing or any next edit. Consult newer commits for subsequent checkpoints.
+
+## Previous resume checkpoint — session 30 / V5.22 repairs saved (2026-11-05)
 
 - Read the uploaded session-29 transcript through its end (historical tool outputs sometimes abbreviated). Managed GitHub authentication succeeded; recovered clean main=origin/main=a84b54d7. Session 29 had ended before final notes were saved. Never copy the exposed transcript token into source/logs/remotes.
 - **Current: 15 Desktop FIXED, 91 independent OPEN (5 S1 / 35 S2 / 51 S3).** Count-based progress **15/106 = 14.15%**, not effort or release readiness. Seven new fixes: BF-007/009/010/026/028/051/095. Previous eight: BF-001/002/003/004/014/104/105/106; S5 harness repair is separate. Catalog 0b4fefac, roadmap 0780719c, README 7458efec.
