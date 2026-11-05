@@ -1887,6 +1887,8 @@ def platform_for_project_template(template: str) -> str:
 def create_project_folder(parent: Path, raw_name: str, description: str = "", template: str = "General engineering / simulation project", create_readme: bool = True, architecture_plan: dict[str, Any] | None = None) -> Path:
     """Create a new project folder and a project-local manifest; never reuse an existing directory."""
     name = validate_project_folder_name(raw_name)
+    if not str(parent).strip() or str(parent) == "." or not parent.expanduser().is_absolute():
+        raise WorkbenchError("Choose an existing parent folder (an explicit absolute path).")
     try:
         parent = parent.expanduser().resolve(strict=True)
     except (OSError, RuntimeError) as exc:
