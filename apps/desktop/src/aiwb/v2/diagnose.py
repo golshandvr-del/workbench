@@ -182,6 +182,13 @@ def troubleshoot_prompt(state: dict[str, Any], h: dict[str, Any], new: dict[str,
              "Your previous answer could not be accepted. Fix ONLY these problems and send the corrected files "
              "completely; do not change anything else.", "", "## Problems found"]
     lines += [f"- [{p['code']}] {p['message']}" for p in errs]
+    bad_paths = {p.get("path", "") for p in problems if p.get("severity") == "error"}
+    retained = [f["path"] for f in h.get("staged_files") or []
+                if f.get("content") is not None and f["path"] not in bad_paths]
+    if retained and not any(p.get("code") == "file_conflict" for p in problems):
+        lines += ["", "## Files retained for the next delivery (not yet applied)",
+                  "These complete files are kept locally and will be included when the corrected delivery is accepted. "
+                  "Send a complete replacement only if you need to change one:"] + [f"- {p}" for p in retained]
     warns = [p for p in problems if p["severity"] == "warning" and p not in errs]
     if warns:
         lines += ["", "## Also check"] + [f"- [{p['code']}] {p['message']}" for p in warns]
