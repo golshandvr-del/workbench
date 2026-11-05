@@ -319,10 +319,9 @@ class ProposalService:
                         t["depends_on"].remove(dep)
                 elif name == "close_or_cancel_task":
                     t = require(s, "tasks", raw["task_id"])
-                    target = "cancelled"
-                    check_transition("task", t["status"], target)
-                    t["status"] = target
-                    t["cancel_reason"] = str(raw.get("reason", ""))[:500]
+                    reason = str(raw.get("reason", ""))[:500]
+                    self.tasks._transition_in(s, t["task_id"], "cancelled", reason)
+                    t["cancel_reason"] = reason
                     notes.append(f"{t['task_id']} cancelled (history kept)")
                 elif name == "propose_decision":
                     did = next_id(s, "decision")
