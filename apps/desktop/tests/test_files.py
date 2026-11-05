@@ -137,6 +137,38 @@ class IntegrateTests(unittest.TestCase):
         nxt = next(x for x in self.g.steps() if x["key"] == f"task:{self.tid}")
         self.assertTrue(nxt["title"].startswith("Verify"), nxt["title"])
 
+    def test_bf010_empty_file_is_staged_and_written_not_silently_dropped(self) -> None:
+        self.g.perform(f"task:{self.tid}", "prepare")
+        answer = self.answer().replace("X = 1", "")
+        out = self.g.perform(self.step()["key"], "paste", text=answer)
+        self.assertEqual(len(out["staged"]), 2)
+        self.assertFalse(any(p["severity"] == "error" for p in out["problems"]))
+        out = self.g.perform(self.step()["key"], "accept_handoff")
+        self.assertEqual(len(out["files"]), 2)
+        self.assertEqual((self.root / "src/util/__init__.py").read_bytes(), b"")
+
+    def test_bf010_limits_are_visible_and_cannot_accept_partial_staging(self) -> None:
+        from unittest.mock import patch
+        self.g.perform(f"task:{self.tid}", "prepare")
+        for limits, code in (({"MAX_FILE": 20}, "too_large"), ({"MAX_TOTAL": 20}, "total_too_large")):
+            with self.subTest(code=code), patch.multiple("aiwb.v2.files", **limits):
+                out = self.g.perform(self.step()["key"], "paste", text=self.answer())
+                self.assertIn(code, [p["code"] for p in out["problems"]])
+                step = self.step()
+                self.assertNotIn("accept_handoff", [a["id"] for a in step["actions"]])
+                self.assertEqual((self.root / "src/calc.py").read_bytes(), b"old\n")
+
+    def test_bf051_normalized_duplicates_report_last_wins_and_case_prefix_conflicts_block(self) -> None:
+        self.g.perform(f"task:{self.tid}", "prepare")
+        answer = self.answer().replace('path="src/util/__init__.py"', 'path="./src/calc.py"')
+        out = self.g.perform(self.step()["key"], "paste", text=answer)
+        self.assertIn("duplicate_path", [p["code"] for p in out["problems"]])
+        self.assertEqual(out["staged"], ["src/calc.py"])
+        out = self.g.perform(self.step()["key"], "paste", text=self.answer().replace(
+            'path="src/util/__init__.py"', 'path="src/CALC.py"'))
+        self.assertIn("file_conflict", [p["code"] for p in out["problems"]])
+        self.assertNotIn("accept_handoff", [a["id"] for a in self.step()["actions"]])
+
     def test_unsafe_and_out_of_scope_are_never_staged(self) -> None:
         self.g.perform(f"task:{self.tid}", "prepare")
         bad = self.answer().replace('path="src/util/__init__.py"', 'path="../evil.py"').replace(
