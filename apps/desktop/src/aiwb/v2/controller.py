@@ -455,6 +455,7 @@ class ProjectsController:
                      handoff_hint: str = "") -> RouteResult:
         """Read one pasted answer. ``handoff_hint``: the handoff the user pasted it for (a guide step), used when
         the answer itself does not say (5.10.0: Markdown / JSON / ZIP answers often carry no manifest)."""
+        text = text.encode("utf-8", "replace").decode("utf-8")  # BF-006: lone surrogates -> U+FFFD
         if not text.strip():
             return RouteResult("rejected", message="The answer is empty.")
         rid = ""
