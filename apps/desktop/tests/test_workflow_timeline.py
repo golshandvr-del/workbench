@@ -115,6 +115,41 @@ class WorkflowTests(unittest.TestCase):
             self.assertNotIn("working", en.lower(), key)
             self.assertEqual(stage_label(key, "fa"), fa)
 
+    def test_bf057_dropped_and_rejected_prompts_offer_a_consistent_restart(self):
+        import json
+        from aiwb.v2.dashboard import attention_queue
+        from aiwb.v2.guide import Guide
+        for received in (False, True):
+            with self.subTest(received=received):
+                tid = _task(self.p, f"Restart{received}")
+                h = self.ctl.start_task(tid)
+                hid, aid = h["handoff_id"], h["attempt_id"]
+                if received:
+                    self.p.handoffs.ingest(hid, "reject-fixture", '<<<AIWB_HANDOFF>>>\n' + json.dumps({
+                        "handoff_id": hid, "attempt_id": aid, "task_id": tid, "outcome": "complete"}) + '\n<<<AIWB_END_HANDOFF>>>')
+                g = Guide(self.ctl)
+                g.perform(f"handoff:{hid}", "reject_handoff" if received else "abandon", reason="wrong work")
+                st = self.ctl.state()
+                self.assertEqual(st["attempts"][aid]["status"], "rejected" if received else "abandoned")
+                self.assertFalse(st["tasks"][tid].get("active_attempt_id"))
+                self.assertEqual(task_stage(st, tid)["stage"], "ready_to_prepare")
+                self.assertTrue(task_stage(st, tid)["user_action"])
+                self.assertEqual(self.ctl.start_warning(tid), "")
+                self.assertTrue(any(x["ref"] == tid and x["stage"] == "ready_to_prepare" for x in attention_queue(st)))
+                self.assertIn("prepare", [x["id"] for x in g.find(f"task:{tid}")["actions"]])
+                # Old saved states must project correctly without a migration/write.
+                with self.p.store.transaction("legacy dropped prompt fixture") as s:
+                    s["tasks"][tid]["active_attempt_id"] = aid
+                    s["attempts"][aid]["status"] = "prompt_ready"
+                    s["attempts"][aid]["workflow"] = {"context_request": "obsolete"}
+                before = self.ctl.state()
+                self.assertEqual(task_stage(before, tid)["stage"], "ready_to_prepare")
+                self.assertEqual(self.ctl.start_warning(tid), "")
+                self.assertEqual(self.ctl.state(), before)
+                fresh = self.ctl.start_task(tid)
+                self.assertNotEqual(fresh["attempt_id"], aid)
+                self.assertEqual(task_stage(self.ctl.state(), tid)["stage"], "prompt_prepared")
+
     def test_draft_and_done_and_cancelled(self):
         tid = _task(self.p, ready=False)
         self.assertEqual(self.stage(tid), "planned")
