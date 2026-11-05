@@ -119,5 +119,17 @@ class WalkTests(unittest.TestCase):
         self.assertEqual(self.node(), "F28")
 
 
+class OversizeAnswerTests(unittest.TestCase):
+    def test_bf084_oversize_answer_is_refused_without_made_up_inbox_id(self) -> None:
+        with tempfile.TemporaryDirectory() as d:
+            c = ProjectsController(Path(d), make_pipeline=wb.make_inbox_pipeline)
+            rev = c.state()["state_revision"]
+            r = c.route_answer("x" * (12 * 1024 * 1024 + 10))
+            self.assertEqual(r.kind, "rejected")
+            self.assertIn("12 MB", r.message)
+            self.assertNotIn("kept in the Inbox", r.message)
+            self.assertEqual(c.state()["state_revision"], rev)
+
+
 if __name__ == "__main__":
     unittest.main()
