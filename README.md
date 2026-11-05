@@ -19,8 +19,8 @@ preserved verbatim in `docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Shor
 These are repair-stage targets, **not released application versions**; Desktop remains 5.20.0.
 
 - Repaired and regression-tested Desktop findings: **BF-001, BF-002, BF-003, BF-004, BF-007,
-  BF-009, BF-010, BF-014, BF-026, BF-028, BF-051, BF-095, BF-104, BF-105, BF-106**.
-  This is **15/106 (14.15%)** by finding count, not effort or release readiness.
+  BF-009, BF-010, BF-014, BF-026, BF-028, BF-043, BF-051, BF-095, BF-104, BF-105, BF-106,
+  BF-108, BF-109**. This is **18/106 (16.98%)** by finding count, not effort or release readiness.
 - Quick and guided deliveries share full-set filesystem preflight, immutable flushed backups,
   exact preview hashes and reverse rollback on file or state-save exceptions. Guided acceptance
   commits with integration; Restore is retryable and preserves later user edits. Empty files are
@@ -29,14 +29,20 @@ These are repair-stage targets, **not released application versions**; Desktop r
   **not** a power-loss transaction across the filesystem and application state; hostile concurrent
   path replacement is not claimed solved. New source module is `aiwb/v2/file_transaction.py`.
 - S5 GUI harness cancels timers through their registering widgets, with permanent ownership tests.
-- Final unit suite: **949 tests OK, 10 skipped**; static gate: **0 undefined names**. Final-source
-  Quick and guided S2 Tk scenarios PASS. Full GUI outcome and run timing are in
-  [session notes](docs/roadmap/SESSION_NOTES.md).
-- **91 independent findings remain OPEN** (5 S1 / 35 S2 / 51 S3). BF-008 stays OPEN: Desktop
-  Windows-path validation and the Mobile Files.safePath port were updated, but actual Windows
-  and Android/Kotlin validation are pending (no Android SDK/Kotlin compiler in this sandbox).
-  Next: those platform gates, missing staged deliveries/repair, remaining lifecycle findings,
-  and project-scoped CI configuration/evidence. The program is not claimed bug-free.
+- All Desktop answer routes now share staging and smart checks (including Companion and classic import).
+  Partial repair publishes complete files before excluding them from the next request; troubleshooting
+  retains good payloads and detects missing code. BF-078/079 remain OPEN for their unchanged Mobile halves.
+- Build Center preferences stay with the originating project/binding. Sync & Build captures project,
+  repository, task revision and attempt, independently checks local HEAD/branch/origin on completion,
+  and never applies A's CI evidence to active project B or to every task. Legacy operations or operations
+  without an explicitly identifiable V2 task intentionally create no automatic task evidence.
+- Final source unit suite: **959 tests OK, 10 skipped**; static gate: **0 undefined names**.
+  No GUI was run in session 31 (xvfb-run absent); session 30 Tk results are historical, not a final-source
+  GUI gate. Details are in [session notes](docs/roadmap/SESSION_NOTES.md).
+- **88 independent findings remain OPEN** (4 S1 / 33 S2 / 51 S3). Actual Windows and Android/Kotlin gates,
+  BF-008 cross-platform validation, Mobile BF-076/078/079, settings recovery BF-016, and other roadmap
+  lifecycle/intake/persistence/UI findings remain. No Mobile source was changed this session.
+  The program is not claimed bug-free.
 - No tag, release or deployment was performed. Existing installed releases do not receive these
   source repairs until a later release passes its gates. Use the local test commands below;
   real GitHub dispatch/create/release endpoints were not used for reproductions.
