@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 38 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105) | 0 |
+| S2 | 39 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103, 105, 106) | 0 |
 | S3 | 54 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102, 104) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
@@ -2300,6 +2300,18 @@ re-plan, like the classic apply.
 **Impact:** a failed retry destroys the user's earlier valid copy rather than leaving it intact. Re-downloading the original artifact may recover it while GitHub retains it, hence S2, but the filesystem loss is real. This does not require bypassing the integrity check: the check detects the error but commits/destructively cleans up in the wrong order.
 
 **Expected:** perform every integrity check on the temporary file before publishing it. On any failure delete only that attempt's temporary file and leave an existing final target byte-for-byte unchanged. Decide replacement policy explicitly and use unique temporary filenames for simultaneous attempts. Add a regression case with a pre-existing valid final file.
+
+### BF-106 · S2 · OPEN — long artifact names truncate away the unique ID and .zip suffix, so different artifacts overwrite each other and cached verification becomes false
+
+**Where:** `aiwb/github/artifacts.py`: `download_artifact()` passes `f"{artifact.name}-{artifact.artifact_id}.zip"` into `sanitize_filename()`, which returns `cleaned[:180]`. A long name consumes the entire limit, removing the disambiguating ID and ZIP extension. Names up to 256 characters are retained by `list_artifacts()`. Both final and .part names then collide. `ArtifactsDialog.downloads` indexes results by ID, but their paths can be identical.
+
+**Reproduced locally with existing fake transports:** use `name="x"*200`, artifact IDs 11 and 12, and ZIPs from `make_zip([("a.txt", b"first")])` / `make_zip([("a.txt", b"other")])`. Supply each archive's correct size and SHA-256 digest, download them sequentially to the same TemporaryDirectory. Observed: both downloads succeed and both `DownloadResult.verified` values are **True**, but `first.path == second.path`; only one file remains, with no extension. Hashing `first.path` now differs from `first.sha256`. The second download silently destroyed the first artifact's bytes.
+
+**Related extraction failure:** for a no-extension result, `res.path.with_suffix("")` in the UI equals the archive's own path, so Extract safely is refused because the destination already exists. Even where an earlier dot leaves a suffix, ID collision/provenance loss remains.
+
+**Impact:** two legitimate artifacts with long shared prefixes cannot coexist; selecting the first row can operate on the second archive while still displaying the first row's saved verification metadata. Concurrent attempts also share a temporary path. This is independent of BF-105: both downloads here pass all integrity checks.
+
+**Expected:** sanitize/truncate only the human-readable stem, reserve space for `-<artifact_id>.zip`, and keep the ID/extension unconditionally. Use unique attempt temporary names and verify existing stored paths before claiming cached verification or extraction provenance. Add two-long-name-artifact and extraction-target regression cases.
 
 ## Checked and OK
 
