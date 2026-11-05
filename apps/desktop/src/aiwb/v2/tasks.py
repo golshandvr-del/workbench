@@ -232,7 +232,9 @@ class TaskService:
     def _refresh_readiness(s: dict[str, Any]) -> None:
         """Ready ⇄ blocked when prerequisites change; never touches started/terminal tasks."""
         for t in s["tasks"].values():
-            if t["status"] not in ("ready", "blocked") or not t.get("depends_on"):
+            # Removing the last dependency is itself a readiness change. Keep
+            # manual blocks below, but do not strand dependency-blocked tasks.
+            if t["status"] not in ("ready", "blocked"):
                 continue
             if t["status"] == "blocked" and not str(t.get("blocked_reason", "")).startswith(("waiting for", "prerequisite")):
                 continue
