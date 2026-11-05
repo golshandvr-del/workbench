@@ -227,7 +227,7 @@ class IntegrateTests(unittest.TestCase):
         h = self.c.state()["handoffs"][self.step()["ref"]]
         self.assertIn("missing_deliverable", [p["code"] for p in h.get("diagnosis", [])])
         action = next(a for a in self.step()["actions"] if a["id"] == "accept_handoff")
-        self.assertIn("reason", action.get("inputs", []))
+        self.assertIn("reason", action["needs"])
 
     def test_bf043_unstaged_legacy_delivery_refuses_acceptance(self) -> None:
         from aiwb.v2.models import ModelError
