@@ -3,7 +3,15 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 36 / intake, context and helper repairs saved (2026-11-05)
+## Current resume checkpoint — session 37 / nine more findings repaired in code (2026-11-05)
+
+- Recovery: read the whole session-36 transcript; restored main=origin/main=75d8a976 using the owner token in the git credential store only (never in source). Every change below is its own single-file add -> commit -> push.
+- Repaired in code with regression tests (catalog headings and counts NOT yet updated; update BUG_FINDING.md, README.md and ROADMAP.md counts next, one file per checkpoint): BF-006 (lone surrogates replaced in route_answer), BF-040 (paste box checks a manager proposal with the real reader), BF-056 (role change rebuilds purpose/instructions/task types), BF-062 (secret filter matches random-looking values only; long ids allowed in chat links), BF-067 (task title line breaks collapsed), BF-083 (object decision_requests kept as text; Mobile Project.kt NOT done), BF-084 (over-12MB answer refused honestly), BF-086 (oldest candidate dropped at the 30 limit), BF-098 (create_project_folder refuses empty/relative parent, now fully closed).
+- Full Desktop suite after the last code change: 1017 tests OK, 10 skipped. No Mobile JVM run this session; no GUI/Windows/Android gate.
+- Expected catalog after updating: 63/106 FIXED (about 59.4%), 43 OPEN. BF-045/046 remain partial. Mobile ports for BF-083 (core/Project.kt) remain open.
+- Resume: verify clean HEAD=origin/main, update catalog/README/ROADMAP counts, then continue with the remaining open findings (e.g. BF-080, 085, 005, 019, 021, 023, 096).
+
+## Previous resume checkpoint — session 36 / intake, context and helper repairs saved (2026-11-05)
 
 - Recovery: read all 1717 lines of supplied session-35 transcript, including abbreviated historical outputs. Managed GitHub setup selected golshandvr-del/workbench. Restored clean main=origin/main=f9914f47 in /home/user/webapp. No exposed user token copied into source, commands or remotes. Every subsequent changed file had immediate add -> commit -> successful push before another edit/test. Each commit changes exactly one file.
 - Latest owner instruction explicitly requests wrap-up, no new subtasks. Initial request was 50 bugs this session; **23 independent catalog findings were completed, NOT 50**. Three more partial repairs remain OPEN. Do not inflate bug count by counting Desktop/Mobile ports, tests or commits separately.
