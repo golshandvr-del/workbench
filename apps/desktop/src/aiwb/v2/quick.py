@@ -18,6 +18,9 @@ import hashlib
 import json
 import os
 import shutil
+import uuid
+
+from .file_transaction import FileTransactionError, checked_path, preflight, transaction
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -241,14 +244,18 @@ def read_answer(text: str = "", *, zip_bytes: bytes | None = None, zip_name: str
 
 def plan(root: Path, files: list[dict[str, str]]) -> list[dict[str, Any]]:
     """Each delivered file against the folder: ``status`` new / changed / same, ``diff`` (unified, text). Reading only."""
-    root = Path(root)
+    root = Path(root).resolve()
     out = []
-    for f in files:
+    try:
+        snapshots = preflight(root, files)
+    except (OSError, ValueError) as exc:
+        raise QuickError(str(exc)) from exc
+    for f, snapshot in zip(files, snapshots):
         target = root / f["path"]
         new = f["content"]
         if target.is_file():
             try:
-                old = target.read_text(encoding="utf-8")
+                old = snapshot["before"].decode("utf-8")
             except (UnicodeDecodeError, OSError):
                 old = None
             if old is not None and (old == new or old.rstrip("\n") == new.rstrip("\n")):
@@ -261,6 +268,7 @@ def plan(root: Path, files: list[dict[str, str]]) -> list[dict[str, Any]]:
             status = "new"
             diff = "".join(difflib.unified_diff([], new.splitlines(True), "/dev/null", f"b/{f['path']}"))
         out.append({"path": f["path"], "status": status, "diff": diff, "content": new,
+                    "before_sha": snapshot["before_sha"],
                     "lines": new.count("\n") + (1 if new and not new.endswith("\n") else 0)})
     return out
 
@@ -284,35 +292,25 @@ def apply(root: Path, items: list[dict[str, Any]], *, task: str = "") -> dict[st
     todo = [i for i in items if i["status"] in ("new", "changed")]
     if not todo:
         raise QuickError("Nothing to apply: every file is already the same.")
-    for i in todo:
-        if answer_files.safe_path(i["path"]) != i["path"]:
-            raise QuickError(f"Unsafe path refused: {i['path']}")
+    if any("before_sha" not in i for i in todo):
+        raise QuickError("The preview is missing its original file hashes — review again.")
     data = _load(root)
-    aid = f"A-{len(data['applies']) + 1:04d}"
+    number = len(data["applies"]) + 1
+    # A failed/crashed attempt owns its backup forever; never reuse that ID.
+    while (_dir(root) / "backups" / f"A-{number:04d}").exists():
+        number += 1
+    aid = f"A-{number:04d}"
     backup = _dir(root) / "backups" / aid
-    rec_files = []
-    for i in todo:  # back up everything first, write nothing before the backup is complete
-        target = root / i["path"]
-        existed = target.is_file()
-        if existed:
-            b = backup / i["path"]
-            b.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(target, b)
-        rec_files.append({"path": i["path"], "existed": existed,
-                          "after_sha": _sha(i["content"].encode("utf-8"))})
-    written = []
-    for i in todo:
-        target = root / i["path"]
-        target.parent.mkdir(parents=True, exist_ok=True)
-        tmp = target.with_name(target.name + ".aiwb-tmp")
-        tmp.write_bytes(i["content"].encode("utf-8"))
-        os.replace(tmp, target)
-        written.append(i["path"])
-    rec = {"apply_id": aid, "at": _now(), "task": (task or "")[:500], "files": rec_files, "written": written,
-           "restored_at": ""}
-    data["applies"].append(rec)
-    _save(root, data)
-    return rec
+    try:
+        with transaction(root, todo, backup) as rows:
+            rec_files = [{k: row[k] for k in ("path", "existed", "before_sha", "after_sha")} for row in rows]
+            rec = {"apply_id": aid, "at": _now(), "task": (task or "")[:500], "files": rec_files,
+                   "written": [r["path"] for r in rows], "restored_at": ""}
+            data["applies"].append(rec)
+            _save(root, data)
+        return rec
+    except (OSError, FileTransactionError) as exc:
+        raise QuickError(str(exc)) from exc
 
 
 def last_apply(root: Path) -> dict[str, Any] | None:
@@ -335,29 +333,37 @@ def restore(root: Path, apply_id: str = "") -> dict[str, Any]:
         raise QuickError("There is no apply to restore.")
     rec = recs[-1]
     backup = _dir(root) / "backups" / rec["apply_id"]
-    restored, kept = [], []
-    for f in rec["files"]:
-        target = root / f["path"]
-        current = target.read_bytes() if target.is_file() else None
-        if current is not None and _sha(current) != f["after_sha"]:
-            kept.append(f["path"])  # edited after the apply: never overwritten
-            continue
-        if f["existed"]:
-            src = backup / f["path"]
-            if not src.is_file():
+    restored, kept, changes = [], [], []
+    try:
+        # Preflight ALL restore destinations and backup sources before any write.
+        for f in rec["files"]:
+            target = checked_path(root, f["path"])
+            if target.exists() and not target.is_file():
+                raise FileTransactionError(f"Destination is not a file: {f['path']}")
+            current = target.read_bytes() if target.exists() else None
+            old = None
+            if f["existed"]:
+                src = checked_path(root, (backup / f["path"]).relative_to(root).as_posix(), internal=True)
+                old = src.read_bytes()
+                if f.get("before_sha") and _sha(old) != f["before_sha"]:
+                    raise FileTransactionError(f"Backup changed: {f['path']}")
+            # Also makes retry after a legacy partial restore truthful.
+            if current == old:
+                restored.append(f["path"])
+                continue
+            if current is None or _sha(current) != f["after_sha"]:
                 kept.append(f["path"])
                 continue
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(src, target)
-        elif current is not None:
-            target.unlink()
-        restored.append(f["path"])
-    for r in data["applies"]:
-        if r["apply_id"] == rec["apply_id"]:
-            r["restored_at"] = _now()
-            r["kept_on_restore"] = kept
-    _save(root, data)
-    return {"apply_id": rec["apply_id"], "restored": restored, "kept": kept}
+            changes.append({"path": f["path"], "bytes": old, "before_sha": _sha(current)})
+            restored.append(f["path"])
+        restore_backup = _dir(root) / "restore-backups" / uuid.uuid4().hex
+        with transaction(root, changes, restore_backup):
+            rec["restored_at"] = _now()
+            rec["kept_on_restore"] = kept
+            _save(root, data)
+        return {"apply_id": rec["apply_id"], "restored": restored, "kept": kept}
+    except (OSError, FileTransactionError) as exc:
+        raise QuickError(str(exc)) from exc
 
 
 # --------------------------------------------------------------------------- Quick → Guided
