@@ -26,12 +26,12 @@ Goal: find problems **before** the owner shows the app to friends — especially
 
 | Severity | Open | Fixed |
 |---|---|---|
-| S1 | 4 (BF-016, BF-076, BF-078, BF-079) | 7 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-043) |
+| S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
 | S2 | 33 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 8 (BF-001, BF-014, BF-026, BF-051, BF-105, BF-106, BF-108, BF-109) |
 | S3 | 51 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 3 (BF-028, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
-**Remaining top risks:** BF-016 settings recovery; Mobile BF-076 and remaining Mobile halves of BF-078/BF-079; BF-008 Windows/Android gates; and the other catalogued lifecycle, intake, persistence and UI findings. File exception rollback is not a database/filesystem power-loss transaction; crash journals remain for manual recovery.
+**Remaining top risks:** BF-008 actual Windows/Android gates; remaining lifecycle, intake, persistence and UI findings. Session-32 fixes have Desktop unit and real Kotlin/JVM regression evidence, NOT an Android APK/device/instrumentation or frozen full GUI pass. File exception rollback is not a database/filesystem power-loss transaction; backups/journals remain for manual recovery.
 
 ## Findings
 
@@ -344,7 +344,9 @@ are rare (servers like OpenAI / Ollama send raw UTF-8, which is fine up to the l
 **Expected:** read up to the limit and, if the limit was hit, say *"the helper AI answer is too long"*; catch
 `http.client.HTTPException` together with `OSError` as a connection problem.
 
-### BF-016 · S1 · OPEN — a `settings.json` that is not UTF-8 stops the app from starting at all
+### BF-016 · S1 · FIXED (bab16563) — a `settings.json` that is not UTF-8 stops the app from starting at all
+
+**Repair evidence — session 32:** Settings recovery reads raw bytes before UTF-8-sig decode; undecodable input now uses the corrupt-JSON recovery path. A unique exclusive flushed/fsynced backup preserves exact UTF-16, Windows-1252 or invalid bytes before removing the unchanged original. Tests reproduce the startup exception on the old source and verify defaults/retry, byte-exact backups and same-second repeated corruption. Final Desktop suite: 961 tests OK, 10 skipped. Actual Windows application startup/GUI remains a release gate.
 
 **Where:** `AI_Workbench.py` `load_settings_with_recovery()`: `path.read_text(encoding="utf-8-sig")` sits inside
 `try … except OSError`; a `UnicodeDecodeError` (a `ValueError`, not an `OSError`) escapes. The corrupt-file backup
@@ -1710,7 +1712,9 @@ skip `__MACOSX`, `.DS_Store`, any `.git` / `.workbench` part, binaries and sensi
 skipped; enforce a per-entry limit while reading; keep a backup of overwritten files and record a `files_imported`
 event; show *"12 files imported, 3 replaced (backup kept), 5 skipped: …"*.
 
-### BF-076 · S1 · OPEN — phone standalone mode: an answer pasted into the always-visible *Paste an AI answer → Read answer* box is never staged, so *Accept the delivery* writes **no file** (phone twin of BF-043)
+### BF-076 · S1 · FIXED (dd7a2cfa) — phone standalone mode: an answer pasted into the always-visible *Paste an AI answer → Read answer* box is never staged, so *Accept the delivery* writes **no file** (phone twin of BF-043)
+
+**Repair evidence — session 32:** Project.routeAnswer now stages and diagnoses the canonical linked answer for standalone Read answer and guided paste alike; Guide consumes persisted checks without a second preview. Cut-off block/fence diagnostics create the shared Home continuation prompt for both routes (26b880d8, 7b51915d, 05f20187). Unstaged legacy responses cannot integrate. Real Kotlin/JVM tests assert on-disk accepted bytes, staging/diagnosis and standalone/guided cut-off prompts. Final full Mobile JVM suite: 108 tests OK using tools/test_mobile_jvm.py. This validates pure JVM logic, not Activity rendering, Android lint, APK compilation or on-device filesystem behaviour; those release gates remain pending.
 
 **Found by code review** (no Android SDK in the sandbox; the Kotlin path is short and direct).
 
@@ -1767,7 +1771,9 @@ device on the desktop and an unpaired phone.
 `configChanges` for this simple screen); add texts for `pairing_used` / `denied`; on the desktop, drop a pending
 request whose phone stopped polling, or show *"waiting since …"* next to it.
 
-### BF-078 · S1 · OPEN — *Ask only for what is missing* (repair) accepts the partial delivery but never writes its files, while the repair prompt tells the AI **not** to resend them: the files that did arrive are lost for good (desktop and phone)
+### BF-078 · S1 · FIXED (f5c90e35) — *Ask only for what is missing* (repair) accepts the partial delivery but never writes its files, while the repair prompt tells the AI **not** to resend them: the files that did arrive are lost for good (desktop and phone)
+
+**Repair evidence — session 32:** Mobile repair now integrates complete partial files BEFORE creating the missing-only prompt. Guide acceptance and file integration share one state transaction via resolveHandoffState; full-set preflight, immutable unique flushed backups, checked replacement and reverse rollback preserve the open handoff/payload on failure. State publication no longer deletes the last state on failed rename (19200653). Tests verify actual repaired bytes, blocked-backup refusal, real state-rename failure with rollback, retry without overwriting the first backup, and corrected retained-file overrides. Desktop repair remains covered by its earlier regressions. Final Mobile JVM: 108 tests OK; Desktop: 961 OK / 10 skipped. No Android device/APK gate is claimed.
 
 **Partial repair — session 31:** Desktop now integrates partial files and acceptance through the shared rollback boundary before asking only for missing items. The repair prompt names the actual retained paths. Tests verify on-disk bytes, integrated_files and refusal without closing the handoff when publication/state writes fail. Mobile Guide.kt remains unchanged: this cross-platform finding stays OPEN.
 
@@ -1794,7 +1800,9 @@ code, and the user blames the AI.
 *"1 file kept (src/core/a.txt); asking only for: …"*. Add the "files on disk" check to the E2E guide test
 (`test_v2_guide.py` takes the repair path but only checks the prompt text). Same fix in the phone's `Guide.kt`.
 
-### BF-079 · S1 · OPEN — *Troubleshoot* drops the good files of the rejected answer; the prompt says *"Fix ONLY these problems … do not change anything else"*, so a correct fix answer carries no files and is approved with **nothing on disk** (desktop and phone)
+### BF-079 · S1 · FIXED (113cf9d4) — *Troubleshoot* drops the good files of the rejected answer; the prompt says *"Fix ONLY these problems … do not change anything else"*, so a correct fix answer carries no files and is approved with **nothing on disk** (desktop and phone)
+
+**Repair evidence — session 32:** Mobile troubleshooting carries complete safe staged files and original preview hashes into the next handoff, discloses retained paths in the prompt and permits explicit replacement. Manifest-only corrected delivery includes good retained code; a fresh file-scoped answer without code receives missing_deliverable rather than clean acceptance. Tests verify preserved on-disk code after manifest-only scope correction, replacement precedence, refusal of stale retained previews while preserving user CRLF edits, and failure/retry. Mobile staging also reports size/truncation/path conflicts instead of silently dropping them; dangling link regression found and fixed in c1d936e1. Final full JVM suite: 108 OK. Existing Desktop repairs remain tested. Android rendering/device/instrumentation gates are still outstanding.
 
 **Partial repair — session 31:** Desktop troubleshooting carries complete, safe staged payloads into the new handoff; corrected files replace matching retained paths. Original preview hashes remain checked and the prompt discloses retained files. Manifest-only file-scoped tasks without prior published repair files produce missing_deliverable rather than clean acceptance. Regression proves a manifest-only scope fix still writes the retained good code. Mobile equivalents remain unchanged, so this finding stays OPEN.
 
