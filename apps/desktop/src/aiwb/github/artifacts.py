@@ -430,7 +430,24 @@ class DownloadResult:
 
     @property
     def verified(self) -> bool:
+        """Whether the downloaded bytes matched the reference at download time."""
         return self.verification == "matched"
+
+    def assert_current(self) -> None:
+        """Do not reuse cached provenance after local replacement or modification."""
+        digest = hashlib.sha256()
+        size = 0
+        try:
+            with self.path.open("rb") as source:
+                for chunk in iter(lambda: source.read(256 * 1024), b""):
+                    size += len(chunk)
+                    if size > self.size:
+                        break
+                    digest.update(chunk)
+        except OSError:
+            raise GitHubApiError("integrity", "The downloaded artifact is missing or cannot be read; download it again.") from None
+        if size != self.size or digest.hexdigest() != self.sha256:
+            raise GitHubApiError("integrity", "The local artifact changed after download; cached verification no longer applies. Download it again.")
 
 
 def _iso_to_epoch(value: str) -> float | None:
