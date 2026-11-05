@@ -175,6 +175,15 @@ def build_prompt(root: Path, task: str, fmt: str = "aiwb", include: list[str] | 
         if not p or target is None or not target.is_file():
             skipped.append(f"{rel} (not a file of this project)")
             continue
+        # BF-030: secrets and files behind a link to outside the project are never pasted into a chat
+        from .context_step import is_sensitive
+        try:
+            inside = target.resolve().is_relative_to(root)
+        except (OSError, ValueError):
+            inside = False
+        if not inside or is_sensitive(p) or is_sensitive(target.resolve().name):
+            skipped.append(f"{p} (secret file or link outside the project — not sent)")
+            continue
         size = target.stat().st_size
         if size > MAX_INCLUDE_BYTES or total + size > MAX_INCLUDE_TOTAL:
             skipped.append(f"{p} (too big to include — ask for the part you need)")
