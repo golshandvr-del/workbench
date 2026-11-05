@@ -131,9 +131,17 @@ object Files {
         } finally { tmp.delete() }
     }
 
+    private fun requirePublishable(state: Obj, h: Obj) {
+        val task = State.require(state, "tasks", Json.str(h["task_id"]))
+        if (task["status"] in setOf("cancelled", "superseded") || h["status"] in setOf("rejected", "superseded"))
+            throw ModelError("This delivery is closed or its task is cancelled/superseded; create a new task instead")
+    }
+
     /** Exception-atomic files + acceptance. Not a power-loss transaction or hostile concurrent-writer guarantee. */
     fun integrate(store: ProjectStore, handoffId: String, accept: ((Obj) -> Unit)? = null): List<String> {
-        val h = State.require(store.load(), "handoffs", handoffId)
+        val state = store.load()
+        val h = State.require(state, "handoffs", handoffId)
+        requirePublishable(state, h)
         if (h["source_response_id"] != null && "staged_files" !in h)
             throw ModelError("The files of this answer were not staged; paste it again")
         val blocking = Json.list(h["staging_problems"]).map { Json.obj(it) }.filter {
@@ -174,8 +182,8 @@ object Files {
             }
             store.transaction("integrate files") { s ->
                 val hh = State.require(s, "handoffs", handoffId)
-                if (hh["staged_files"] != h["staged_files"] || hh["source_response_id"] != h["source_response_id"])
-                    throw ModelError("delivery changed during integration")
+                requirePublishable(s, hh)
+                if (hh != h) throw ModelError("delivery changed during integration")
                 accept?.invoke(s)
                 hh["staged_files"] = ArrayList<Any?>(staged.map { LinkedHashMap(it).apply { remove("content") } })
                 hh.remove("retained_files")
