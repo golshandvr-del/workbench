@@ -31,6 +31,7 @@ import stat
 import tempfile
 import time
 import zipfile
+import zlib
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Callable, Iterable, Iterator, Mapping
@@ -591,14 +592,21 @@ class GitHubDispatchService:
         location = next((str(v) for k, v in resp.headers.items() if str(k).casefold() == "location"), "")
         if not _is_trusted_download_host(location):
             raise GitHubApiError("invalid_response", "GitHub returned an unexpected download location; refusing to follow it.")
-        safe_name = sanitize_filename(f"{artifact.name or 'artifact'}-{artifact.artifact_id}.zip")
-        final = dest_dir / safe_name
-        part = dest_dir / (safe_name + ".part")
+        # Truncate only the display stem; the immutable ID and extension are not
+        # optional. Bound UTF-8 bytes as well as Windows characters (Persian names).
+        suffix = f"-{artifact.artifact_id}.zip"
+        stem = sanitize_filename(artifact.name or "artifact")
+        stem = stem.encode("utf-8")[:180 - len(suffix)].decode("utf-8", errors="ignore").rstrip(" .") or "artifact"
+        final = dest_dir / (stem + suffix)
+        part: Path | None = None
         digest = hashlib.sha256()
         size = 0
         started = time.monotonic()
         try:
-            with open(part, "wb") as fh:
+            # Each attempt owns its temporary file, even for simultaneous retries.
+            with tempfile.NamedTemporaryFile(mode="wb", prefix=".aiwb-download-", suffix=".part",
+                                             dir=dest_dir, delete=False) as fh:
+                part = Path(fh.name)
                 try:
                     for chunk in self._stream(location, self.client.timeout_seconds):
                         if cancel():
@@ -624,22 +632,20 @@ class GitHubDispatchService:
                 raise GitHubApiError("invalid_response", f"Downloaded size ({size}) differs from the size GitHub reported ({artifact.size_in_bytes}).")
             if not zipfile.is_zipfile(part):
                 raise GitHubApiError("invalid_response", "The downloaded file is not a valid ZIP archive.")
+            sha = digest.hexdigest()
+            ref = artifact.sha256_reference
+            if ref is not None and ref != sha:
+                raise GitHubApiError("integrity", "SHA-256 of the download does not match the digest GitHub reported; the temporary download was removed. Any previous copy was kept.")
+            verification = "computed_only" if ref is None else "matched"
+            # Publish only validated bytes. Failure cleanup must never touch final.
             os.replace(part, final)
         except BaseException:
-            try:
-                part.unlink()
-            except OSError:
-                pass
+            if part is not None:
+                try:
+                    part.unlink()
+                except OSError:
+                    pass
             raise
-        sha = digest.hexdigest()
-        ref = artifact.sha256_reference
-        verification = "computed_only" if ref is None else ("matched" if ref == sha else "mismatch")
-        if verification == "mismatch":
-            try:
-                final.unlink()
-            except OSError:
-                pass
-            raise GitHubApiError("integrity", "SHA-256 of the download does not match the digest GitHub reported; the file was removed.")
         return DownloadResult(artifact.artifact_id, final, size, sha, verification, ref)
 
 
@@ -765,6 +771,9 @@ def safe_extract_zip(zip_path: Path, dest_dir: Path, limits: ExtractLimits = Ext
                         out.write(chunk)
                 written.append(target.relative_to(root))
         os.replace(staging, dest_dir)
+    except (zipfile.BadZipFile, zlib.error, EOFError, NotImplementedError) as exc:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise UnsafeArchiveError("The ZIP archive is corrupt or uses unsupported compression; nothing was extracted.") from exc
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
