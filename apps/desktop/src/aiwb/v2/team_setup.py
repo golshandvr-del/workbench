@@ -218,6 +218,12 @@ def _write_team(s: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, list
     out: dict[str, list[str]] = {"created": [], "updated": [], "removed": [], "disabled": []}
     agents = s["agents"]
     ids = plan_ids(rows, set(agents))
+    removing = {aid for aid, a in agents.items() if a.get("enabled", True) and aid not in ids and aid != PM_ID}
+    orphaned = sorted(tid for tid, t in s["tasks"].items() if t.get("owner_agent_id") in removing
+                      and t.get("status") not in ("done", "cancelled", "superseded"))
+    if orphaned:
+        raise ModelError("Reassign open tasks before removing their AI: " + ", ".join(orphaned)
+                         + ". Choose an enabled worker in the task editor, then save the team again.")
     refs = _references(s)
     for aid, row in zip(ids, rows):
         if aid in agents:
