@@ -24,6 +24,47 @@ class DiagnoseTest {
 
     private fun strs(a: JSONArray?): List<String> = if (a == null) emptyList() else (0 until a.length()).map { a.getString(it) }
 
+    @Test fun rawBodiesKeepFencesWhitespaceAndUnicode() {
+        val body = "\n```bash\necho می\u200cروم 👩\u200d💻\n```\n\nThen run.\n"
+        val text = "<<<AIWB_FILE path=\"README.md\" body=\"raw\">>>\n$body\n<<<AIWB_END_FILE>>>"
+        val parsed = Diagnose.parseFiles(text)
+        assertEquals(false, parsed.second)
+        assertEquals(body, parsed.first.single().body)
+        assertEquals(true, parsed.first.single().fenceBalanced)
+        val damaged = text.replace("path=\"README.md\"", "path=“README.md”")
+        assertTrue(io.github.golshandvr.aiworkbench.core.Normalize.normalize(damaged).text.contains(body))
+    }
+
+    @Test fun unsupportedActionsAreErrorsNotWrites() {
+        for (action in listOf("delete", "move", "rename", "unknown")) {
+            val text = "<<<AIWB_FILE path=\"a.txt\" action=\"$action\">>>\n<<<AIWB_END_FILE>>>"
+            assertEquals(action, Diagnose.parseFiles(text).first.single().action)
+            assertTrue(Diagnose.diagnose(text).problems.any { it.code == "unsupported_action" })
+        }
+    }
+
+    @Test fun brokenBoundaryDoesNotSwallowNextFile() {
+        val text = "<<<AIWB_FILE path=\"a.txt\">>>\na\n<<<AIWB_FILE path=\"b.txt\">>>\nb\n<<<AIWB_END_FILE>>>"
+        val parsed = Diagnose.parseFiles(text)
+        assertEquals(true, parsed.second)
+        assertEquals(listOf("a.txt", "b.txt"), parsed.first.map { it.path })
+        assertEquals(false, parsed.first[0].complete)
+        assertEquals(true, parsed.first[1].complete)
+        assertEquals("a", parsed.first[0].body)
+    }
+
+    @Test fun scopeAndExpectedFilesUseNormalizedPaths() {
+        val text = "<<<AIWB_FILE path=\"src\\a.py\">>>\n````\npass\n````\n<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n{}\n<<<AIWB_END_HANDOFF>>>"
+        val result = Diagnose.diagnose(text, allowedPaths = listOf("./src/"), expectedPaths = listOf("src/a.py"))
+        assertTrue(result.problems.toString(), result.acceptable)
+    }
+
+    @Test fun repairedJsonPreservesSmartQuoteLiteral() {
+        val text = "{\"value\": \"" + "Click “Save”, then go" + "\",}"
+        val clean = io.github.golshandvr.aiworkbench.core.Normalize.normalizeJsonText(text)
+        assertEquals("Click “Save”, then go", io.github.golshandvr.aiworkbench.core.StrictJson.parse(clean.text).let { (it as Map<*, *>)["value"] })
+    }
+
     @Test fun corpusMatchesDesktop() {
         val cases = corpus().getJSONArray("cases")
         assertTrue(cases.length() >= 17)
