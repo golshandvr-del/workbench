@@ -157,6 +157,93 @@ class ApplyRestoreTests(Base):
         self.assertFalse((self.root / "src/app.py").exists())
         self.assertIn("edited by hand", (self.root / "src/util.py").read_text(encoding="utf-8"))
 
+    def test_bf095_stale_preview_refuses_all_writes(self):
+        for existed in (False, True):
+            with self.subTest(existed=existed):
+                a = self.root / "a.txt"
+                if existed:
+                    a.write_bytes(b"old\r\n")
+                elif a.exists():
+                    a.unlink()
+                items = quick.plan(self.root, [{"path": "a.txt", "content": "AI\n"},
+                                               {"path": "new.txt", "content": "new"}])
+                a.write_bytes(b"user edit\r\n")
+                with self.assertRaisesRegex(quick.QuickError, "preview"):
+                    quick.apply(self.root, items)
+                self.assertEqual(a.read_bytes(), b"user edit\r\n")
+                self.assertFalse((self.root / "new.txt").exists())
+
+    def test_bf007_write_or_state_failure_rolls_back_and_retry_preserves_original(self):
+        from unittest.mock import patch
+        for failure in ("write", "state"):
+            with self.subTest(failure=failure):
+                a = self.root / "a.txt"
+                a.write_bytes(b"original\r\n")
+                items = quick.plan(self.root, [{"path": "a.txt", "content": "AI"},
+                                               {"path": "new.txt", "content": "new"}])
+                replace = quick.os.replace
+                def fail_second(src, dst):
+                    if Path(dst) == self.root / "new.txt":
+                        raise PermissionError("locked")
+                    return replace(src, dst)
+                context = (patch.object(quick.os, "replace", side_effect=fail_second) if failure == "write"
+                           else patch.object(quick, "_save", side_effect=OSError("disk full")))
+                with context, self.assertRaises(quick.QuickError):
+                    quick.apply(self.root, items)
+                self.assertEqual(a.read_bytes(), b"original\r\n")
+                self.assertFalse((self.root / "new.txt").exists())
+                self.assertFalse(list(self.root.glob("**/*.aiwb-tmp")))
+                rec = quick.apply(self.root, quick.plan(self.root, [{"path": "a.txt", "content": "retry"}]))
+                backup = self.root / ".workbench/quick/backups" / rec["apply_id"] / "a.txt"
+                self.assertEqual(backup.read_bytes(), b"original\r\n")
+                quick.restore(self.root)
+                self.assertEqual(a.read_bytes(), b"original\r\n")
+
+    def test_bf026_links_are_refused_on_preview_apply_and_restore(self):
+        with tempfile.TemporaryDirectory() as outside:
+            target = Path(outside) / "a.txt"
+            target.write_bytes(b"outside")
+            link = self.root / "lib"
+            try:
+                link.symlink_to(outside, target_is_directory=True)
+            except OSError as exc:
+                self.skipTest(f"symlink unavailable: {exc}")
+            with self.assertRaises(quick.QuickError):
+                quick.plan(self.root, [{"path": "lib/a.txt", "content": "AI"}])
+            link.unlink()
+            link.mkdir()
+            quick.apply(self.root, quick.plan(self.root, [{"path": "lib/a.txt", "content": "AI"}]))
+            (link / "a.txt").unlink()
+            link.rmdir()
+            link.symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(quick.QuickError):
+                quick.restore(self.root)
+            self.assertEqual(target.read_bytes(), b"outside")
+
+    def test_bf051_conflicts_refused_before_any_write(self):
+        for paths in (("src", "src/a.py"), ("A.py", "a.py"), ("a.py", "a.py")):
+            with self.subTest(paths=paths), self.assertRaises(quick.QuickError):
+                quick.apply(self.root, quick.plan(self.root, [{"path": p, "content": "x"} for p in paths]))
+        self.assertFalse((self.root / "src").exists())
+        self.assertFalse((self.root / "A.py").exists())
+
+    def test_bf028_restore_failure_is_atomic_and_retry_is_truthful(self):
+        from unittest.mock import patch
+        for name in ("a.txt", "b.txt"):
+            (self.root / name).write_bytes(b"old")
+        quick.apply(self.root, quick.plan(self.root, [{"path": p, "content": "AI"} for p in ("a.txt", "b.txt")]))
+        replace = quick.os.replace
+        def fail_b(src, dst):
+            if Path(dst) == self.root / "b.txt":
+                raise PermissionError("locked")
+            return replace(src, dst)
+        with patch.object(quick.os, "replace", side_effect=fail_b), self.assertRaises(quick.QuickError):
+            quick.restore(self.root)
+        out = quick.restore(self.root)
+        self.assertEqual(out["kept"], [])
+        self.assertEqual(sorted(out["restored"]), ["a.txt", "b.txt"])
+        self.assertTrue(all((self.root / p).read_bytes() == b"old" for p in out["restored"]))
+
     def test_nothing_to_apply(self):
         (self.root / "ok.py").write_text("ok\n", encoding="utf-8")
         items = quick.plan(self.root, [{"path": "ok.py", "content": "ok\n"}])
