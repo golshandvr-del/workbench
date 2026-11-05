@@ -279,39 +279,44 @@ class HandoffService:
     def resolve(self, handoff_id: str, accept: bool, reason: str = "") -> dict[str, Any]:
         """User decision. Accepting a handoff never applies files and never marks the task done."""
         with self.store.transaction("resolve handoff") as s:
-            h = require(s, "handoffs", handoff_id)
-            if accept and h["status"] in ("stale", "reconciliation_required"):
-                if not reason.strip():
-                    raise ModelError("accepting a stale handoff needs an explicit reconciliation note")
-                check_transition("handoff", h["status"], "reconciled")
-                h["status"] = "reconciled"
-            target = "accepted" if accept else "rejected"
-            check_transition("handoff", h["status"], target)
-            h["status"] = target
-            h["resolution"] = {"accepted": accept, "reason": reason[:2000], "at": now_utc()}
-            att = s["attempts"].get(h["attempt_id"])
-            if att and att["status"] in ("parsed", "reconciliation_required", "ready_for_review", "stale"):
-                if att["status"] in ("parsed", "reconciliation_required") and accept:
-                    att["status"] = "ready_for_review"
-                if att["status"] == "parsed" and not accept:
-                    att["status"] = "rejected"
-                elif att["status"] in ("ready_for_review", "stale", "reconciliation_required"):
-                    att["status"] = "accepted" if accept else "rejected"
-            for other in s["handoffs"].values():
-                if accept and other["task_id"] == h["task_id"] and other["handoff_id"] != handoff_id \
-                        and other["status"] == "accepted":
-                    other["status"] = "superseded"
-            t = s["tasks"][h["task_id"]]
-            if accept and t["status"] == "in_progress" and h["outcome"] in ("complete", "partial"):
-                t["status"] = "in_review"
-                emit(s, "task_status", task_id=t["task_id"], old="in_progress", new="in_review",
-                     why=f"handoff {handoff_id} accepted ({h['outcome']})")
-            if accept and h["outcome"] in ("blocked", "needs_decision") and t["status"] == "in_progress":
-                t["status"] = "blocked" if h["outcome"] == "blocked" else "needs_decision"
-                t["blocked_reason"] = "; ".join(h["unresolved_items"] or h["decision_requests"])[:500]
-                emit(s, "task_status", task_id=t["task_id"], old="in_progress", new=t["status"], why="handoff outcome")
-            emit(s, "handoff_" + target, handoff_id=handoff_id)
-            return h
+            return self.resolve_state(s, handoff_id, accept, reason)
+
+    @staticmethod
+    def resolve_state(s: dict[str, Any], handoff_id: str, accept: bool, reason: str = "") -> dict[str, Any]:
+        """Same decision inside an existing transaction (file publication + state are one unit)."""
+        h = require(s, "handoffs", handoff_id)
+        if accept and h["status"] in ("stale", "reconciliation_required"):
+            if not reason.strip():
+                raise ModelError("accepting a stale handoff needs an explicit reconciliation note")
+            check_transition("handoff", h["status"], "reconciled")
+            h["status"] = "reconciled"
+        target = "accepted" if accept else "rejected"
+        check_transition("handoff", h["status"], target)
+        h["status"] = target
+        h["resolution"] = {"accepted": accept, "reason": reason[:2000], "at": now_utc()}
+        att = s["attempts"].get(h["attempt_id"])
+        if att and att["status"] in ("parsed", "reconciliation_required", "ready_for_review", "stale"):
+            if att["status"] in ("parsed", "reconciliation_required") and accept:
+                att["status"] = "ready_for_review"
+            if att["status"] == "parsed" and not accept:
+                att["status"] = "rejected"
+            elif att["status"] in ("ready_for_review", "stale", "reconciliation_required"):
+                att["status"] = "accepted" if accept else "rejected"
+        for other in s["handoffs"].values():
+            if accept and other["task_id"] == h["task_id"] and other["handoff_id"] != handoff_id \
+                    and other["status"] == "accepted":
+                other["status"] = "superseded"
+        t = s["tasks"][h["task_id"]]
+        if accept and t["status"] == "in_progress" and h["outcome"] in ("complete", "partial"):
+            t["status"] = "in_review"
+            emit(s, "task_status", task_id=t["task_id"], old="in_progress", new="in_review",
+                 why=f"handoff {handoff_id} accepted ({h['outcome']})")
+        if accept and h["outcome"] in ("blocked", "needs_decision") and t["status"] == "in_progress":
+            t["status"] = "blocked" if h["outcome"] == "blocked" else "needs_decision"
+            t["blocked_reason"] = "; ".join(h["unresolved_items"] or h["decision_requests"])[:500]
+            emit(s, "task_status", task_id=t["task_id"], old="in_progress", new=t["status"], why="handoff outcome")
+        emit(s, "handoff_" + target, handoff_id=handoff_id)
+        return h
 
 
 def _section(title: str, lines: list[str]) -> list[str]:
