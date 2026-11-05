@@ -199,6 +199,32 @@ class SettingsRecoveryTests(unittest.TestCase):
             self.assertEqual(backups[0].read_text(encoding="utf-8"), '{"a": 1,')
             self.assertFalse(p.exists())
 
+    def test_bf016_undecodable_bytes_are_preserved_and_startup_can_retry(self) -> None:
+        import AI_Workbench as app
+        for payload in ('{"folder": "C:/José"}'.encode("utf-16"), b'{"folder": "Jos\xe9"}', b'\xff\x00\xfe'):
+            with self.subTest(payload=payload), tempfile.TemporaryDirectory() as t:
+                p = Path(t) / "settings.json"
+                p.write_bytes(payload)
+                self.assertEqual(app.load_settings_with_recovery(p), {})
+                backups = list(Path(t).glob("settings.json.corrupt-*"))
+                self.assertEqual(len(backups), 1)
+                self.assertEqual(backups[0].read_bytes(), payload)
+                self.assertFalse(p.exists())
+                self.assertEqual(app.load_settings_with_recovery(p), {})
+
+    def test_bf016_repeated_corruption_never_overwrites_previous_backup(self) -> None:
+        import AI_Workbench as app
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as t, patch.object(app.time, "strftime", return_value="same-second"):
+            p = Path(t) / "settings.json"
+            payloads = [b'{broken', b'\xff\x00', b'not json']
+            for payload in payloads:
+                p.write_bytes(payload)
+                self.assertEqual(app.load_settings_with_recovery(p), {})
+                self.assertFalse(p.exists())
+            backups = list(Path(t).glob("settings.json.corrupt-*"))
+            self.assertEqual(sorted(x.read_bytes() for x in backups), sorted(payloads))
+
     def test_bom_and_unknown_keys_are_kept(self) -> None:
         import AI_Workbench as app
         with tempfile.TemporaryDirectory() as t:
