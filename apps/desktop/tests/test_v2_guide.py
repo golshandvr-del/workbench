@@ -119,6 +119,55 @@ class InvariantTests(GuideBase):
         self.assertNotEqual(fresh["attempt_id"], h["attempt_id"])
         self.assertNotIn("continue", [s["key"] for s in self.g.steps()])
 
+    def test_bf011_validation_note_is_evidence_and_reaches_fresh_prompt(self):
+        p = self.c.project
+        tid = p.tasks.create({"title": "Calculator", "objective": "fix calculator",
+            "owner_agent_id": "agent-implementer", "allowed_paths": ["src/x/"],
+            "acceptance_criteria": ["tests pass"], "acceptance_policy": "tests_pass"}, status="ready")["task_id"]
+        h = self.c.start_task(tid)
+        self.g.perform(f"handoff:{h['handoff_id']}", "paste", text=answer_for(h))
+        self.g.perform(f"handoff:{h['handoff_id']}", "accept_handoff")
+        note = "۲ تست در test_calc خراب است: " + "incorrect boundary; " * 20
+        self.g.perform(f"task:{tid}", "validation_failed", note=note, run_id="run-42")
+        ev = [e for e in p.evidence.list(tid) if e["type"] == "test_run"][-1]
+        self.assertEqual(ev["summary"], note)
+        self.assertEqual(ev["source"]["run_id"], "run-42")
+        self.assertEqual(ev["attempt_id"], h["attempt_id"])
+        # A restarted controller must carry the same feedback into a fresh chat.
+        c = ProjectsController(self.c.root, make_pipeline=wb.make_inbox_pipeline)
+        fresh = c.start_task(tid)
+        self.assertIn(note, fresh["prompt"])
+        self.assertIn("run-42", fresh["prompt"])
+        self.assertIn("CONTRADICTED", fresh["prompt"])
+        self.assertIn("fix", fresh["prompt"].lower())
+        self.assertNotIn("Claimed (NOT verified): tests pass", fresh["prompt"])
+        # Foreign tasks and obsolete revisions must not contaminate this task's prompt.
+        with p.store.transaction("old and foreign evidence fixture") as s:
+            from copy import deepcopy
+            for key, subject, revision in (("EV-old", tid, 0), ("EV-other", "other-task", 1)):
+                row = deepcopy(ev)
+                row.update(evidence_id=key, subject_id=subject, task_revision=revision,
+                           summary="DO NOT LEAK", state_revision=999999)
+                s["evidence"][key] = row
+        self.assertNotIn("DO NOT LEAK", c.start_task(tid)["prompt"])
+
+    def test_bf013_rejected_delivery_reason_survives_restart_and_preparation(self):
+        p = self.c.project
+        tid = p.tasks.create({"title": "Calculator", "objective": "calculator",
+            "owner_agent_id": "agent-implementer", "allowed_paths": ["src/x/"]}, status="ready")["task_id"]
+        h = self.c.start_task(tid)
+        self.g.perform(f"handoff:{h['handoff_id']}", "paste", text=answer_for(h))
+        reason = "الگوریتم اشتباه است — wrong algorithm, handle zero correctly"
+        self.g.perform(f"handoff:{h['handoff_id']}", "reject_handoff", reason=reason)
+        c = ProjectsController(self.c.root, make_pipeline=wb.make_inbox_pipeline)
+        fresh = c.start_task(tid)
+        self.assertEqual(fresh["previous_handoff_id"], h["handoff_id"])
+        self.assertIn(reason, fresh["prompt"])
+        self.assertIn("rejected by the user", fresh["prompt"])
+        self.assertIn("src/x/a.txt", fresh["prompt"])
+        self.assertNotIn("This is the first handoff", fresh["prompt"])
+        self.assertEqual(p.handoffs.get(h["handoff_id"])["resolution"]["reason"], reason)
+
     def test_incomplete_charter_returns_the_fix_prompt(self):
         self.g.perform("design", "design", goal="An offline todo app")
         bad = json.loads(FIXTURE.read_text(encoding="utf-8"))
