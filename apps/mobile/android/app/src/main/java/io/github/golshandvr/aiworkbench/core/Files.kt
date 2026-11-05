@@ -40,15 +40,20 @@ object Files {
     /** Refuse links (including dangling links), case aliases, directories and parent-file conflicts. */
     private fun target(root: File, path: String): File {
         if (safePath(path) != path || path.isEmpty()) throw ModelError("unsafe path '$path'")
-        if (root.absoluteFile != root.canonicalFile) throw ModelError("linked file root")
+        if (root.absoluteFile != root.canonicalFile ||
+            (!root.exists() && root.parentFile?.list()?.contains(root.name) == true)) throw ModelError("linked file root")
         if (root.exists() && !root.isDirectory) throw ModelError("file root is not a directory")
         var at = root.absoluteFile
         val parts = path.split('/')
         for ((i, part) in parts.withIndex()) {
-            val alias = at.list()?.firstOrNull { it.equals(part, ignoreCase = true) && it != part }
+            val children = at.list()?.toSet().orEmpty()
+            val alias = children.firstOrNull { it.equals(part, ignoreCase = true) && it != part }
             if (alias != null) throw ModelError("case alias at $path: $alias")
             at = File(at, part)
-            if (at.absoluteFile != at.canonicalFile) throw ModelError("linked path '$path'")
+            // File.canonicalFile does not resolve dangling symlinks on every JVM.
+            // An entry present in its parent but not dereferenceable must also be refused.
+            if (at.absoluteFile != at.canonicalFile || (part in children && !at.exists()))
+                throw ModelError("linked or inaccessible path '$path'")
             if (at.exists() && (if (i == parts.lastIndex) !at.isFile else !at.isDirectory))
                 throw ModelError("file/directory conflict at '$path'")
         }
@@ -144,7 +149,8 @@ object Files {
         }
         // Fresh exclusive backup per attempt, never overwrite an earlier recovery copy.
         val backupRoot = File(store.root, "backups").absoluteFile
-        if (backupRoot != backupRoot.canonicalFile || (backupRoot.exists() && !backupRoot.isDirectory))
+        if (backupRoot != backupRoot.canonicalFile || (backupRoot.exists() && !backupRoot.isDirectory) ||
+            (!backupRoot.exists() && backupRoot.parentFile?.list()?.contains(backupRoot.name) == true))
             throw ModelError("unsafe backup directory")
         if (!backupRoot.isDirectory && !backupRoot.mkdirs()) throw ModelError("cannot create backups")
         if (!Regex("HO-[0-9]+").matches(handoffId)) throw ModelError("unsafe handoff backup name")
@@ -154,7 +160,8 @@ object Files {
             if (!backup.mkdir()) throw ModelError("cannot create exclusive backup")
         }
         for ((p, bytes) in originals) if (bytes != null) atomicWrite(File(backup, p), bytes)
-        atomicWrite(File(backup, "integration.json"), StrictJson.stringify(linkedMapOf<String, Any?>(
+        val journal = File.createTempFile(".integration-", ".json", backup)
+        atomicWrite(journal, StrictJson.stringify(linkedMapOf<String, Any?>(
             "handoff_id" to handoffId, "original_paths" to originals.filterValues { it != null }.keys.toList(),
             "new_paths" to originals.filterValues { it == null }.keys.toList())).toByteArray(Charsets.UTF_8))
         val written = ArrayList<String>()
