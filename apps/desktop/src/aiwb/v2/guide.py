@@ -291,6 +291,10 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                 acts = [_a("troubleshoot", "Build the troubleshooting prompt"), _a("accept_handoff", "Accept anyway…", "reason"),
                         _a("reject_handoff", "Reject…", "reason")]
                 why = f" Troubleshooting attempt {n + 1} of {TROUBLESHOOT_ATTEMPTS}."
+            if any(p.get("severity") == "error" and p.get("code") in
+                   ("too_large", "total_too_large", "file_conflict") for p in h.get("staging_problems") or []):
+                acts = [a for a in acts if a["id"] != "accept_handoff"]
+                why += " Fix the incomplete/conflicting file set before accepting any of it."
             out.append(_step(f"handoff:{h['handoff_id']}", "decision", f"Problems found in {who}'s answer for {label}",
                              "Smart check: " + found + "." + why, acts, agent=USER, ref=h["handoff_id"], rank=9,
                              task_id=h["task_id"], problems=diag))
@@ -891,6 +895,15 @@ class Guide:
         att = st["attempts"].get(h["attempt_id"]) or {}
         res = diagnose(text, attempt_id=h["attempt_id"], allowed_paths=task_paths(t),
                        expected_paths=list(att.get("expected_paths") or []))
+        # Persist every omission/conflict discovered by the actual staging boundary.
+        existing = {(p["code"], p.get("path", "")) for p in res["problems"]}
+        res["problems"].extend(p for p in h.get("staging_problems") or []
+                               if (p["code"], p.get("path", "")) not in existing)
+        empty_staged = {f["path"] for f in h.get("staged_files") or [] if f.get("content") == ""}
+        for problem in res["problems"]:
+            if problem["code"] == "empty_file" and problem.get("path") in empty_staged:
+                problem["severity"] = "warning"
+                problem["message"] += "; an empty file is staged and will be written"
         if h.get("staged_files"):
             # 5.10.0 (A13): Markdown / JSON / ZIP answers rarely carry a manifest; the files are what matters
             for p in res["problems"]:
