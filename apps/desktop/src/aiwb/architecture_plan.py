@@ -70,6 +70,10 @@ def validate_plan(raw: dict[str, Any]) -> dict[str, Any]:
                     item[key] = value
                 else:
                     item[key] = _text(value, f"{field}[{i}].{key}", limits.get(key, 2000), required=key in {"topic", "choice", "name", "description", "path"})
+            if field == "risks":
+                item["severity"] = item["severity"].lower()
+                if item["severity"] not in {"low", "medium", "high"}:
+                    raise ArchitecturePlanError(f"risks[{i}].severity must be low, medium or high.")
             if field in {"modules", "proposed_files"}:
                 _validate_relative_path(item["path"], f"{field}[{i}].path")
             if field == "proposed_files" and item.get("action") not in {"create", "modify", "delete", "rename", "move", "review"}:
@@ -77,7 +81,8 @@ def validate_plan(raw: dict[str, Any]) -> dict[str, Any]:
             out.append(item)
         clean[field] = out
     status = raw.get("status", "draft")
-    if status not in {"draft", "proposed", "approved", "blocked", "complete"}: raise ArchitecturePlanError("status is unsupported.")
+    if not isinstance(status, str) or status not in {"draft", "proposed", "approved", "blocked", "complete"}:
+        raise ArchitecturePlanError("status must be one of draft, proposed, approved, blocked, complete.")
     clean["status"] = status
     clean["created_at"] = _text(raw.get("created_at", ""), "created_at", 80)
     clean["updated_at"] = _text(raw.get("updated_at", ""), "updated_at", 80)
@@ -155,7 +160,7 @@ def schema_contract() -> str:
         "data_flows": [{"name": "Flow name", "source": "Source", "destination": "Destination", "description": "When/how the data moves"}],
         "dependencies": [{"name": "package/tool", "purpose": "Why required", "version_policy": "Supported version range or standard-library-only", "optional": False}],
         "proposed_files": [{"path": "relative/path.ext", "action": "create", "purpose": "What it owns"}],
-        "risks": [{"description": "Risk", "mitigation": "Mitigation", "severity": "low|medium|high"}],
+        "risks": [{"description": "Risk", "mitigation": "Mitigation", "severity": "medium"}],
         "acceptance_criteria": ["Observable, testable condition"], "open_questions": [], "assumptions": [], "next_steps": [], "status": "proposed",
     }
     return json.dumps(template, ensure_ascii=False, indent=2)
