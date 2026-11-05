@@ -122,6 +122,47 @@ class InvariantTests(GuideBase):
         self.assertEqual(p.tasks.get(a["task_id"])["status"], "ready")
         self.check_invariant()
 
+    def test_bf001_dead_prerequisite_has_replan_and_explicit_drop_not_failing_buttons(self):
+        p = self.c.project
+        a = p.tasks.create({"title": "Old plan", "objective": "old"}, status="ready")
+        b = p.tasks.create({"title": "Waiting", "objective": "wait", "depends_on": [a["task_id"]]})
+        p.tasks.transition(a["task_id"], "cancelled", "replaced")
+        key = f"task:{b['task_id']}"
+        for status in ("draft", "blocked"):
+            with self.subTest(status=status):
+                with p.store.transaction("legacy task state") as s:
+                    s["tasks"][b["task_id"]]["status"] = status
+                    s["tasks"][b["task_id"]]["blocked_reason"] = "prerequisite no longer valid"
+                step = self.g.find(key)
+                actions = {a["id"] for a in step["actions"]}
+                self.assertFalse(actions & {"make_ready", "unblock"})
+                self.assertTrue({"drop_dead_dependencies", "manager_prompt"} <= actions)
+                prompt = self.g.perform(key, "manager_prompt")["prompt"]
+                self.assertIn(a["task_id"], prompt)
+        self.g.perform(key, "drop_dead_dependencies")
+        self.assertEqual(p.tasks.get(b["task_id"])["depends_on"], [])
+        self.assertEqual(p.tasks.get(b["task_id"])["status"], "ready")
+        self.assertEqual(p.tasks.get(a["task_id"])["status"], "cancelled")
+        self.check_invariant()
+
+    def test_bf002_legacy_cycle_visible_and_bf003_changes_request_works(self):
+        p = self.c.project
+        a = p.tasks.create({"title": "A", "objective": "a"}, status="ready")
+        b = p.tasks.create({"title": "B", "objective": "b"}, status="ready")
+        with p.store.transaction("legacy emergency cycle") as s:
+            for first, second in ((a, b), (b, a)):
+                t = s["tasks"][first["task_id"]]
+                t.update(status="blocked", depends_on=[second["task_id"]], blocked_reason="waiting for " + second["task_id"])
+        graph_step = self.g.find("graph:repair")
+        self.assertIn("cycle", graph_step["explain"])
+        self.assertIn("dependency cycle", self.g.perform("graph:repair", "manager_prompt")["prompt"])
+        prop = p.proposals.import_data({"base_state_revision": p.store.revision, "summary": "replan",
+                                       "operations": [{"operation": "report_risk", "description": "cycle"}]})
+        result = self.g.perform(f"proposal:{prop['proposal_id']}", "request_changes", note="Break this cycle")
+        self.assertIn("Break this cycle", result["prompt"])
+        self.assertEqual(p.proposals.get(prop["proposal_id"])["status"], "rejected")
+        self.check_invariant()
+
     def test_action_not_offered_is_refused(self):
         with self.assertRaises(Exception):
             self.g.perform("design", "accept")
