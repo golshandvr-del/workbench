@@ -90,14 +90,19 @@ object Files {
         }
         val parsed = Diagnose.parseFiles(text)
         val seen = HashSet<String>()
-        for ((index, f) in parsed.first.withIndex()) {
+        for (f in parsed.first) {
             val p = safePath(f.path)
+            if (f.action != "write" || !f.complete || !f.fenceBalanced) {
+                problem(if (f.action != "write") "unsupported_action" else "truncated",
+                    "${f.path}: unsupported operation or incomplete file; resend a complete write", f.path)
+                staged.remove(p); continue
+            }
             if (p.isEmpty()) { problem("unsafe_path", "unsafe file path '${f.path}'", f.path); continue }
             if (!Diagnose.inScope(p, allowed)) { problem("out_of_scope", "$p is outside this task's allowed paths", p); continue }
             if (!seen.add(p)) problem("duplicate_path", "$p was sent twice — the last complete version is used", p, "warning")
             // A broken replacement must not silently fall back to a retained old version.
             staged.remove(p)
-            if (!f.fenceBalanced || (parsed.second && index == parsed.first.lastIndex)) {
+            if (!f.complete || !f.fenceBalanced) {
                 problem("truncated", "$p is incomplete; send the complete file", p); continue
             }
             val body = f.body + if (f.body.isNotEmpty() && !f.body.endsWith("\n")) "\n" else ""
