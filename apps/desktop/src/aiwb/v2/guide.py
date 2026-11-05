@@ -737,15 +737,19 @@ class Guide:
                     "prompt": continue_project_prompt(c.manager_update(), c.state())}
         if action == "repair":
             h = self.p.handoffs.get(ref)
-            c.resolve_handoff(ref, True, "partial delivery accepted; repair requested for the missing items")
+            from .files import integrate
+            written = integrate(self.p.store, c.root, ref,
+                                accept_reason="partial delivery accepted; repair requested for the missing items")
+            c._dirty("partial delivery integrated")
             if self.p.tasks.get(h["task_id"])["status"] == "in_review":
                 self.p.tasks.transition(h["task_id"], "in_progress", "repair requested")
             nh = c.start_task(h["task_id"], h["to_agent_id"])
             with self.p.store.transaction("repair prompt") as s:
                 s["handoffs"][nh["handoff_id"]]["prompt"] = prompt = repair_prompt(s, h, s["handoffs"][nh["handoff_id"]])
                 s["handoffs"][nh["handoff_id"]]["repair_of"] = ref
-            return {"message": f"Repair prompt for {h['task_id']} ready (only the missing items).", "prompt": prompt,
-                    "handoff_id": nh["handoff_id"]}
+            return {"message": f"Repair prompt for {h['task_id']} ready (only the missing items). "
+                               f"{len(written)} delivered file(s) kept on disk.", "prompt": prompt,
+                    "files": written, "handoff_id": nh["handoff_id"]}
         if action == "abandon":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")) or "dropped by the user")
             return {"message": f"Prompt {ref} dropped."}
@@ -949,13 +953,12 @@ class Guide:
             if step["key"] in ("manager_update", "charter"):
                 self._set_guide(seen=True)
             if r.kind == "handoff":
-                from .context_step import clear
-                clear(self.p.store, r.reference_id)   # 5.12.0: the files the AI asked for were used
-                from .files import stage
-                staged = stage(self.p.store, r.reference_id, text)
+                # route_answer has already staged and checked this delivery for
+                # every caller. Do not take a second filesystem preview here.
+                staged = r.record.get("staged_files") or []
                 if staged:
                     out["staged"] = [x["path"] for x in staged]
-                probs = self._diagnose(r.reference_id, text)
+                probs = r.record.get("diagnosis") or []
                 errs = [x for x in probs if x["severity"] == "error"]
                 if errs:
                     out["message"] += " Smart check found problems: " + "; ".join(x["code"] for x in errs) + \
