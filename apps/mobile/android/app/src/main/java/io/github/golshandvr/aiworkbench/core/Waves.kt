@@ -20,7 +20,15 @@ object Waves {
         val agents = State.coll(st, "agents")
         val o = Json.str(t["owner_agent_id"])
         if (o.isNotEmpty() && o in agents && Json.obj(agents[o])["enabled"] != false) return o
-        return if ("agent-implementer" in agents) "agent-implementer" else agents.keys.firstOrNull() ?: ""
+        val workers = agents.keys.filter { aid ->
+            val a = Json.obj(agents[aid])
+            a["enabled"] != false && a["role"] != "project_manager" && aid != "agent-project-manager"
+        }
+        val handoffs = State.coll(st, "handoffs").values.map { Json.obj(it) }
+        return workers.minWithOrNull(compareBy<String>(
+            { if (Json.obj(agents[it])["role"] == "implementer") 0 else 1 },
+            { aid -> handoffs.count { it["to_agent_id"] == aid && it["status"] in OPEN_HANDOFF } },
+            { it })) ?: ""
     }
 
     private fun openTasks(st: Obj): Map<String, Obj> =
@@ -62,7 +70,9 @@ object Waves {
         val limit = maxChats(st)
         val slots = (limit - handoffs.size).coerceAtLeast(0)
         // an emergency task from the project manager goes first (roadmap 4.4.0, correction C4)
-        val startable = waves(st).waves.flatten().filter { Json.str(Json.obj(tasks[it])["status"]) in STARTABLE && it !in busy }
+        val startable = waves(st).waves.flatten().filter {
+            Json.str(Json.obj(tasks[it])["status"]) in STARTABLE && it !in busy && owner(st, Json.obj(tasks[it])).isNotEmpty()
+        }
             .sortedBy { if ("emergency" in Json.strs(Json.obj(tasks[it])["flags"])) 0 else 1 }
         val first = ArrayList<String>(); val rest = ArrayList<String>(); val seen = HashSet<String>()
         val owners = LinkedHashMap<String, String>()
