@@ -54,6 +54,37 @@ class TaskInstructionsTest(unittest.TestCase):
 
 
 class TranslateTest(unittest.TestCase):
+    def test_bf045_title_assessments_update_existing_tasks_not_duplicates(self):
+        r = translate({"task_assessment": [{"title": "Core", "status": "on track"},
+            {"title": "Docs", "acceptance_criteria": ["updated"]}, {"title": "Unknown", "priority": "high"}]}, STATE)
+        self.assertEqual([o["operation"] for o in r["operations"]], ["update_task"])
+        self.assertEqual(r["operations"][0]["task_id"], "TASK-0001")
+        self.assertTrue(any("Unknown" in x for x in r["leftover"]))
+        for alias in ("TASK-1", "task-0001", "1"):
+            out = translate({"task_updates": [{"task_id": alias, "depends_on": ["Core", "missing"]}]}, STATE)
+            self.assertEqual(out["operations"][0]["changes"]["depends_on"], ["TASK-0002"])
+            self.assertTrue(any("missing" in x for x in out["leftover"]))
+
+    def test_bf046_assessment_comment_never_replaces_objective(self):
+        for key in ("description", "goal", "files", "outputs"):
+            out = translate({"task_assessment": [{"task_id": "TASK-0002", key: "Looks good so far"}]}, STATE)
+            self.assertEqual(out["operations"], [])
+        out = translate({"task_updates": [{"task_id": "TASK-0002", "changes": {"description": "New objective"}}]}, STATE)
+        self.assertEqual(out["operations"][0]["changes"], {"objective": "New objective"})
+
+    def test_bf047_plain_decision_choice_and_recommendation_sentence(self):
+        plain = translate({"decision": "Use SQLite"}, STATE)["operations"][0]
+        self.assertEqual(plain["recommendation"], "Use SQLite")
+        self.assertEqual(plain["options"], ["Use SQLite"])
+        sentence = translate({"decisions": [{"question": "Which database?", "recommendation": "SQLite because it is simple"}]}, STATE)["operations"][0]
+        self.assertEqual(sentence["options"], ["SQLite"])
+        self.assertEqual(sentence["recommendation"], "SQLite because it is simple")
+
+    def test_bf052_persian_keyboard_variants_do_not_repeat_final_decisions(self):
+        state = {"decisions": {"DEC-1": {"title": "انتخاب پایگاه\u200cداده ۱۲", "status": "accepted"}}}
+        for title in ("انتخاب پايگاهداده 12", "انتخاب پایگاه داده ١٢", "انتخاب پـایگاهداده ۱۲"):
+            self.assertEqual(duplicate_of(title, "", state), "DEC-1", title)
+
     def test_invented_keys_become_operations(self) -> None:
         r = translate({"operations": [],
                        "decisions": [{"title": "Keyboard support", "options": ["keys", "mouse", "both"],
