@@ -62,10 +62,32 @@ object Normalize {
         if (out.startsWith("\ufeff")) {
             out = out.trimStart('\ufeff'); fixes.add("bom")
         }
-        val zw = out.count { it in ZERO_WIDTH }
-        if (zw > 0) { out = translate(out, ZERO_WIDTH, null); fixes.add("zero_width:$zw") }
-        val nb = out.count { it in NBSP }
-        if (nb > 0) { out = translate(out, NBSP, " "); fixes.add("nbsp:$nb") }
+        var inFile = false
+        var inString = false
+        var escaped = false
+        var zw = 0
+        var nb = 0
+        out = out.split("\n").map { line ->
+            val marker = fixMarkerLine(translate(line, ZERO_WIDTH, null))
+            if (inFile && !marker.startsWith("<<<AIWB_END_FILE>>>")) line
+            else {
+                val clean = StringBuilder()
+                for (raw in line) {
+                    var c = raw
+                    if (!inString && c in ZERO_WIDTH) { zw++; continue }
+                    if (!inString && c in NBSP) { nb++; c = ' ' }
+                    clean.append(c)
+                    if (escaped) escaped = false
+                    else if (inString && c == '\\') escaped = true
+                    else if (c == '"') inString = !inString
+                }
+                if (marker.startsWith("<<<AIWB_FILE ")) { inFile = true; inString = false; escaped = false }
+                else if (marker.startsWith("<<<AIWB_END_FILE>>>")) inFile = false
+                clean.toString()
+            }
+        }.joinToString("\n")
+        if (zw > 0) fixes.add("zero_width:$zw")
+        if (nb > 0) fixes.add("nbsp:$nb")
         if ('\r' in out) { out = out.replace("\r\n", "\n").replace("\r", "\n"); fixes.add("line_endings") }
         return out
     }
@@ -184,13 +206,14 @@ object Normalize {
         var i = 0
         val n = body.length
         var inStr = false
+        var smartOpen = false
         var quoteFix = 0; var commentFix = 0; var commaFix = 0; var literalFix = 0
         while (i < n) {
             val c = body[i]
             if (inStr) {
                 if (c == '\\' && i + 1 < n) { out.append(body, i, i + 2); i += 2; continue }
                 if (c == '"') { inStr = false; out.append(c); i++; continue }
-                if (c == '\u201c' || c == '\u201d') {
+                if (smartOpen && (c == '\u201c' || c == '\u201d')) {
                     val nxt = body.substring(i + 1, minOf(n, i + 40)).trimStart()
                     if (nxt.isEmpty() || nxt[0] in ":,}]") { inStr = false; out.append('"'); quoteFix++; i++; continue }
                 }
@@ -199,6 +222,7 @@ object Normalize {
             }
             if (c == '"' || c == '\u201c' || c == '\u201d' || c == '\u201e') {
                 if (c != '"') quoteFix++
+                smartOpen = c != '"'
                 inStr = true; out.append('"'); i++; continue
             }
             if (c == '/' && i + 1 < n && body[i + 1] == '/') {
@@ -270,7 +294,7 @@ object Normalize {
                 val stop = if (i + 1 < heads.size) heads[i + 1].range.first else s.length
                 val seg = s.substring(h.range.last + 1, stop)
                 val name = Regex("(?:path|id)=\"([^\"]*)\"").find(h.groupValues[2])?.groupValues?.get(1) ?: "?"
-                if (END_LINE.containsMatchIn(seg)) done.add(name) else if (i == heads.size - 1) openPath = name
+                if (END_LINE.containsMatchIn(seg)) done.add(name) else if (openPath.isEmpty()) openPath = name
             }
             if (openPath.isNotEmpty()) return Truncation(true, "unclosed_block", done.lastOrNull() ?: "", openPath, done)
             return Truncation(false, completedPaths = done)
