@@ -201,9 +201,6 @@ class ProposalService:
             n_valid = sum(1 for op in p["operations"] if op["valid"])
             p["status"] = ("accepted" if not n_valid and not p["operations"] else "rejected" if not accepted
                            else "accepted" if len(accepted) == n_valid else "partially_accepted")
-            if p.get("has_decision") and p["status"] != "rejected":
-                from .report import apply_decision
-                result["decision"] = apply_decision(s, p, result["created"])
             p["result"] = {**result, "note": note[:1000], "reviewed_at": now_utc()}
             if accepted and p.get("charter"):
                 s["settings"]["charter"] = {**p["charter"], "proposal_id": proposal_id, "accepted_at": now_utc(),
@@ -220,6 +217,10 @@ class ProposalService:
         order = {"create_agent": 0, "assign_account": 1, "create_milestone": 3}
         selected = sorted([ops[i] for i in sorted(set(accept)) if i in ops],
                           key=lambda o: (order.get(o["operation"], 2), o["index"]))
+        if not selected and p["operations"]:
+            # Reject / request changes is a review-only operation. In particular,
+            # legacy graph damage must never make a proposal impossible to reject.
+            return {"applied": [], "created": {}, "errors": [], "notes": [], "dry_run": dry_run}
         selected_refs = {o.get("temporary_ref") for o in selected if o.get("temporary_ref")}
         ts = TaskService(self.store)
         resolve = lambda ref: created.get(ref, ref)  # noqa: E731
@@ -362,11 +363,20 @@ class ProposalService:
                 t["status"], t["blocked_reason"] = st, why
                 emit(s, "task_status", task_id=t["task_id"], old="draft", new=st, why=why or "plan approved")
                 continue
-            if t["status"] == "ready" and readiness(t, s["tasks"])[0] != "ready":
-                t["status"] = "blocked"
-                t["blocked_reason"] = readiness(t, s["tasks"])[1]
-                notes.append(f"{t['task_id']} is now blocked: {t['blocked_reason']}")
-        return {"applied": applied, "created": created, "errors": errors, "notes": notes, "dry_run": dry_run}
+        if not errors:
+            # Existing tasks, including blocked tasks losing their LAST dependency,
+            # use the same readiness derivation as the direct TaskService API.
+            ts._refresh_readiness(s)
+        result = {"applied": applied, "created": created, "errors": errors, "notes": notes, "dry_run": dry_run}
+        if not errors and p.get("has_decision") and (applied or not p["operations"]):
+            from .report import apply_decision
+            # Preview and commit must include the SAME emergency edges, before
+            # final graph validation. Previously these were added only after review.
+            result["decision"] = apply_decision(s, p, created)
+            final_problems = validate_graph(s["tasks"])
+            if final_problems:
+                errors.append("resulting task graph is invalid: " + "; ".join(final_problems))
+        return result
 
 
 def _apply_milestone(s: dict[str, Any], raw: dict[str, Any], created: dict[str, str], proposal_id: str) -> list[str]:
