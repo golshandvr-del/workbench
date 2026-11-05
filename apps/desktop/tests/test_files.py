@@ -81,6 +81,45 @@ class IntegrateTests(unittest.TestCase):
         self.assertEqual(ev[-1]["count"], 2)
         self.assertNotIn(".workbench/v2/state.json", [x["path"] for x in list_files(self.root)])
 
+    def test_bf009_failure_keeps_delivery_open_and_rolls_back_then_retries(self) -> None:
+        from unittest.mock import patch
+        import os
+        from aiwb.v2.models import ModelError
+        self.g.perform(f"task:{self.tid}", "prepare")
+        self.g.perform(self.step()["key"], "paste", text=self.answer())
+        step = self.step()
+        hid = step["ref"]
+        before = self.c.state()
+        replace = os.replace
+        def locked(src, dst):
+            if Path(dst) == self.root / "src/util/__init__.py":
+                raise PermissionError("locked by editor")
+            return replace(src, dst)
+        with patch("os.replace", side_effect=locked), self.assertRaises(ModelError):
+            self.g.perform(step["key"], "accept_handoff")
+        self.assertEqual((self.root / "src/calc.py").read_bytes(), b"old\n")
+        self.assertFalse((self.root / "src/util/__init__.py").exists())
+        self.assertEqual(self.c.state()["handoffs"][hid], before["handoffs"][hid])
+        self.assertEqual(self.c.state()["tasks"][self.tid], before["tasks"][self.tid])
+        self.assertFalse(list(self.root.glob("**/*.aiwb-tmp")))
+        out = self.g.perform(step["key"], "accept_handoff")
+        self.assertEqual(len(out["files"]), 2)
+        self.assertEqual(self.c.state()["handoffs"][hid]["status"], "accepted")
+        backups = self.root / ".workbench/v2/backups"
+        self.assertTrue(all(p.read_bytes() == b"old\n" for p in backups.glob("*/src/calc.py")))
+
+    def test_bf009_destination_directory_preflight_writes_nothing(self) -> None:
+        from aiwb.v2.models import ModelError
+        self.g.perform(f"task:{self.tid}", "prepare")
+        self.g.perform(self.step()["key"], "paste", text=self.answer())
+        step = self.step()
+        (self.root / "src/util/__init__.py").mkdir(parents=True)
+        before = self.c.state()
+        with self.assertRaises(ModelError):
+            self.g.perform(step["key"], "accept_handoff")
+        self.assertEqual((self.root / "src/calc.py").read_bytes(), b"old\n")
+        self.assertEqual(self.c.state()["handoffs"], before["handoffs"])
+
     def test_accepting_the_delivery_is_the_review(self) -> None:
         """5.13.0 (gate ≤ 14 clicks): a clean "Accept the delivery" records the user's review approval, so the task
         goes straight to the tests/build step; the review is a real manual_review evidence, never a test result."""
