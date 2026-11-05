@@ -231,26 +231,40 @@ def load_settings_with_recovery(path: Path) -> dict[str, Any]:
     """Read settings.json; a corrupt file is preserved as ``settings.json.corrupt-<ts>``.
 
     Without the backup the next save would silently overwrite the user's data.
-    Accepts a UTF-8 BOM (files edited with Notepad / PowerShell 5).
+    Accepts a UTF-8 BOM. Other encodings are preserved byte-for-byte, not guessed.
     """
     try:
         if not path.exists():
             return {}
-        raw = path.read_text(encoding="utf-8-sig")
+        raw = path.read_bytes()
     except OSError:
         return {}
     try:
-        loaded = json.loads(raw)
+        # UnicodeDecodeError is a ValueError too: use the same recovery path as invalid JSON.
+        loaded = json.loads(raw.decode("utf-8-sig"))
         if isinstance(loaded, dict):
             return loaded
     except ValueError:
         pass
+    backup = path.with_name(path.name + ".corrupt-" + time.strftime("%Y%m%d-%H%M%S") + "-" + uuid.uuid4().hex)
+    created = False
     try:
-        backup = path.with_name(path.name + ".corrupt-" + time.strftime("%Y%m%d-%H%M%S"))
-        if not backup.exists():
-            path.replace(backup)
+        # Exclusive creation prevents repeated starts (even within one second) clobbering recovery bytes.
+        with backup.open("xb") as out:
+            created = True
+            out.write(raw)
+            out.flush()
+            os.fsync(out.fileno())
+        if path.read_bytes() == raw:
+            path.unlink()
     except OSError:
-        pass
+        # Leave the original intact if the recovery copy could not be completed.
+        if created:
+            try:
+                if backup.read_bytes() != raw:
+                    backup.unlink()
+            except OSError:
+                pass
     return {}
 
 
