@@ -44,6 +44,24 @@ class WaveTests(unittest.TestCase):
         self.assertEqual(w["cycle"], ["T-1", "T-2"])
         self.assertEqual(w["dead"], ["T-3", "T-4"])
 
+    def test_bf055_fallback_prefers_least_busy_developer_and_never_disabled_template(self):
+        st = _state([_t("T-1", owner="missing")])
+        st["agents"] = {"agent-project-manager": {"role": "project_manager"},
+                        "agent-implementer": {"role": "implementer", "enabled": False},
+                        "agent-a": {"role": "implementer"}, "agent-b": {"role": "implementer"},
+                        "agent-qa": {"role": "reviewer"}}
+        st["handoffs"] = {"H-1": {"status": "prepared", "to_agent_id": "agent-a"}}
+        task = st["tasks"]["T-1"]
+        self.assertEqual(waves._owner(st, task), "agent-b")
+        task["owner_agent_id"] = "agent-a"
+        self.assertEqual(waves._owner(st, task), "agent-a", "explicit enabled owner is binding")
+        task["owner_agent_id"] = "missing"
+        st["agents"]["agent-a"]["enabled"] = False
+        st["agents"]["agent-b"]["enabled"] = False
+        self.assertEqual(waves._owner(st, task), "agent-qa")
+        st["agents"]["agent-qa"]["enabled"] = False
+        self.assertEqual(waves._owner(st, task), "")
+
     def test_lanes_group_by_owner(self):
         st = _state([_t("T-1"), _t("T-2", owner="agent-ui"), _t("T-3", owner="agent-ui"), _t("T-4", owner="nobody")])
         self.assertEqual(waves.lanes(st), {"agent-implementer": ["T-1", "T-4"], "agent-ui": ["T-2", "T-3"]})
