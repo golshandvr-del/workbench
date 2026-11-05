@@ -36,34 +36,40 @@ CODE_EXT = (".py", ".kt", ".kts", ".java", ".js", ".ts", ".tsx", ".jsx", ".dart"
             ".cs", ".swift", ".rb", ".php", ".gradle", ".yml", ".yaml")
 SEVERITY = {"truncated": "error", "no_manifest": "error", "wrong_attempt": "error", "unsafe_path": "error",
             "out_of_scope": "error", "empty_file": "error", "missing_deliverable": "error", "failed_outcome": "error",
-            "copy_damage": "warning", "unverified_test_claim": "warning"}
+            "unsupported_action": "error", "copy_damage": "warning", "unverified_test_claim": "warning"}
 
 
 def parse_files(text: str) -> tuple[list[dict[str, Any]], bool]:
     """AIWB file blocks as [{path, body, fenced}], and whether the last block was left open."""
     files: list[dict[str, Any]] = []
     cur: dict[str, Any] | None = None
+    incomplete = False
     for line in (text or "").replace("\r\n", "\n").split("\n"):
-        if cur is None:
-            m = FILE_HEAD.match(line)
-            if m:
-                attrs = dict(ATTR.findall(m.group(1)))
-                cur = {"path": attrs.get("path", ""), "raw": attrs.get("body", "").lower() == "raw", "lines": []}
-            continue
-        if line.strip() == FILE_END:
-            files.append(_close(cur))
-            cur = None
-        else:
-            cur["lines"].append(line)
+        m = FILE_HEAD.match(line)
+        if m:
+            if cur is not None:
+                cur["complete"] = False
+                files.append(_close(cur))
+                incomplete = True
+            attrs = dict(ATTR.findall(m.group(1)))
+            cur = {"path": attrs.get("path", ""), "action": attrs.get("action", "write").strip().lower(),
+                   "raw": attrs.get("body", "").lower() == "raw", "lines": [], "complete": True}
+        elif cur is not None:
+            if line.strip() == FILE_END:
+                files.append(_close(cur))
+                cur = None
+            else:
+                cur["lines"].append(line)
     if cur is not None:
+        cur["complete"] = False
         files.append(_close(cur))
-    return files, cur is not None
+    return files, incomplete or cur is not None
 
 
 def _close(cur: dict[str, Any]) -> dict[str, Any]:
     lines = list(cur["lines"])
     if cur.get("raw"):
-        return {"path": cur["path"], "body": "\n".join(lines), "fenced": False, "fence_balanced": True}
+        return {"path": cur["path"], "body": "\n".join(lines), "fenced": False, "fence_balanced": True, "action": cur.get("action", "write"), "complete": cur.get("complete", True)}
     while lines and not lines[0].strip():
         lines.pop(0)
     while lines and not lines[-1].strip():
@@ -74,7 +80,8 @@ def _close(cur: dict[str, Any]) -> dict[str, Any]:
         mark = FENCE.match(lines[0]).group(1)
         fence_balanced = len(lines) > 1 and lines[-1].strip() == mark
         lines = lines[1:-1] if fence_balanced else lines[1:]
-    return {"path": cur["path"], "body": "\n".join(lines), "fenced": fenced, "fence_balanced": fence_balanced}
+    return {"path": cur["path"], "body": "\n".join(lines), "fenced": fenced, "fence_balanced": fence_balanced,
+            "action": cur.get("action", "write"), "complete": cur.get("complete", True)}
 
 
 def task_paths(task: dict[str, Any]) -> list[str]:
@@ -88,7 +95,9 @@ def _in_scope(path: str, allowed: list[str]) -> bool:
     if not allowed:
         return True
     for a in allowed:
-        a = a.strip()
+        a = a.strip().replace("\\", "/")
+        while a.startswith("./"):
+            a = a[2:]
         base = a.rstrip("*").rstrip("/")
         if not base or path == base or path.startswith(base + "/") or (a.endswith("*") and path.startswith(a.rstrip("*"))):
             return True
@@ -146,6 +155,9 @@ def diagnose(text: str, *, attempt_id: str = "", allowed_paths: list[str] | None
         add("wrong_attempt", f"the answer is for attempt {claimed}, this prompt was {attempt_id}")
     from aiwb.intake.answer_files import safe_path
     for f in files:
+        if f.get("action", "write") != "write":
+            add("unsupported_action", f"{f['path']}: {f['action']} is not supported; perform it manually", f["path"])
+            continue
         p = safe_path(f["path"])
         if not p:
             add("unsafe_path", f"unsafe or Windows-invalid file path {f['path']!r}", f["path"])
@@ -161,9 +173,9 @@ def diagnose(text: str, *, attempt_id: str = "", allowed_paths: list[str] | None
             add("copy_damage", f"{p} is not inside a four-backtick fence; indentation or backticks may be lost", p)
         elif p.lower().endswith(".py") and _python_indent_lost(f["body"]):
             add("copy_damage", f"{p} lost its indentation (a block line is not followed by an indented line)", p)
-    delivered = {f["path"] for f in files}
+    delivered = {safe_path(f["path"]) for f in files if f.get("action", "write") == "write"}
     for p in expected_paths or []:
-        if p not in delivered:
+        if safe_path(p) not in delivered:
             add("missing_deliverable", f"expected file {p} was not delivered", p)
     outcome = str((man or {}).get("outcome", ""))
     if outcome in ("failed", "blocked"):
