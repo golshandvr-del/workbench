@@ -237,6 +237,14 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
     if end:
         return end
 
+    from .tasks import readiness, validate_graph
+    graph_problems = validate_graph(tasks)
+    if graph_problems:
+        out.append(_step("graph:repair", "decision", "The task dependencies need repair",
+                         "; ".join(graph_problems) + ". Ask the project manager to remove the invalid dependencies; "
+                         "you can still reject a plan or ask for changes.",
+                         [_a("manager_prompt", "Ask the project manager to repair the dependencies")], rank=4))
+
     cont = g.get("continue")
     if cont:
         charter_cut = cont.get("for") == "charter"
@@ -361,7 +369,15 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
         name = f"{tid} {t['title']}"
         if _open_handoff(st, tid):
             continue
-        if s_ == "in_review":
+        ready_state, ready_reason = readiness(t, tasks)
+        if s_ in ("draft", "proposed", "blocked") and ready_reason.startswith("prerequisite no longer valid"):
+            out.append(_step(f"task:{tid}", "decision", f"Re-plan {name}: a prerequisite is no longer valid",
+                             ready_reason + ". Dropping a dependency does not complete the cancelled work; "
+                             "continue only if this task no longer needs it.",
+                             [_a("manager_prompt", "Ask the project manager to re-plan"),
+                              _a("drop_dead_dependencies", "Drop the invalid prerequisites"),
+                              _a("cancel", "Cancel the task…", "reason")], ref=tid, rank=60))
+        elif s_ == "in_review":
             out.append(_step(f"task:{tid}", "decision", f"Review {name}",
                              "Compare the delivery with the acceptance criteria: " + "; ".join(t.get("acceptance_criteria", []))[:300],
                              [_a("approve", "Approve"), _a("reject_review", "Needs changes…", "note"),
@@ -763,6 +779,26 @@ class Guide:
             out = self.p.evidence.evaluate_task(ref, current_commit=c.base_commit())
             c._dirty("validation recorded")
             return {"message": f"Validation {result} recorded → {ref} {out['status']}."}
+        if action == "drop_dead_dependencies":
+            from .tasks import readiness
+            # Re-read at execution time. Only missing/cancelled/superseded
+            # prerequisites are dropped, never unfinished or newly changed work.
+            with self.p.store.transaction("drop invalid prerequisites") as state:
+                task = state["tasks"][ref]
+                old_deps = list(task.get("depends_on") or [])
+                task["depends_on"] = [d for d in old_deps if d in state["tasks"]
+                                      and state["tasks"][d]["status"] not in ("cancelled", "superseded")]
+                from .tasks import validate_graph
+                problems = validate_graph(state["tasks"])
+                if problems:
+                    raise ModelError("dependency repair still needed: " + "; ".join(problems))
+                task["status"], task["blocked_reason"] = readiness(task, state["tasks"])
+                task["updated_at"] = now_utc()
+                from .store import emit
+                emit(state, "task_dependencies_repaired", task_id=ref,
+                     removed=[d for d in old_deps if d not in task["depends_on"]])
+            c._dirty("invalid prerequisites dropped")
+            return {"message": f"Invalid prerequisites removed from {ref}; remaining prerequisites are still required."}
         if action == "make_ready":
             self.p.tasks.transition(ref, "ready", "approved in the guided loop")
             return {"message": f"{ref} approved."}
@@ -773,7 +809,8 @@ class Guide:
             self.p.tasks.transition(ref, "cancelled", str(inp.get("reason", "")) or "cancelled by the user")
             return {"message": f"{ref} cancelled."}
         if action == "manager_prompt":
-            return {"message": "Manager update ready to copy.", "prompt": c.manager_update()}
+            return {"message": "Manager update ready to copy.",
+                    "prompt": continue_project_prompt(c.manager_update(), c.state())}
         if action == "accept_milestone":
             self.p.timeline.accept_milestone(ref)
             return {"message": f"Milestone {ref} accepted."}
