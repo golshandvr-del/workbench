@@ -546,6 +546,24 @@ class NextActionTests(Base):
         md = render_status_md(build_snapshot(self.p.store.load()), self.p.store.load())
         self.assertIn("Next action", md)
 
+    def test_bf056_role_change_rebuilds_role_fields(self) -> None:
+        from aiwb.v2.team_setup import _write_team, default_rows
+        st = self.p.store.load()
+        rows = default_rows(2)
+        with self.p.store.transaction("t") as s:
+            _write_team(s, rows)
+        st = self.p.store.load()
+        aid = rows[1].get("agent_id") or [a for a in st["agents"] if a != "agent-project-manager"][0]
+        aid = [a for a in st["agents"] if a != "agent-project-manager"][0]
+        before = st["agents"][aid]["purpose"]
+        new_rows = [dict(r) for r in rows]
+        new_rows[1] = {**new_rows[1], "agent_id": aid, "role": "reviewer"}
+        with self.p.store.transaction("t2") as s:
+            _write_team(s, new_rows)
+        after = self.p.store.load()["agents"][aid]
+        self.assertEqual(after["role"], "reviewer")
+        self.assertNotEqual(after["purpose"], before)
+
     def test_bf083_object_decision_requests_are_kept_as_text(self) -> None:
         from aiwb.v2.handoff import _decisions
         out = _decisions([{"question": "SQLite or JSON files?", "options": ["SQLite", "JSON"], "recommendation": "SQLite"}, "plain", 5, {}])
