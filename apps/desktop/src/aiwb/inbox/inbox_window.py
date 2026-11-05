@@ -127,6 +127,8 @@ class InboxWindow:
         self.last[rid] = out
         res = out.salvage or SalvageResult()
         if not (res.broken or res.missing or res.duplicates or res.complete):
+            if out.status == "parsed" and not out.issues:
+                return ""  # BF-085: read without problems; a "could not import" prompt would be false
             issue = out.issues[0] if out.issues else None
             reason = explain(issue) if issue else "The response could not be imported."
             aid = out.response.declared_attempt_id or out.response.attempt_id
