@@ -169,6 +169,9 @@ class EditTeam(Base):
         with self.assertRaisesRegex(ModelError, "[Rr]eassign.*" + task["task_id"]):
             ts.save_team(self.p.store, r)
         self.assertEqual(self.p.store.load(), before)
+        with self.assertRaisesRegex(ModelError, "[Rr]eassign"):
+            ts.apply_start(self.p.store, {**BRIEF, "goal": "must not replace saved goal"}, r)
+        self.assertEqual(self.p.store.load(), before, "start-form refusal must not partially save the brief")
         self.p.tasks.update(task["task_id"], {"owner_agent_id": "agent-alice"})
         reassigned = self.p.store.load()
         with patch.object(self.p.store, "_write", side_effect=OSError("disk full")):
