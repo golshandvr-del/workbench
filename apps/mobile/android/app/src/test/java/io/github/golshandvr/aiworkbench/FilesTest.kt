@@ -165,6 +165,21 @@ class FilesTest {
         assertFalse(File(Files.dir(p.store), "src/util/__init__.py").exists())
     }
 
+    @Test fun bf076StandaloneAndGuidedCutOffDeliveryKeepContinuePrompt() {
+        for (guided in listOf(false, true)) {
+            val (p, tid) = project()
+            val g = Guide(p)
+            g.perform("task:$tid", "prepare")
+            val key = g.steps().first { it.key.startsWith("handoff:") }.key
+            val broken = answer(p, tid).replaceFirst("\n````\n<<<AIWB_END_FILE>>>", "\n<<<AIWB_END_FILE>>>")
+            if (guided) g.perform(key, "paste", mapOf("text" to broken)) else p.routeAnswer(broken)
+            assertTrue("continue prompt missing (guided=$guided)", g.steps().any { it.key == "continue" && it.prompt.isNotEmpty() })
+            assertTrue(Json.list(State.require(p.state(), "handoffs", key.substringAfter(":"))["diagnosis"])
+                .any { Json.obj(it)["code"] == "truncated" })
+            assertEquals("old\n", Files.read(p.store, "src/calc.py"))
+        }
+    }
+
     @Test fun staleRetainedPreviewRefusesAndPreservesUserEdit() {
         val (p, tid) = project()
         val g = Guide(p)
