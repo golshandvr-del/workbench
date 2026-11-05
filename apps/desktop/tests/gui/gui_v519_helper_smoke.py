@@ -14,11 +14,13 @@ import sys
 import time
 import tkinter as tk
 from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # tests/ (FakeServer lives in test_helper_ai.py)
 
 from scenario_driver import Driver, charter_to_first_prompt, guided_answer, new_guided_project, run, scenario_home  # noqa: E402
 from test_helper_ai import FakeServer  # noqa: E402
+import AI_Workbench as wb  # noqa: E402
 
 from aiwb.ui.next_card import EXPLAIN_LABEL, FIX_LABEL  # noqa: E402
 
@@ -52,6 +54,18 @@ def main() -> None:
             assert w["body"].winfo_manager() and w["save"].winfo_ismapped(), "Show settings did not open the form"
             w["url_var"].set(srv.url)
             w["model_var"].set("small-model")
+            # BF-017: persistence failure is visible, never a fake Saved or an enabled helper.
+            before = app.settings_path.read_bytes()
+            with patch.object(wb, "atomic_write", side_effect=PermissionError("settings locked")), \
+                    patch.object(wb.messagebox, "showwarning") as warning:
+                assert w["do_save"]() is False
+                assert "could not be saved" in w["status_var"].get()
+                assert w["model_var"].get() == "small-model"
+                assert not app.helper_service.configured
+                app.save_now()
+                assert "could not be saved" in app.status_var.get()
+                warning.assert_called_once()
+            assert app.settings_path.read_bytes() == before
             d.click(w["save"], "Save helper")
             assert w["status_var"].get().startswith("Saved."), w["status_var"].get()
             assert app.settings_data.get("helper_ai", {}).get("model") == "small-model", app.settings_data
@@ -92,6 +106,14 @@ def main() -> None:
             # 4) remove → buttons gone
             app.shell.show("settings")
             d.pump(200)
+            before = app.settings_path.read_bytes()
+            with patch.object(wb, "atomic_write", side_effect=PermissionError("settings locked")), \
+                    patch.object(wb.messagebox, "showwarning"):
+                w["do_remove"]()
+                assert "could not be saved" in w["status_var"].get()
+                assert app.helper_service.configured
+                assert w["model_var"].get() == "small-model"
+            assert app.settings_path.read_bytes() == before
             d.click(w["remove"], "Remove")
             d.pump(200)
             app.shell.show("home")
