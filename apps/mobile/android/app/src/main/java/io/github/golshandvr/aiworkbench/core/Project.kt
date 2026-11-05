@@ -288,8 +288,8 @@ class Project(val store: ProjectStore) {
                     "remove_dependency" -> Json.list(State.require(s, "tasks", Json.str(raw["task_id"]))["depends_on"]).remove(Json.str(raw["depends_on_task_id"]))
                     "close_or_cancel_task" -> {
                         val t = State.require(s, "tasks", Json.str(raw["task_id"]))
-                        if ("cancelled" !in State.TASK_FLOW[Json.str(t["status"])].orEmpty()) throw ModelError("task cannot go from '${t["status"]}' to 'cancelled'")
-                        t["status"] = "cancelled"; t["cancel_reason"] = Json.str(raw["reason"]).take(500)
+                        transitionIn(s, Json.str(t["task_id"]), "cancelled", Json.str(raw["reason"]))
+                        t["cancel_reason"] = Json.str(raw["reason"]).take(500)
                         notes.add("${t["task_id"]} cancelled (history kept)")
                     }
                     "propose_decision" -> {
@@ -418,10 +418,31 @@ class Project(val store: ProjectStore) {
         if (new != cur && new !in State.TASK_FLOW[cur].orEmpty()) throw ModelError("task cannot go from '$cur' to '$new'")
         if (new == "ready") { val (r, why) = State.readiness(t, State.coll(s, "tasks")); if (r != "ready") throw ModelError("$taskId is not ready: $why") }
         if (new == "done") throw ModelError("tasks become done only through the evidence policy (review + validation)")
+        if (new in setOf("cancelled", "superseded")) retireWorkIn(s, taskId, new)
         if (new == cur) return
         t["status"] = new; t["updated_at"] = State.nowUtc()
         if (new == "blocked" && reason.isNotEmpty()) t["blocked_reason"] = reason.take(500)
         State.emit(s, "task_status", "task_id" to taskId, "old" to cur, "new" to new, "why" to reason.take(300))
+    }
+
+    /** Close unwanted prompts with the task, retaining historical accepted deliveries and payloads. */
+    private fun retireWorkIn(s: Obj, taskId: String, why: String) {
+        for (raw in State.coll(s, "handoffs").values) {
+            val h = Json.obj(raw)
+            if (h["task_id"] != taskId || h["status"] in setOf("accepted", "rejected", "superseded")) continue
+            if ("superseded" !in HANDOFF_FLOW[Json.str(h["status"])].orEmpty()) throw ModelError("cannot close handoff ${h["handoff_id"]}")
+            h["status"] = "superseded"; h["updated_at"] = State.nowUtc()
+            h["closed_reason"] = "task $taskId $why"
+            State.emit(s, "handoff_superseded", "handoff_id" to h["handoff_id"], "task_id" to taskId, "why" to h["closed_reason"])
+        }
+        for (raw in State.coll(s, "attempts").values) {
+            val a = Json.obj(raw)
+            if (a["task_id"] != taskId || a["status"] in setOf("accepted", "rejected", "abandoned")) continue
+            val aid = Json.str(a["attempt_id"])
+            if ("abandoned" !in ATTEMPT_FLOW[Json.str(a["status"])].orEmpty()) moveAttempt(s, aid, "stale", "task $why")
+            moveAttempt(s, aid, "abandoned", "task $why")
+        }
+        State.require(s, "tasks", taskId)["active_attempt_id"] = ""
     }
 
     // ------------------------------------------------------- attempts/handoffs
@@ -675,6 +696,9 @@ class Project(val store: ProjectStore) {
     /** Shared lifecycle mutation, also used inside the file integration transaction. */
     internal fun resolveHandoffState(s: Obj, handoffId: String, accept: Boolean, reason: String): Obj {
         val h = State.require(s, "handoffs", handoffId)
+        val task = State.require(s, "tasks", Json.str(h["task_id"]))
+        if (accept && task["status"] in setOf("cancelled", "superseded"))
+            throw ModelError("${task["task_id"]} is ${task["status"]}; create a new task instead of accepting unwanted work")
         if (accept && h["status"] in setOf("stale", "reconciliation_required")) {
             if (reason.isBlank()) throw ModelError("accepting a stale handoff needs an explicit reconciliation note")
             h["status"] = "reconciled"
