@@ -11,7 +11,8 @@ package io.github.golshandvr.aiworkbench.core
 object Report {
     val ROUTES = listOf("emergency", "next_stage", "complete")
     private val TRUE = setOf("true", "yes", "y", "1")
-    private val FALSE = setOf("false", "no", "n", "0", "none")
+    private val FALSE = setOf("false", "no", "n", "0", "none", "nothing", "nothing left", "complete", "completed", "done",
+        "no, the project is complete")
 
     const val DECISION_FORMAT = """## Your decision (required in the block)
 Add two fields to the AIWB_MANAGER_PROPOSAL JSON:
@@ -23,8 +24,10 @@ Add two fields to the AIWB_MANAGER_PROPOSAL JSON:
     fun parseRemaining(v: Any?): Boolean? = when (v) {
         is Boolean -> v
         is Number -> v.toDouble() != 0.0
+        is List<*> -> if (v.isEmpty()) false else null
         else -> {
-            val s = (v?.toString() ?: "").trim().lowercase()
+            // Whole statements only: 'no tests yet' and 'not done' remain unknown.
+            val s = (v?.toString() ?: "").trim().lowercase().trimEnd('.', '!', ' ')
             if (s in TRUE) true else if (s in FALSE) false else null
         }
     }
