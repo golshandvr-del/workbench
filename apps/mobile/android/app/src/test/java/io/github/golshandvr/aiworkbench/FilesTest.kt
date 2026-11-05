@@ -247,6 +247,7 @@ class FilesTest {
         val hid = Json.str(h["handoff_id"])
         p.routeAnswer(answer(p, tid).replace("X = 1", ""))
         Files.integrate(p.store, hid)
+        assertTrue(File(Files.dir(p.store), "src/util/__init__.py").isFile)
         assertEquals(0L, File(Files.dir(p.store), "src/util/__init__.py").length())
         val nh = p.startTask(tid, "agent-implementer")
         val nid = Json.str(nh["handoff_id"])
