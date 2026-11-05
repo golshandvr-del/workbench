@@ -95,6 +95,7 @@ class GitOperationRecord:
     created_at: float = 0.0
     updated_at: float = 0.0
     events: list[dict[str, Any]] = field(default_factory=list)
+    evidence_context: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -193,7 +194,8 @@ class SyncBuildOrchestrator:
         branch: str, workflow_file: str, artifact_pattern: str, get_token: Callable[[], str],
         store: RecordStore, in_scope: Callable[[str], bool] = lambda _p: True,
         is_sensitive: Callable[[str], bool] = lambda _p: False, operation_id: str | None = None,
-        task_id: str = "", guard: RepositoryOperationGuard = OPERATION_GUARD,
+        task_id: str = "", evidence_context: dict[str, Any] | None = None,
+        guard: RepositoryOperationGuard = OPERATION_GUARD,
         clock: Callable[[], float] = time.time, sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         if not workflow_file:
@@ -218,11 +220,14 @@ class SyncBuildOrchestrator:
             self.build = BuildRunRecord(**{k: b[k] for k in BuildRunRecord.__dataclass_fields__ if k in b})
             if self.git.repository != self.full_name or self.git.branch != branch:
                 raise OrchestratorError("resume", "The recorded operation belongs to another repository/branch.")
+            if self.git.evidence_context and self.git.evidence_context != (evidence_context or {}):
+                raise OrchestratorError("resume", "The recorded operation belongs to another project, binding or task attempt.")
             self.resumed = True
         else:
             oid = "sb-" + uuid.uuid4().hex[:12]
             now = clock()
-            self.git = GitOperationRecord(oid, self.full_name, branch, task_id=task_id, created_at=now, updated_at=now)
+            self.git = GitOperationRecord(oid, self.full_name, branch, task_id=task_id, created_at=now, updated_at=now,
+                                          evidence_context=dict(evidence_context or {}))
             self.build = BuildRunRecord(oid, workflow_file=workflow_file)
             self.resumed = False
 
