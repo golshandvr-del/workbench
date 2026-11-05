@@ -507,6 +507,10 @@ class ProjectsController:
                 return RouteResult("proposal", rid, msg, p["proposal_id"], p)
             from ..intake.answer_files import canonical
             canon, ex = canonical(text)   # 5.10.0 (A13): Markdown, Strict JSON, ZIP, damaged markers → AIWB blocks
+            unsupported = [problem for problem in ex.problems if "is not applied by the guided loop" in problem]
+            if unsupported:
+                return RouteResult("rejected", rid, "Unsupported file operation: " + "; ".join(unsupported)
+                                   + ". Nothing was linked or applied. Send complete write blocks or perform the operation manually.", text=text)
             if ex.truncated and not HANDOFF_RE.search(canon):
                 # cut off before the end and nothing says what was finished: ask to continue, link nothing yet
                 return RouteResult("truncated", rid, f"The answer was cut off ({len(ex.files)} file(s) so far, "
