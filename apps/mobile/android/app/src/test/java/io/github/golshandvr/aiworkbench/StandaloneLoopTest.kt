@@ -57,6 +57,31 @@ class StandaloneLoopTest {
             "<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n${StrictJson.stringify(m)}\n<<<AIWB_END_HANDOFF>>>\n"
     }
 
+    @Test fun bf057DroppedAndRejectedPromptsCloseAttemptsAndAllowRestart() {
+        for (received in listOf(false, true)) {
+            val p = project()
+            try {
+                val tid = Json.str(p.createTask(linkedMapOf("title" to "Restart", "objective" to "test",
+                    "owner_agent_id" to "agent-implementer", "allowed_paths" to arrayListOf<Any?>("src/core/")), "ready")["task_id"])
+                val h = p.startTask(tid)
+                val hid = Json.str(h["handoff_id"])
+                val aid = Json.str(h["attempt_id"])
+                if (received) p.routeAnswer(answer(h))
+                val g = Guide(p)
+                g.perform("handoff:$hid", if (received) "reject_handoff" else "abandon", mapOf("reason" to "wrong work"))
+                val st = p.state()
+                assertEquals(if (received) "rejected" else "abandoned", State.require(st, "attempts", aid)["status"])
+                assertTrue(Json.str(State.require(st, "tasks", tid)["active_attempt_id"]).isEmpty())
+                assertTrue(g.find("task:$tid").actions.any { it.id == "prepare" })
+                val fresh = p.startTask(tid)
+                assertTrue(aid != fresh["attempt_id"])
+                // Rejecting an old answer must never detach the newer active attempt.
+                p.ingest(hid, "late-response", answer(h))
+                assertEquals(fresh["attempt_id"], State.require(p.state(), "tasks", tid)["active_attempt_id"])
+            } finally { p.store.root.parentFile.deleteRecursively() }
+        }
+    }
+
     @Test fun charterFixtureIsValid() {
         val r = Charter.parse(charterText(), State.empty("todo"))
         assertTrue(r.errors.toString(), r.ok)
