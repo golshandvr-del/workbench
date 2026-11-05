@@ -153,6 +153,27 @@ class ChangeRouteTests(unittest.TestCase):
         self.assertIn("stale", out["message"])
         self.assertTrue(self.ctl.state()["handoffs"][h["handoff_id"]])
 
+    def test_bf033_terminal_tasks_suggest_followup_and_refuse_revision_without_mutation(self):
+        for status in ("done", "cancelled", "superseded"):
+            with self.subTest(status=status):
+                # Isolate the routing boundary from the evidence policy that normally completes tasks.
+                with self.p.store.transaction("terminal routing fixture") as s:
+                    s["tasks"][self.tid]["status"] = status
+                before = self.ctl.state()
+                suggestion = suggest_route(before, self.tid, "fix the login button colour")
+                self.assertEqual(suggestion["route"], "new_task")
+                self.assertIn(status, suggestion["why"])
+                with self.assertRaisesRegex(ModelError, "new task"):
+                    self.ctl.apply_change_route(self.tid, "revise", "fix the login button colour")
+                self.assertEqual(self.ctl.state(), before)
+                out = self.ctl.apply_change_route(self.tid, "new_task", "fix the login button colour")
+                followup = self.ctl.state()["tasks"][out["task_id"]]
+                self.assertEqual((followup["status"], followup["depends_on"]), ("draft", []))
+                self.p.tasks.transition(out["task_id"], "ready")
+                self.assertTrue(self.ctl.start_task(out["task_id"])["prompt"])
+                self.assertEqual(self.ctl.state()["tasks"][self.tid], before["tasks"][self.tid])
+                self.assertEqual(suggest_route(before, self.tid, "migrate the whole framework")["route"], "replan")
+
     def test_new_task_depends_on_open_task(self):
         out = self.ctl.apply_change_route(self.tid, "new_task", "add password reset")
         t = self.ctl.state()["tasks"][out["task_id"]]
