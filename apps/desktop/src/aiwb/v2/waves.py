@@ -28,7 +28,12 @@ def _owner(state: dict[str, Any], t: dict[str, Any]) -> str:
     agents = state.get("agents", {})
     if o and o in agents and (agents.get(o) or {}).get("enabled", True):
         return o
-    return "agent-implementer" if "agent-implementer" in agents else next(iter(agents), "")
+    # A missing owner is not permission to send implementation work into the PM chat.
+    workers = [aid for aid, a in agents.items() if a.get("enabled", True)
+               and a.get("role") != "project_manager" and aid != "agent-project-manager"]
+    load = {aid: sum(h.get("to_agent_id") == aid and h.get("status") in OPEN_HANDOFF
+                     for h in state.get("handoffs", {}).values()) for aid in workers}
+    return min(workers, key=lambda aid: (agents[aid].get("role") != "implementer", load[aid], aid), default="")
 
 
 def _open_tasks(state: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -86,7 +91,8 @@ def dispatch(state: dict[str, Any]) -> dict[str, Any]:
     limit = max_chats(state)
     slots = max(0, limit - len(handoffs))
     order = [tid for layer in waves(state)["waves"] for tid in layer]
-    startable = [tid for tid in order if state["tasks"][tid].get("status") in _STARTABLE and tid not in busy]
+    startable = [tid for tid in order if state["tasks"][tid].get("status") in _STARTABLE and tid not in busy
+                 and _owner(state, state["tasks"][tid])]
     # an emergency task from the project manager goes first (roadmap 4.4.0, correction C4)
     startable.sort(key=lambda tid: "emergency" not in (state["tasks"][tid].get("flags") or []))
     # fairness across lanes: first one task per AI, then the remaining ones, both in wave order
