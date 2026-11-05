@@ -81,6 +81,23 @@ def _preview(text: str, state: dict[str, Any] | None) -> Preview:
             p.line += " — paste it anyway to get a fix prompt for the model."
         return p
     if PROPOSAL_RE.search(text):
+        # BF-040: the same reader as the import (JSON, base revision, at least one operation) — ✓ only when it can work
+        from ..v2.models import ModelError
+        from ..v2.proposals import find_block
+        try:
+            data = find_block(text)
+        except ModelError as exc:
+            msg = str(exc).split("; the raw answer")[0]
+            return Preview("proposal", False, f"Manager proposal ✗ · {msg}", problems=[msg])
+        if data is None:
+            msg = "the proposal block is not closed"
+            return Preview("proposal", False, f"Manager proposal ✗ · {msg}", problems=[msg])
+        ops = data.get("operations")
+        has_ops = isinstance(ops, list) and bool(ops)
+        rescuable = any(k in data for k in ("decisions", "task_assessment", "follow_up_tasks", "roadmap_remaining"))
+        if not has_ops and not rescuable:
+            msg = "the proposal has no operations"
+            return Preview("proposal", False, f"Manager proposal ✗ · {msg}", problems=[msg])
         return Preview("proposal", True, "Manager proposal ✓ — paste it to review its changes.")
     from ..context_request import ContextRequestError, find_request, parse_request
     if CONTEXT_RE.search(text) or find_request(text) is not None:
