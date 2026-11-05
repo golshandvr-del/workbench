@@ -56,6 +56,7 @@ def _strip_invisible(s: str, fixes: list[str]) -> str:
     # Repair transport whitespace only outside file bodies and JSON strings.
     lines = out.split("\n")
     in_file = in_string = escaped = False
+    quote = ""
     zw = nb = 0
     for i, line in enumerate(lines):
         marker = _fix_marker_line(line.translate({ord(c): None for c in ZERO_WIDTH}))
@@ -74,8 +75,11 @@ def _strip_invisible(s: str, fixes: list[str]) -> str:
                 escaped = False
             elif in_string and c == "\\":
                 escaped = True
-            elif c == '"':
-                in_string = not in_string
+            elif in_string and c == quote:
+                in_string = False
+            elif not in_string and c in '\"“':
+                in_string = True
+                quote = '"' if c == '"' else '”' 
         lines[i] = "".join(cleaned)
         if marker.startswith("<<<AIWB_FILE "):
             in_file = True
