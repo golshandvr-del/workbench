@@ -228,6 +228,12 @@ def role_of(value: Any, *, name: str = "") -> str:
     if v in ROLES:
         return v
     words = " " + re.sub(r"[^a-z0-9]+", " ", (v or str(name).lower())) + " "
+    # Leadership of code or releases is not project-management authority.
+    if " project manager " not in words and " project lead " not in words and " project owner " not in words:
+        if " tech lead " in words or " technical lead " in words:
+            return "architect"
+        if any(term in words for term in (" developer ", " engineer ", " code owner ", " release manager ")):
+            return "implementer"
     for role, keys in _ROLE_RULES:
         for k in keys:
             if (" " + k + " ") in words or (len(k) > 3 and k in words):
