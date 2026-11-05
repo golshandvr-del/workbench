@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 11 (BF-002, 003, 004, 007, 009, 010, 016, 043, 076, 078, 079) | 0 |
-| S2 | 36 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101) | 0 |
+| S2 | 37 (BF-001, 005, 008, 011, 013, 014, 017, 019, 021, 023, 025, 026, 029, 030, 032, 033, 035, 039, 041, 042, 045, 046, 048, 051, 053, 054, 055, 072, 074, 077, 080, 081, 091, 092, 096, 101, 103) | 0 |
 | S3 | 53 (BF-006, 012, 015, 018, 020, 022, 024, 027, 028, 031, 034, 036, 037, 038, 040, 044, 047, 052, 056, 057, 058, 059, 060, 061, 062, 063, 064, 065, 066, 067, 068, 069, 070, 071, 073, 075, 082, 083, 084, 085, 086, 087, 088, 089, 090, 093, 094, 095, 097, 098, 099, 100, 102) | 0 |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021 | |
 
@@ -2270,6 +2270,16 @@ re-plan, like the classic apply.
 **Impact:** part of the form and/or the Run/Close bar is outside the visible desktop. A window manager may constrain the window instead, but there is no content scrolling to recover the clipped controls. Manual window movement/resizing is an awkward workaround and does not solve the missing layout bounds. This is a separate dialog from BF-099/BF-100, with the same unbounded-layout family plus an independent horizontal-width issue.
 
 **Expected:** wrap descriptions, bound the dialog to the work area, scroll the input region in both necessary directions, and keep status and Run/Close outside it. Add GUI coverage for maximum supported inputs and long descriptions on laptop-size displays.
+
+### BF-103 · S2 · OPEN — Build Center: selecting another run during a job fetch shows jobs/log links from the previous run
+
+**Where:** `aiwb/github/build_center.py` `_load_jobs()`: the run is captured at request start. Selecting a second run clears the job tree but returns immediately when `self.busy` is true. The first request's `done()` unconditionally fills `self.jobs` and the tree; it never verifies that the selection still matches the captured run and never queues the second selection. Tree selections remain enabled during network work. `_open_job()` then opens the stale job's log URL.
+
+**Reproduced locally with real Tk selection events:** construct `BuildCenterWindow` with initial refresh disabled and two completed runs (IDs 1 and 2). Replace `_run` with a deferred callback recorder that sets busy; select `1:1` and process Tk events, then select `2:1` and process events while the first callback is pending. Complete that callback with `WorkflowJob(11, "JOB FOR A", "completed", "failure", "", "", "https://github.com/o/r/actions/runs/1/job/11")`. Observed: selected run **2**, only **one** job request, job tree **["JOB FOR A"]**, status **"Run 1: 1 job(s) ..."**. This deterministically models a slow network response; no GitHub requests are made.
+
+**Impact:** failed steps and the double-click log target belong to run A while run B remains selected. This can send the user debugging the wrong commit/run. The status names A, but the selected row and other run actions still target B. Reselecting B after the request finishes is a workaround; later polling may also repair it.
+
+**Expected:** associate results with a run-ID/attempt selection generation, discard stale results, and schedule a fetch for the latest selection after the current worker finishes. Clear the cached jobs with the displayed rows. Cover run changes and workflow changes during a pending request.
 
 ## Checked and OK
 
