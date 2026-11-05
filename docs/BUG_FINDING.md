@@ -27,7 +27,7 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
-| S2 | 29 (BF-005, BF-008, BF-011, BF-013, BF-017, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-039, BF-041, BF-042, BF-045, BF-046, BF-053, BF-054, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 12 (BF-001, BF-014, BF-026, BF-033, BF-035, BF-048, BF-051, BF-055, BF-105, BF-106, BF-108, BF-109) |
+| S2 | 26 (BF-005, BF-008, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-032, BF-039, BF-041, BF-042, BF-045, BF-046, BF-053, BF-054, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103) | 15 (BF-001, BF-011, BF-013, BF-014, BF-017, BF-026, BF-033, BF-035, BF-048, BF-051, BF-055, BF-105, BF-106, BF-108, BF-109) |
 | S3 | 49 (BF-006, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 5 (BF-012, BF-028, BF-057, BF-095, BF-104) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
@@ -248,7 +248,9 @@ user cannot see why. The same silent skip happens for a file whose body is only 
 severity error for size limits) listed on the card, so the user can *Build the troubleshooting prompt* or accept
 knowingly; an intentionally empty file (e.g. `__init__.py`) should simply be written empty.
 
-### BF-011 · S2 · OPEN — "Tests/build failed…": the user's note is thrown away and the next prompt still says "tests pass"
+### BF-011 · S2 · FIXED (a887ae4e) — "Tests/build failed…": the user's note is thrown away and the next prompt still says "tests pass"
+
+**Repair evidence — session 35 / V5.25–V5.26:** Desktop guided validation (5fd92ec6) now stores the user note as the evidence summary (existing 2000-character bound), with separate explicit/generated run ID and attempt association. Fresh prompts include the latest verified test/build result for this task and current revision; failed validation associated with the previous delivery labels its model claims CONTRADICTED and asks for the reported failure to be fixed. Foreign task and obsolete revision evidence are excluded. Mobile equivalents 52cda1dd/c9d6fc56/88b85e97. Actual guided paste/accept/validation and project-reopen tests in test_v2_guide and StandaloneLoopTest verify long Persian notes, explicit run ID, attempt identity, fresh prompt content and evidence isolation. Initial baseline failures reproduced; Mobile test fixture follows its offered Approve step and existing input trimming. These are unit/JVM tests, not Android device/UI validation.
 
 **Where:** `aiwb/v2/guide.py` `_perform`: `validation_failed` copies the note into `run_id` only when no run id is
 given (truncated to 100 chars), then `record_validation` stores `summary="recorded in the guided loop"`. The task
@@ -286,7 +288,9 @@ the user to waste a chat round.
 **Expected:** the continue step is dropped automatically when its handoff is no longer open (and on abandon / reject /
 troubleshoot of that handoff).
 
-### BF-013 · S2 · OPEN — after "Reject…" the reason is lost and the next prompt says "This is the first handoff"
+### BF-013 · S2 · FIXED (a887ae4e) — after "Reject…" the reason is lost and the next prompt says "This is the first handoff"
+
+**Repair evidence — session 35 / V5.25–V5.26:** Desktop and Mobile (52cda1dd/88b85e97) select the most recent accepted OR rejected handoff as the next prompt lineage. Its summary/delivered items remain visible, and a rejected handoff carries its user resolution reason plus explicit warning that the listed items were NOT accepted. It no longer calls a rejected delivery the first handoff. Actual guided paste -> Reject with Persian/English reason -> reopen project -> prepare tests on both platforms verify prior handoff ID, retained reason and self-contained feedback. No historical resolution is modified. Unit/JVM evidence only; no Android Activity/device gate claimed.
 
 **Where:** `aiwb/v2/guide.py` `reject_handoff` → `resolve_handoff(ref, False, reason)`; the task prompt
 (`aiwb/v2/handoff.py`, section *6. Previous handoff*) only looks at accepted/complete handoffs.
@@ -373,7 +377,9 @@ defaults and a notice), or decoded as UTF-16 (BOM) / Windows-1252 as a fallback.
 (`_save_github_account_metadata`, `_save_github_repository_binding_metadata`) read with plain `utf-8` (no `-sig`):
 they already catch the decode error, so they are fine.
 
-### BF-017 · S2 · OPEN — when `settings.json` cannot be written, every settings change says "Saved" and is lost at restart
+### BF-017 · S2 · FIXED (bec490b7) — when `settings.json` cannot be written, every settings change says "Saved" and is lost at restart
+
+**Repair evidence — session 35 / V5.25–V5.26:** Global Desktop settings save failure now reports the cause, lost-on-close risk and logs/app.log once per failure period; clears the Saved badge and never lets Toolbar Save claim success. Successful retry persists in-memory preferences and resets warning suppression. HelperService ff72aad6 treats explicit False and raised save callbacks as failures, restores prior helper configuration in the current callable settings dict and rolls back created/replaced/deleted credentials. Failed credential deletion keeps configuration reachable; rollback failure is surfaced explicitly. This is exception rollback, NOT power-loss atomicity across Credential Manager and JSON. Helper Remove 75e06de3 preserves its form and displays the failure. Regressions cover real directory-at-settings.json atomic replacement failure, Toolbar with/without workspace, repeated warning/retry, helper initial/replace/keep/remove-key/clear, callable dict replacement and rollback errors. Real Tk gui_v519_helper_smoke (218d65da) passes under Xvfb with injected save/removal failures, unchanged on-disk settings, retries and normal Save/Test/Explain/Fix/Remove against a local fake API. Native Windows Credential Manager validation remains a platform gate.
 
 **Where:** `AI_Workbench.py` `_save_settings()` catches every exception, writes it to `logs/app.log` and returns
 `False`; the callers ignore the result: `_save_prefs()` (theme / language / mode / reduce motion),
