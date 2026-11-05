@@ -198,7 +198,9 @@ class ProjectWizard:
         if step == 0:
             if not self.vars["name"].get().strip() and self.mode == "create":
                 out.append("Give the project a name.")
-            if self.mode == "create" and not Path(self.vars["parent"].get().strip() or ".").expanduser().is_dir():
+            parent = self.vars["parent"].get().strip()
+            if self.mode == "create" and (not parent or not Path(parent).expanduser().is_absolute()
+                                           or not Path(parent).expanduser().is_dir()):
                 out.append("Choose an existing parent folder.")
             if not self.goal():
                 out.append("Describe the goal of the project (one or two sentences).")
