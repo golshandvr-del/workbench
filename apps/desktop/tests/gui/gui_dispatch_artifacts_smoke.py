@@ -148,6 +148,34 @@ def main() -> int:
         ad.tree.selection_set("31"); root.update()
         ad.extract()
         assert (Path(tmp.name) / "setup-31" / "AI_Workbench_Setup.bat").is_file(), ad.status_var.get()
+        # BF-106: a cached matched result is not proof after local replacement,
+        # including modification while the confirmation is open.
+        import shutil
+        shutil.rmtree(Path(tmp.name) / "setup-31")
+        result = ad.downloads[31]
+        def replace_during_confirmation(title, message):
+            changed = bytearray(ZIP)
+            changed[30 + len("AI_Workbench_Setup.bat")] ^= 1
+            result.path.write_bytes(changed)
+            return True
+        ad.confirm = replace_during_confirmation
+        ad.extract()
+        assert "changed after download" in ad.status_var.get(), ad.status_var.get()
+        assert not result.path.with_suffix("").exists()
+        result.path.unlink()
+        ad.extract()
+        assert "missing" in ad.status_var.get(), ad.status_var.get()
+        # BF-104: an archive whose metadata loads but whose payload has bad CRC
+        # must become a domain error with no destination, even with no digest.
+        corrupt = bytearray(ZIP)
+        corrupt[30 + len("AI_Workbench_Setup.bat")] ^= 1
+        result.path.write_bytes(corrupt)
+        ad.downloads[31] = ar.DownloadResult(31, result.path, len(corrupt), hashlib.sha256(corrupt).hexdigest(), "computed_only")
+        ad.confirm = lambda title, message: True
+        ad.extract()
+        assert "corrupt" in ad.status_var.get(), ad.status_var.get()
+        assert not result.path.with_suffix("").exists()
+        assert not list(Path(tmp.name).glob(".aiwb-extract-*"))
         assert errors == [], errors
         ad.close()
     finally:
