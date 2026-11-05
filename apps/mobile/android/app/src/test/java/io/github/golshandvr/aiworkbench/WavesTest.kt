@@ -56,6 +56,43 @@ class WavesTest {
         assertEquals(listOf("T-3"), d.queued)
     }
 
+    @Test fun bf055OrphanOwnerUsesWorkerAndNoWorkerOffersRecovery() {
+        val root = Files.createTempDirectory("aiwb-owner").toFile()
+        try {
+            val p = Project(ProjectStore(File(root, "w")))
+            p.installTemplates()
+            p.store.transaction("custom team") { s ->
+                val agents = io.github.golshandvr.aiworkbench.core.State.coll(s, "agents")
+                val template = Json.obj(agents["agent-implementer"])
+                agents["agent-dev-a"] = LinkedHashMap(template).apply { put("agent_id", "agent-dev-a") }
+                agents["agent-dev-b"] = LinkedHashMap(template).apply { put("agent_id", "agent-dev-b"); put("enabled", false) }
+                agents.remove("agent-implementer"); agents.remove("agent-architect"); agents.remove("agent-reviewer")
+                Json.obj(s["settings"])["goal"] = "test routing"
+            }
+            for (oldOwner in listOf("", "agent-dev-b", "agent-missing")) {
+                val tid = Json.str(p.createTask(linkedMapOf("title" to "Core", "objective" to "test"), "ready")["task_id"])
+                p.store.transaction("legacy ownership") { s -> Json.obj(Json.obj(s["tasks"])[tid])["owner_agent_id"] = oldOwner }
+                val st = p.state()
+                assertEquals("agent-dev-a", Waves.owner(st, Json.obj(Json.obj(st["tasks"])[tid])))
+                assertEquals("agent-dev-a", Guide(p).find("task:$tid").agentId)
+                val h = p.startTask(tid)
+                assertEquals("agent-dev-a", h["to_agent_id"])
+                p.resolveHandoff(Json.str(h["handoff_id"]), false, "next fixture")
+                p.transition(tid, "cancelled")
+            }
+            val tid = Json.str(p.createTask(linkedMapOf("title" to "No worker", "objective" to "test"), "ready")["task_id"])
+            p.store.transaction("no enabled workers") { s -> Json.obj(Json.obj(s["agents"])["agent-dev-a"])["enabled"] = false }
+            val before = p.state()
+            assertTrue(tid !in Waves.dispatch(before).next)
+            val step = Guide(p).find("task:$tid")
+            assertTrue(step.actions.none { it.id == "prepare" })
+            assertTrue(step.actions.any { it.id == "manager_prompt" })
+            try { p.startTask(tid); org.junit.Assert.fail("missing worker accepted") }
+            catch (e: io.github.golshandvr.aiworkbench.core.ModelError) { assertTrue(e.message.orEmpty().contains("enabled worker")) }
+            assertEquals(before, p.state())
+        } finally { root.deleteRecursively() }
+    }
+
     @Test fun bf035CancellationRetiresPromptsAndRefusesLatePublication() {
         for (route in listOf("direct", "proposal", "supersede")) for (received in listOf(false, true)) {
             val root = Files.createTempDirectory("aiwb-cancel").toFile()
