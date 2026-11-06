@@ -12,6 +12,7 @@ from tkinter import messagebox, simpledialog, ttk
 from typing import Any, Callable
 
 from .. import i18n
+from ..ui import layout as ui_layout
 from .controller import ProjectsController
 from .models import ModelError
 
@@ -308,25 +309,49 @@ class ProposalDialog:
         msg = proposal.get("summary", "")
         if proposal.get("stale"):
             msg = "⚠ Written for an older project state. " + msg
-        ttk.Label(self.top, text=msg, wraplength=700).pack(anchor="w", padx=10, pady=6)
+        head = ttk.Label(self.top, text=msg, wraplength=700)
+        head.pack(anchor="w", padx=10, pady=6)
+        # BF-099: the buttons stay outside a bounded, scrollable list (a plan can have up to 60 operations)
+        bar = ttk.Frame(self.top, padding=8)
+        bar.pack(side="bottom", fill="x")
+        self.page = ui_layout.ScrollPage(self.top)
+        self.page.pack(side="top", fill="both", expand=True, padx=(10, 0))
         self.vars: list[tuple[int, tk.BooleanVar]] = []
+        self.checks: list[ttk.Checkbutton] = []
         for op in proposal["operations"]:
             v = tk.BooleanVar(value=op.get("valid", False))
             text = f"#{op['index']} {op['operation']}: {op.get('label') or op.get('raw', {}).get('title', '')}"
             if not op.get("valid"):
                 text += f"  (invalid: {op.get('problem', '')})"
-            cb = ttk.Checkbutton(self.top, text=text, variable=v)
-            cb.pack(anchor="w", padx=14)
+            cb = ttk.Checkbutton(self.page.body, text=text, variable=v)
+            cb.pack(anchor="w", padx=4)
             if not op.get("valid"):
                 cb.state(["disabled"])
             self.vars.append((op["index"], v))
-        bar = ttk.Frame(self.top, padding=8)
-        bar.pack(fill="x")
-        ttk.Button(bar, text="Apply selected", command=self._ok).pack(side="left")
+            self.checks.append(cb)
+        self.apply_btn = ttk.Button(bar, text="Apply selected", command=self._ok)
+        self.apply_btn.pack(side="left")
+        self.all_btn = ttk.Button(bar, text="Select all valid", command=lambda: self._select(True))
+        self.all_btn.pack(side="left", padx=(8, 0))
+        self.none_btn = ttk.Button(bar, text="Select none", command=lambda: self._select(False))
+        self.none_btn.pack(side="left", padx=(4, 0))
         ttk.Button(bar, text="Cancel", command=self.top.destroy).pack(side="right")
+        self.top.bind("<Return>", lambda _e: self._ok())
+        self.top.bind("<Escape>", lambda _e: self.top.destroy())
+        self.page.bind_wheel_tree(self.page.body)
+        self.top.update_idletasks()
+        _, max_h = ui_layout.fit_size(self.top, 800, 10_000)
+        chrome = head.winfo_reqheight() + bar.winfo_reqheight() + 40
+        need = self.page.fit_height(max(120, max_h - chrome))
+        ui_layout.place_dialog(self.top, 760, need + chrome, parent)
         self.top.transient(parent)
         self.top.grab_set()
         parent.wait_window(self.top)
+
+    def _select(self, on: bool) -> None:
+        for (idx, v), cb in zip(self.vars, self.checks):
+            if not cb.instate(["disabled"]):
+                v.set(on)
 
     def _ok(self) -> None:
         self.result = [i for i, v in self.vars if v.get()]

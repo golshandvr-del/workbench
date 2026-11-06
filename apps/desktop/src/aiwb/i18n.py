@@ -58,7 +58,7 @@ ACTION = {
     "manager_update": ("Send the manager an update", "گزارش به‌روز را برای مدیر پروژه بفرستید"),
     "replan": ("Re-plan a blocked task", "Task مسدود را دوباره برنامه‌ریزی کنید"),
     "unblock_task": ("Unblock a task whose prerequisites changed", "Taskی را که پیش‌نیازهایش تغییر کرده آزاد کنید"),
-    "approve_task": ("Approve finished work so the task can be closed", "کار تمام‌شده را تأیید کنید تا Task بسته شود"),
+    "approve_task": ("Approve the new task so it can start", "Task جدید را تأیید کنید تا شروع شود"),
     "review_delivery": ("Review what the agent delivered", "تحویلی Agent را بازبینی کنید"),
     "prepare_handoff": ("Prepare the prompt for the next agent", "پرامپت Agent بعدی را آماده کنید"),
     "review_task": ("Review the finished task", "Task تمام‌شده را بازبینی کنید"),

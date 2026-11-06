@@ -8,7 +8,7 @@ from typing import Callable
 
 from ..ui import qr
 from .server import CompanionServer
-from .service import DEFAULT_PERMISSIONS, PERMISSIONS, CompanionService
+from .service import DEFAULT_PERMISSIONS, PERMISSIONS, CompanionError, CompanionService
 
 
 class CompanionWindow:
@@ -68,8 +68,14 @@ class CompanionWindow:
         self.perm_vars = {p: tk.BooleanVar(value=p in DEFAULT_PERMISSIONS) for p in PERMISSIONS}
         for p, v in self.perm_vars.items():
             ttk.Checkbutton(row2, text=p.replace("_", " "), variable=v).pack(side="left")
-        ttk.Button(row2, text="Set permissions", command=self.do_permissions).pack(side="left", padx=6)
-        ttk.Button(row2, text="Revoke", command=self.do_revoke).pack(side="left")
+        self.perm_btn = ttk.Button(row2, text="Set permissions", command=self.do_permissions, state="disabled")
+        self.perm_btn.pack(side="left", padx=6)
+        self.revoke_btn = ttk.Button(row2, text="Revoke", command=self.do_revoke, state="disabled")
+        self.revoke_btn.pack(side="left")
+        self.perm_note = tk.StringVar(value="")
+        ttk.Label(df, textvariable=self.perm_note, wraplength=700).pack(anchor="w")
+        # BF-072: selecting a device shows ITS permissions in the boxes (they are not the next pairing's choice)
+        self.tree.bind("<<TreeviewSelect>>", lambda _e: self._on_select())
         # on_change is called from the network thread: never touch Tk there, the timer refreshes the UI
         self.svc.on_change = lambda: None
         self.refresh()
@@ -110,17 +116,52 @@ class CompanionWindow:
                                                                     d.get("last_seen") or "never"))
         if sel and self.tree.exists(sel[0]):
             self.tree.selection_set(sel[0])
+        self._update_device_buttons()
+        skew = self.svc.last_skew   # BF-071: say it when a phone's clock is the reason it cannot connect
+        if skew and self.svc.clock() - skew["at"] < 120 and not pend:
+            mins = max(1, round(abs(skew["seconds"]) / 60))
+            self.pair_var.set(f"A phone tried to connect but its clock is {mins} minute(s) "
+                              f"{'ahead' if skew['seconds'] > 0 else 'behind'}. Set the phone and this PC to automatic time.")
+
+    def _selected_device(self) -> dict | None:
+        did = self._selected()
+        return next((d for d in self.svc.registry.list() if d["device_id"] == did), None) if did else None
+
+    def _update_device_buttons(self) -> None:
+        dev = self._selected_device()
+        live = bool(dev) and dev.get("status") == "active"
+        self.perm_btn.configure(state="normal" if live else "disabled")
+        self.revoke_btn.configure(state="normal" if live else "disabled")
+
+    def _on_select(self) -> None:
+        dev = self._selected_device()
+        if dev:
+            for p, v in self.perm_vars.items():
+                v.set(p in dev.get("permissions", []))
+            self.perm_note.set(f"{dev['name']}: {', '.join(p.replace('_', ' ') for p in dev['permissions']) or 'no permissions'}")
+        self._update_device_buttons()
 
     def toggle(self) -> None:
         try:
             self.server.stop() if self.server.running else self.server.start()
         except OSError as exc:
-            messagebox.showerror("Mobile Companion", f"Could not start the endpoint: {exc}", parent=self.win)
+            self._start_failed(exc)
         self.refresh()
+
+    def _start_failed(self, exc: OSError) -> None:
+        text = (f"Port {self.server.port} is used by another program (maybe a second AI Workbench). Close it and try "
+                f"again. ({exc})") if getattr(exc, "errno", None) in (98, 10048, 48) else \
+            f"Could not start the endpoint: {exc}"
+        self.pair_var.set(text)
+        messagebox.showerror("Mobile Companion", text, parent=self.win)
 
     def do_pair(self) -> str:
         if not self.server.running:
-            self.server.start()
+            try:
+                self.server.start()
+            except OSError as exc:   # BF-073: a taken port is a normal situation, not an application bug
+                self._start_failed(exc)
+                return ""
         uri = self.svc.start_pairing(self.server.host, self.server.port)
         self.uri = uri
         self.code_var.set(self.svc.pairing_code())
@@ -147,19 +188,41 @@ class CompanionWindow:
         if not pend:
             return
         perms = tuple(p for p, v in self.perm_vars.items() if v.get()) or DEFAULT_PERMISSIONS
-        self.svc.decide(pend[0]["pairing_id"], approve, perms)
+        try:
+            self.svc.decide(pend[0]["pairing_id"], approve, perms)
+        except CompanionError as exc:   # BF-069: a request that came too late is refused with a reason
+            self.pair_var.set(str(exc))
+            self.refresh()
+            return
         self.pair_var.set("Device approved." if approve else "Pairing denied.")
+        self._reset_permission_boxes()   # BF-072: the choice made for this phone is not carried to the next one
         self.refresh()
 
     def _selected(self) -> str:
         sel = self.tree.selection()
         return sel[0] if sel else ""
 
+    def _reset_permission_boxes(self) -> None:
+        for p, v in self.perm_vars.items():
+            v.set(p in DEFAULT_PERMISSIONS)
+
     def do_permissions(self) -> None:
-        did = self._selected()
-        if did:
-            self.svc.registry.set_permissions(did, [p for p, v in self.perm_vars.items() if v.get()])
-            self.refresh()
+        dev = self._selected_device()
+        if not dev or dev.get("status") != "active":
+            return
+        new = [p for p, v in self.perm_vars.items() if v.get()]
+        old = list(dev.get("permissions", []))
+        self.svc.registry.set_permissions(dev["device_id"], new)
+        removed = [p for p in old if p not in new]
+        added = [p for p in new if p not in old]
+        txt = ", ".join(p.replace("_", " ") for p in new) or "no permissions"
+        note = f"{dev['name']}: {txt}"
+        if removed:
+            note += f" (removed: {', '.join(p.replace('_', ' ') for p in removed)})"
+        if added:
+            note += f" (added: {', '.join(p.replace('_', ' ') for p in added)})"
+        self.perm_note.set(note)
+        self.refresh()
 
     def do_revoke(self) -> None:
         did = self._selected()

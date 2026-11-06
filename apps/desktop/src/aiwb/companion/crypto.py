@@ -20,11 +20,22 @@ from typing import Any
 
 VERSION = 1
 MAX_SKEW_SECONDS = 300
+# BF-070: the envelope must hold the largest allowed text (300 000 characters x up to 4 UTF-8 bytes) after base64
+MAX_FIELD_CHARS = 2_000_000
+MAX_ENVELOPE_BYTES = 2_200_000
 _FIELDS = ("v", "kid", "ts", "nonce", "re", "ct", "mac")
 
 
 class EnvelopeError(ValueError):
     """Authentication/format failure; the message never contains key material."""
+
+
+class ClockSkewError(EnvelopeError):
+    """BF-071: the MAC is valid (so the sender knows the key) but its timestamp is outside the window."""
+
+    def __init__(self, skew_seconds: int) -> None:
+        super().__init__("message too old or clock skew too large")
+        self.skew_seconds = skew_seconds
 
 
 def b64e(raw: bytes) -> str:
@@ -80,7 +91,7 @@ def check_shape(env: Any) -> dict[str, Any]:
     if env["v"] != VERSION or not isinstance(env["ts"], int) or isinstance(env["ts"], bool):
         raise EnvelopeError("bad envelope version/timestamp")
     for k in ("kid", "nonce", "re", "ct", "mac"):
-        if not isinstance(env[k], str) or len(env[k]) > 400_000:
+        if not isinstance(env[k], str) or len(env[k]) > MAX_FIELD_CHARS:
             raise EnvelopeError(f"bad envelope field {k}")
     if not env["kid"] or len(env["kid"]) > 80:
         raise EnvelopeError("bad key id")
@@ -92,8 +103,9 @@ def open_bytes(master: bytes, env: Any, *, now: float | None = None, max_skew: i
     ek, mk = _keys(master)
     if not hmac.compare_digest(b64d(env["mac"]), _h(mk, _mac_input(env))):
         raise EnvelopeError("authentication failed")
-    if abs((time.time() if now is None else now) - env["ts"]) > max_skew:
-        raise EnvelopeError("message too old or clock skew too large")
+    skew = int(env["ts"] - (time.time() if now is None else now))   # >0: the sender's clock is ahead
+    if abs(skew) > max_skew:
+        raise ClockSkewError(skew)
     nonce = b64d(env["nonce"])
     if len(nonce) != 16:
         raise EnvelopeError("bad nonce")

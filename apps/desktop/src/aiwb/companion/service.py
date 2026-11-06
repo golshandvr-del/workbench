@@ -21,10 +21,11 @@ from pathlib import Path
 from typing import Any, Callable
 
 from . import crypto, pairing as pairing_code
-from .crypto import EnvelopeError, b64d, b64e
+from .crypto import ClockSkewError, EnvelopeError, b64d, b64e
 
 PAIRING_TTL_SECONDS = 600
 PAIRING_MAX_FAILURES = 5
+PAIRING_GRACE_SECONDS = 300   # BF-069: a request sent before the code ran out stays decidable (and pollable) this long
 PERMISSIONS = ("view_project", "create_task", "submit_response")
 DEFAULT_PERMISSIONS = ("view_project",)
 MAX_TEXT = 300_000
@@ -109,6 +110,7 @@ class CompanionService:
         self.pending: dict[str, dict[str, Any]] = {}   # pairing_id -> request awaiting desktop approval
         self._seen: dict[str, float] = {}               # nonce -> ts (replay protection)
         self._locked = False                             # last pairing was cancelled after 5 failed attempts
+        self.last_skew: dict[str, Any] | None = None     # BF-071: the last phone refused for its clock {seconds, at}
 
     @property
     def on_change(self) -> Callable[[], None]:
@@ -167,15 +169,26 @@ class CompanionService:
             self.pending.clear()
             self._locked = False
 
+    def _drop_late_requests(self) -> None:
+        """BF-069: a pending request is dropped once the grace period after the code's expiry is over."""
+        p = self.pairing
+        if self.pending and (not p or self.clock() > p["expires"] + PAIRING_GRACE_SECONDS):
+            self.pending.clear()
+            if p and p.get("result") is None:
+                p["result"] = {"status": "expired"}
+
     def pending_requests(self) -> list[dict[str, Any]]:
         with self._lock:
+            self._drop_late_requests()
             return [dict(v) for v in self.pending.values()]
 
     def decide(self, pairing_id: str, approve: bool, permissions: tuple[str, ...] = DEFAULT_PERMISSIONS) -> dict[str, Any] | None:
         with self._lock:
+            self._drop_late_requests()
             req = self.pending.pop(pairing_id, None)
             if req is None or not self.pairing or self.pairing["pairing_id"] != pairing_id:
-                raise CompanionError("no_request", "no pairing request is waiting")
+                raise CompanionError("no_request", "no pairing request is waiting - it may have come too late; "
+                                                   "create a new code")
             if not approve:
                 self.pairing["result"] = {"status": "denied"}
                 return None
@@ -198,6 +211,8 @@ class CompanionService:
 
     def handle(self, body: bytes) -> tuple[int, dict[str, Any]]:
         """Returns (http_status, json). Authenticated replies are sealed; failures are plain codes only."""
+        if len(body) > crypto.MAX_ENVELOPE_BYTES:   # BF-070: a clear answer before any parsing
+            return 413, {"error": "too_large"}
         try:
             env = crypto.check_shape(json.loads(body.decode("utf-8")))
         except (ValueError, UnicodeDecodeError):
@@ -207,8 +222,15 @@ class CompanionService:
                 kid = env["kid"]
                 if kid.startswith("pair-"):
                     p = self.pairing
-                    if not p or self.clock() > p["expires"]:
+                    if not p:
                         return 403, {"error": "pairing_expired"}
+                    if self.clock() > p["expires"]:
+                        # BF-069: after the code ran out only the phone that already sent its request may keep
+                        # polling (pair_status), for the grace period; a new pair_request is refused below.
+                        late_ok = (p["used"] and p["pairing_id"] == kid
+                                   and self.clock() <= p["expires"] + PAIRING_GRACE_SECONDS)
+                        if not late_ok:
+                            return 403, {"error": "pairing_expired"}
                     if p["pairing_id"] != kid:
                         # wrong manual code: counts toward the 5-attempt limit
                         self._pair_failure()
@@ -221,6 +243,11 @@ class CompanionService:
                     key = b64d(dev["key"])
                 req = crypto.open_json(key, env, now=self.clock())
                 self._replay(env)
+            except ClockSkewError as exc:
+                # BF-071: a correct MAC with a wrong clock is NOT a wrong code; tell the phone the desktop time
+                self.last_skew = {"seconds": exc.skew_seconds, "at": int(self.clock())}
+                self.on_change()
+                return 401, {"error": "clock_skew", "server_time": int(self.clock())}
             except EnvelopeError:
                 if env["kid"].startswith("pair-"):
                     self._pair_failure()
@@ -239,6 +266,8 @@ class CompanionService:
             p = self.pairing
             assert p is not None
             if op == "pair_request":
+                if self.clock() > p["expires"]:
+                    raise CompanionError("pairing_expired", "the pairing code expired")
                 if p["used"]:
                     raise CompanionError("pairing_used", "this pairing code was already used")
                 name = str(req.get("device_name") or "").strip()[:60] or "Android device"

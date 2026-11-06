@@ -47,34 +47,43 @@ class ActionForm:
         self.top.withdraw()
         self.top.title(FORM_TITLE_PREFIX + (spec.get("title") or "Your answer"))
         self.top.transient(parent.winfo_toplevel())
-        body = ttk.Frame(self.top, padding=14)
-        body.pack(fill="both", expand=True)
-        wrap = WIDTH - 40
+        outer = ttk.Frame(self.top, padding=14)
+        outer.pack(fill="both", expand=True)
+        wrap = WIDTH - 60
+        # BF-100: title on top, error feedback + OK/Cancel at the bottom (always visible); the question and the
+        # fields in between scroll when the screen is too small for them.
         if spec.get("step_title"):
-            ttk.Label(body, text=spec["step_title"], style="SectionTitle.TLabel", wraplength=wrap,
-                      justify="left").pack(anchor="w")
+            ttk.Label(outer, text=spec["step_title"], style="SectionTitle.TLabel", wraplength=wrap,
+                      justify="left").pack(side="top", anchor="w")
+        bar = ttk.Frame(outer)
+        bar.pack(side="bottom", fill="x", pady=(10, 0))
+        self.error_var = tk.StringVar(value="")
+        self.error_label = ttk.Label(outer, textvariable=self.error_var, style="Error.TLabel", wraplength=wrap,
+                                     justify="left")
+        self.error_label.pack(side="bottom", anchor="w", pady=(6, 0))
+        self.page = ui_layout.ScrollPage(outer)
+        self.page.pack(side="top", fill="both", expand=True)
+        body = self.page.body
         self.question_label = ttk.Label(body, text=spec.get("question") or "", wraplength=wrap, justify="left")
         if spec.get("question"):
             self.question_label.pack(anchor="w", pady=(6, 10), fill="x")
         start = initial_values(spec)
         for f in spec["fields"]:
             self._field(body, f, start.get(f["need"], ""), wrap)
-        self.error_var = tk.StringVar(value="")
-        self.error_label = ttk.Label(body, textvariable=self.error_var, style="Error.TLabel", wraplength=wrap,
-                                     justify="left")
-        self.error_label.pack(anchor="w", pady=(6, 0))
-        bar = ttk.Frame(body)
-        bar.pack(fill="x", pady=(10, 0))
         self.cancel_btn = ttk.Button(bar, text="Cancel", command=self.cancel)
         self.cancel_btn.pack(side="right")
         self.ok_btn = ttk.Button(bar, text="OK", style="Accent.TButton", command=self.ok)
         self.ok_btn.pack(side="right", padx=(0, 8))
+        self.page.bind_wheel_tree(body)
         self.top.bind("<Return>", lambda _e: self.ok())
         self.top.bind("<KP_Enter>", lambda _e: self.ok())
         self.top.bind("<Escape>", lambda _e: self.cancel())
         self.top.protocol("WM_DELETE_WINDOW", self.cancel)
         self.top.update_idletasks()
-        ui_layout.place_dialog(self.top, WIDTH, max(220, body.winfo_reqheight() + 8), parent)
+        chrome = outer.winfo_reqheight() - self.page.winfo_reqheight() + 8   # title + error line + button bar + padding
+        _aw, max_h = ui_layout.fit_size(self.top, WIDTH, 10_000)
+        content = self.page.fit_height(max(120, max_h - chrome))
+        ui_layout.place_dialog(self.top, WIDTH, max(220, content + chrome), parent)
         self.top.deiconify()
         self._focus_first()
         if modal:

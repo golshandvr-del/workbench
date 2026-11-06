@@ -378,8 +378,9 @@ def install(root: tk.Misc) -> None:
 class ScrollPage(ttk.Frame):
     """A frame with a vertically scrollable ``body``; the body always matches the visible width."""
 
-    def __init__(self, master: tk.Misc, **kw: Any) -> None:
+    def __init__(self, master: tk.Misc, *, horizontal: bool = False, **kw: Any) -> None:
         super().__init__(master, **kw)
+        self.horizontal = horizontal
         self.canvas = tk.Canvas(self, highlightthickness=0, borderwidth=0)
         self.vbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.vbar.set)
@@ -387,13 +388,52 @@ class ScrollPage(ttk.Frame):
         self._win = self.canvas.create_window(0, 0, window=self.body, anchor="nw")
         self.canvas.grid(row=0, column=0, sticky="nsew")
         self.vbar.grid(row=0, column=1, sticky="ns")
+        if horizontal:   # BF-102: very wide content scrolls sideways instead of leaving the screen
+            self.hbar = ttk.Scrollbar(self, orient="horizontal", command=self.canvas.xview)
+            self.canvas.configure(xscrollcommand=self.hbar.set)
+            self.hbar.grid(row=1, column=0, sticky="we")
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
         self.body.bind("<Configure>", lambda _e: self._sync())
-        self.canvas.bind("<Configure>", lambda e: (self.canvas.itemconfigure(self._win, width=e.width), self._sync()))
+        self.canvas.bind("<Configure>", lambda e: (self._fit_width(e.width), self._sync()))
+        self.bind_wheel(self)
+
+    def _fit_width(self, width: int) -> None:
+        # the body is at least as wide as the view; with horizontal scrolling it may be wider
+        want = max(width, self.body.winfo_reqwidth()) if self.horizontal else width
+        self.canvas.itemconfigure(self._win, width=want)
+
+    def bind_wheel(self, widget: tk.Misc) -> None:
+        """Mouse-wheel scrolling while the pointer is over ``widget`` (and, via class bindings, its children)."""
+        def wheel(e: Any) -> str | None:
+            if self.body.winfo_reqheight() <= self.canvas.winfo_height():
+                return None
+            step = -1 if (getattr(e, "num", 0) == 4 or getattr(e, "delta", 0) > 0) else 1
+            self.canvas.yview_scroll(step * 3, "units")
+            return "break"
+        for seq in ("<MouseWheel>", "<Button-4>", "<Button-5>"):
+            widget.bind(seq, wheel, add="+")
+        self._wheel = wheel
+
+    def bind_wheel_tree(self, widget: tk.Misc) -> None:
+        """Make the wheel work over every child widget of ``widget`` too (call after the children exist)."""
+        self.bind_wheel(widget)
+        for child in widget.winfo_children():
+            self.bind_wheel_tree(child)
+
+    def fit_height(self, max_height: int) -> int:
+        """Ask for the content's height, bounded by ``max_height``; returns the height requested."""
+        self.update_idletasks()
+        h = max(1, min(self.body.winfo_reqheight(), int(max_height)))
+        self.canvas.configure(height=h)
+        if self.horizontal:
+            self.canvas.configure(width=min(self.body.winfo_reqwidth(), 900))
+        return h
 
     def _sync(self) -> None:
         try:
+            if self.horizontal:
+                self._fit_width(self.canvas.winfo_width())
             self.canvas.configure(scrollregion=self.canvas.bbox("all") or (0, 0, 0, 0))
             self.canvas.configure(background=ttk.Style(self).lookup("TFrame", "background") or "")
         except tk.TclError:

@@ -11,10 +11,11 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
+from . import crypto
 from .service import CompanionService
 
 PATH = "/aiwb/v1"
-MAX_BODY = 512 * 1024
+MAX_BODY = crypto.MAX_ENVELOPE_BYTES   # BF-070: derived from the text limit, not a separate guess
 DEFAULT_PORT = 47821
 
 
@@ -33,10 +34,19 @@ def lan_address() -> str:
 class CompanionServer:
     def __init__(self, service: CompanionService, host: str = "", port: int = DEFAULT_PORT) -> None:
         self.service = service
-        self.host = host or lan_address()
+        self._host = host or lan_address()
+        self._auto_host = not host     # BF-073: a detected address is re-detected on every start, a given one is kept
         self.port = port
         self.httpd: ThreadingHTTPServer | None = None
         self.thread: threading.Thread | None = None
+
+    @property
+    def host(self) -> str:
+        return self._host
+
+    @host.setter
+    def host(self, value: str) -> None:
+        self._host, self._auto_host = value, False
 
     @property
     def running(self) -> bool:
@@ -45,6 +55,8 @@ class CompanionServer:
     def start(self) -> int:
         if self.httpd:
             return self.port
+        if self._auto_host:
+            self._host = lan_address()   # BF-073: the Wi-Fi may have changed since the window was opened
         service = self.service
 
         class Handler(BaseHTTPRequestHandler):
@@ -74,7 +86,7 @@ class CompanionServer:
                 except ValueError:
                     n = -1
                 if n <= 0 or n > MAX_BODY:
-                    return self._send(413 if n > MAX_BODY else 400, {"error": "bad_size"})
+                    return self._send(413 if n > MAX_BODY else 400, {"error": "too_large" if n > MAX_BODY else "bad_size"})
                 code, obj = service.handle(self.rfile.read(n))
                 self._send(code, obj)
 

@@ -14,6 +14,7 @@ from typing import Any, Callable
 
 from . import artifacts as ar
 from .actions import WorkflowInfo, WorkflowRun
+from ..ui import layout as ui_layout
 
 
 class _Worker:
@@ -80,6 +81,11 @@ class DispatchDialog:
         self._initial_ref = ref
         self.inputs_frame = ttk.LabelFrame(frame, text="Inputs (from the workflow file)", padding=6)
         self.inputs_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=8)
+        # BF-102: up to 25 inputs with long descriptions scroll in both directions; status and Run/Close stay visible
+        self.inputs_page = ui_layout.ScrollPage(self.inputs_frame, horizontal=True)
+        self.inputs_page.pack(fill="both", expand=True)
+        self.inputs_body = self.inputs_page.body
+        self.inputs_body.columnconfigure(1, weight=1)
         self.status_var = tk.StringVar(value="Reading workflow inputs…")
         ttk.Label(frame, textvariable=self.status_var, wraplength=520, justify="left").grid(row=3, column=0, columnspan=2, sticky="w")
         bar = ttk.Frame(frame)
@@ -88,6 +94,9 @@ class DispatchDialog:
         self.btn_run.pack(side="right")
         ttk.Button(bar, text="Close", command=self.close).pack(side="right", padx=(0, 6))
         frame.columnconfigure(1, weight=1)
+        frame.rowconfigure(2, weight=1)
+        self._frame = frame
+        self._fit_dialog(parent)
         self._load_form(ref)
         self.ref_var.trace_add("write", lambda *_a: self._ref_edited())
 
@@ -127,6 +136,19 @@ class DispatchDialog:
         if ref:
             self._load_form(ref)
 
+    def _fit_dialog(self, parent: tk.Misc | None = None) -> None:
+        """BF-102: size the dialog to its content but never beyond the work area; the input region scrolls."""
+        try:
+            self.win.update_idletasks()
+            _w, max_h = ui_layout.fit_size(self.win, 900, 10_000)
+            chrome = self._frame.winfo_reqheight() - self.inputs_frame.winfo_reqheight() + 30
+            page_h = self.inputs_page.fit_height(max(100, max_h - chrome - 40))
+            self.win.update_idletasks()
+            need_w = max(560, self.inputs_page.canvas.winfo_reqwidth() + 60)
+            ui_layout.place_dialog(self.win, need_w, page_h + chrome + 40, parent or self.win.master)
+        except tk.TclError:
+            pass
+
     def close(self) -> None:
         self.worker.closed = True
         try:
@@ -150,7 +172,7 @@ class DispatchDialog:
                 changed = str(val) != old_default
             if changed:
                 kept[name] = val
-        for child in self.inputs_frame.winfo_children():
+        for child in self.inputs_body.winfo_children():
             child.destroy()
         self.vars = {}
         self.form = form
@@ -161,18 +183,19 @@ class DispatchDialog:
             return
         for row, spec in enumerate(form.inputs):
             label = spec.name + (" *" if spec.required else "")
-            ttk.Label(self.inputs_frame, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=2)
+            ttk.Label(self.inputs_body, text=label).grid(row=row, column=0, sticky="w", padx=(0, 8), pady=2)
             if spec.type == "boolean":
                 var: tk.Variable = tk.BooleanVar(value=spec.default == "true")
-                ttk.Checkbutton(self.inputs_frame, variable=var).grid(row=row, column=1, sticky="w")
+                ttk.Checkbutton(self.inputs_body, variable=var).grid(row=row, column=1, sticky="w")
             elif spec.type == "choice":
                 var = tk.StringVar(value=spec.default if spec.default in spec.options else (spec.options[0] if spec.required else ""))
-                ttk.Combobox(self.inputs_frame, textvariable=var, values=spec.options, state="readonly", width=30).grid(row=row, column=1, sticky="w")
+                ttk.Combobox(self.inputs_body, textvariable=var, values=spec.options, state="readonly", width=30).grid(row=row, column=1, sticky="w")
             else:
                 var = tk.StringVar(value=spec.default or "")
-                ttk.Entry(self.inputs_frame, textvariable=var, width=40).grid(row=row, column=1, sticky="we")
+                ttk.Entry(self.inputs_body, textvariable=var, width=40).grid(row=row, column=1, sticky="we")
             if spec.description:
-                ttk.Label(self.inputs_frame, text=spec.description, foreground="#667085").grid(row=row, column=2, sticky="w", padx=(8, 0))
+                ttk.Label(self.inputs_body, text=spec.description, foreground="#667085", wraplength=360,
+                          justify="left").grid(row=row, column=2, sticky="w", padx=(8, 0))
             if spec.name in kept and (spec.type != "choice" or kept[spec.name] in spec.options):
                 try:
                     var.set(kept[spec.name])
@@ -180,9 +203,11 @@ class DispatchDialog:
                     pass
             self.vars[spec.name] = var
         if not form.inputs:
-            ttk.Label(self.inputs_frame, text="This workflow takes no inputs.").grid(row=0, column=0, sticky="w")
+            ttk.Label(self.inputs_body, text="This workflow takes no inputs.").grid(row=0, column=0, sticky="w")
         self.status_var.set("Ready. GitHub needs Actions: write on the token to start a run.")
         self.btn_run.configure(state="normal")
+        self.inputs_page.bind_wheel_tree(self.inputs_body)
+        self._fit_dialog()
 
     def values(self) -> dict[str, object]:
         return {name: var.get() for name, var in self.vars.items()}
