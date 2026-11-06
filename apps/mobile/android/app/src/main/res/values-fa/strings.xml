@@ -120,4 +120,5 @@
     <string name="pairing_denied">اتصال روی دسکتاپ رد شد.</string>
     <string name="clock_skew">ساعت گوشی و ساعت رایانه حدود %1$d دقیقه اختلاف دارند. هر دو را روی زمان خودکار بگذارید و دوباره تلاش کنید.</string>
     <string name="answer_too_long">این پاسخ برای گوشی خیلی طولانی است. آن را روی رایانه جایگذاری کنید یا در چند بخش بفرستید.</string>
+    <string name="standalone_export_interrupted">خروجی نیمه‌کاره ماند و چیزی ذخیره نشد. دوباره تلاش کنید.</string>
 </resources>

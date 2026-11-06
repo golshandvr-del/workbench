@@ -31,6 +31,8 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | S3 | 11 (BF-060, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-099, BF-100, BF-102) | 43 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-028, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-095, BF-097, BF-098, BF-104, BF-107) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
 
+**Session 40 checkpoint:** 102/106 FIXED (96.23% count-based), 4 OPEN (BF-008, BF-045, BF-046, BF-060). Session 40 repaired BF-068/069/070/071/072/073/074/075/077/082/099/100/102 (Desktop + Mobile Kotlin where applicable). BF-083 Mobile port (core/Project.kt) still missing. Desktop suite 1097 tests OK; Kotlin JVM suite 125 tests OK (+3 new) compiled with standalone kotlinc and the whole Android tree type-checks against android.jar. No GUI-on-real-Windows/APK/lint/device gate.
+
 **Session 39 checkpoint:** 89/106 FIXED (83.96% count-based), 17 OPEN (0 S1 / 6 S2 / 11 S3). Catalog statuses now include the sessions 37-38 repairs (BF-006/040/056/062/067/083/084/086/098, BF-085/080/005/021/023/019/030) and 19 findings repaired in session 39 (BF-096/097/101/103/107/036/037/038/041/058/059/018/020/034/022/025/029/087/088). BF-083's Mobile port (core/Project.kt) and BF-045/046 (partial) remain open. Full Desktop suite 1070 tests OK, 0 undefined names; no Mobile JVM run, no GUI/native Windows/Android gate this session.
 
 **Session 36 checkpoint:** 23 additional catalogued findings repaired; 54/106 FIXED (50.94% count-based), 52 OPEN (0 S1 / 18 S2 / 34 S3). BF-045/046/098 have partial work and remain OPEN. This is not 50 bugs fixed in this session. Final source 66ccc8a3: 1009 Desktop tests OK (10 skipped), 120 Mobile JVM tests OK, zero undefined names. No GUI/native Windows/Android APK/device gate or release was run this session.
@@ -1583,7 +1585,7 @@ shows only the first line).
 when normalising; in `render_status_md()` escape Markdown per item (replace newlines with spaces, escape a leading
 `#`, `-`, `|`) so text from the store can never create a heading or a list item.
 
-### BF-068 · S3 · OPEN — a new **draft** task (e.g. created from the phone) is announced as *"Approve finished work so the task can be closed"* on the phone, the classic Projects window and the Workspace
+### BF-068 · S3 · FIXED (session 40) — a new **draft** task (e.g. created from the phone) is announced as *"Approve finished work so the task can be closed"* on the phone, the classic Projects window and the Workspace
 
 **Where:** `aiwb/v2/next_action.py` emits type `approve_task` only for tasks in `draft` / `proposed` (*"task is draft;
 complete it and mark it ready"*). `aiwb/i18n.py` `ACTIONS["approve_task"]` translates that type as
@@ -1603,7 +1605,7 @@ The two screens describe opposite situations for the same step.
 **Expected:** translate `approve_task` as *"Approve the new task so it can start"* / *"Task جدید را تأیید کنید تا
 شروع شود"* (or rename the type to `approve_draft`); keep "finished work" wording for `review_delivery`.
 
-### BF-069 · S3 · OPEN — phone pairing: approving the phone after the 10-minute code ran out registers the device, but the phone is told *"The pairing code expired"* and never gets its device id
+### BF-069 · S3 · FIXED (session 40) — phone pairing: approving the phone after the 10-minute code ran out registers the device, but the phone is told *"The pairing code expired"* and never gets its device id
 
 **Where:** `aiwb/companion/service.py`: `pair_request` is accepted until `expires`; the request then waits in `pending`
 for the desktop user. `decide()` does not check `expires` and adds the device to `devices.json` (`status: active`).
@@ -1624,7 +1626,7 @@ the first one stays *active* with a key nobody uses until the user notices and r
 result, for a short grace period after `expires`. Or refuse `decide()` after `expires` (*"This request came too late —
 create a new code"*) and clear `pending`, so no device is added. Show the remaining time next to the waiting request.
 
-### BF-070 · S3 · OPEN — phone *Send answer*: a Persian answer over ~150 000 characters (or any answer near the 300 000 limit) is refused with *"Companion error: bad_request"*; the `too_large` message is never reached
+### BF-070 · S3 · FIXED (session 40) — phone *Send answer*: a Persian answer over ~150 000 characters (or any answer near the 300 000 limit) is refused with *"Companion error: bad_request"*; the `too_large` message is never reached
 
 **Where:** `aiwb/companion/crypto.py` `check_shape()` refuses any envelope field longer than 400 000 characters. `ct`
 is base64url of the whole UTF-8 JSON request, so the real ceiling is ~300 000 **bytes** of JSON — not 300 000
@@ -1650,7 +1652,7 @@ keep `MAX_BODY` above that), or measure `MAX_TEXT` in UTF-8 bytes. Check the siz
 *"This answer is too long for the phone. Paste it on the computer, or send it in parts."* — ideally checked on the
 phone before sending.
 
-### BF-071 · S3 · OPEN — phone and desktop clocks more than 5 minutes apart: pairing with the **correct** code is counted as *"Too many wrong attempts"*, and a paired phone gets only *"Companion error: unauthenticated"*
+### BF-071 · S3 · FIXED (session 40) — phone and desktop clocks more than 5 minutes apart: pairing with the **correct** code is counted as *"Too many wrong attempts"*, and a paired phone gets only *"Companion error: unauthenticated"*
 
 **Where:** `aiwb/companion/crypto.py` `open_bytes()` checks the MAC first and then the timestamp window
 (`MAX_SKEW_SECONDS = 300`) and raises the same `EnvelopeError` for both. `service.handle()` turns every
@@ -1673,7 +1675,7 @@ desktop time in the reply, **not** counted as a wrong attempt. On the phone: *"T
 clock differ by N minutes. Set both to automatic time and try again."* (or remember the offset from the reply and use
 it). The desktop window should say *"A phone tried to connect but its clock is N minutes off"*.
 
-### BF-072 · S2 · OPEN — Mobile Companion › *Set permissions*: selecting a device does not load its permissions, so changing one permission silently removes the others (e.g. *submit answers* is taken away)
+### BF-072 · S2 · FIXED (session 40) — Mobile Companion › *Set permissions*: selecting a device does not load its permissions, so changing one permission silently removes the others (e.g. *submit answers* is taken away)
 
 **Where:** `aiwb/companion/window.py`: one set of check boxes (`perm_vars`, initialised to `DEFAULT_PERMISSIONS` =
 *view project* only) serves both *Approve device* and *Set permissions*. The device list has no `<<TreeviewSelect>>`
@@ -1693,7 +1695,7 @@ meant to touch. The user finds out only on the phone, far from the desktop.
 pairing request); disable *Set permissions* / *Revoke* when nothing is selected; after saving, say
 *"Pixel: view project, create task (submit answers removed)"*.
 
-### BF-073 · S3 · OPEN — Mobile Companion › *Pair new device…* while port 47821 is taken (second Workbench, another program) shows *"That action stopped because of a bug in AI Workbench"*
+### BF-073 · S3 · FIXED (session 40) — Mobile Companion › *Pair new device…* while port 47821 is taken (second Workbench, another program) shows *"That action stopped because of a bug in AI Workbench"*
 
 **Where:** `aiwb/companion/window.py` `do_pair()` calls `self.server.start()` without the `try/except OSError` that
 `toggle()` has. `CompanionServer.start()` raises `OSError` (*Address already in use* / *Permission denied* / a LAN
@@ -1714,7 +1716,7 @@ program on that port makes it look like a crash and asks for a bug report, with 
 program (maybe a second AI Workbench). Close it, or …"*); fall back to a free port (the QR code / manual address
 already carry the port); re-detect the LAN address on *Start* / *Pair new device…*.
 
-### BF-074 · S2 · OPEN — phone standalone mode: if Android recreates the screen while the file picker is open (rotation, dark-mode switch, low memory), *Export project bundle* / *Save files as ZIP* leave an **empty file** and say nothing; a pasted answer is lost on rotation
+### BF-074 · S2 · FIXED (session 40) — phone standalone mode: if Android recreates the screen while the file picker is open (rotation, dark-mode switch, low memory), *Export project bundle* / *Save files as ZIP* leave an **empty file** and say nothing; a pasted answer is lost on rotation
 
 **Found by code review** (no Android SDK in the sandbox; the logic is plain Kotlin and easy to follow).
 
@@ -1743,7 +1745,7 @@ while the picker is in front — normal on low-RAM phones), the field is `null` 
 (`DocumentsContract.deleteDocument`) and say *"Export was interrupted — try again"*. Restore the open project and the
 paste box text in `onSaveInstanceState`.
 
-### BF-075 · S3 · OPEN — phone *Import files from ZIP*: a GitHub "Download ZIP" lands under `myapp-main/…`, Mac `__MACOSX` junk and nested `.git` are imported, a ZIP with `./` or `\` names is refused whole, and existing files are overwritten without a backup
+### BF-075 · S3 · FIXED (session 40) — phone *Import files from ZIP*: a GitHub "Download ZIP" lands under `myapp-main/…`, Mac `__MACOSX` junk and nested `.git` are imported, a ZIP with `./` or `\` names is refused whole, and existing files are overwritten without a backup
 
 **Found by code review** (the path rule was replayed in Python: script `/tmp/hunt/kzip.py`).
 
@@ -1801,7 +1803,7 @@ into `Project.routeAnswer` / `ingest`, or make *Read answer* call `Guide.run(ste
 `accept_handoff`, if the stored response has file blocks but `staged_files` is empty, re-stage from the
 response or refuse with *"the files of this answer were not read — paste it again"*.
 
-### BF-077 · S2 · OPEN — phone pairing: turning the phone (or leaving the Companion screen) while it waits for approval loses the pairing; the desktop then registers an *active* device nobody can use, and the same code can no longer be used
+### BF-077 · S2 · FIXED (session 40) — phone pairing: turning the phone (or leaving the Companion screen) while it waits for approval loses the pairing; the desktop then registers an *active* device nobody can use, and the same code can no longer be used
 
 **Found by code review** (no Android SDK in the sandbox).
 
@@ -1947,7 +1949,7 @@ characters can be sent to the helper — the last part (from `src/core/m6.py`) w
 several calls by file block; after the call, add *"the helper saw only the first part; check the end"*; keep the
 original answer (e.g. *Undo helper fix*).
 
-### BF-082 · S3 · OPEN — when the project manager says "complete", the closeout card hides open milestones and the pending release: the cycle is announced with *"0 milestone(s) accepted … Released: none"*, and the old milestones pop up again in the next cycle
+### BF-082 · S3 · FIXED (session 40) — when the project manager says "complete", the closeout card hides open milestones and the pending release: the cycle is announced with *"0 milestone(s) accepted … Released: none"*, and the old milestones pop up again in the next cycle
 
 **Where:** `aiwb/v2/guide.py` `steps()`: `end = closeout_steps(st)` — *"the end of the algorithm replaces every other
 step"*. `closeout.can_announce()` checks only that every **task** is finished and that the last PM route is
@@ -2346,7 +2348,7 @@ re-plan, like the classic apply.
 
 **Expected:** treat an empty parent as missing: *"Choose an existing parent folder."* Drop the `or "."` fallback, and in `create_project_folder()` refuse an empty or relative parent.
 
-### BF-099 · S3 · OPEN — classic Projects window: the proposal review dialog grows one row per operation with no scrollbar; for a normal planning proposal (≥ ~28 operations on a 768 px screen) *Apply selected* / *Cancel* are off-screen
+### BF-099 · S3 · FIXED (session 40) — classic Projects window: the proposal review dialog grows one row per operation with no scrollbar; for a normal planning proposal (≥ ~28 operations on a 768 px screen) *Apply selected* / *Cancel* are off-screen
 
 **Where:** `aiwb/v2/projects_window.py` `ProposalDialog`: one `ttk.Checkbutton` per operation is packed straight into the `Toplevel`, then the button bar. There is no scroll container, no size or geometry, and no keyboard binding (`<Return>` / `<Escape>`). `grab_set()` + `wait_window` make it modal. `proposals.MAX_OPS = 60`, and a first plan from the project manager (create tasks + assignments + dependencies) easily has 30–60 operations. Reached through Project Workbench › Tools › *classic* (`classic_projects` → `ProjectsWindow.do_proposal`).
 
@@ -2356,7 +2358,7 @@ re-plan, like the classic apply.
 
 **Expected:** put the operation list in a scrollable frame (or a `Treeview` with check marks) with a bounded height, keep the button bar outside it, bind `<Return>` = *Apply selected* and `<Escape>` = *Cancel*, and add *Select all / none*.
 
-### BF-100 · S3 · OPEN — decision form: a long question hides OK, rationale and validation feedback below the clipped window
+### BF-100 · S3 · FIXED (session 40) — decision form: a long question hides OK, rationale and validation feedback below the clipped window
 
 **Where:** `aiwb/ui/action_form.py:50–77`: the full question, all radio options, rationale, error label and button bar are packed into one non-scrollable body. `place_dialog()` caps the window at the available screen height; `choices.form_spec()` does not cap the question.
 
@@ -2376,7 +2378,7 @@ re-plan, like the classic apply.
 
 **Expected:** invalidate and reload the workflow schema when ref changes, retain its ref alongside the form, disable submission while stale/loading, and only validate/dispatch a form associated with the exact submitted ref. Preserve still-valid entered values deliberately rather than silently reusing unrelated defaults.
 
-### BF-102 · S3 · OPEN — workflow dispatch form has unbounded input rows and unwrapped descriptions, exceeding the screen in both dimensions
+### BF-102 · S3 · FIXED (session 40) — workflow dispatch form has unbounded input rows and unwrapped descriptions, exceeding the screen in both dimensions
 
 **Where:** `aiwb/github/build_center_dialogs.py:71–86,105–123`: each workflow input and its description is gridded into `inputs_frame`. Description labels have no `wraplength`; neither a scroll container nor screen-fit geometry is installed. Status and Run/Close buttons follow the entire list.
 

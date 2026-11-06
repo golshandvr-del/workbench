@@ -244,26 +244,141 @@ object Files {
         return out.toByteArray()
     }
 
-    /** Extract a ZIP into the file space; refuses the whole archive if any entry is unsafe (zip-slip). */
-    fun unzip(store: ProjectStore, data: ByteArray): List<String> {
-        val entries = LinkedHashMap<String, ByteArray>()
-        var total = 0L
+    /** What an imported ZIP did, in words the user can read (BF-075). */
+    data class ZipReport(val written: List<String>, val replaced: List<String>, val unchanged: List<String>,
+                         val skipped: List<String>, val skippedCount: Int, val fixes: List<String>, val backup: String) {
+        fun message(): String {
+            val sb = StringBuilder("${written.size} file(s) imported")
+            if (replaced.isNotEmpty()) sb.append(", ${replaced.size} replaced (backup kept in $backup)")
+            if (unchanged.isNotEmpty()) sb.append(", ${unchanged.size} unchanged")
+            if (skippedCount > 0)
+                sb.append(", $skippedCount skipped: ").append(skipped.joinToString("; ")).append(if (skippedCount > skipped.size) "; …" else "")
+            sb.append('.')
+            if (fixes.isNotEmpty()) sb.append(' ').append(fixes.joinToString(". ")).append('.')
+            return sb.toString()
+        }
+    }
+
+    private val ZIP_NOISE = listOf("__MACOSX/", ".DS_Store", "Thumbs.db", "desktop.ini")
+    private val ZIP_ROOTS = setOf("README.md", "readme.md", "package.json", "pyproject.toml", "requirements.txt", ".gitignore",
+        "build.gradle", "build.gradle.kts", "settings.gradle", "Cargo.toml", "go.mod", "index.html")
+
+    private fun looksSecret(base: String): Boolean {
+        val b = base.lowercase(java.util.Locale.ROOT)
+        return b == ".env" || (b.startsWith(".env.") && b != ".env.example") || b == "id_rsa" || b == "id_ed25519" ||
+            listOf(".pem", ".p12", ".pfx", ".key", ".keystore", ".jks").any { b.endsWith(it) }
+    }
+
+    /**
+     * Import a ZIP into the file space with the desktop rules (`intake/answer_files.zip_files`), BF-075:
+     * `./` and `\` names are normalised, one top folder that holds README/package.json/… is taken as the project root,
+     * system junk, any `.git`/`.workbench` part, binaries and secret files are skipped (and listed), every entry is read
+     * with a size bound, overwritten files are backed up under `backups/zip-import-N/`, and a `files_imported` event is
+     * recorded. A genuine traversal (`..`, absolute path, drive letter) still refuses the whole archive.
+     */
+    fun importZip(store: ProjectStore, data: ByteArray): ZipReport {
+        val fixes = ArrayList<String>()
+        val skipped = ArrayList<String>()
+        var skippedCount = 0
+        fun skip(why: String) { skippedCount++; if (skipped.size < 8) skipped.add(why) }
+        val raw = LinkedHashMap<String, ByteArray>()
+        var kept = 0L
+        var expanded = 0L
+        var noise = 0
+        var vcs = 0
+        var normalised = 0
         ZipInputStream(ByteArrayInputStream(data)).use { z ->
             while (true) {
                 val e = z.nextEntry ?: break
                 if (e.isDirectory) continue
-                val name = e.name.trim('/')
-                if (safePath(e.name) != name) throw ModelError("unsafe ZIP entry: ${e.name}")
-                val b = z.readBytes()
-                total += b.size
-                if (total > MAX_TOTAL * 4L) throw ModelError("ZIP too large")
-                entries[safePath(name)] = b
+                val orig = e.name
+                var name = orig.replace('\\', '/')
+                if (name != orig) normalised++
+                while (name.startsWith("./")) { name = name.substring(2); normalised++ }
+                val parts = name.split('/').filter { it.isNotEmpty() }
+                if (name.startsWith("/") || Regex("^[A-Za-z]:").containsMatchIn(name) || parts.any { it == ".." } || parts.isEmpty())
+                    throw ModelError("unsafe ZIP entry: $orig")
+                // bounded read: one huge entry must not exhaust memory
+                val buf = ByteArrayOutputStream()
+                val chunk = ByteArray(8192)
+                var tooBig = false
+                while (true) {
+                    val n = z.read(chunk)
+                    if (n < 0) break
+                    expanded += n
+                    if (expanded > MAX_TOTAL * 4L) throw ModelError("ZIP too large")
+                    if (!tooBig) { buf.write(chunk, 0, n); if (buf.size() > MAX_FILE) { tooBig = true; buf.reset() } }
+                }
+                if (ZIP_NOISE.any { it in name }) { noise++; continue }
+                if (parts.any { it.lowercase(java.util.Locale.ROOT) in RESERVED }) { vcs++; continue }
+                if (tooBig) { skip("${parts.joinToString("/")} is larger than ${MAX_FILE / 1024} KB"); continue }
+                val bytes = buf.toByteArray()
+                if (bytes.take(8192).any { it == 0.toByte() }) { skip("${parts.joinToString("/")} is a binary file"); continue }
+                if (looksSecret(parts.last())) { skip("${parts.joinToString("/")} looks like a secret"); continue }
+                if (safePath(name).isEmpty()) { skip("${parts.joinToString("/")} is not a valid file name"); continue }
+                if (kept + bytes.size > MAX_TOTAL) { skip("the files exceed ${MAX_TOTAL / (1024 * 1024)} MB in total"); break }
+                kept += bytes.size
+                raw[safePath(name)] = bytes
             }
         }
-        val root = dir(store).apply { mkdirs() }
-        for ((p, b) in entries) File(root, p).apply { parentFile?.mkdirs() }.writeBytes(b)
-        return entries.keys.toList()
+        if (normalised > 0) fixes.add("$normalised name(s) with ./ or \\ were normalised")
+        if (noise > 0) fixes.add("$noise system file(s) (__MACOSX, .DS_Store…) ignored")
+        if (vcs > 0) fixes.add("$vcs .git/.workbench file(s) ignored")
+        // one top folder that is itself the project root (GitHub "Download ZIP": myapp-main/…) is stripped
+        val tops = raw.keys.map { it.substringBefore('/') }.toSet()
+        var strip = ""
+        if (tops.size == 1 && raw.keys.all { '/' in it } && raw.keys.any { it.substringAfter('/') in ZIP_ROOTS }) {
+            strip = tops.first() + "/"
+            fixes.add("the ZIP's top folder \"${tops.first()}/\" was taken as the project root")
+        }
+        val entries = LinkedHashMap<String, ByteArray>()
+        for ((p0, b) in raw) {
+            val p = safePath(if (strip.isNotEmpty()) p0.removePrefix(strip) else p0)
+            if (p.isEmpty()) { skip("$p0 is not a valid file name"); continue }
+            entries[p] = b
+        }
+        val root = dir(store).apply { mkdirs() }.absoluteFile
+        val staged = entries.keys.map { linkedMapOf<String, Any?>("path" to it) as Obj }
+        preflight(root, staged)   // links, case aliases and file/directory collisions refuse the whole archive
+        val originals = entries.keys.associateWith { p -> target(root, p).let { if (it.isFile) it.readBytes() else null } }
+        val replaced = entries.keys.filter { originals[it] != null && !originals[it]!!.contentEquals(entries[it]!!) }
+        val unchanged = entries.keys.filter { originals[it] != null && originals[it]!!.contentEquals(entries[it]!!) }
+        var backupName = ""
+        if (replaced.isNotEmpty()) {
+            val backupRoot = File(store.root, "backups").absoluteFile
+            if (backupRoot.exists() && !backupRoot.isDirectory) throw ModelError("unsafe backup directory")
+            if (!backupRoot.isDirectory && !backupRoot.mkdirs()) throw ModelError("cannot create backups")
+            var n = 1
+            var backup = File(backupRoot, "zip-import-$n")
+            while (!backup.mkdir()) { n++; backup = File(backupRoot, "zip-import-$n"); if (n > 10_000) throw ModelError("cannot create backup") }
+            for (p in replaced) atomicWrite(File(backup, p), originals[p]!!)
+            backupName = "backups/zip-import-$n"
+        }
+        val written = ArrayList<String>()
+        try {
+            for ((p, b) in entries) {
+                if (p in unchanged) continue
+                atomicWrite(target(root, p), b)
+                written.add(p)
+            }
+        } catch (e: Exception) {
+            for (p in written.asReversed()) try {
+                val old = originals[p]
+                if (old == null) target(root, p).delete() else atomicWrite(target(root, p), old)
+            } catch (_: Exception) { }
+            throw ModelError("Import failed; the files were restored. ${e.message}")
+        }
+        val report = ZipReport(written.toList(), replaced, unchanged, skipped, skippedCount, fixes, backupName)
+        store.transaction("import files from ZIP") { s ->
+            State.emit(s, "files_imported", "count" to written.size.toLong(), "replaced" to replaced.size.toLong(),
+                "skipped" to skippedCount.toLong(), "paths" to ArrayList<Any?>(written.take(50)), "backup" to backupName,
+                "importance" to "major")
+        }
+        return report
     }
+
+    /** Compatibility wrapper: the paths written by [importZip]. */
+    fun unzip(store: ProjectStore, data: ByteArray): List<String> = importZip(store, data).let { it.written + it.unchanged }
 
     private val FIXED_TIME = java.util.GregorianCalendar(2020, 0, 1, 0, 0, 0).timeInMillis
 }

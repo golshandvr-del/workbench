@@ -15,6 +15,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import io.github.golshandvr.aiworkbench.core.Exports
 import io.github.golshandvr.aiworkbench.core.Files
 import io.github.golshandvr.aiworkbench.core.GitHubApi
 import io.github.golshandvr.aiworkbench.core.Guide
@@ -36,8 +37,12 @@ class StandaloneActivity : Activity() {
     private lateinit var body: LinearLayout
     private lateinit var status: TextView
     private var current: Project? = null
-    private var pendingExport: String? = null
-    private var pendingZip: ByteArray? = null
+    // BF-074: only the id of the project being exported is remembered (and saved across a recreation); the bytes are
+    // built when the system picker returns, so an Activity that was recreated or killed meanwhile loses nothing.
+    private var exportProjectId: String? = null
+
+    private var pasteBox: EditText? = null
+    private var pasteDraft: String = ""
 
     private val projectsDir: File get() = File(filesDir, "projects").apply { mkdirs() }
 
@@ -52,8 +57,19 @@ class StandaloneActivity : Activity() {
         root.addView(body)
         setContentView(ScrollView(this).apply { setBackgroundColor(Ui5.c(this@StandaloneActivity, "window")); addView(root) })
         title = getString(R.string.standalone_title)
-        val wanted = intent?.getStringExtra(EXTRA_OPEN)
+        exportProjectId = savedInstanceState?.getString(STATE_EXPORT_ID)
+        val restored = savedInstanceState?.getString(STATE_CURRENT)
+        val wanted = restored?.takeIf { it in projectIds() } ?: intent?.getStringExtra(EXTRA_OPEN)
         if (wanted != null && wanted in projectIds()) open(wanted) else showProjects()
+        savedInstanceState?.getString(STATE_PASTE)?.let { pasteDraft = it; pasteBox?.setText(it) }
+    }
+
+    /** BF-074: the open project, the export in progress and the pasted answer survive a rotation / theme change. */
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        current?.let { outState.putString(STATE_CURRENT, it.store.projectId) }
+        exportProjectId?.let { outState.putString(STATE_EXPORT_ID, it) }
+        pasteBox?.text?.toString()?.takeIf { it.isNotEmpty() }?.let { outState.putString(STATE_PASTE, it.take(MAX_SAVED_PASTE)) }
     }
 
     // ---------------------------------------------------------------- project list
@@ -111,7 +127,8 @@ class StandaloneActivity : Activity() {
             steps.drop(1).take(6).forEach { stepCard(p, it, false) }
         }
         heading(getString(R.string.standalone_paste_answer))
-        val paste = EditText(this).apply { minLines = 4; hint = getString(R.string.standalone_paste_hint) }
+        val paste = EditText(this).apply { minLines = 4; hint = getString(R.string.standalone_paste_hint); setText(pasteDraft) }
+        pasteBox = paste
         body.addView(paste)
         button(getString(R.string.standalone_route)) {
             guard { val r = p.routeAnswer(paste.text.toString()); render(r.message) }
@@ -231,7 +248,7 @@ class StandaloneActivity : Activity() {
 
     // ---------------------------------------------------------------- bundles (SAF, user-chosen files only)
     private fun pickExport(p: Project) = guard {
-        pendingExport = ProjectBundle.dumps(ProjectBundle.export(p.state(), p.store.projectId, version = BuildConfig.VERSION_NAME))
+        exportProjectId = p.store.projectId
         startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE); type = "application/json"
             putExtra(Intent.EXTRA_TITLE, "${p.store.projectId}.aiwb-bundle.json")
@@ -251,23 +268,19 @@ class StandaloneActivity : Activity() {
         if (resultCode != RESULT_OK || uri == null) return
         when (requestCode) {
             REQ_EXPORT -> guard {
-                val text = pendingExport ?: return@guard
-                contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) }
-                pendingExport = null
-                say(getString(R.string.standalone_exported))
+                val bytes = Exports.bundleBytes(projectsDir, exportProjectId, BuildConfig.VERSION_NAME)
+                writeChosen(uri, bytes, getString(R.string.standalone_exported))
             }
             REQ_ZIP_EXPORT -> guard {
-                val bytes = pendingZip ?: return@guard
-                contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                pendingZip = null
-                say(getString(R.string.standalone_files_saved))
+                writeChosen(uri, Exports.zipBytes(projectsDir, exportProjectId), getString(R.string.standalone_files_saved))
             }
             REQ_ZIP_IMPORT -> guard {
-                val p = current ?: return@guard
+                val p = current ?: Exports.project(projectsDir, exportProjectId) ?: run { say(getString(R.string.standalone_export_interrupted)); return@guard }
                 val bytes = contentResolver.openInputStream(uri)?.use { s -> s.readBytes().also { if (it.size > MAX_BUNDLE) error("ZIP too large") } }
                     ?: return@guard
-                val n = Files.unzip(p.store, bytes).size
-                showFiles(p); say(getString(R.string.standalone_files_imported, n))
+                val report = Files.importZip(p.store, bytes)
+                current = p
+                showFiles(p); say(report.message())
             }
             REQ_IMPORT -> guard {
                 val bytes = contentResolver.openInputStream(uri)?.use { s -> s.readBytes().also { if (it.size > MAX_BUNDLE) error("bundle too large") } }
@@ -311,7 +324,7 @@ class StandaloneActivity : Activity() {
         }
         if (list.isNotEmpty()) button(getString(R.string.standalone_files_zip)) {
             guard {
-                pendingZip = Files.zip(p.store)
+                exportProjectId = p.store.projectId
                 startActivityForResult(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE); type = "application/zip"
                     putExtra(Intent.EXTRA_TITLE, "${p.store.projectId}-files.zip")
@@ -319,6 +332,7 @@ class StandaloneActivity : Activity() {
             }
         }
         button(getString(R.string.standalone_files_unzip)) {
+            exportProjectId = p.store.projectId   // BF-074: the import target also survives a recreation
             startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" }, REQ_ZIP_IMPORT)
         }
         button(getString(R.string.standalone_back)) { render() }
@@ -329,6 +343,22 @@ class StandaloneActivity : Activity() {
 
     private fun safeId(raw: String): String =
         raw.trim().lowercase().replace(Regex("[^a-z0-9._-]+"), "-").trim('-', '.').take(60)
+
+    /**
+     * BF-074: write the export into the file the user just created. If it cannot be built (the project is gone) or the
+     * write fails, the empty document the picker already created is deleted and the user is told to try again.
+     */
+    private fun writeChosen(uri: android.net.Uri, bytes: ByteArray?, done: String) {
+        try {
+            if (bytes == null) throw java.io.IOException("nothing to write")
+            (contentResolver.openOutputStream(uri) ?: throw java.io.IOException("cannot open the chosen file")).use { it.write(bytes) }
+            exportProjectId = null
+            say(done)
+        } catch (e: Exception) {
+            try { android.provider.DocumentsContract.deleteDocument(contentResolver, uri) } catch (_: Exception) { }
+            say(getString(R.string.standalone_export_interrupted))
+        }
+    }
 
     private fun guard(block: () -> Unit) {
         try { block() } catch (e: Exception) { say(getString(R.string.standalone_error, e.message ?: e.javaClass.simpleName)) }
@@ -403,5 +433,9 @@ class StandaloneActivity : Activity() {
         private const val REQ_ZIP_EXPORT = 43
         private const val REQ_ZIP_IMPORT = 44
         private const val MAX_BUNDLE = 25 * 1024 * 1024
+        private const val MAX_SAVED_PASTE = 200_000   // a Bundle must stay well under the 1 MB transaction limit
+        private const val STATE_CURRENT = "current_project"
+        private const val STATE_EXPORT_ID = "export_project_id"
+        private const val STATE_PASTE = "paste_draft"
     }
 }

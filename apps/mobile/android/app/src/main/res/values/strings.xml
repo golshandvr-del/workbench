@@ -120,4 +120,5 @@
     <string name="pairing_denied">The pairing was denied on the desktop.</string>
     <string name="clock_skew">The phone's clock and the computer's clock differ by about %1$d minute(s). Set both to automatic time and try again.</string>
     <string name="answer_too_long">This answer is too long for the phone. Paste it on the computer, or send it in parts.</string>
+    <string name="standalone_export_interrupted">Export was interrupted - nothing was saved. Try again.</string>
 </resources>

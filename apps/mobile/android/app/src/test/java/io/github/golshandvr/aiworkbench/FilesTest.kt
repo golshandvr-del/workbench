@@ -1,5 +1,6 @@
 package io.github.golshandvr.aiworkbench
 
+import io.github.golshandvr.aiworkbench.core.Exports
 import io.github.golshandvr.aiworkbench.core.Files
 import io.github.golshandvr.aiworkbench.core.Guide
 import io.github.golshandvr.aiworkbench.core.Json
@@ -294,5 +295,47 @@ class FilesTest {
         }
         try { Files.unzip(other, bad.toByteArray()); fail("zip-slip accepted") } catch (_: ModelError) { }
         assertFalse(File(Files.dir(other), "ok2.txt").exists())
+    }
+    private fun zipOf(vararg e: Pair<String, String>): ByteArray {
+        val out = ByteArrayOutputStream()
+        ZipOutputStream(out).use { z -> for ((n, t) in e) { z.putNextEntry(ZipEntry(n)); z.write(t.toByteArray()); z.closeEntry() } }
+        return out.toByteArray()
+    }
+
+    // BF-075: GitHub "Download ZIP" layout, Mac junk, nested .git, ./ and \\ names, secrets, backup of replaced files
+    @Test fun bf075ZipImportUsesTheDesktopRules() {
+        val (p, _) = project()
+        val data = zipOf("myapp-main/README.md" to "# r\n", "myapp-main/src/calc.py" to "new\n", "myapp-main/.git/HEAD" to "x",
+            "__MACOSX/myapp-main/._a.py" to "x", "myapp-main/.env" to "SECRET=1", "myapp-main/.DS_Store" to "x")
+        val r = Files.importZip(p.store, data)
+        assertEquals(listOf("README.md", "src/calc.py"), r.written.sorted())
+        assertEquals(listOf("src/calc.py"), r.replaced)
+        assertEquals("new\n", Files.read(p.store, "src/calc.py"))
+        assertEquals("old\n", File(p.store.root, r.backup + "/src/calc.py").readText())
+        assertFalse(File(Files.dir(p.store), ".env").exists())
+        assertFalse(File(Files.dir(p.store), "myapp-main").exists())
+        assertTrue(r.message(), r.message().contains("top folder") && r.message().contains("replaced") && r.message().contains("secret"))
+        assertTrue(Json.list(p.state()["events"]).any { Json.obj(it)["type"] == "files_imported" })
+        val r2 = Files.importZip(p.store, zipOf("./docs/a.md" to "a\n", "docs\\b.md" to "b\n"))
+        assertEquals(listOf("docs/a.md", "docs/b.md"), r2.written.sorted())
+        try { Files.importZip(p.store, zipOf("ok.txt" to "x", "../evil.txt" to "x")); fail("traversal accepted") } catch (_: ModelError) { }
+        assertFalse(File(Files.dir(p.store), "ok.txt").exists())
+        val big = zipOf("big.txt" to "x".repeat(Files.MAX_FILE + 10), "fine.txt" to "ok\n")
+        val r3 = Files.importZip(p.store, big)
+        assertEquals(listOf("fine.txt"), r3.written)
+        assertEquals(1, r3.skippedCount)
+    }
+
+    // BF-074: the export is built from the project id when the picker returns, not kept in an Activity field
+    @Test fun bf074ExportIsBuiltFromTheProjectId() {
+        val (p, _) = project()
+        val dir = p.store.root.parentFile
+        val name = p.store.root.name
+        val bundle = Exports.bundleBytes(dir, name, "1.0.0")!!
+        assertTrue(String(bundle, Charsets.UTF_8).trimStart().startsWith("{"))
+        assertTrue(Exports.zipBytes(dir, name)!!.isNotEmpty())
+        assertEquals(null, Exports.bundleBytes(dir, null, "1"))
+        assertEquals(null, Exports.bundleBytes(dir, "../x", "1"))
+        assertEquals(null, Exports.zipBytes(dir, "missing"))
     }
 }
