@@ -13,6 +13,7 @@ Code Auto-Sync is a different feature: this publisher never commits source.
 from __future__ import annotations
 
 import base64
+import http.client
 import json
 import os
 import tempfile
@@ -57,6 +58,16 @@ def urllib_transport(method: str, url: str, headers: Mapping[str, str], body: by
         return ApiResult(e.code, parsed, dict(e.headers or {}))
 
 
+def _field(body: Any, *keys: str) -> Any:
+    """BF-018: a reply without the expected field is an 'invalid reply' PublishError, never a KeyError."""
+    cur = body
+    for k in keys:
+        if not isinstance(cur, dict) or k not in cur:
+            raise PublishError("network", f"GitHub's reply lacks the expected field '{k}'; will retry")
+        cur = cur[k]
+    return cur
+
+
 class PublishError(RuntimeError):
     def __init__(self, kind: str, message: str, retry_after: float = 0) -> None:
         super().__init__(message)
@@ -88,8 +99,10 @@ class GitHubStateClient:
         try:
             url = f"{self.api}{path}" if absolute else f"{self.api}/repos/{self.owner}/{self.repo}{path}"
             r = self.transport(method, url, headers, body)
-        except (OSError, urllib.error.URLError) as exc:
+        except (OSError, urllib.error.URLError, http.client.HTTPException) as exc:
             raise PublishError("network", f"GitHub is not reachable ({type(exc).__name__})") from None
+        except ValueError:   # BF-018: a proxy / captive portal answered with something that is not JSON
+            raise PublishError("network", "GitHub answered with an unreadable reply (not JSON); will retry") from None
         if r.status in (401,):
             raise PublishError("auth", "GitHub rejected the token (401). Update the account token; publishing is paused.")
         if r.status == 403 or r.status == 429:
@@ -115,14 +128,14 @@ class GitHubStateClient:
             if "404" in str(exc):
                 return None
             raise
-        return body["object"]["sha"]
+        return _field(body, "object", "sha")
 
     def default_head(self) -> str:
         repo = self._call("GET", "")
-        return self._call("GET", f"/git/ref/heads/{repo['default_branch']}")["object"]["sha"]
+        return _field(self._call("GET", f"/git/ref/heads/{_field(repo, 'default_branch')}"), "object", "sha")
 
     def commit_tree(self, sha: str) -> str:
-        return self._call("GET", f"/git/commits/{sha}")["tree"]["sha"]
+        return _field(self._call("GET", f"/git/commits/{sha}"), "tree", "sha")
 
     def read_file(self, branch: str, path: str) -> str | None:
         try:
@@ -143,10 +156,10 @@ class GitHubStateClient:
         parent = head or self.default_head()
         base_tree = self.commit_tree(parent)
         tree = [{"path": p, "mode": "100644", "type": "blob",
-                 "sha": self._call("POST", "/git/blobs", {"content": c, "encoding": "utf-8"})["sha"]}
+                 "sha": _field(self._call("POST", "/git/blobs", {"content": c, "encoding": "utf-8"}), "sha")}
                 for p, c in sorted(files.items())]
-        new_tree = self._call("POST", "/git/trees", {"base_tree": base_tree, "tree": tree})["sha"]
-        commit = self._call("POST", "/git/commits", {"message": message, "tree": new_tree, "parents": [parent]})["sha"]
+        new_tree = _field(self._call("POST", "/git/trees", {"base_tree": base_tree, "tree": tree}), "sha")
+        commit = _field(self._call("POST", "/git/commits", {"message": message, "tree": new_tree, "parents": [parent]}), "sha")
         if head is None:
             self._call("POST", "/git/refs", {"ref": f"refs/heads/{branch}", "sha": commit})
         else:
@@ -273,6 +286,13 @@ class StatePublisher:
                     q["next_try_at"] = now + wait
                 self._save(q)
                 return {"status": "error", "kind": exc.kind, "message": str(exc)}
+            except Exception as exc:  # noqa: BLE001 - BF-018: tick() promises never to raise; record and back off
+                q["last_error"] = f"{type(exc).__name__}: {str(exc)[:200]}"
+                wait = BACKOFF[min(q["attempts"], len(BACKOFF) - 1)]
+                q["attempts"] += 1
+                q["next_try_at"] = now + wait
+                self._save(q)
+                return {"status": "error", "kind": "network", "message": q["last_error"]}
             q.update(last_published_revision=snap["state_revision"], last_published_hash=snap["content_hash"],
                      last_commit=commit, remote_head=commit, attempts=0, next_try_at=0.0, last_error="",
                      pending_revision=0, dirty_since=0.0)

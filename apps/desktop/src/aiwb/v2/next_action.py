@@ -72,7 +72,9 @@ def compute_next_actions(state: dict[str, Any], *, publish_pending: bool = False
         out.append(_act("publish_state", "", "local project state is newer than the last published snapshot", rank=80))
     if manager_report_due:
         out.append(_act("manager_update", "", "the project manager has not seen the latest state revision", rank=85))
-    if not tasks:
+    waiting_plan = any(p["status"] == "pending" for p in state["proposals"].values()) or any(
+        d["status"] == "proposed" for d in state["decisions"].values())
+    if not tasks and not waiting_plan:   # BF-058: a plan or a decision already waits — do not ask for a second plan
         out.append(_act("plan_project", "", "no tasks yet: prepare the project-manager planning prompt", rank=1))
     out.sort(key=lambda a: (a["rank"], a["reference_id"]))
     return out

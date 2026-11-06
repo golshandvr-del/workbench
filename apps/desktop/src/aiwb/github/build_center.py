@@ -353,10 +353,18 @@ class BuildCenterWindow:
         run = self._selected_run()
         self.job_tree.delete(*self.job_tree.get_children())
         self._update_buttons()
+        self.jobs = ()
         if run is None or self.busy:
-            return
+            return   # a selection made during a fetch is re-read when that fetch ends (see done)
 
         def done(jobs: tuple[ga.WorkflowJob, ...]) -> None:
+            now = self._selected_run()   # BF-103: results belong to the run they were requested for
+            if now is None or (now.run_id, now.run_attempt or 1) != (run.run_id, run.run_attempt or 1):
+                self.jobs = ()
+                self.job_tree.delete(*self.job_tree.get_children())
+                if now is not None:
+                    self._load_jobs()
+                return
             self.jobs = jobs
             self.job_tree.delete(*self.job_tree.get_children())
             for job in jobs:

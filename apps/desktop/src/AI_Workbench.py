@@ -2225,6 +2225,14 @@ def scan_staged_blobs(root: Path, paths: Iterable[str]) -> list[str]:
 
 
 
+def _utf8_child_env() -> dict[str, str]:
+    """BF-025: Python children print UTF-8 (Persian, ✓) through the pipe instead of the Windows ANSI code page."""
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"            # the reader below always decodes UTF-8, so the child must write UTF-8
+    env["PYTHONIOENCODING"] = "utf-8"
+    return env
+
+
 def _run_process_bounded(
     command: str | list[str], cwd: Path, timeout: float, max_output_chars: int,
     *, shell: bool, merge_stderr: bool,
@@ -2248,7 +2256,7 @@ def _run_process_bounded(
             command, cwd=str(cwd), shell=shell, stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT if merge_stderr else subprocess.PIPE,
             text=True, encoding="utf-8", errors="replace", bufsize=1,
-            env=os.environ.copy(), **kwargs,
+            env=_utf8_child_env(), **kwargs,
         )
     except OSError as exc:
         return {
@@ -2266,9 +2274,22 @@ def _run_process_bounded(
     def drain(name: str, stream: Any) -> None:
         if stream is None:
             return
+        import codecs
+        raw = getattr(stream, "buffer", None)
+        decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         while True:
             try:
-                chunk = stream.read(4096)
+                if raw is not None and hasattr(raw, "read1"):
+                    # BF-029: read1 returns what is available NOW; TextIOWrapper.read(4096) would block until 4096
+                    # characters or EOF, losing the output while a background process still holds the pipe.
+                    data = raw.read1(4096)
+                    chunk = decoder.decode(data, final=not data).replace("\r\n", "\n").replace("\r", "\n")
+                    if not data and not chunk:
+                        break
+                    if not data:
+                        pass
+                else:
+                    chunk = stream.read(4096)
             except (OSError, ValueError):
                 break
             if not chunk:
@@ -2325,14 +2346,20 @@ def _run_process_bounded(
             except OSError:
                 pass
             exit_code = proc.wait(timeout=5)
+    # BF-029: a grandchild (a server, a launcher) can keep the pipe's write end open. Wait a bounded time for
+    # the readers; if one is still blocked, do NOT close its stream (close() waits for the read lock, i.e. until
+    # the grandchild ends) — the readers are daemon threads — and say so.
+    deadline = time.monotonic() + 3.0
     for reader in readers:
-        reader.join(timeout=5)
-    for stream in (proc.stdout, proc.stderr):
-        if stream is not None:
-            try:
-                stream.close()
-            except OSError:
-                pass
+        reader.join(timeout=max(0.0, deadline - time.monotonic()))
+    background = any(reader.is_alive() for reader in readers)
+    if not background:
+        for stream in (proc.stdout, proc.stderr):
+            if stream is not None:
+                try:
+                    stream.close()
+                except OSError:
+                    pass
     with lock:
         stdout = "".join(chunk for name, chunk in output_tail if name == "stdout")
         stderr = "".join(chunk for name, chunk in output_tail if name == "stderr")
@@ -2341,6 +2368,7 @@ def _run_process_bounded(
         "exit_code": exit_code, "stdout": stdout, "stderr": stderr,
         "error": error, "elapsed": time.monotonic() - started,
         "timed_out": timed_out, "output_truncated": output_truncated,
+        "background_process": background,
     }
 
 
@@ -2359,6 +2387,8 @@ def run_shell_command_bounded(command: str, cwd: Path, timeout: int = MAX_COMMAN
     output = str(result.get("stdout", ""))
     if result.get("output_truncated"):
         output = "[Output truncated; only the most recent output is retained.]\n" + output
+    if result.get("background_process"):
+        output += "\n[A background process is still running and holds the output; Workbench stopped waiting for it.]"
     return {
         "command": command, "exit_code": result.get("exit_code"),
         "output": redact(output), "elapsed": result.get("elapsed", 0.0),
@@ -10396,7 +10426,11 @@ class WorkbenchApp:
         if not path:
             return ""
         text = ctl.export_bundle(version=APP_VERSION)
-        Path(path).write_text(text, encoding="utf-8")
+        try:
+            Path(path).write_text(text, encoding="utf-8")
+        except OSError as exc:   # BF-022: a file problem is a normal message, not the "bug in AI Workbench" dialog
+            messagebox.showerror("Export project", f"Could not write {Path(path).name}: {exc}", parent=self.root)
+            return ""
         self.set_status(f"Project exported to {Path(path).name}. Open it in AI Workbench Mobile → Projects → Import.")
         return path
 
@@ -10408,7 +10442,11 @@ class WorkbenchApp:
                 filetypes=[("AI Workbench project bundle", "*.aiwb-bundle.json *.json"), ("All files", "*.*")])
         if not path:
             return {"imported": False, "kind": "cancelled"}
-        data = Path(path).read_bytes()
+        try:
+            data = Path(path).read_bytes()
+        except OSError as exc:   # BF-022
+            messagebox.showerror("Import project", f"Could not read {Path(path).name}: {exc}", parent=self.root)
+            return {"imported": False, "kind": "invalid", "message": str(exc)}
         try:
             plan = ctl.plan_bundle_import(data)
         except Exception as exc:  # noqa: BLE001 - shown to the user, nothing changed
@@ -10427,7 +10465,12 @@ class WorkbenchApp:
         if not confirm:
             self.set_status("Import cancelled; nothing changed.")
             return {**plan, "imported": False}
-        out = ctl.import_bundle(data, force=not plan["safe"])
+        try:
+            out = ctl.import_bundle(data, force=not plan["safe"])
+        except OSError as exc:   # BF-022: the backup / write step failed first; nothing changed
+            messagebox.showerror("Import project", f"The project folder could not be written ({exc}). Nothing was "
+                                 "changed.", parent=self.root)
+            return {**plan, "imported": False, "message": str(exc)}
         self.set_status(f"Project imported (revision {out['bundle_revision']}). A backup of the previous state was kept.")
         ww = getattr(self, "workspace_window", None)
         if ww is not None:

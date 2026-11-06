@@ -3,7 +3,16 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 38 / eight more findings repaired in code (2026-11-05)
+## Current resume checkpoint — session 39 / 89/106 FIXED, catalog updated (2026-11-06)
+
+- Recovery: read the session-38 transcript; restored main=origin/main=230fa450 via the git credential store (token never in source). New owner rule: no commit per change; ONE commit+push at session end (a safety checkpoint push is allowed because the sandbox resets). Never report/stop before the roadmap is complete.
+- Repaired with regression tests in `apps/desktop/tests/test_session39_repairs.py` (22 tests): BF-096 (push target = origin/<branch>, live remote SHA, -u when upstream differs), BF-097 (resume adopts the new HEAD after rebase), BF-101 (dispatch form reloads per ref, stale form not submittable), BF-103 (jobs of another run discarded, latest selection re-fetched), BF-107 (ZIP skipped-file warnings survive the debounce), BF-036 (release validated before any transition, default tag), BF-037 (honest message after accepting a failed answer), BF-038 (answer for a dropped prompt not "linked"), BF-041 (files + context request keep the request), BF-058 (no second plan prompt), BF-059 (attention key names the event; trim by recency), BF-018 (publisher odd replies/tick never raises), BF-020/034 (archive writes bundle first, atomic; retry), BF-022 (bundle/file errors are plain messages), BF-025 (children write UTF-8), BF-029 (background process does not hold the app; read1 drain), BF-087 (big file semantic report), BF-088 (relative imports resolve).
+- Catalog headings/counts, README and ROADMAP regenerated from the headings: **89/106 FIXED, 17 OPEN** = BF-008, 045, 046, 060, 068, 069, 070, 071, 072, 073, 074, 075, 077, 082, 099, 100, 102. BF-083 Mobile port still missing.
+- Full Desktop suite: 1070 tests OK; static check 0 undefined names. Not run: Mobile JVM, GUI smoke scripts, Windows/Android gates.
+- Tooling note: `xvfb-run -a python3 -m unittest ...` runs the Tk tests (install xvfb with sudo apt-get install -y xvfb xauth after a reset).
+- Resume: verify clean HEAD=origin/main, then continue with BF-099/100/102 (scrollable dialogs), 082, 068, 045/046, Desktop-side companion findings 069-073, 060, then Mobile (072, 074, 075, 077, BF-083 port) and BF-008.
+
+## Previous resume checkpoint — session 38 / eight more findings repaired in code (2026-11-05)
 
 - Recovery: read the session-37 transcript, restored main=origin/main=2db2f0bf via the git credential store (token never in source). Every change is one add -> commit -> push.
 - Repaired in code with regression tests (catalog headings/counts NOT yet updated; update BUG_FINDING.md, README.md, ROADMAP.md one file per checkpoint): BF-085 (no false repair prompt for clean parse), BF-080 (manifest path claims without file block -> missing_deliverable), BF-005 (state.json.prev + restore_last_good + honest message), BF-021 (safe_project_id on export), BF-023 (goal/settings count as local work in plan_import), BF-019 (idempotent create-repo / tag / release retries), BF-030 (Quick prompt refuses secret files and outside links).

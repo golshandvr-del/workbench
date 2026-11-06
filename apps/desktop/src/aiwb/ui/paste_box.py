@@ -43,6 +43,7 @@ class PastePanel(ttk.Frame):
         self.preview: Any = None
         self.zip_name = ""
         self.zip_text = ""
+        self._zip_preview: Any = None   # BF-107: source diagnostics of the loaded ZIP (skipped entries, fixes)
         self._after: str | None = None
         self._ask_zip = ask_zip
         bar = ttk.Frame(self, style=kw.get("style", "TFrame"))
@@ -64,7 +65,20 @@ class PastePanel(ttk.Frame):
         self.box.pack(fill="both", expand=True, pady=(0, 6))
         self.box.bind("<<Modified>>", self._modified)
         self.box.bind("<Control-Return>", lambda _e: (self.use(), "break")[1])
+        self.bind("<Destroy>", self._on_destroy, add="+")
         self.refresh()
+
+    def _cancel_pending(self) -> None:
+        if self._after is not None:
+            try:
+                self.after_cancel(self._after)
+            except tk.TclError:
+                pass
+            self._after = None
+
+    def _on_destroy(self, event: Any = None) -> None:
+        if event is None or event.widget is self:
+            self._cancel_pending()
 
     @property
     def state(self) -> dict[str, Any] | None:
@@ -100,6 +114,18 @@ class PastePanel(ttk.Frame):
         from ..intake.preview import preview
         self._after = None
         self.preview = (self._diagnose or preview)(self.text(), self.state)
+        zp = self._zip_preview
+        if zp is not None and self.zip_text and self.text() == self.zip_text:
+            # BF-107: while the text is still the ZIP's canonical text, keep what the ZIP reading dropped
+            for x in zp.problems:
+                if x not in self.preview.problems:
+                    self.preview.problems.append(x)
+            for x in zp.fixes:
+                if x not in self.preview.fixes:
+                    self.preview.fixes.append(x)
+            if zp.problems and "skipped item" not in self.preview.line:
+                n = len(zp.problems)
+                self.preview.line += f" · ZIP: {n} skipped item{'s' if n != 1 else ''}"
         self._show(self.preview)
         return self.preview
 
@@ -134,7 +160,9 @@ class PastePanel(ttk.Frame):
             self._show(self.preview)
             return self.preview
         text, pv = preview_zip(data, p.name)
+        self._cancel_pending()   # BF-107: a queued refresh must not replace the ZIP diagnostics
         if text:
+            self._zip_preview = pv
             self.zip_name = p.name
             self.zip_text = text  # 5.14.0: the box text that came from the ZIP (a later paste is not the ZIP)
             self.box.delete("1.0", "end")
@@ -153,6 +181,8 @@ class PastePanel(ttk.Frame):
     def clear(self) -> None:
         self.box.delete("1.0", "end")
         self.zip_name = ""
+        self.zip_text = ""
+        self._zip_preview = None
         self.refresh()
 
     def use(self) -> Any:

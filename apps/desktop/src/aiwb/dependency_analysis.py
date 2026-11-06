@@ -103,14 +103,20 @@ def scan_dependency_graph(root: Path, *, max_files: int = MAX_FILES) -> dict[str
     for rel, text in files.items():
         suffix = PurePosixPath(rel).suffix.casefold()
         for ref in _references(rel, text):
-            ref = ref.strip().strip(".").replace("\\", "/")
+            path_style = suffix in {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".rb", ".php"}
+            # BF-088: dots are significant in a path-style reference ("./util", "../lib/x.js"); only module names lose them
+            ref = ref.strip().replace("\\", "/") if path_style else ref.strip().strip(".").replace("\\", "/")
             possible: list[str] = []
-            if suffix in {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".c", ".h", ".cc", ".cpp", ".cxx", ".hpp", ".rb", ".php"}:
-                candidate = (PurePosixPath(rel).parent / ref)
-                candidate_str = str(candidate).replace("\\", "/")
-                possible.extend([candidate_str, candidate_str + ".py", candidate_str + ".js", candidate_str + ".jsx", candidate_str + ".ts", candidate_str + ".tsx", candidate_str + ".c", candidate_str + ".h", candidate_str + ".cpp"])
-                possible.extend(str(candidate / index) for index in ("index.js", "index.ts", "index.tsx"))
-                matches = [p for p in files if p in possible]
+            if path_style:
+                import posixpath
+                candidate_str = posixpath.normpath(posixpath.join(str(PurePosixPath(rel).parent), ref)) if ref else ""
+                if candidate_str.startswith("..") or candidate_str.startswith("/"):
+                    matches = []   # leaves the project: stays unresolved
+                else:
+                    possible.extend([candidate_str, candidate_str + ".py", candidate_str + ".js", candidate_str + ".jsx", candidate_str + ".ts", candidate_str + ".tsx", candidate_str + ".c", candidate_str + ".h", candidate_str + ".cpp"])
+                    possible.extend(posixpath.join(candidate_str, index) for index in ("index.js", "index.ts", "index.tsx"))
+                    wanted = {x.casefold() for x in possible}
+                    matches = [p for p in files if p.casefold() in wanted]
             else:
                 key = ref.replace("::", ".").casefold()
                 matches = key_to_paths.get(key, [])

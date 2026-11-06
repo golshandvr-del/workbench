@@ -325,12 +325,26 @@ class SyncBuildOrchestrator:
         if not result.ok:
             self._event(PREFLIGHT_FAILED, "; ".join(c.detail for c in checks if not c.ok)[:500])
         elif self.git.commit_sha:
+            if not self.git.pushed:
+                self._adopt_moved_head(plan)   # BF-097
             self._event(COMMITTED if not self.git.pushed else PUSHED, "Resuming: " + self.git_effect())
         elif not items:
             self._event(READY_TO_COMMIT, "No local changes; the current HEAD can be pushed/built.")
         else:
             self._event(REVIEW_REQUIRED, f"{len(items)} changed path(s) to review.")
         return result
+
+    def _adopt_moved_head(self, plan: SyncPlan | None) -> None:
+        """BF-097: the recorded, unpushed commit is no longer HEAD (the user pulled/rebased as asked after
+        'the remote branch moved'). Use the new HEAD instead of looping on 'HEAD moved since the commit was recorded'."""
+        head = self.sync.git.run(self.git_root, ["rev-parse", "HEAD"]).stdout.strip()
+        if len(head) != 40 or head == self.git.commit_sha:
+            return
+        old = self.git.commit_sha
+        self.git.commit_sha = head
+        self.git.base_remote_sha = plan.remote_sha if plan else ""
+        self._event(COMMITTED, f"HEAD moved from the recorded commit {old[:12]} (for example after a rebase); "
+                               f"now using the new HEAD {head[:12]}.")
 
     def _review_item(self, entry: ReviewEntry) -> ReviewItem:
         flags = []
@@ -406,7 +420,7 @@ class SyncBuildOrchestrator:
         if self.branch.casefold() in PROTECTED_BRANCHES:
             raise OrchestratorError("push", f"Direct push to '{self.branch}' is blocked.")
         snap = self.sync.review_snapshot(self.git_root)
-        upstream = snap.branch.upstream or f"origin/{self.branch}"
+        upstream = self.sync.push_target(snap.branch) or f"origin/{self.branch}"   # BF-096: this branch's own remote ref
         try:
             live = self.sync.remote_branch_sha(self.git_root, upstream)
         except GitCommandError as exc:

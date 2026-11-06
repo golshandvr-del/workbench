@@ -13,6 +13,9 @@ The phone has the same rules in ``core/Closeout.kt``.
 """
 from __future__ import annotations
 
+import copy
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -129,18 +132,42 @@ def archive(store: Any, root: Path, *, version: str = "") -> Path:
     from . import bundle
     st = store.load()
     fs = _fs(st)
+    path = archive_path(root, st)
     if fs.get("archived_at"):
-        raise ModelError("the project is already archived")
+        if path.is_file():
+            raise ModelError("the project is already archived")
+        _write_bundle(path, st, root, version)   # BF-034: an archived project whose bundle is missing can re-write it
+        return path
     if not fs.get("completed_at"):
         raise ModelError("announce the completion first (F26)")
+    # BF-020 / BF-034: the bundle comes FIRST (temp file + replace); the project is marked archived only when it exists
+    pre = copy.deepcopy(st)
+    pre["settings"].setdefault("flow", {})["archived_at"] = now_utc()
+    _write_bundle(path, pre, root, version)
     with store.transaction("project archived") as s:
-        s["settings"].setdefault("flow", {})["archived_at"] = now_utc()
+        s["settings"].setdefault("flow", {})["archived_at"] = pre["settings"]["flow"]["archived_at"]
         emit(s, "project_archived", importance="major")
-    final = store.load()
-    path = archive_path(root, final)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(bundle.dumps(bundle.export_bundle(final, name=Path(root).name, version=version)), encoding="utf-8")
     return path
+
+
+def _write_bundle(path: Path, state: dict[str, Any], root: Path, version: str) -> None:
+    from . import bundle
+    tmp = ""
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        text = bundle.dumps(bundle.export_bundle(state, name=Path(root).name, version=version))
+        fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".final-", suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.replace(tmp, path)
+    except OSError as exc:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
+        raise ModelError(f"The final bundle could not be written: {exc}. The project was NOT archived; "
+                         "fix the cause and press Archive again.") from None
 
 
 def reopen(store: Any) -> None:

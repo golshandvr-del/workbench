@@ -81,7 +81,10 @@ def read_bundle(data: str | bytes | dict[str, Any]) -> tuple[dict[str, Any], dic
     if isinstance(data, (bytes, bytearray)):
         if len(data) > MAX_BUNDLE_BYTES:
             raise BundleError("the bundle is larger than 8 MB")
-        data = data.decode("utf-8-sig", errors="strict")
+        try:
+            data = data.decode("utf-8-sig", errors="strict")
+        except UnicodeDecodeError:
+            raise BundleError("the file is not UTF-8 text (was it saved in another encoding?)") from None
     if isinstance(data, str):
         if len(data.encode("utf-8")) > MAX_BUNDLE_BYTES:
             raise BundleError("the bundle is larger than 8 MB")
@@ -111,9 +114,15 @@ def read_bundle(data: str | bytes | dict[str, Any]) -> tuple[dict[str, Any], dic
     if not isinstance(pid, str) or not PROJECT_ID.match(pid):
         raise BundleError("the project_id in the bundle is not valid")
     proj = b.get("project") or {}
+    if not isinstance(proj, dict):
+        raise BundleError("the bundle is damaged: 'project' must be an object")
     if proj.get("project_id") != pid:
         raise BundleError("project.project_id does not match the state")
-    if int(state.get("db_version", 0) or 0) > DB_VERSION:
+    try:
+        db_ver = int(state.get("db_version", 0) or 0)
+    except (TypeError, ValueError):
+        raise BundleError("the bundle is damaged: db_version is not a number") from None
+    if db_ver > DB_VERSION:
         raise BundleError("the bundle was written by a newer AI Workbench; update this app")
     try:
         state = migrate_state(state, pid)[0]

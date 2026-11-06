@@ -337,6 +337,21 @@ class GitSyncService:
             return OperationResult(False, "fetch", (r.stderr or r.stdout or "Fetch failed.").strip())
         return OperationResult(True, "fetch", "Fetched " + remote)
 
+    @staticmethod
+    def tracks_same_branch(b: BranchInfo) -> bool:
+        """True when the upstream is ``<remote>/<this branch>`` (BF-096)."""
+        return bool(b.upstream) and b.upstream.partition("/")[2] == b.branch
+
+    @staticmethod
+    def _remote_of(b: BranchInfo, default: str = "origin") -> str:
+        return (b.upstream.partition("/")[0] if b.upstream else "") or default
+
+    def push_target(self, b: BranchInfo, default_remote: str = "origin") -> str:
+        """The remote ref a push of this branch updates: ``<remote>/<branch>`` (BF-096)."""
+        if not b.branch:
+            return ""
+        return f"{self._remote_of(b, default_remote)}/{b.branch}"
+
     def remote_branch_sha(self, root: Path, upstream: str, *, timeout: int = 60) -> str:
         """Live remote SHA via ls-remote (not the possibly stale tracking ref)."""
         remote, _, branch = upstream.partition("/")
@@ -358,9 +373,19 @@ class GitSyncService:
             fetched, fetch_error = res.ok, ("" if res.ok else res.message)
         snap = self.review_snapshot(root)
         remote_sha = ""
-        if snap.branch.upstream:
-            r = self.git.run(snap.root, ["rev-parse", "--verify", "--quiet", snap.branch.upstream + "^{commit}"])
+        target = self.push_target(snap.branch)
+        if target:
+            r = self.git.run(snap.root, ["rev-parse", "--verify", "--quiet", target + "^{commit}"])
             remote_sha = r.stdout.strip() if r.returncode == 0 else ""
+        if snap.branch.branch and not self.tracks_same_branch(snap.branch):
+            # BF-096: no upstream, or an upstream with another branch name (git switch -c feat origin/main):
+            # the guard must watch origin/<this branch>, read live from the remote, not another branch.
+            try:
+                remote_sha = self.remote_branch_sha(snap.root, f"{self._remote_of(snap.branch)}/{snap.branch.branch}")
+            except GitCommandError:
+                r = self.git.run(snap.root, ["rev-parse", "--verify", "--quiet",
+                                             f"refs/remotes/{self._remote_of(snap.branch)}/{snap.branch.branch}^{{commit}}"])
+                remote_sha = r.stdout.strip() if r.returncode == 0 else ""
         plan = classify_sync_state(snap, remote_sha)
         if fetch_error:
             plan = SyncPlan(**{**_plan_dict(plan), "fetch_error": fetch_error,
@@ -432,7 +457,8 @@ class GitSyncService:
         snap = self.review_snapshot(root)
         if snap.branch.branch != plan.branch:
             return OperationResult(False, "push", "The checked-out branch changed since the plan was built; refresh the plan.")
-        upstream = plan.upstream or f"{remote}/{plan.branch}"
+        same = bool(plan.upstream) and plan.upstream.partition("/")[2] == plan.branch   # BF-096
+        upstream = plan.upstream if same else f"{remote}/{plan.branch}"
         try:
             live = self.remote_branch_sha(snap.root, upstream)
         except GitCommandError as exc:
@@ -441,8 +467,13 @@ class GitSyncService:
             return OperationResult(False, "push",
                                    "The remote branch changed since the plan was built (expected "
                                    f"{plan.remote_sha[:12] or 'none'}, found {live[:12] or 'none'}). Fetch and build a new plan.")
+        if live and not same and live != snap.branch.head_sha:
+            anc = self.git.run(snap.root, ["merge-base", "--is-ancestor", live, "HEAD"])
+            if anc.returncode != 0:
+                return OperationResult(False, "push", f"{upstream} already exists and has different commits — fetch and "
+                                       "merge (or rebase) first; nothing was pushed.")
         args = ["push", "--porcelain"]
-        if not plan.upstream:
+        if not same:
             args.append("-u")
         # --force-with-lease is deliberately NOT used: a normal push is rejected
         # by the server for any non-fast-forward, which is the desired behaviour.

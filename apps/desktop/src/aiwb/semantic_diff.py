@@ -181,12 +181,17 @@ def _language(path: str) -> str:
 
 def analyze_semantic_diff(path: str, before: str, after: str) -> dict[str, Any]:
     """Return structural changes where supported and a bounded unified diff summary."""
-    before = before[:MAX_SEMANTIC_CHARS]
-    after = after[:MAX_SEMANTIC_CHARS]
+    too_big = len(before) > MAX_SEMANTIC_CHARS or len(after) > MAX_SEMANTIC_CHARS
+    identical = before == after
     lang = _language(path)
     result: dict[str, Any] = {"path": path, "language": lang, "confidence": "heuristic", "added": {}, "removed": {}, "modified": {}, "warnings": [], "unified_diff": ""}
     try:
-        if lang == "python":
+        if too_big:   # BF-087: never parse or diff a file cut in the middle — say so and diff the full text
+            old = new = {}
+            big = max(len(before), len(after))
+            result["warnings"].append(f"File too large for structural analysis ({big:,} characters); showing a bounded "
+                                      "text diff of the whole file. See the Diff tab for the complete change.")
+        elif lang == "python":
             old, new = _python_symbols(before), _python_symbols(after)
             old_fingerprints, new_fingerprints = _python_fingerprints(before), _python_fingerprints(after)
             result["confidence"] = "Python AST"
@@ -216,7 +221,8 @@ def analyze_semantic_diff(path: str, before: str, after: str) -> dict[str, Any]:
         result["warnings"].append(f"Structural parsing failed; falling back to text diff: {type(exc).__name__}: {exc}")
     diff = difflib.unified_diff(before.splitlines(), after.splitlines(), fromfile=f"a/{path}", tofile=f"b/{path}", lineterm="")
     result["unified_diff"] = "\n".join(list(diff)[:4000])[:80_000]
-    result["truncated"] = len(before) >= MAX_SEMANTIC_CHARS or len(after) >= MAX_SEMANTIC_CHARS
+    result["truncated"] = too_big
+    result["identical"] = identical
     return result
 
 
@@ -231,6 +237,7 @@ def format_semantic_report(report: dict[str, Any]) -> str:
             for kind, values in payload.items():
                 lines.append(f"  {kind}: " + ", ".join(values[:60]))
     for warning in report.get("warnings", []): lines.append("Warning: " + warning)
-    if report.get("truncated"): lines.append("Warning: source excerpt truncated to stay within analysis limits.")
-    lines += ["", "Bounded unified diff:", str(report.get("unified_diff", "")) or "(no textual differences detected)"]
+    if report.get("truncated"): lines.append("Warning: the file is over the structural-analysis limit; only the text diff below is reliable.")
+    empty = "(no textual differences detected)" if report.get("identical", True) else "(no line-level differences to show; the texts differ only in line endings or the final newline)"
+    lines += ["", "Bounded unified diff:", str(report.get("unified_diff", "")) or empty]
     return "\n".join(lines)

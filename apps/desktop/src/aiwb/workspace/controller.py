@@ -351,9 +351,14 @@ class WorkspaceController:
 
     def mark_seen(self, keys: list[str]) -> set[str]:
         """'Mark as read' for queue items: user preference in app data; history is never removed."""
-        cur = self.seen_keys() | set(keys)
-        self.ctl._save_ui(ws_seen=sorted(cur)[-500:])
-        return cur
+        ordered = [k for k in (self.ctl._load_ui().get("ws_seen") or []) if isinstance(k, str)]
+        for k in keys:   # BF-059: trim by recency (oldest dropped), not alphabetically
+            if k in ordered:
+                ordered.remove(k)
+            ordered.append(k)
+        ordered = ordered[-500:]
+        self.ctl._save_ui(ws_seen=ordered)
+        return set(ordered)
 
     def clear_seen(self) -> None:
         self.ctl._save_ui(ws_seen=[])

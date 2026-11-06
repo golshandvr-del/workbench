@@ -73,15 +73,20 @@ def attention_queue(state: dict[str, Any], *, lang: str = "en", publish_paused: 
     items: list[dict[str, Any]] = []
 
     def add(rank: int, kind: str, ref: str, why: str, ask: str, agent: str = "", action: str = "open_task",
-            task_id: str = "", trace: dict[str, str] | None = None) -> None:
+            task_id: str = "", trace: dict[str, str] | None = None, key_extra: str = "") -> None:
         key = f"{kind}:{ref}:{rank}"
+        # BF-059: the key names the event (handoff / reason), so "mark as read" mutes only THIS notification
+        extra = key_extra or ((trace or {}).get("handoff_id") or "")
+        if extra:
+            key += ":" + extra
         items.append({"key": key, "rank": rank, "rank_text": _tr(RANKS[rank], lang), "kind": kind, "ref": ref,
                       "task_id": task_id or (ref if kind == "task" else ""), "why": why, "ask": ask,
                       "agent_id": agent, "action": action, "seen": key in seen, "trace": trace or {}})
 
     if publish_paused:
         add(1, "publish", "publish", f"publishing paused: {publish_paused}",
-            _tr(("Fix the GitHub connection or resume", "اتصال GitHub را اصلاح یا ادامه دهید"), lang), action="open_settings")
+            _tr(("Fix the GitHub connection or resume", "اتصال GitHub را اصلاح یا ادامه دهید"), lang), action="open_settings",
+            key_extra=__import__("hashlib").sha256(publish_paused.encode("utf-8")).hexdigest()[:8])
     for d in sorted(state["decisions"].values(), key=lambda d: d["decision_id"]):
         if d["status"] == "proposed":
             add(1, "decision", d["decision_id"], f"open decision: {d['title']}", _tr(ASK["needs_decision"], lang),

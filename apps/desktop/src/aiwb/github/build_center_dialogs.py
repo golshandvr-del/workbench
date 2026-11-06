@@ -61,6 +61,9 @@ class DispatchDialog:
         self.svc, self.owner, self.repo, self.workflow = svc, owner, repo, workflow
         self.known_run_ids, self.on_result, self.redact = known_run_ids, on_result, redact
         self.form: ar.DispatchForm | None = None
+        self.form_ref: str = ""        # BF-101: the ref the current form was read at
+        self._load_gen = 0
+        self._reload_after: str | None = None
         self.vars: dict[str, tk.Variable] = {}
         self.result: ar.DispatchResult | None = None
         self.win = tk.Toplevel(parent)
@@ -74,6 +77,7 @@ class DispatchDialog:
         ttk.Label(frame, text="Branch / tag (ref):").grid(row=1, column=0, sticky="w", pady=(8, 0))
         self.ref_var = tk.StringVar(value=ref)
         ttk.Entry(frame, textvariable=self.ref_var, width=40).grid(row=1, column=1, sticky="we", pady=(8, 0))
+        self._initial_ref = ref
         self.inputs_frame = ttk.LabelFrame(frame, text="Inputs (from the workflow file)", padding=6)
         self.inputs_frame.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=8)
         self.status_var = tk.StringVar(value="Reading workflow inputs…")
@@ -84,7 +88,44 @@ class DispatchDialog:
         self.btn_run.pack(side="right")
         ttk.Button(bar, text="Close", command=self.close).pack(side="right", padx=(0, 6))
         frame.columnconfigure(1, weight=1)
-        self.worker.run(lambda t: self.svc.dispatch_form(t, owner, repo, workflow, ref=ref), self._form_loaded, self._fail)
+        self._load_form(ref)
+        self.ref_var.trace_add("write", lambda *_a: self._ref_edited())
+
+    # BF-101: the input schema belongs to a ref — reload it when the ref changes and never submit a stale one
+    def _load_form(self, ref: str) -> None:
+        if self.worker.busy:
+            self._reload_after = self.win.after(200, lambda: self._load_form(self.ref_var.get().strip() or ref))
+            return
+        self._load_gen += 1
+        gen = self._load_gen
+        self.status_var.set(f"Reading workflow inputs at '{ref}'…")
+        self.btn_run.configure(state="disabled")
+
+        def loaded(form: ar.DispatchForm) -> None:
+            if gen == self._load_gen:
+                self._form_loaded(form, ref)
+
+        self.worker.run(lambda t: self.svc.dispatch_form(t, self.owner, self.repo, self.workflow, ref=ref), loaded, self._fail)
+
+    def _ref_edited(self) -> None:
+        if self.worker.closed:
+            return
+        self.form = None            # stale: disable submission until the new ref's form arrives
+        self._load_gen += 1
+        try:
+            self.btn_run.configure(state="disabled")
+            self.status_var.set("Branch / tag changed — workflow inputs will be re-read…")
+            if self._reload_after is not None:
+                self.win.after_cancel(self._reload_after)
+            self._reload_after = self.win.after(500, self._reload_now)
+        except tk.TclError:
+            pass
+
+    def _reload_now(self) -> None:
+        self._reload_after = None
+        ref = self.ref_var.get().strip()
+        if ref:
+            self._load_form(ref)
 
     def close(self) -> None:
         self.worker.closed = True
@@ -97,8 +138,24 @@ class DispatchDialog:
         self.status_var.set(f"[{getattr(error, 'category', type(error).__name__)}] {self.redact(error)}")
         self.btn_run.configure(state="normal" if self.form and self.form.dispatchable else "disabled")
 
-    def _form_loaded(self, form: ar.DispatchForm) -> None:
+    def _form_loaded(self, form: ar.DispatchForm, ref: str | None = None) -> None:
+        prev_defaults = dict(getattr(self, "_defaults", {}))   # self.form is None while a new ref loads
+        kept = {}   # only what the USER changed survives a ref change; an old ref's defaults never override the new ones
+        for name, var in self.vars.items():
+            val = var.get()
+            old_default = prev_defaults.get(name, "")
+            if isinstance(val, bool):
+                changed = str(val).lower() != (old_default or "false")
+            else:
+                changed = str(val) != old_default
+            if changed:
+                kept[name] = val
+        for child in self.inputs_frame.winfo_children():
+            child.destroy()
+        self.vars = {}
         self.form = form
+        self._defaults = {s.name: (s.default or "") for s in form.inputs}
+        self.form_ref = ref if ref is not None else self._initial_ref
         if not form.dispatchable:
             self.status_var.set(form.error or "This workflow does not declare workflow_dispatch; it cannot be run manually.")
             return
@@ -116,6 +173,11 @@ class DispatchDialog:
                 ttk.Entry(self.inputs_frame, textvariable=var, width=40).grid(row=row, column=1, sticky="we")
             if spec.description:
                 ttk.Label(self.inputs_frame, text=spec.description, foreground="#667085").grid(row=row, column=2, sticky="w", padx=(8, 0))
+            if spec.name in kept and (spec.type != "choice" or kept[spec.name] in spec.options):
+                try:
+                    var.set(kept[spec.name])
+                except tk.TclError:
+                    pass
             self.vars[spec.name] = var
         if not form.inputs:
             ttk.Label(self.inputs_frame, text="This workflow takes no inputs.").grid(row=0, column=0, sticky="w")
@@ -130,6 +192,9 @@ class DispatchDialog:
             return
         try:
             ref = ar.validate_ref(self.ref_var.get())
+            if ref != self.form_ref:
+                self.status_var.set(f"The workflow inputs were read at '{self.form_ref}', not '{ref}'; wait for them to reload.")
+                return
             payload = ar.validate_dispatch_values(self.form.inputs, self.values())
         except ValueError as exc:
             self.status_var.set(str(exc))

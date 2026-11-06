@@ -521,8 +521,19 @@ class ProjectsController:
                 return RouteResult("truncated", rid, f"The answer was cut off ({len(ex.files)} file(s) so far, "
                                    f"{ex.label}). Nothing was linked; a continue prompt is ready.", text=canon)
             if ex.files or HANDOFF_RE.search(canon):
+                original_text = text
                 text = canon
                 hid = self._match_handoff(text, attempt_id=ex.attempt_id, hint=handoff_hint)
+                dead = self.state()["handoffs"].get(hid) if hid else None
+                if dead is not None and dead["status"] in ("rejected", "superseded"):
+                    # BF-038: never report "linked" for a handoff that cannot take the answer
+                    task_h = [h["handoff_id"] for h in self.state()["handoffs"].values()
+                              if h["task_id"] == dead["task_id"] and h["status"] in self.WAITING]
+                    again = (f" The task's open prompt is {task_h[0]}: copy it and send it again, or paste the answer "
+                             "for that prompt." if task_h else " Prepare a new prompt for the task to use this work.")
+                    return RouteResult("rejected", rid, f"This answer is for prompt {hid}, which was {dead['status']} "
+                                       f"(dropped).{again} The answer is kept in the Inbox; nothing was linked or applied.",
+                                       text=text)
                 if not hid and not HANDOFF_RE.search(text) and not ex.attempt_id:
                     return RouteResult("rejected", rid, f"{len(ex.files)} file(s) found ({ex.label}), but this "
                                        "project is not waiting for an answer they belong to. Copy a task prompt "
@@ -548,6 +559,23 @@ class ProjectsController:
                     msg += " Smart check found problems: " + "; ".join(errors) + "."
                 if ex.files:
                     msg += f" {len(ex.files)} file(s) read from {ex.label}."
+                # BF-041: files AND a context request in one answer — keep the request on the handoff so the next
+                # step offers the files the AI asked for (the delivery stays staged, not accepted)
+                try:
+                    from ..context_request import find_request, parse_request
+                    from . import context_step
+                    if find_request(original_text) is not None:
+                        req = parse_request(original_text)
+                        context_step.record(self.project.store, hid, req)
+                        what = context_step.summary_line(context_step.to_record(req))
+                        with self.project.store.transaction("context request beside files") as s:
+                            items = s["handoffs"][hid].setdefault("unresolved_items", [])
+                            note = f"the AI also asked for: {what}"
+                            if note not in items:
+                                items.append(note)   # the delivery card lists it as still open
+                        msg += f" The AI also asked for {what}: send those next (the delivery is kept, not accepted)."
+                except Exception:  # noqa: BLE001 - a damaged request block never loses the delivery
+                    pass
                 if ex.fixes:
                     msg += " Fixed automatically: " + "; ".join(ex.fixes[:3]) + (" …" if len(ex.fixes) > 3 else "") + "."
                 if ex.problems:

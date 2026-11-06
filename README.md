@@ -19,14 +19,17 @@ preserved verbatim in `docs/roadmap/archive/ROADMAP_v5.16-v5.20_Light_Clear_Shor
 These are repair-stage targets, **not released application versions**; Desktop remains 5.20.0.
 
 - Repaired and regression-tested findings (Desktop and/or Mobile, as catalogued): **
-  BF-001, BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-011,
-  BF-012, BF-013, BF-014, BF-015, BF-016, BF-017, BF-024, BF-026,
-  BF-027, BF-028, BF-031, BF-032, BF-033, BF-035, BF-039, BF-042,
-  BF-043, BF-044, BF-047, BF-048, BF-051, BF-052, BF-053, BF-054,
-  BF-055, BF-057, BF-061, BF-063, BF-064, BF-065, BF-066, BF-076,
-  BF-078, BF-079, BF-081, BF-089, BF-091, BF-092, BF-093, BF-094,
-  BF-095, BF-104, BF-105, BF-106, BF-108, BF-109**.
-  This is **54/106 (50.94%)** by finding count, not effort or release readiness.
+  BF-001, BF-002, BF-003, BF-004, BF-005, BF-006, BF-007, BF-009, BF-010,
+  BF-011, BF-012, BF-013, BF-014, BF-015, BF-016, BF-017, BF-018, BF-019,
+  BF-020, BF-021, BF-022, BF-023, BF-024, BF-025, BF-026, BF-027, BF-028,
+  BF-029, BF-030, BF-031, BF-032, BF-033, BF-034, BF-035, BF-036, BF-037,
+  BF-038, BF-039, BF-040, BF-041, BF-042, BF-043, BF-044, BF-047, BF-048,
+  BF-051, BF-052, BF-053, BF-054, BF-055, BF-056, BF-057, BF-058, BF-059,
+  BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-076, BF-078,
+  BF-079, BF-080, BF-081, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088,
+  BF-089, BF-091, BF-092, BF-093, BF-094, BF-095, BF-096, BF-097, BF-098,
+  BF-101, BF-103, BF-104, BF-105, BF-106, BF-107, BF-108, BF-109**.
+  This is **89/106 (83.96%)** by finding count, not effort or release readiness.
 - Quick and guided deliveries share full-set filesystem preflight, immutable flushed backups,
   exact preview hashes and reverse rollback on file or state-save exceptions. Guided acceptance
   commits with integration; Restore is retryable and preserves later user edits. Empty files are

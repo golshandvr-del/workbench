@@ -27,9 +27,11 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
-| S2 | 18 (BF-005, BF-008, BF-019, BF-021, BF-023, BF-025, BF-029, BF-030, BF-041, BF-045, BF-046, BF-072, BF-074, BF-077, BF-080, BF-096, BF-101, BF-103) | 23 (BF-001, BF-011, BF-013, BF-014, BF-017, BF-026, BF-032, BF-033, BF-035, BF-039, BF-042, BF-048, BF-051, BF-053, BF-054, BF-055, BF-081, BF-091, BF-092, BF-105, BF-106, BF-108, BF-109) |
-| S3 | 34 (BF-006, BF-018, BF-020, BF-022, BF-034, BF-036, BF-037, BF-038, BF-040, BF-056, BF-058, BF-059, BF-060, BF-062, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-097, BF-098, BF-099, BF-100, BF-102, BF-107) | 20 (BF-012, BF-015, BF-024, BF-027, BF-028, BF-031, BF-044, BF-047, BF-052, BF-057, BF-061, BF-063, BF-064, BF-065, BF-066, BF-089, BF-093, BF-094, BF-095, BF-104) |
+| S2 | 6 (BF-008, BF-045, BF-046, BF-072, BF-074, BF-077) | 35 (BF-001, BF-005, BF-011, BF-013, BF-014, BF-017, BF-019, BF-021, BF-023, BF-025, BF-026, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-048, BF-051, BF-053, BF-054, BF-055, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103, BF-105, BF-106, BF-108, BF-109) |
+| S3 | 11 (BF-060, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-099, BF-100, BF-102) | 43 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-028, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-095, BF-097, BF-098, BF-104, BF-107) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
+
+**Session 39 checkpoint:** 89/106 FIXED (83.96% count-based), 17 OPEN (0 S1 / 6 S2 / 11 S3). Catalog statuses now include the sessions 37-38 repairs (BF-006/040/056/062/067/083/084/086/098, BF-085/080/005/021/023/019/030) and 19 findings repaired in session 39 (BF-096/097/101/103/107/036/037/038/041/058/059/018/020/034/022/025/029/087/088). BF-083's Mobile port (core/Project.kt) and BF-045/046 (partial) remain open. Full Desktop suite 1070 tests OK, 0 undefined names; no Mobile JVM run, no GUI/native Windows/Android gate this session.
 
 **Session 36 checkpoint:** 23 additional catalogued findings repaired; 54/106 FIXED (50.94% count-based), 52 OPEN (0 S1 / 18 S2 / 34 S3). BF-045/046/098 have partial work and remain OPEN. This is not 50 bugs fixed in this session. Final source 66ccc8a3: 1009 Desktop tests OK (10 skipped), 120 Mobile JVM tests OK, zero undefined names. No GUI/native Windows/Android APK/device gate or release was run this session.
 
@@ -120,7 +122,7 @@ step" while a planned task never runs. The PM sees nothing stuck.
 **Expected:** a blocked "waiting for/prerequisite" task with no open prerequisite becomes ready again
 (`_refresh_readiness` must not skip `depends_on == []`; `_apply` must refresh readiness for every task).
 
-### BF-005 · S2 · OPEN — a damaged `state.json` blocks the project, and the error points to a backup that does not exist
+### BF-005 · S2 · FIXED (session 38) — a damaged `state.json` blocks the project, and the error points to a backup that does not exist
 
 **Where:** `aiwb/v2/store.py` `_read_raw()` message; `backup()` is only called before a migration
 (`store.py`) and before a bundle import (`bundle.py`).
@@ -138,7 +140,7 @@ so this needs an outside cause — rare, but a dead end when it happens.
 **Expected:** keep the last good state (e.g. `state.json.prev`, rotated on each write or every N writes) and offer
 *Restore the last good copy* in the error; the message must only mention backups that exist.
 
-### BF-006 · S3 · OPEN — text with a broken emoji (lone UTF-16 surrogate) makes paste / Quick apply fail with "a bug in AI Workbench"
+### BF-006 · S3 · FIXED (session 37) — text with a broken emoji (lone UTF-16 surrogate) makes paste / Quick apply fail with "a bug in AI Workbench"
 
 **Where:** `aiwb/v2/controller.py` `route_answer()` line ~461 (`text.encode("utf-8")` for the response id);
 `aiwb/v2/quick.py` `apply()` line ~302 (`i["content"].encode("utf-8")`). Only
@@ -408,7 +410,7 @@ helper AI key "disappears"); nothing points to `app.log`.
 lost when you close Workbench"*), `save_now()` / the helper card show the real result, and `HelperService.configure()`
 rolls back the secret it just stored when the settings save fails.
 
-### BF-018 · S3 · OPEN — GitHub state publishing: a dropped connection or an odd reply gives "a bug in AI Workbench" / is never shown
+### BF-018 · S3 · FIXED (session 39) — GitHub state publishing: a dropped connection or an odd reply gives "a bug in AI Workbench" / is never shown
 
 **Where:** `aiwb/v2/publisher.py`: `GitHubStateClient._call()` only turns `OSError` / `URLError` into a `PublishError`;
 `urllib_transport()` parses the body with `json.loads` unguarded; `branch_head()` / `default_head()` / `commit_tree()`
@@ -432,7 +434,7 @@ and the silent timer hides why nothing is published.
 `PublishError("network" / "invalid", …)`; `tick()` keeps its *never raises* promise by recording any other exception
 in `last_error` with back-off.
 
-### BF-019 · S2 · OPEN — a GitHub write (create repo / release) that fails half-way can never succeed on retry
+### BF-019 · S2 · FIXED (session 38) — a GitHub write (create repo / release) that fails half-way can never succeed on retry
 
 **Where:** `aiwb/v2/repo.py` `RepoService.confirm()` runs several GitHub calls in a row (`_do_create`: create repo →
 branch; `_do_release`: tag ref → Release) and keeps `github_pending` on any error, so *Confirm and send to GitHub*
@@ -457,7 +459,7 @@ case), *I did it by hand — record…* with the tag (release case).
 → continue with the Release; Release exists → record it); a 422 on `refs/tags/…` is reported as *"the tag already
 exists"*; after a partial failure the card says what was already done on GitHub.
 
-### BF-020 · S3 · OPEN — "Archive the project": if the final bundle cannot be written, the project is read-only anyway and the card says the bundle exists
+### BF-020 · S3 · FIXED (session 39) — "Archive the project": if the final bundle cannot be written, the project is read-only anyway and the card says the bundle exists
 
 **Where:** `aiwb/v2/closeout.py` `archive()`: the `archived_at` transaction is committed **first**, then
 `path.parent.mkdir()` / `path.write_text()` run unguarded. `Guide._perform` (`archive` action) does not catch the
@@ -480,7 +482,7 @@ fact (the final bundle exists).
 exists; a write error is reported as a normal message (*"The final bundle could not be written: <reason>. The project
 was not archived."*).
 
-### BF-021 · S2 · OPEN — "Export project for the phone" makes a file nobody can import when the folder name has a space, Persian letters, brackets or is long
+### BF-021 · S2 · FIXED (session 38) — "Export project for the phone" makes a file nobody can import when the folder name has a space, Persian letters, brackets or is long
 
 **Where:** `aiwb/v2/controller.py` `ProjectsController.__init__`: `V2Project(root, root.name)` passes the **raw folder
 name** as `project_id`, so `ProjectStore._default_project_id()` (which slugs the name) is never used. `bundle.read_bundle()`
@@ -503,7 +505,7 @@ and does not say why.
 keep the display name separately; or accept any non-empty id in bundles (both apps) and validate only what matters
 (length, no control characters); at the very least refuse the export with a clear reason.
 
-### BF-022 · S3 · OPEN — bundle export / import: a file error gives the "bug in AI Workbench" dialog; a malformed bundle gives a raw Python message
+### BF-022 · S3 · FIXED (session 39) — bundle export / import: a file error gives the "bug in AI Workbench" dialog; a malformed bundle gives a raw Python message
 
 **Where:** `AI_Workbench.py` `export_project_bundle()`: `Path(path).write_text(...)` unguarded;
 `import_project_bundle()`: `Path(path).read_bytes()` unguarded, and `ctl.import_bundle(...)` (backup + write) after the
@@ -526,7 +528,7 @@ confirmation unguarded. The menu calls them through `WorkspaceShell._guard`, whi
 <reason>"*; `read_bundle` reports *"the bundle is damaged (project / db_version)"* and *"the bundle is not UTF-8
 text"*.
 
-### BF-023 · S2 · OPEN — bundle import into a project that has a goal but no tasks yet: another project's / an older bundle replaces it as "new", with no warning
+### BF-023 · S2 · FIXED (session 38) — bundle import into a project that has a goal but no tasks yet: another project's / an older bundle replaces it as "new", with no warning
 
 **Severity raised S3 → S2 (session 18):** BF-049 showed that accepted decisions and a custom team are lost too, and
 that a bundle of a **different** project is imported with the same plain *"Import the project (revision N)."*.
@@ -568,7 +570,7 @@ garbage.
 **Expected:** run Git with `-c core.quotepath=false` (as the status calls already pass `-c status.renames=false`), or
 build the message from the staged path list.
 
-### BF-025 · S2 · OPEN — Run page: a Python script that prints Persian (or any non-ANSI) text fails on Windows; output of other programs is garbled
+### BF-025 · S2 · FIXED (session 39) — Run page: a Python script that prints Persian (or any non-ANSI) text fails on Windows; output of other programs is garbled
 
 **Where:** `AI_Workbench.py` `build_project_file_run_spec()` builds `[sys.executable, file, …]`; `_run_process_bounded()`
 starts it with `env=os.environ.copy()` and reads the pipe as `encoding="utf-8", errors="replace"`. Nothing sets
@@ -655,7 +657,7 @@ false (it makes the user think a file was not restored).
 **Expected:** catch `OSError` per file, report *"Could not restore b.txt: <reason> — close the program that uses it
 and press Restore again"*; on retry treat a file whose current content equals its backup as already restored.
 
-### BF-029 · S2 · OPEN — Run page: a script that starts a background process (a server) keeps the app "busy" until that process ends — the time limit does not apply
+### BF-029 · S2 · FIXED (session 39) — Run page: a script that starts a background process (a server) keeps the app "busy" until that process ends — the time limit does not apply
 
 **Where:** `AI_Workbench.py` `_run_process_bounded()`: after the child exits (or is killed on time-out), the reader
 threads are joined with `timeout=5`, then `stream.close()` is called on the pipes. A grandchild that inherited the
@@ -682,7 +684,7 @@ whole app freezes in a busy state with no cancel button.
 holds the output"*. Optionally: run the child in a Windows Job Object (kill-on-close) / its own session and kill
 the whole tree on time-out; add a *Stop* button for the running job.
 
-### BF-030 · S2 · OPEN — Quick mode prompt: `.env`, keys and files behind a link to outside the project are pasted into the AI chat without a word
+### BF-030 · S2 · FIXED (session 38) — Quick mode prompt: `.env`, keys and files behind a link to outside the project are pasted into the AI chat without a word
 
 **Where:** `aiwb/v2/quick.py` `inventory()` / `build_prompt()`: every file (except tool folders) is listed in
 *Choose… (files the AI needs to see)* (`quick_window._fill_include_menu`) and its content is copied into the prompt
@@ -777,7 +779,7 @@ drops it. The user has to discover by themselves that they should have picked *N
 milestone as no longer accepted) so the guide offers *Prepare the prompt* for revision 2, or refuse *revise* with *"TASK-0001
 is finished — use New task (it will build on TASK-0001)"* and suggest `new_task` when `done` is true.
 
-### BF-034 · S3 · OPEN — "Archive the project": if writing the final bundle fails, the project is read-only with no bundle, and Archive can never be retried
+### BF-034 · S3 · FIXED (session 39) — "Archive the project": if writing the final bundle fails, the project is read-only with no bundle, and Archive can never be retried
 
 **Where:** `aiwb/v2/closeout.py` `archive()`: the state transaction sets `archived_at` **first**, then the bundle is written
 with `path.write_text(...)` (not atomic, no `OSError` handling). A failed write leaves `archived_at` set; a second *Archive*
@@ -819,7 +821,7 @@ the prompt. With one parallel chat the project silently stops advancing.
 transaction (*"prompt HO-0001 closed: task cancelled"*); a late answer for it is kept as *stale* and cannot be accepted
 without *Accept anyway…* that warns *"TASK-0001 is cancelled"*.
 
-### BF-036 · S3 · OPEN — guided "Record the release…": a missing run id leaves the version half-advanced with a wrong tag (`vv1.0.0`), and the tag typed on the retry is silently ignored
+### BF-036 · S3 · FIXED (session 39) — guided "Record the release…": a missing run id leaves the version half-advanced with a wrong tag (`vv1.0.0`), and the tag typed on the retry is silently ignored
 
 **Where:** `aiwb/v2/guide.py` `_perform` › `release` runs three separate `advance_version` transactions (proposed → local →
 tagged → released). The released step's check (*needs a run id or artifact*) runs **after** the first two are already saved.
@@ -837,7 +839,7 @@ exist, and the user is not told that the tag they typed was dropped.
 **Expected:** validate all facts first and run the whole proposed → released move in **one** transaction (all or nothing); default
 tag = label if it already starts with `v`; when the version is already tagged and a different tag is given, refuse or ask.
 
-### BF-037 · S3 · OPEN — "Accept anyway…" on an answer whose outcome is `failed` / `blocked`-less failure: files are written, the message says "Next: review the task", but there is no review — the guide offers a fresh prompt
+### BF-037 · S3 · FIXED (session 39) — "Accept anyway…" on an answer whose outcome is `failed` / `blocked`-less failure: files are written, the message says "Next: review the task", but there is no review — the guide offers a fresh prompt
 
 **Where:** `aiwb/v2/handoff.py` `resolve()` moves the task to `in_review` only for outcome `complete` / `partial` and to
 `blocked` / `needs_decision` for those outcomes; `failed` (and the empty outcome) leaves it `in_progress`. `guide._perform` ›
@@ -855,7 +857,7 @@ review it, and instead is pushed to re-send the task. Low impact (nothing is los
 say *"Accepted as a failed attempt — the files are kept; prepare a new prompt to continue"*; never promise a review card
 that will not appear.
 
-### BF-038 · S3 · OPEN — an answer for a prompt the user dropped says "Answer linked to HO-0001 (rejected, complete). 1 file(s) read" — and then nothing happens to it
+### BF-038 · S3 · FIXED (session 39) — an answer for a prompt the user dropped says "Answer linked to HO-0001 (rejected, complete). 1 file(s) read" — and then nothing happens to it
 
 **Where:** `aiwb/v2/controller.py` `route_answer()` → `_match_handoff()` finds the handoff by the answer's `attempt_id` /
 `handoff_id` even when that handoff is already `rejected` (dropped with *Drop this prompt…*); `handoffs.ingest()` then attaches
@@ -907,7 +909,7 @@ words (*developer, engineer, dev, programmer, backend, frontend*) before the gen
 never create a second `project_manager` from a fuzzy guess — if the charter already has a PM, fall back to the
 work role or ask, and show the role change as a warning, not a quiet repair note.
 
-### BF-040 · S3 · OPEN — paste box live diagnosis says "Manager proposal ✓" for any text with the marker, even when the import will refuse it
+### BF-040 · S3 · FIXED (session 37) — paste box live diagnosis says "Manager proposal ✓" for any text with the marker, even when the import will refuse it
 
 **Where:** `aiwb/intake/preview.py` `_preview()` returns `Preview("proposal", True, "Manager proposal ✓ — paste it
 to review its changes.")` as soon as `<<<AIWB_MANAGER_PROPOSAL>>>` appears; nothing is parsed. The charter and the
@@ -928,7 +930,7 @@ the charter — it always says ✓, so the promise does not hold.
 known operation; stale base revision as a warning) and show ✗ with the first problem, like the charter branch.
 Drop the duplicated *"The raw answer is kept in the Inbox"* in `route_answer`.
 
-### BF-041 · S2 · OPEN — an answer with some files **and** a context request: the box says "Context request ✓", the app takes it as a finished delivery and the request is lost
+### BF-041 · S2 · FIXED (session 39) — an answer with some files **and** a context request: the box says "Context request ✓", the app takes it as a finished delivery and the request is lost
 
 **Where:** `aiwb/intake/preview.py` checks the context-request marker **before** file blocks, so the preview says
 *"Context request ✓ · the model asks for 1 file"*. `aiwb/v2/controller.py` `route_answer()` checks file blocks
@@ -1310,7 +1312,7 @@ followed the button, so nothing tells them it is wrong.
 the project manager. When removing / disabling an AI that owns open tasks, ask whom to give them to (or reassign to
 the first remaining developer and say so).
 
-### BF-056 · S3 · OPEN — Edit team › changing an AI's role keeps the old role's purpose, rules and task types in every prompt
+### BF-056 · S3 · FIXED (session 37) — Edit team › changing an AI's role keeps the old role's purpose, rules and task types in every prompt
 
 **Where:** `aiwb/v2/team_setup.py` `_write_team()`: for an existing agent only `name`, `role`,
 `preferred_model_label`, `enabled` are changed. `purpose`, `instructions`, `allowed_task_types`, `review_policy`,
@@ -1353,7 +1355,7 @@ user who just dropped a prompt hesitate to start again.
 `ready_to_prepare` when the latest handoff of the active attempt is `rejected` and the task is still startable; the
 restart warning ignores attempts whose handoff was dropped.
 
-### BF-058 · S3 · OPEN — before the first task exists, the "next action" (Workspace overview, phone, PROJECT_STATUS.md) says *"write the goal and copy the planning prompt"* even while a plan / decision waits
+### BF-058 · S3 · FIXED (session 39) — before the first task exists, the "next action" (Workspace overview, phone, PROJECT_STATUS.md) says *"write the goal and copy the planning prompt"* even while a plan / decision waits
 
 **Where:** `aiwb/v2/next_action.py` `compute_next_actions()` appends `plan_project` with **rank 1** whenever
 `state["tasks"]` is empty; a pending proposal has rank 5 and an open decision 8/30, so `plan_project` always wins
@@ -1374,7 +1376,7 @@ not been planned although its plan is waiting.
 decision (or give it a rank after them); ideally derive the overview's next step from the same `Guide.steps()` that
 Home uses.
 
-### BF-059 · S3 · OPEN — Workspace *Needs your attention › More › Mark as read* hides every **later** item of the same task / kind too (new delivery, new publish error)
+### BF-059 · S3 · FIXED (session 39) — Workspace *Needs your attention › More › Mark as read* hides every **later** item of the same task / kind too (new delivery, new publish error)
 
 **Where:** `aiwb/v2/dashboard.py` `attention_queue()` builds the item key as `f"{kind}:{ref}:{rank}"` — no handoff,
 attempt, response or reason in it. `WorkspaceController.mark_seen()` stores these keys in `.workbench/v2/ui.json`
@@ -1444,7 +1446,7 @@ Agents page pastes into the old chat.
 `confirmed_at` / creation instead of `updated_at`; editing a note must never change which chat is current. Optional:
 creating a new binding disables (or marks "previous") the older ones of the same agent.
 
-### BF-062 · S3 · OPEN — the "looks like a password" filter refuses ordinary account / chat labels with the words *token* or *session* (and AI Studio chat links)
+### BF-062 · S3 · FIXED (session 37) — the "looks like a password" filter refuses ordinary account / chat labels with the words *token* or *session* (and AI Studio chat links)
 
 **Where:** `aiwb/v2/resources.py` `SECRET_RE` contains `(?:password|passwd|token|cookie|session|api[_ -]?key)\s*[:=]`
 and `[A-Za-z0-9+/]{40,}={0,2}`; `_clean()` applies it to **every** text field (`display_name`, `chat_name`, `note`,
@@ -1557,7 +1559,7 @@ report skipped sub-folders (*"src/dist/ skipped (build output) — ask for it by
 exist" separately. (Related small issue: requesting `pkg/core.py` and `pkg/` puts `pkg/core.py` in the pack twice;
 de-duplicate after expansion.)
 
-### BF-067 · S3 · OPEN — a task title with line breaks (from a model's plan) injects fake sections into `PROJECT_STATUS.md` and the manager-update fallback summary
+### BF-067 · S3 · FIXED (session 37) — a task title with line breaks (from a model's plan) injects fake sections into `PROJECT_STATUS.md` and the manager-update fallback summary
 
 **Where:** `aiwb/v2/models.py` `_text()` only `strip()`s the ends, so `normalize_task()` keeps `\n` inside `title`
 (limit 200) — for tasks created from an accepted `AIWB_MANAGER_PROPOSAL` as well as by hand. `aiwb/v2/snapshot.py`
@@ -1889,7 +1891,7 @@ on accept, unless the fix answer replaces them). Alternatively, list them in the
 unchanged: …"*. In the smart check, flag an answer that has no file for a code task (`missing_deliverable` /
 `no_files`), and do not let a clean *Accept* approve the task then.
 
-### BF-080 · S2 · OPEN — an answer with **no file blocks at all** (the AI put the code in an ordinary ```` ```python ```` fence) passes the smart check, and *Accept the delivery* approves the task with nothing written
+### BF-080 · S2 · FIXED (session 38) — an answer with **no file blocks at all** (the AI put the code in an ordinary ```` ```python ```` fence) passes the smart check, and *Accept the delivery* approves the task with nothing written
 
 **Where:** `aiwb/v2/diagnose.py` `diagnose()` raises `missing_deliverable` only for `expected_paths`, and the
 guided flow never fills them: `controller.start_task()` → `handoffs.prepare()` without `expected_paths`, so the
@@ -1974,7 +1976,7 @@ not as *"All its tasks are done"*.
 **Phone:** the same (`core/Guide.kt` line 48 `closeoutSteps(st)…?.let { return it }`; `core/Closeout.kt`
 `canAnnounce` checks only tasks) — fix both.
 
-### BF-083 · S3 · OPEN — an AI decision request written as an object (`{"question": …, "options": […]}`) is silently dropped: the *waits for a decision* card shows only the unresolved item, without the question or its options
+### BF-083 · S3 · FIXED (session 37) — an AI decision request written as an object (`{"question": …, "options": […]}`) is silently dropped: the *waits for a decision* card shows only the unresolved item, without the question or its options
 
 **Where:** `aiwb/v2/handoff.py` `ingest()` stores `decision_requests=_list(manifest.get("decision_requests"))`;
 `_list()` keeps only `str` / `int` / `float` items, so object items vanish with no `fixes` / issue entry. After
@@ -2000,7 +2002,7 @@ The user decides on a vague label, and the AI later gets a decision that does no
 or at least turn them into text and note it in `fixes`; show the question (not `unresolved_items`) as the card text
 of a `needs_decision` task. **Phone:** the same — `core/Project.kt` ingest `lst(k)` keeps only `String` / `Number` items (object items dropped), and `blocked_reason` prefers `unresolved_items` (line ~680) — fix both.
 
-### BF-084 · S3 · OPEN — a guided answer over 12 MB is never stored in the Inbox, but every message says *"It is kept in the Inbox"*; the handoff points to a response id that does not exist
+### BF-084 · S3 · FIXED (session 37) — a guided answer over 12 MB is never stored in the Inbox, but every message says *"It is kept in the Inbox"*; the handoff points to a response id that does not exist
 
 **Where:** `aiwb/v2/controller.py` `route_answer()`: `cap = self.make_pipeline(self.root).capture_text(text, …)`;
 `rid = cap.response.response_id if cap.response else ""` — `cap.issue` (`too_large`, `aiwb/inbox/store.py`
@@ -2024,7 +2026,7 @@ diagnostics), so they close the chat or overwrite the paste box. The answer is g
 was not stored; split it into smaller answers"* (nothing linked), or store it in chunks; never make up a response
 id, and only say *"kept in the Inbox"* when it really was.
 
-### BF-085 · S3 · OPEN — Response Inbox › *Copy repair prompt* on an answer that parsed fine copies *"AI Workbench could not import your previous answer. The response could not be imported."*; the real gap (a missing file) is not named
+### BF-085 · S3 · FIXED (session 38) — Response Inbox › *Copy repair prompt* on an answer that parsed fine copies *"AI Workbench could not import your previous answer. The response could not be imported."*; the real gap (a missing file) is not named
 
 **Where:** `aiwb/inbox/inbox_window.py` `repair_text()`: when the outcome has no salvage result (the normal case for a
 well-formed AIWB answer: `status = parsed`, no issues), it falls into the *"could not import"* branch with the
@@ -2047,7 +2049,7 @@ that `repair_prompt` would give is empty here), and the user cannot tell from th
 files) or send the user to the guided card's *Troubleshoot*. Also update the Inbox status after a guided paste
 (it stays `captured`).
 
-### BF-086 · S3 · OPEN — *Save response candidate* stops for good after 30 candidates: the error says *"remove one before saving another"*, but the app has no way to remove a candidate
+### BF-086 · S3 · FIXED (session 37) — *Save response candidate* stops for good after 30 candidates: the error says *"remove one before saving another"*, but the app has no way to remove a candidate
 
 **Where:** `aiwb/candidate_store.py` `save_candidate()` refuses when `len(list_candidates(root)) >= MAX_CANDIDATES`
 (30) with *"At most 30 candidates are retained per project; remove one before saving another."*.
@@ -2065,7 +2067,7 @@ compare window also keeps offering all 30 old candidates for every path.
 **Expected:** a *Remove* button per candidate (and *Remove all*) in the compare window, or auto-drop the oldest
 when the limit is reached (with a note), or remove the candidates that were used in a merge.
 
-### BF-087 · S3 · OPEN — preview › *Semantic* tab: for a file over 256 000 characters a change after the cut is reported as *"(no textual differences detected)"* and *"Structural parsing failed … SyntaxError"*
+### BF-087 · S3 · FIXED (session 39) — preview › *Semantic* tab: for a file over 256 000 characters a change after the cut is reported as *"(no textual differences detected)"* and *"Structural parsing failed … SyntaxError"*
 
 **Where:** `aiwb/semantic_diff.py` `analyze_semantic_diff()` cuts `before` / `after` to `MAX_SEMANTIC_CHARS` (256 000)
 **before** parsing and before the unified diff. The AST then sees a file cut in the middle (false *SyntaxError*), and
@@ -2086,7 +2088,7 @@ files and large modules hit this.
 the Diff tab"* and skip the AST, or diff the full text (only the output is bounded); never print *"no textual
 differences"* unless the full texts are equal.
 
-### BF-088 · S3 · OPEN — dependency / change-impact analysis never resolves a relative import (`./util`, `../lib/x.js`, `#include "../inc/c.h"`): the preview's *Impact* tab says *"Direct dependents: (none resolved by static analysis)"* for ordinary JS/TS/C projects
+### BF-088 · S3 · FIXED (session 39) — dependency / change-impact analysis never resolves a relative import (`./util`, `../lib/x.js`, `#include "../inc/c.h"`): the preview's *Impact* tab says *"Direct dependents: (none resolved by static analysis)"* for ordinary JS/TS/C projects
 
 **Where:** `aiwb/dependency_analysis.py` `scan_dependency_graph()` (line ~106): every reference goes through
 `ref = ref.strip().strip(".").replace("\\", "/")`. `strip(".")` removes the leading dots, so `./util` → `/util` and
@@ -2301,7 +2303,7 @@ approval was given for a diff that is no longer true; a file shown as *new* can 
 changed, or a *new* path now exists, write nothing and say *"src/a.py changed since the preview — review again"*, then
 re-plan, like the classic apply.
 
-### BF-096 · S2 · OPEN — Git Review & Sync: a branch that exists on the remote but has no upstream can **never** be pushed ("remote branch changed since the plan" forever); a branch tracking `origin/main` stays *"ahead by 1"* after every successful push
+### BF-096 · S2 · FIXED (session 39) — Git Review & Sync: a branch that exists on the remote but has no upstream can **never** be pushed ("remote branch changed since the plan" forever); a branch tracking `origin/main` stays *"ahead by 1"* after every successful push
 
 **Where:** `aiwb/git/sync.py`.
 - `build_plan()` reads `remote_sha` only from the tracking ref of `snap.branch.upstream`. With no upstream, `remote_sha=''` and the state is `NO_UPSTREAM` (push allowed, *"the first push will create it"*).
@@ -2319,7 +2321,7 @@ re-plan, like the classic apply.
 
 **Expected:** with no upstream (or an upstream whose branch name differs from the pushed branch), read the live SHA of `origin/<branch>` during `build_plan()` and store it as `remote_sha`. Compare and push against that ref. If it exists and is an ancestor of HEAD, push with `-u`; if not, say *"origin/feat2 already exists and has different commits — fetch and merge first"*. When the upstream is a different branch (`origin/main`), push with `-u` to `origin/<branch>`, or warn that the branch tracks `main`.
 
-### BF-097 · S3 · OPEN — Sync & Build: after *"The remote branch moved"* the user pulls/rebases as asked, then the resumed operation loops on *"HEAD moved since the commit was recorded; check again"*; *Check* never clears it
+### BF-097 · S3 · FIXED (session 39) — Sync & Build: after *"The remote branch moved"* the user pulls/rebases as asked, then the resumed operation loops on *"HEAD moved since the commit was recorded; check again"*; *Check* never clears it
 
 **Where:** `aiwb/github/orchestrator.py`. `commit()` records `git.commit_sha` and `base_remote_sha`; `push()` refuses when `snap.branch.head_sha != self.git.commit_sha` (*"HEAD moved … check again"*). `check()` on a record that has a `commit_sha` only logs *"Resuming: Local commit … exists (not pushed)"* and sets the state back to `COMMITTED`. It never compares the recorded commit with HEAD, and it never resets the record. `commit()` / `adopt_head()` return early (*"Idempotent"*) because `commit_sha` is set. `AI_Workbench.py` (~12310) offers *"Resume unfinished operation … ?"* for every record with a `commit_sha` and a non-terminal state, so reopening the window brings back the same dead record.
 
@@ -2332,7 +2334,7 @@ re-plan, like the classic apply.
 
 **Expected:** in `check()`, if the recorded commit is not pushed and HEAD differs from it, say so and offer *"Use the new HEAD {sha} instead"* (adopt it after the same ahead-of-remote checks; update `base_remote_sha` from the fresh plan), or mark the record superseded and start a new operation. Also, do not offer *Resume?* for a record whose commit is no longer HEAD or an ancestor of HEAD.
 
-### BF-098 · S3 · OPEN — New Project wizard: an empty *Parent folder* is accepted and the project is created in the app's current working directory (on Windows often the install folder or `C:\Windows\System32`)
+### BF-098 · S3 · FIXED (session 37) — New Project wizard: an empty *Parent folder* is accepted and the project is created in the app's current working directory (on Windows often the install folder or `C:\Windows\System32`)
 
 **Partial repair — session 36 (not counted fixed):** d048bf6a rejects empty/relative parent in the wizard, with a no-display regression. Still OPEN: create_project_folder itself still resolves relative parents; the independent service-boundary guard and actual Windows GUI gate remain.
 
@@ -2364,7 +2366,7 @@ re-plan, like the classic apply.
 
 **Expected:** bound or scroll the question/form content; keep confirmation, cancellation and error feedback outside the scroll area. The previous session's attempted BF-100 checkpoint did not reach GitHub; this entry recovers it after a fresh reproduction.
 
-### BF-101 · S2 · OPEN — Run workflow: changing Branch / tag keeps the input schema and defaults from the original ref
+### BF-101 · S2 · FIXED (session 39) — Run workflow: changing Branch / tag keeps the input schema and defaults from the original ref
 
 **Where:** `aiwb/github/build_center_dialogs.py:75–87,100–143`. `dispatch_form(..., ref=ref)` runs only in the constructor. The ref Entry remains editable but has no refresh/trace binding. `submit()` validates against `self.form` and sends that same form with the newly typed ref. `GitHubDispatchService.dispatch()` validates the supplied form; it does not reload the file at the new ref.
 
@@ -2384,7 +2386,7 @@ re-plan, like the classic apply.
 
 **Expected:** wrap descriptions, bound the dialog to the work area, scroll the input region in both necessary directions, and keep status and Run/Close outside it. Add GUI coverage for maximum supported inputs and long descriptions on laptop-size displays.
 
-### BF-103 · S2 · OPEN — Build Center: selecting another run during a job fetch shows jobs/log links from the previous run
+### BF-103 · S2 · FIXED (session 39) — Build Center: selecting another run during a job fetch shows jobs/log links from the previous run
 
 **Where:** `aiwb/github/build_center.py` `_load_jobs()`: the run is captured at request start. Selecting a second run clears the job tree but returns immediately when `self.busy` is true. The first request's `done()` unconditionally fills `self.jobs` and the tree; it never verifies that the selection still matches the captured run and never queues the second selection. Tree selections remain enabled during network work. `_open_job()` then opens the stale job's log URL.
 
@@ -2432,7 +2434,7 @@ re-plan, like the classic apply.
 
 **Expected:** sanitize/truncate only the human-readable stem, reserve space for `-<artifact_id>.zip`, and keep the ID/extension unconditionally. Use unique attempt temporary names and verify existing stored paths before claiming cached verification or extraction provenance. Add two-long-name-artifact and extraction-target regression cases.
 
-### BF-107 · S3 · OPEN — a pending paste debounce erases ZIP-specific skipped-file warnings immediately after Load ZIP
+### BF-107 · S3 · FIXED (session 39) — a pending paste debounce erases ZIP-specific skipped-file warnings immediately after Load ZIP
 
 **Where:** `aiwb/ui/paste_box.py`: `_modified()` schedules `after(DEBOUNCE_MS, refresh)`. `load_zip()` replaces the text, clears its modified flag and displays `preview_zip()`'s source diagnostics, but does not cancel that already queued refresh. `refresh()` later diagnoses only the canonical text, which no longer contains the skipped ZIP entries. ZIP source warnings/fixes are not retained with `zip_text`.
 

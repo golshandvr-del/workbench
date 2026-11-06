@@ -112,6 +112,13 @@ def _preview(text: str, state: dict[str, Any] | None) -> Preview:
         what = [_plural(len(names), "file")] if names else []
         what += [_plural(len(req.questions), "question")] if req.questions else []
         p.line = "Context request ✓ · the model asks for " + " and ".join(what)
+        from .answer_files import extract as _extract
+        delivered = _extract(text).files
+        if delivered:   # BF-041: the same classification as the import — files AND a request
+            p.line = (f"Files ✓ · {_plural(len(delivered), 'file')} AND a context request ✓ · the model also asks for "
+                      + " and ".join(what))
+            p.warnings.append("the answer has files and a request: the files are kept for review and the request is "
+                              "recorded; send the requested files next")
         if p.fixes:
             p.line += f" · {_plural(len(p.fixes), 'auto-fix', 'auto-fixes')}"
         return p

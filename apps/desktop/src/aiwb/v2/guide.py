@@ -711,6 +711,10 @@ class Guide:
                 nxt = {"validation_pending": " Next: record whether the tests/build passed.",
                        "done": f" {tid} is done."}.get(out["status"], "")
                 return {"message": f"Delivery {ref} accepted and {tid} approved.{added}{nxt}", "files": written}
+            if tid and (self.p.tasks.get(tid) or {}).get("status") == "in_progress":
+                # BF-037: a failed / outcome-less answer does not move the task to review: never promise a review card
+                return {"message": f"Delivery {ref} accepted as a failed attempt.{added} The files are kept; prepare a "
+                                   "new prompt to continue the task.", "files": written}
             return {"message": f"Delivery {ref} accepted.{added} Next: review the task.", "files": written}
         if action == "reject_handoff":
             c.resolve_handoff(ref, False, str(inp.get("reason", "")))
@@ -848,11 +852,21 @@ class Guide:
             v = self.p.timeline.versions()
             v = next(x for x in v if x["version_id"] == ref)
             sha, tag, run = (str(inp.get(k, "")).strip() for k in ("commit_sha", "tag", "run_id"))
+            # BF-036: check every fact BEFORE the first transition so a refusal never leaves a half-advanced version
+            if not (run or v.get("run_id") or v.get("artifact")):
+                raise ModelError("released needs a real build/run id or artifact; Workbench never assumes a release. "
+                                 "Nothing was changed.")
+            if v["status"] == "proposed" and not (sha or v.get("commit_sha")):
+                raise ModelError("the release needs the commit SHA it points to. Nothing was changed.")
+            if v["status"] in ("tagged",) and tag and v.get("tag") and tag != v["tag"]:
+                raise ModelError(f"this version is already tagged {v['tag']!r}; the tag {tag!r} you typed was NOT used. "
+                                 f"Leave the tag empty to keep {v['tag']!r}. Nothing was changed.")
+            default_tag = v["label"] if str(v["label"]).startswith("v") else "v" + str(v["label"])
             if v["status"] == "proposed":
                 self.p.timeline.advance_version(ref, "local", commit_sha=sha)
                 v["status"] = "local"
             if v["status"] == "local":
-                self.p.timeline.advance_version(ref, "tagged", tag=tag or "v" + v["label"])
+                self.p.timeline.advance_version(ref, "tagged", tag=tag or default_tag)
             self.p.timeline.advance_version(ref, "released", run_id=run)
             return {"message": f"Version {v['label']} released."}
         if kind == "github":
