@@ -122,4 +122,33 @@ class CompanionContractTest {
         }, now = { 5L })
         try { client.call("192.168.1.2", 1, "dev-1", k, JSONObject().put("op", "hello")); fail() } catch (e: CompanionException) { assertEquals("bad_reply", e.code) }
     }
+
+    // BF-071: a valid MAC with a wrong clock is reported as clock_skew with the difference, not as a generic error
+    @Test fun clockSkewReplyCarriesTheDifference() {
+        val client = CompanionClient({ _, _, _ -> 401 to "{\"error\":\"clock_skew\",\"server_time\":1000}" }, now = { 1000L + 420 })
+        try { client.call("192.168.1.2", 1, "dev-1", CompanionCrypto.randomBytes(32), JSONObject().put("op", "hello")); fail() }
+        catch (e: CompanionException) { assertEquals("clock_skew", e.code); assertEquals(420L, e.skewSeconds) }
+        val plain = CompanionClient({ _, _, _ -> 413 to "{\"error\":\"too_large\"}" }, now = { 5L })
+        try { plain.call("192.168.1.2", 1, "dev-1", CompanionCrypto.randomBytes(32), JSONObject().put("op", "hello")); fail() }
+        catch (e: CompanionException) { assertEquals("too_large", e.code) }
+    }
+
+    // BF-077: the pairing that waits for approval survives a screen change (saved before the request, resumed later)
+    @Test fun pendingPairingRoundTripsAndExpires() {
+        val code = PairingCode.fromSecret("192.168.1.20", 47821, CompanionCrypto.randomBytes(10))
+        val key = CompanionCrypto.randomBytes(32)
+        val pending = PendingPairing(code, key, deadlineMs = 10_000L)
+        val back = PendingPairing.decode(pending.encode(), nowMs = 5_000L)!!
+        assertEquals(code.pairingId, back.code.pairingId)
+        assertEquals(code.host, back.code.host)
+        assertArrayEquals(code.secret, back.code.secret)
+        assertArrayEquals(key, back.deviceKey)
+        assertNull(PendingPairing.decode(pending.encode(), nowMs = 10_001L), "an expired wait is not resumed")
+        assertNull(PendingPairing.decode("not json", 0L))
+        assertNull(PendingPairing.decode(null, 0L))
+        val publicHost = pending.encode().replace("192.168.1.20", "8.8.8.8")
+        assertNull(PendingPairing.decode(publicHost, 0L), "a public address is never resumed")
+    }
+
+    @Test fun answerLimitMatchesTheDesktop() { assertEquals(300_000, MAX_ANSWER_CHARS) }
 }

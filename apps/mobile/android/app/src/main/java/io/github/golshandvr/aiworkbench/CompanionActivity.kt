@@ -60,20 +60,21 @@ class CompanionActivity : Activity() {
         findViewById<Button>(R.id.submit_answer_button).setOnClickListener {
             val text = findViewById<EditText>(R.id.answer_text).text.toString()
             if (text.isBlank()) return@setOnClickListener
+            if (text.length > MAX_ANSWER_CHARS) { status.setText(R.string.answer_too_long); return@setOnClickListener }   // BF-070
             run("submit_response", JSONObject().put("text", text)) { out ->
                 status.text = out.optString("message")
                 refresh()
             }
         }
         findViewById<Button>(R.id.unpair_button).setOnClickListener {
-            prefs().edit().remove(KEY_PAIRING).apply()
+            prefs().edit().remove(KEY_PAIRING).remove(KEY_PENDING).apply()
             pairing = null
             stateText.text = ""
             status.setText(R.string.unpaired)
             showSections()
         }
         showSections()
-        if (pairing != null) refresh()
+        if (pairing != null) refresh() else resumePendingPairing()   // BF-077
         handleLink(intent)
     }
 
@@ -117,22 +118,45 @@ class CompanionActivity : Activity() {
 
     private fun pair(code: PairingCode) {
         val key = CompanionCrypto.randomBytes(32)
+        val pending = PendingPairing(code, key, System.currentTimeMillis() + 5 * 60_000)
+        // BF-077: remember the device key and the deadline BEFORE the request, so the wait survives a screen change
+        prefs().edit().putString(KEY_PENDING, pending.encode()).apply()
         status.setText(R.string.pairing_wait)
         background({
             client.requestPairing(code, Build.MODEL ?: "Android", key)
-            var result: Pairing? = null
-            val deadline = System.currentTimeMillis() + 5 * 60_000
-            while (result == null && System.currentTimeMillis() < deadline) {
-                Thread.sleep(2000)
-                result = client.pairingStatus(code, key)
-            }
-            result ?: throw CompanionException("timeout", getString(R.string.pairing_timeout))
-        }) { p ->
-            prefs().edit().putString(KEY_PAIRING, p.encode()).apply()
-            pairing = p
-            showSections()
-            refresh()
+            waitForApproval(pending)
+        }, ::pairingDone, ::pairingFailed)
+    }
+
+    /** BF-077: continue polling a pairing that was started before the screen was recreated. */
+    private fun resumePendingPairing() {
+        val pending = PendingPairing.decode(prefs().getString(KEY_PENDING, null), System.currentTimeMillis())
+        if (pending == null) { prefs().edit().remove(KEY_PENDING).apply(); return }
+        status.setText(R.string.pairing_wait)
+        background({ waitForApproval(pending) }, ::pairingDone, ::pairingFailed)
+    }
+
+    private fun waitForApproval(p: PendingPairing): Pairing {
+        var result: Pairing? = null
+        while (result == null && System.currentTimeMillis() < p.deadlineMs) {
+            Thread.sleep(2000)
+            result = client.pairingStatus(p.code, p.deviceKey)
         }
+        return result ?: throw CompanionException("timeout", getString(R.string.pairing_timeout))
+    }
+
+    private fun pairingDone(p: Pairing) {
+        prefs().edit().remove(KEY_PENDING).putString(KEY_PAIRING, p.encode()).apply()
+        pairing = p
+        showSections()
+        refresh()
+    }
+
+    /** A finished (denied / expired / timed out) attempt is forgotten; a network hiccup keeps it for a retry. */
+    private fun pairingFailed(e: Exception) {
+        val code = (e as? CompanionException)?.code
+        if (code in setOf("denied", "timeout", "pairing_expired", "pairing_used", "expired")) prefs().edit().remove(KEY_PENDING).apply()
+        showError(e)
     }
 
     private fun refresh() = run("get_state", JSONObject()) { out -> stateText.text = CompanionView.summary(out) }
@@ -142,20 +166,28 @@ class CompanionActivity : Activity() {
         background({ client.request(p, op, extra) }, done)
     }
 
-    private fun <T> background(work: () -> T, done: (T) -> Unit) {
+    private fun <T> background(work: () -> T, done: (T) -> Unit, failed: ((Exception) -> Unit)? = null) {
         executor.execute {
             val r = try { Result.success(work()) } catch (e: Exception) { Result.failure(e) }
             main.post {
                 if (isFinishing || isDestroyed) return@post
-                r.fold(done) { e ->
-                    status.text = when ((e as? CompanionException)?.code) {
-                        "device_not_paired" -> getString(R.string.device_revoked)
-                        "forbidden" -> getString(R.string.not_allowed, e.message ?: "")
-                        "pairing_expired" -> getString(R.string.pairing_expired)
-                        else -> getString(R.string.companion_error, e.message ?: e.javaClass.simpleName)
-                    }
-                }
+                r.fold(done) { e -> (failed ?: ::showError)(e as? Exception ?: Exception(e)) }
             }
+        }
+    }
+
+    /** Plain-language texts for the codes the desktop sends (BF-069/070/071/077); never a raw code for a known case. */
+    private fun showError(e: Exception) {
+        val ce = e as? CompanionException
+        status.text = when (ce?.code) {
+            "device_not_paired" -> getString(R.string.device_revoked)
+            "forbidden" -> getString(R.string.not_allowed, e.message ?: "")
+            "pairing_expired" -> getString(R.string.pairing_expired)
+            "pairing_used" -> getString(R.string.pairing_used)
+            "denied" -> getString(R.string.pairing_denied)
+            "clock_skew" -> getString(R.string.clock_skew, Math.max(1L, Math.abs(ce.skewSeconds) / 60))
+            "too_large", "bad_size" -> getString(R.string.answer_too_long)
+            else -> getString(R.string.companion_error, e.message ?: e.javaClass.simpleName)
         }
     }
 
@@ -183,6 +215,7 @@ class CompanionActivity : Activity() {
 
     companion object {
         private const val KEY_PAIRING = "pairing"
+        private const val KEY_PENDING = "pending_pairing"
         private const val REQ_SCAN = 42
         private const val MAX_REPLY = 4 * 1024 * 1024
     }

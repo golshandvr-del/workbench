@@ -110,6 +110,14 @@ object Closeout {
             fs["cycle"] = c.toLong()
             fs["expansion"] = linkedMapOf<String, Any?>("open" to true, "idea" to idea.trim().take(2000), "at" to State.nowUtc())
             for (k in listOf("completed_at", "completion", "last_decision")) fs.remove(k)
+            // BF-082: a milestone of the finished cycle whose tasks were ALL cancelled is closed, not carried over
+            for (m in State.coll(s, "milestones").values.map { Json.obj(it) }) {
+                val ts = Json.strs(m["task_ids"]).map { Json.str(Json.obj(State.coll(s, "tasks")[it])["status"]) }
+                if (m["status"] == "planned" && ts.isNotEmpty() && ts.all { it == "cancelled" || it == "superseded" }) {
+                    m["status"] = "dropped"; m["updated_at"] = State.nowUtc()
+                    State.emit(s, "milestone_dropped", "milestone_id" to Json.str(m["milestone_id"]), "why" to "expansion: all its tasks were cancelled")
+                }
+            }
             fs["roadmap_remaining"] = true
             State.emit(s, "project_expanded", "cycle" to c.toLong(), "importance" to "major")
             c

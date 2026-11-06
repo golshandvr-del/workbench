@@ -878,6 +878,14 @@ class Project(val store: ProjectStore) {
         m
     }
 
+    fun dropMilestone(milestoneId: String): Obj = store.transaction("milestone dropped") { s ->
+        val m = State.require(s, "milestones", milestoneId)
+        if (m["status"] != "planned") throw ModelError("$milestoneId is ${m["status"]}")
+        m["status"] = "dropped"; m["updated_at"] = State.nowUtc()
+        State.emit(s, "milestone_dropped", "milestone_id" to milestoneId)
+        m
+    }
+
     fun advanceVersion(versionId: String, status: String, commitSha: String = "", tag: String = "", runId: String = ""): Obj =
         store.transaction("version $status") { s ->
             val v = State.require(s, "versions", versionId)

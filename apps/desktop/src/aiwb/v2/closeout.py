@@ -118,6 +118,12 @@ def expand(store: Any, idea: str = "") -> dict[str, Any]:
         fs.update(cycle=cycle, expansion={"open": True, "idea": idea.strip()[:2000], "at": now_utc()})
         for k in ("completed_at", "completion", "last_decision"):
             fs.pop(k, None)
+        # BF-082: a milestone of the finished cycle whose tasks were ALL cancelled is closed, not carried over
+        for m in s.get("milestones", {}).values():
+            ts = [(s["tasks"].get(t) or {}).get("status") for t in m.get("task_ids") or []]
+            if m.get("status") == "planned" and ts and all(x in ("cancelled", "superseded") for x in ts):
+                m.update(status="dropped", updated_at=now_utc())
+                emit(s, "milestone_dropped", milestone_id=m["milestone_id"], why="expansion: all its tasks were cancelled")
         fs["roadmap_remaining"] = True
         emit(s, "project_expanded", cycle=cycle, importance="major")
     return {"cycle": cycle, "prompt": expansion_prompt(store.load(), idea)}

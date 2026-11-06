@@ -106,7 +106,36 @@ data class Pairing(val host: String, val port: Int, val deviceId: String, val ke
     }
 }
 
-class CompanionException(val code: String, message: String) : Exception(message)
+class CompanionException(val code: String, message: String, val skewSeconds: Long = 0L) : Exception(message)
+
+/** BF-070: the desktop accepts an answer of at most this many characters (service.py MAX_TEXT). */
+const val MAX_ANSWER_CHARS = 300_000
+
+/**
+ * BF-077: a pairing that was sent to the desktop and waits for approval. Saved BEFORE the request so a rotation,
+ * Back or a process kill during the (up to 5 minute) wait does not lose the device key; polling resumes from it.
+ */
+data class PendingPairing(val code: PairingCode, val deviceKey: ByteArray, val deadlineMs: Long) {
+    fun encode(): String = JSONObject().put("host", code.host).put("port", code.port).put("pairing_id", code.pairingId)
+        .put("secret", B64Url.encode(code.secret)).put("device_key", B64Url.encode(deviceKey)).put("deadline", deadlineMs).toString()
+
+    companion object {
+        fun decode(text: String?, nowMs: Long): PendingPairing? {
+            if (text == null) return null
+            return try {
+                val o = JSONObject(text)
+                val host = o.getString("host")
+                val key = B64Url.decode(o.getString("device_key"))
+                val secret = B64Url.decode(o.getString("secret"))
+                val deadline = o.getLong("deadline")
+                if (!PairingCode.isPrivateLan(host) || key.size != 32 || secret.size != 32 || deadline <= nowMs) null
+                else PendingPairing(PairingCode(host, o.getInt("port"), o.getString("pairing_id"), secret), key, deadline)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+}
 
 /** Sends one sealed request and opens the sealed reply. [post] does the HTTP POST (body → status, body). */
 class CompanionClient(
@@ -117,7 +146,12 @@ class CompanionClient(
         val env = CompanionCrypto.seal(key, kid, request.toString().toByteArray(Charsets.UTF_8), now())
         val (status, body) = post(host, port, toJson(env).toString())
         if (status != 200) {
-            val code = try { JSONObject(body).optString("error", "http_$status") } catch (e: Exception) { "http_$status" }
+            val obj = try { JSONObject(body) } catch (e: Exception) { JSONObject() }
+            val code = obj.optString("error", "http_$status")
+            if (code == "clock_skew") {   // BF-071: the desktop tells us its time; the difference is what the user needs
+                val server = obj.optLong("server_time", 0L)
+                throw CompanionException(code, code, if (server > 0) now() - server else 0L)
+            }
             throw CompanionException(code, code)
         }
         val reply = fromJson(JSONObject(body))

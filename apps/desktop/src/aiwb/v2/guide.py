@@ -165,6 +165,48 @@ def continue_project_prompt(update: str, state: dict[str, Any] | None = None) ->
     return status_prompt(state or {}, update)
 
 
+def milestone_steps(st: dict[str, Any]) -> list[dict[str, Any]]:
+    """Accept (or, when every task was cancelled, drop) each planned milestone whose tasks are all finished."""
+    tasks = st["tasks"]
+    out: list[dict[str, Any]] = []
+    for m in sorted(st["milestones"].values(), key=lambda m: m["milestone_id"]):
+        if m["status"] != "planned" or not m["task_ids"]:
+            continue
+        sts = [tasks.get(x, {}).get("status") for x in m["task_ids"]]
+        if not all(s_ in ("done", "cancelled", "superseded") for s_ in sts):
+            continue
+        mid = m["milestone_id"]
+        if "done" not in sts:   # BF-082: nothing of it was delivered - it is not "all its tasks are done"
+            out.append(_step(f"milestone:{mid}", "decision", f"Drop milestone {m['title']}",
+                             "Every task of this milestone was cancelled, so nothing of it was delivered. Drop it "
+                             "(or accept it anyway if you consider it reached).",
+                             [_a("drop_milestone", "Drop the milestone"), _a("accept_milestone", "Accept it anyway")],
+                             ref=mid, rank=15))
+            continue
+        out.append(_step(f"milestone:{mid}", "decision", f"Accept milestone {m['title']}",
+                         "All its tasks are done. Check its criteria: " + "; ".join(m.get("criteria", []))[:300],
+                         [_a("accept_milestone", "Accept the milestone")], ref=mid,
+                         rank=15))  # 5.13.0: close a finished milestone before new prompts start (was 75)
+    return out
+
+
+def version_steps(st: dict[str, Any]) -> list[dict[str, Any]]:
+    """Record the release of each version whose milestones are all accepted (no GitHub repository connected)."""
+    out: list[dict[str, Any]] = []
+    connected = bool(((st["settings"].get("flow") or {}).get("repo") or {}).get("full_name"))
+    for v in sorted(st["versions"].values(), key=lambda v: v["version_id"]):
+        if v["status"] in ("released", "withdrawn") or connected:  # connected: the GitHub release step (4.5.0)
+            continue
+        ms = [st["milestones"].get(x) or {} for x in v.get("milestone_ids", [])]
+        if ms and all(m.get("status") == "accepted" for m in ms):
+            out.append(_step(f"version:{v['version_id']}", "decision", f"Release version {v['label']}",
+                             f"Its milestones are accepted (status now {v['status']}). Record the real commit, tag and "
+                             "build run or artifact; Workbench never assumes a release.",
+                             [_a("release", "Record the release…", "commit_sha", "tag", "run_id"),
+                              _a("withdraw", "Withdraw the version")], ref=v["version_id"], rank=78))
+    return out
+
+
 def closeout_steps(st: dict[str, Any]) -> list[dict[str, Any]]:
     """F26 announce, F27 expand or archive, F28 archived (read-only)."""
     from .closeout import can_announce, is_archived, summary, summary_text
@@ -234,6 +276,16 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
     tasks = st["tasks"]
 
     end = closeout_steps(st)  # F26–F28 (roadmap 4.6.0): the end of the algorithm replaces every other step
+    if end and end[0]["key"] == "closeout:announce":
+        # BF-082: milestones still to accept and a version still to release come first; announcing stays possible
+        before = milestone_steps(st) + version_steps(st) + [
+            s_ for s_ in github_steps(ctl, st) if s_["key"].startswith("github:release")]
+        if before:
+            ann = end[0]
+            ann["rank"] = 100
+            ann["explain"] = ("Before announcing: " + "; ".join(s_["title"] for s_ in before)
+                              + " - or skip them (they will not be part of the completion record). " + ann["explain"])
+            return _in_user_words(st, _with_choices(st, sorted(before + [ann], key=lambda s_: (s_["rank"], s_["key"]))))
     if end:
         return end
 
@@ -431,25 +483,7 @@ def steps(ctl: Any) -> list[dict[str, Any]]:  # noqa: C901 — one flat table of
                              "The task is a draft. Approve it so it can start, or cancel it.",
                              [_a("make_ready", "Approve the task"), _a("cancel", "Cancel…", "reason")], ref=tid, rank=70))
 
-    for m in sorted(st["milestones"].values(), key=lambda m: m["milestone_id"]):
-        if m["status"] != "planned" or not m["task_ids"]:
-            continue
-        if all(tasks.get(x, {}).get("status") in ("done", "cancelled", "superseded") for x in m["task_ids"]):
-            out.append(_step(f"milestone:{m['milestone_id']}", "decision", f"Accept milestone {m['title']}",
-                             "All its tasks are done. Check its criteria: " + "; ".join(m.get("criteria", []))[:300],
-                             [_a("accept_milestone", "Accept the milestone")], ref=m["milestone_id"],
-                             rank=15))  # 5.13.0: close a finished milestone before new prompts start (was 75)
-    connected = bool(((st["settings"].get("flow") or {}).get("repo") or {}).get("full_name"))
-    for v in sorted(st["versions"].values(), key=lambda v: v["version_id"]):
-        if v["status"] in ("released", "withdrawn") or connected:  # connected: the GitHub release step (4.5.0)
-            continue
-        ms = [st["milestones"].get(x) or {} for x in v.get("milestone_ids", [])]
-        if ms and all(m.get("status") == "accepted" for m in ms):
-            out.append(_step(f"version:{v['version_id']}", "decision", f"Release version {v['label']}",
-                             f"Its milestones are accepted (status now {v['status']}). Record the real commit, tag and "
-                             "build run or artifact; Workbench never assumes a release.",
-                             [_a("release", "Record the release…", "commit_sha", "tag", "run_id"),
-                              _a("withdraw", "Withdraw the version")], ref=v["version_id"], rank=78))
+    out += milestone_steps(st) + version_steps(st)
 
     if not tasks and not any(p["status"] == "pending" for p in st["proposals"].values()):
         goal = str(st["settings"].get("goal", "")).strip()
@@ -848,6 +882,9 @@ class Guide:
         if action == "accept_milestone":
             self.p.timeline.accept_milestone(ref)
             return {"message": f"Milestone {ref} accepted."}
+        if action == "drop_milestone":
+            self.p.timeline.drop_milestone(ref)
+            return {"message": f"Milestone {ref} dropped."}
         if action == "release":
             v = self.p.timeline.versions()
             v = next(x for x in v if x["version_id"] == ref)

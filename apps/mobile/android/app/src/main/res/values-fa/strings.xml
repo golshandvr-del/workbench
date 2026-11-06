@@ -116,4 +116,8 @@
     <string name="mission_hint">برای هر AI یک مسیر و برای هر تسک یک دایره در ستون نسخه‌اش. با دو انگشت بزرگ‌نمایی کنید، بکشید تا جابه‌جا شود، برای جزئیات روی دایره بزنید و برای COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE لمس طولانی کنید.</string>
     <string name="mission_node">%1$s\n%2$s · %3$s</string>
     <string name="mission_moved">پروژه تغییر کرده — این گام فعلی است.</string>
+    <string name="pairing_used">این کد اتصال قبلاً استفاده شده است. روی دسکتاپ کد جدید بسازید.</string>
+    <string name="pairing_denied">اتصال روی دسکتاپ رد شد.</string>
+    <string name="clock_skew">ساعت گوشی و ساعت رایانه حدود %1$d دقیقه اختلاف دارند. هر دو را روی زمان خودکار بگذارید و دوباره تلاش کنید.</string>
+    <string name="answer_too_long">این پاسخ برای گوشی خیلی طولانی است. آن را روی رایانه جایگذاری کنید یا در چند بخش بفرستید.</string>
 </resources>

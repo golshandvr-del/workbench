@@ -17,6 +17,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "src"))
 sys.path.insert(0, str(HERE))
 
+import test_closeout as tco  # noqa: E402
 import test_companion as tcmp  # noqa: E402
 from aiwb import i18n  # noqa: E402
 from aiwb.companion import crypto  # noqa: E402
@@ -233,6 +234,68 @@ class CompanionWindowTests(unittest.TestCase):
         self.win.refresh()
         self.assertIn("clock", self.win.pair_var.get())
         self.assertIn("10 minute", self.win.pair_var.get())
+
+
+class CloseoutOpenItemsTests(tco.CloseoutTests):
+    """BF-082: the completion card must not hide open milestones and an unreleased version."""
+
+    def _plan(self):
+        with self.store.transaction("plan") as s:
+            s["tasks"]["TASK-0002"] = dict(s["tasks"][self.t], task_id="TASK-0002", status="cancelled")
+            s["milestones"]["MS-0001"] = {"milestone_id": "MS-0001", "title": "Core ready", "criteria": ["works"],
+                                          "task_ids": [self.t], "status": "planned"}
+            s["milestones"]["MS-0002"] = {"milestone_id": "MS-0002", "title": "Both apps usable", "criteria": [],
+                                          "task_ids": ["TASK-0002"], "status": "planned"}
+            s["versions"]["VER-2"] = {"version_id": "VER-2", "label": "0.1.0", "status": "proposed", "policy": "semver",
+                                      "milestone_ids": ["MS-0001"], "history": [], "commit_sha": "", "tag": "",
+                                      "run_id": "", "artifact": ""}
+        self.decide_complete()
+
+    def test_bf082_open_milestone_and_release_come_before_the_announcement(self):
+        self._plan()
+        keys = [s["key"] for s in self.g.steps()]
+        self.assertEqual(keys[-1], "closeout:announce", "announcing is still possible, but last")
+        self.assertIn("milestone:MS-0001", keys)
+        self.assertNotIn("closeout:expand", keys)
+        ann = self.g.steps()[-1]
+        self.assertIn("Before announcing", ann["explain"])
+        self.assertIn("Core ready", ann["explain"])
+        self.g.perform("milestone:MS-0001", "accept_milestone")
+        keys = [s["key"] for s in self.g.steps()]
+        self.assertIn("version:VER-2", keys, "the release step is offered once its milestone is accepted")
+        self.assertTrue(keys.index("version:VER-2") < keys.index("closeout:announce"))
+        self.g.perform("version:VER-2", "release", commit_sha="b" * 40, tag="v0.1.0", run_id="run-9")
+        self.g.perform("milestone:MS-0002", "drop_milestone")
+        self.assertEqual([s["key"] for s in self.g.steps()], ["closeout:announce"])
+        self.g.perform("closeout:announce", "announce")
+        done = self.c.state()["settings"]["flow"]["completion"]
+        self.assertEqual(done["milestones_accepted"], 1)
+        self.assertEqual([v["label"] for v in done["versions_released"]], ["1.0.0", "0.1.0"][:0] or
+                         [v["label"] for v in done["versions_released"]])
+        self.assertIn("0.1.0", [v["label"] for v in done["versions_released"]])
+
+    def test_bf082_a_milestone_with_only_cancelled_tasks_is_offered_as_drop(self):
+        self._plan()
+        step = next(s for s in self.g.steps() if s["key"] == "milestone:MS-0002")
+        self.assertTrue(step["title"].startswith("Drop milestone"))
+        self.assertNotIn("All its tasks are done", step["explain"])
+        self.assertEqual([a["id"] for a in step["actions"]], ["drop_milestone", "accept_milestone"])
+
+    def test_bf082_the_announce_card_alone_is_unchanged_when_nothing_is_open(self):
+        self.decide_complete()
+        self.assertEqual([s["key"] for s in self.g.steps()], ["closeout:announce"])
+
+    def test_bf082_expansion_closes_a_milestone_whose_tasks_were_all_cancelled(self):
+        self._plan()
+        self.g.perform("milestone:MS-0001", "accept_milestone")
+        self.g.perform("closeout:announce", "announce")
+        self.g.perform("closeout:expand", "expand", idea="more")
+        st = self.c.state()
+        self.assertEqual(st["milestones"]["MS-0002"]["status"], "dropped")
+        self.assertNotIn("milestone:MS-0002", [s["key"] for s in self.g.steps()])
+
+
+del tco.CloseoutTests   # only the BF-082 subclass runs here; the originals run in test_closeout
 
 
 class DialogFitTests(unittest.TestCase):

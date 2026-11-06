@@ -82,4 +82,47 @@ class CloseoutTest {
         assertFalse(Closeout.isArchived(p.state()))
         p.store.transaction("edit") { s -> Json.obj(s["settings"])["goal"] = "changed" }
     }
+    // BF-082: open milestones and an unreleased version are offered before the completion is announced
+    private fun planOpenItems(p: Project) = p.store.transaction("plan") { s ->
+        Json.obj(s["tasks"])["TASK-2"] = linkedMapOf<String, Any?>("task_id" to "TASK-2", "title" to "Second", "status" to "cancelled",
+            "owner_agent_id" to "agent-implementer")
+        Json.obj(s["milestones"])["MS-1"] = linkedMapOf<String, Any?>("milestone_id" to "MS-1", "title" to "Core ready",
+            "criteria" to arrayListOf<Any?>("works"), "task_ids" to arrayListOf<Any?>("TASK-1"), "status" to "planned")
+        Json.obj(s["milestones"])["MS-2"] = linkedMapOf<String, Any?>("milestone_id" to "MS-2", "title" to "Both apps usable",
+            "criteria" to arrayListOf<Any?>(), "task_ids" to arrayListOf<Any?>("TASK-2"), "status" to "planned")
+        Json.obj(s["versions"])["VER-2"] = linkedMapOf<String, Any?>("version_id" to "VER-2", "label" to "0.1.0", "status" to "proposed",
+            "policy" to "semver", "milestone_ids" to arrayListOf<Any?>("MS-1"), "history" to arrayListOf<Any?>(),
+            "commit_sha" to "", "tag" to "", "run_id" to "", "artifact" to "")
+    }
+
+    @Test fun bf082OpenMilestonesAndReleaseComeBeforeTheAnnouncement() {
+        val p = project(); val g = Guide(p)
+        planOpenItems(p); decideComplete(p)
+        val keys = g.steps().map { it.key }
+        assertEquals("closeout:announce", keys.last())
+        assertTrue(keys.contains("milestone:MS-1"))
+        assertFalse(keys.contains("closeout:expand"))
+        assertTrue(g.steps().last().explain.contains("Before announcing"))
+        val drop = g.steps().first { it.key == "milestone:MS-2" }
+        assertTrue(drop.title, drop.title.startsWith("Drop milestone"))
+        assertFalse(drop.explain.contains("All its tasks are done"))
+        g.perform("milestone:MS-1", "accept_milestone")
+        val k2 = g.steps().map { it.key }
+        assertTrue(k2.indexOf("version:VER-2") in 0 until k2.indexOf("closeout:announce"))
+        g.perform("version:VER-2", "release", mapOf("commit_sha" to "b".repeat(40), "tag" to "v0.1.0", "run_id" to "run-9"))
+        g.perform("milestone:MS-2", "drop_milestone")
+        assertEquals(listOf("closeout:announce"), g.steps().map { it.key })
+        g.perform("closeout:announce", "announce")
+        assertEquals(1, Json.int(Json.obj(Flow.settings(p.state())["completion"])["milestones_accepted"]))
+    }
+
+    @Test fun bf082ExpansionClosesAMilestoneWhoseTasksWereAllCancelled() {
+        val p = project(); val g = Guide(p)
+        planOpenItems(p); decideComplete(p)
+        g.perform("milestone:MS-1", "accept_milestone")
+        g.perform("closeout:announce", "announce")
+        g.perform("closeout:expand", "expand", mapOf("idea" to "more"))
+        assertEquals("dropped", Json.obj(Json.obj(p.state()["milestones"])["MS-2"])["status"])
+        assertFalse(g.steps().any { it.key == "milestone:MS-2" })
+    }
 }

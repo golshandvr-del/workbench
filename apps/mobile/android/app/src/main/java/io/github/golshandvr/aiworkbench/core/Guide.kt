@@ -40,7 +40,18 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         val gd = g(st)
         val out = ArrayList<Step>()
         val tasks = State.coll(st, "tasks")
-        closeoutSteps(st).takeIf { it.isNotEmpty() }?.let { return it }  // F26–F28 (mobile 1.7.0) replace every other step
+        val end = closeoutSteps(st)  // F26–F28 (mobile 1.7.0) replace every other step
+        if (end.isNotEmpty() && end[0].key == "closeout:announce") {
+            // BF-082: milestones still to accept and a version still to release come first; announcing stays possible
+            val before = milestoneSteps(st) + versionSteps(st)
+            if (before.isNotEmpty()) {
+                val ann = end[0]
+                val note = "Before announcing: " + before.joinToString("; ") { it.title } +
+                    " - or skip them (they will not be part of the completion record). "
+                return (before + ann.copy(rank = 100, explain = note + ann.explain)).sortedWith(compareBy({ it.rank }, { it.key }))
+            }
+        }
+        if (end.isNotEmpty()) return end
         (gd["continue"] as? Map<*, *>)?.let { c ->
             val target = Json.str(c["for"])
             if (target.startsWith("handoff:")) {
@@ -169,25 +180,8 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
                     listOf(a("make_ready", "Approve the task"), a("cancel", "Cancel…", "reason")), ref = tid, rank = 70))
             }
         }
-        val milestones = State.coll(st, "milestones")
-        for (m in milestones.values.map { Json.obj(it) }.sortedBy { Json.str(it["milestone_id"]) }) {
-            val ids = Json.strs(m["task_ids"])
-            if (m["status"] != "planned" || ids.isEmpty()) continue
-            if (ids.all { Json.obj(tasks[it])["status"] in State.TERMINAL_TASK })
-                out.add(step("milestone:${m["milestone_id"]}", "decision", "Accept milestone ${m["title"]}",
-                    "All its tasks are done. Check its criteria: " + Json.strs(m["criteria"]).joinToString("; ").take(300),
-                    listOf(a("accept_milestone", "Accept the milestone")), ref = Json.str(m["milestone_id"]), rank = 75))
-        }
-        val connected = Json.str(Repo.info(st)["full_name"]).isNotEmpty()
-        for (v in State.coll(st, "versions").values.map { Json.obj(it) }.sortedBy { Json.str(it["version_id"]) }) {
-            if (v["status"] in setOf("released", "withdrawn") || connected) continue  // connected: the GitHub release step
-            val ms = Json.strs(v["milestone_ids"]).map { Json.obj(milestones[it]) }
-            if (ms.isNotEmpty() && ms.all { it["status"] == "accepted" })
-                out.add(step("version:${v["version_id"]}", "decision", "Release version ${v["label"]}",
-                    "Its milestones are accepted (status now ${v["status"]}). Record the real commit, tag and build run or artifact; Workbench never assumes a release.",
-                    listOf(a("release", "Record the release…", "commit_sha", "tag", "run_id"), a("withdraw", "Withdraw the version")),
-                    ref = Json.str(v["version_id"]), rank = 78))
-        }
+        out.addAll(milestoneSteps(st))
+        out.addAll(versionSteps(st))
         if (tasks.isEmpty() && State.coll(st, "proposals").values.none { Json.obj(it)["status"] == "pending" }) {
             val goal = Json.str(Json.obj(st["settings"])["goal"]).trim()
             if (goal.isEmpty()) out.add(step("design", "form", "Start the project",
@@ -210,6 +204,45 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
         }
         out.addAll(githubSteps(st))  // optional blue nodes never hide the manager update (roadmap 4.5.0)
         return out.sortedWith(compareBy({ it.rank }, { it.key }))
+    }
+
+    /** Accept (or, when every task was cancelled, drop) each planned milestone whose tasks are all finished. */
+    private fun milestoneSteps(st: Obj): List<Step> {
+        val tasks = State.coll(st, "tasks")
+        val out = ArrayList<Step>()
+        for (m in State.coll(st, "milestones").values.map { Json.obj(it) }.sortedBy { Json.str(it["milestone_id"]) }) {
+            val ids = Json.strs(m["task_ids"])
+            if (m["status"] != "planned" || ids.isEmpty()) continue
+            val sts = ids.map { Json.str(Json.obj(tasks[it])["status"]) }
+            if (!sts.all { it in State.TERMINAL_TASK }) continue
+            val mid = Json.str(m["milestone_id"])
+            if ("done" !in sts)   // BF-082: nothing of it was delivered, so it is not "all its tasks are done"
+                out.add(step("milestone:$mid", "decision", "Drop milestone ${m["title"]}",
+                    "Every task of this milestone was cancelled, so nothing of it was delivered. Drop it (or accept it anyway if you consider it reached).",
+                    listOf(a("drop_milestone", "Drop the milestone"), a("accept_milestone", "Accept it anyway")), ref = mid, rank = 15))
+            else
+                out.add(step("milestone:$mid", "decision", "Accept milestone ${m["title"]}",
+                    "All its tasks are done. Check its criteria: " + Json.strs(m["criteria"]).joinToString("; ").take(300),
+                    listOf(a("accept_milestone", "Accept the milestone")), ref = mid, rank = 15))
+        }
+        return out
+    }
+
+    /** Record the release of each version whose milestones are all accepted (no GitHub repository connected). */
+    private fun versionSteps(st: Obj): List<Step> {
+        val out = ArrayList<Step>()
+        val milestones = State.coll(st, "milestones")
+        val connected = Json.str(Repo.info(st)["full_name"]).isNotEmpty()
+        for (v in State.coll(st, "versions").values.map { Json.obj(it) }.sortedBy { Json.str(it["version_id"]) }) {
+            if (v["status"] in setOf("released", "withdrawn") || connected) continue  // connected: the GitHub release step
+            val ms = Json.strs(v["milestone_ids"]).map { Json.obj(milestones[it]) }
+            if (ms.isNotEmpty() && ms.all { it["status"] == "accepted" })
+                out.add(step("version:${v["version_id"]}", "decision", "Release version ${v["label"]}",
+                    "Its milestones are accepted (status now ${v["status"]}). Record the real commit, tag and build run or artifact; Workbench never assumes a release.",
+                    listOf(a("release", "Record the release…", "commit_sha", "tag", "run_id"), a("withdraw", "Withdraw the version")),
+                    ref = Json.str(v["version_id"]), rank = 78))
+        }
+        return out
     }
 
     /** F26 announce, F27 expand or archive, F28 archived (read-only) — same rules as desktop `closeout_steps`. */
@@ -402,6 +435,7 @@ class Guide(val project: Project, val github: ((owner: String, repo: String) -> 
             "cancel" -> { p.transition(ref, "cancelled", i("reason").ifEmpty { "cancelled by the user" }); Outcome("$ref cancelled.") }
             "manager_prompt" -> Outcome("Manager update ready to copy.", p.managerUpdate())
             "accept_milestone" -> { p.acceptMilestone(ref); Outcome("Milestone $ref accepted.") }
+            "drop_milestone" -> { p.dropMilestone(ref); Outcome("Milestone $ref dropped.") }
             "release" -> {
                 var v = State.require(p.state(), "versions", ref)
                 if (v["status"] == "proposed") v = p.advanceVersion(ref, "local", commitSha = i("commit_sha"))

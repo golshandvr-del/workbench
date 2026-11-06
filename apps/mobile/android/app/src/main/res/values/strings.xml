@@ -116,4 +116,8 @@
     <string name="mission_hint">One lane per AI, one circle per task in its version. Pinch to zoom, drag to move, tap a circle for details, long-press for COPY PROMPT · SEND PROMPT · GET AI RESPONSE · MARK AS DONE.</string>
     <string name="mission_node">%1$s\n%2$s · %3$s</string>
     <string name="mission_moved">The project changed — here is the current step.</string>
+    <string name="pairing_used">This pairing code was already used. Create a new one on the desktop.</string>
+    <string name="pairing_denied">The pairing was denied on the desktop.</string>
+    <string name="clock_skew">The phone's clock and the computer's clock differ by about %1$d minute(s). Set both to automatic time and try again.</string>
+    <string name="answer_too_long">This answer is too long for the phone. Paste it on the computer, or send it in parts.</string>
 </resources>
