@@ -92,6 +92,11 @@
   {"input": ".GIT/config", "expect": ""},
   {"input": ".WorkBench/state.json", "expect": ""},
   {"input": "src/console.py", "expect": "src/console.py"},
+  {"input": "CONIN$", "expect": ""},
+  {"input": "CONOUT$", "expect": ""},
+  {"input": "conin$.txt", "expect": ""},
+  {"input": "conout$.txt", "expect": ""},
+  {"input": "src/CONIN$", "expect": ""},
   {"input": "پوشه/فایل.txt", "expect": "پوشه/فایل.txt"}
  ]
 }
