@@ -88,6 +88,45 @@ class TranslateTest(unittest.TestCase):
         out = translate({"task_updates": [{"task_id": "TASK-0002", "changes": {"description": "New objective"}}]}, STATE)
         self.assertEqual(out["operations"][0]["changes"], {"objective": "New objective"})
 
+    def test_bf045_dependencies_on_new_tasks_of_the_same_answer(self):
+        r = translate({"follow_up_tasks": [{"title": "Write tests", "depends_on": ["Build API", "Core"]},
+                                           {"title": "Build API"}, {"title": "Ship", "depends_on": ["Nothing"]}]},
+                      STATE)
+        by_title = {o["title"]: o for o in r["operations"]}
+        self.assertEqual(by_title["Write tests"]["depends_on"], ["TASK-0002"])
+        self.assertEqual(by_title["Write tests"]["depends_on_refs"], [by_title["Build API"]["temporary_ref"]])
+        self.assertTrue(any("Nothing" in x for x in r["leftover"]))
+        self.assertEqual(len({o["temporary_ref"] for o in r["operations"]}), 3)
+        upd = translate({"task_updates": [{"task_id": "TASK-0002", "depends_on": ["Brand new"]}],
+                         "new_tasks": [{"title": "Brand new"}]}, STATE)
+        self.assertEqual([o["operation"] for o in upd["operations"]], ["create_task", "add_dependency"])
+        self.assertEqual(upd["operations"][1]["task_id"], "TASK-0002")
+        self.assertEqual(upd["operations"][1]["depends_on_ref"], upd["operations"][0]["temporary_ref"])
+
+    def test_bf045_ambiguous_title_is_reported_not_guessed(self):
+        state = {**STATE, "tasks": {**STATE["tasks"], "TASK-0003": {"task_id": "TASK-0003", "title": "core"}}}
+        r = translate({"task_assessment": [{"title": "Core", "priority": "high"}]}, state)
+        self.assertEqual(r["operations"], [])
+        self.assertTrue(any("ambiguous" in x and "TASK-0002" in x and "TASK-0003" in x for x in r["leftover"]))
+        r = translate({"task_updates": [{"task_id": "TASK-0001", "depends_on": ["Core"]}]}, state)
+        self.assertEqual(r["operations"], [])
+        self.assertTrue(any("ambiguous" in x for x in r["leftover"]))
+
+    def test_bf046_owner_role_is_normalised_and_comments_are_kept(self):
+        state = {**STATE, "agents": {"agent-implementer": {"role": "implementer", "enabled": True},
+                                     "agent-reviewer": {"role": "reviewer", "enabled": True}}}
+        r = translate({"follow_up_tasks": [{"title": "A", "owner_role": "Senior Developer"},
+                                           {"title": "B", "role": "Wizard"}]}, state)
+        self.assertEqual(r["operations"][0]["owner_role"], "implementer")
+        self.assertNotIn("owner_role", r["operations"][1])
+        self.assertTrue(any("Wizard" in x for x in r["leftover"]))
+        r = translate({"task_assessment": [{"task_id": "TASK-0002", "owner_role": "QA", "status": "at risk",
+                                            "description": "Needs a second look", "assessment": "slipping"}]}, state)
+        op = r["operations"][0]
+        self.assertEqual(op["changes"], {"owner_agent_id": "agent-reviewer"})
+        for part in ("slipping", "Needs a second look", "at risk"):
+            self.assertIn(part, op["reason"])
+
     def test_bf047_plain_decision_choice_and_recommendation_sentence(self):
         plain = translate({"decision": "Use SQLite"}, STATE)["operations"][0]
         self.assertEqual(plain["recommendation"], "Use SQLite")
