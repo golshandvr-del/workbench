@@ -18,6 +18,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .charter_repair import role_of
+
 TASK_FIELDS = ("title", "objective", "task_type", "owner_agent_id", "depends_on", "scope", "acceptance_criteria",
                "deliverables", "context_refs", "priority", "risk_level")
 LIST_FIELDS = ("depends_on", "acceptance_criteria", "deliverables", "context_refs")
@@ -191,57 +193,115 @@ def _changes(d: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _lookup(ref: str, tasks: dict[str, Any]) -> list[str]:
+    """Existing task ids a reference names: an id (``TASK-1``, ``1``) or an exact normalised title."""
+    if ref in tasks:
+        return [ref]
+    match = re.fullmatch(r"(?:task-)?0*(\d+)", ref, re.I)
+    if match and f"TASK-{int(match.group(1)):04d}" in tasks:
+        return [f"TASK-{int(match.group(1)):04d}"]
+    return [key for key, row in tasks.items() if ref and norm(row.get("title")) == norm(ref)]
+
+
+def _new_refs(items: list[Any]) -> dict[str, str]:
+    """``{normalised title: temporary_ref}`` of the tasks this answer creates (ref = position in the create list)."""
+    out: dict[str, str] = {}
+    for n, it in enumerate(items, 1):
+        title = _changes(it if isinstance(it, dict) else {"title": _text(it)}).get("title")
+        if title and norm(title) not in out:
+            out[norm(title)] = f"new-r{n}"
+    return out
+
+
+def _owner_for(role: str, state: dict[str, Any] | None) -> str:
+    agents = (state or {}).get("agents") or {}
+    return next((aid for aid, a in sorted(agents.items()) if a.get("role") == role and a.get("enabled", True)), "")
+
+
+def _comment(it: dict[str, Any], skipped: bool) -> str:
+    """The assessment's free text, kept as the operation's reason and never as a task field (BF-046)."""
+    parts = [_text(it.get(k)) for k in ("reason", "rationale", "assessment", "summary", "comment", "notes")]
+    if it.get("status"):
+        parts.append(f"status: {_text(it['status'])}")
+    if skipped:
+        for k in ("description", "goal", "files", "outputs"):
+            parts.append("; ".join(_strs(it.get(k))))
+    return " · ".join(x for x in parts if x)[:1000]
+
+
 def _task_ops(items: list[Any], state: dict[str, Any] | None, fixes: list[str], leftover: list[str],
-              start: int, *, allow_create: bool = True) -> list[dict[str, Any]]:
+              *, allow_create: bool = True, new_refs: dict[str, str] | None = None,
+              deferred: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     tasks = (state or {}).get("tasks") or {}
     agents = (state or {}).get("agents") or {}
+    new_refs = new_refs or {}
     ops: list[dict[str, Any]] = []
     upd = new = 0
-    for it in items:
+    for position, it in enumerate(items, 1):
         if not isinstance(it, dict):
             t = _text(it)
             if t:
                 it = {"title": t}
             else:
                 continue
-        tid = str(_first(it, "task_id", "id", "task") or "")
-        def resolve(ref: str) -> str:
-            if ref in tasks:
-                return ref
-            match = re.fullmatch(r"(?:task-)?0*(\d+)", ref, re.I)
-            if match and f"TASK-{int(match.group(1)):04d}" in tasks:
-                return f"TASK-{int(match.group(1)):04d}"
-            found = [key for key, row in tasks.items() if norm(row.get("title")) == norm(ref)] if ref else []
+
+        def known(ref: str, what: str) -> str:
+            found = _lookup(ref, tasks)
+            if len(found) > 1:
+                leftover.append(f"ambiguous {what} {ref!r} matches {', '.join(sorted(found))}")
             return found[0] if len(found) == 1 else ""
-        raw_tid = tid
-        tid = resolve(tid) if tid else ""
+
+        raw_tid = str(_first(it, "task_id", "id", "task") or "")
+        tid = known(raw_tid, "task") if raw_tid else ""
+        if not tid and not allow_create and not (raw_tid and len(_lookup(raw_tid, tasks)) > 1):
+            tid = known(_text(it.get("title")), "task")
         if not tid and not allow_create:
-            tid = resolve(_text(it.get("title")))
-        if not tid and not allow_create:
-            leftover.append(f"a change for unknown task {raw_tid or _text(it.get('title'))}")
+            if not any(x.startswith("ambiguous") and (raw_tid or _text(it.get("title"))) in x for x in leftover):
+                leftover.append(f"a change for unknown task {raw_tid or _text(it.get('title'))}")
             continue
+        has_changes = isinstance(it.get("changes"), dict)
         source = it
-        if not allow_create and not isinstance(it.get("changes"), dict):
+        if not allow_create and not has_changes:
             source = {k: v for k, v in it.items() if k not in ("description", "goal", "files", "outputs")}
         ch = _changes(source)
         if ch.get("owner_agent_id") and ch["owner_agent_id"] not in agents:
             ch.pop("owner_agent_id")
-        if "depends_on" in ch:
-            refs = ch["depends_on"]
-            ch["depends_on"] = [resolve(x) for x in refs if resolve(x)]
-            leftover.extend(f"unresolved prerequisite {x}" for x in refs if not resolve(x))
-        if tid.startswith("TASK-"):
-            if tid not in tasks:
-                leftover.append(f"a change for unknown task {tid}")
-                continue
+        role_text = _text(_first(it, "owner_role", "role") or _first(it.get("changes") or {}, "owner_role") or "")
+        role = role_of(role_text) if role_text else ""
+        if role_text and not role:
+            leftover.append(f"unknown role {role_text!r}")
+        own_ref = new_refs.get(norm(ch.get("title"))) if ch.get("title") else None
+        dep_ids: list[str] = []
+        dep_refs: list[str] = []
+        for x in ch.pop("depends_on", []):
+            found = known(x, "prerequisite")
+            ref = new_refs.get(norm(x))
+            if found and found != tid:
+                dep_ids.append(found)
+            elif not found and ref and ref != (own_ref if not tid else None):
+                dep_refs.append(ref)
+            elif not found and not any(x in y for y in leftover if y.startswith("ambiguous")):
+                leftover.append(f"unresolved prerequisite {x}")
+        if tid:
             cur = tasks[tid]
+            if dep_ids:
+                ch["depends_on"] = sorted(set(dep_ids) | set(cur.get("depends_on") or []))
+            if role and "owner_agent_id" not in ch:
+                owner = _owner_for(role, state)
+                if owner:
+                    ch["owner_agent_id"] = owner
+                else:
+                    leftover.append(f"no enabled agent with the role {role}")
             ch.pop("title", None) if ch.get("title") == cur.get("title") else None
             ch = {k: v for k, v in ch.items() if cur.get(k) != v}
+            for ref in dep_refs:
+                (deferred if deferred is not None else ops).append(
+                    {"operation": "add_dependency", "task_id": tid, "depends_on_ref": ref,
+                     "reason": "translated from the answer (5.18.0)"})
             if not ch:
                 continue  # an assessment ("on track", "needs review") with nothing to change: not an operation
             ops.append({"operation": "update_task", "task_id": tid, "changes": ch,
-                        "reason": _text(_first(it, "reason", "rationale", "assessment", "summary") or "")[:1000]
-                        or "translated from the answer (5.18.0)"})
+                        "reason": _comment(it, not has_changes) or "translated from the answer (5.18.0)"})
             upd += 1
             continue
         title = str(ch.get("title") or "")
@@ -249,13 +309,16 @@ def _task_ops(items: list[Any], state: dict[str, Any] | None, fixes: list[str], 
             leftover.append("a task without a title")
             continue
         new += 1
-        op = {"operation": "create_task", "temporary_ref": f"new-r{start + new}", "title": title[:200],
+        op = {"operation": "create_task", "temporary_ref": f"new-r{position}", "title": title[:200],
               "objective": str(ch.get("objective") or title)[:4000], "reason": "translated from the answer (5.18.0)"}
-        for k in ("acceptance_criteria", "deliverables", "depends_on", "scope", "priority", "risk_level",
-                  "owner_agent_id", "task_type"):
+        for k in ("acceptance_criteria", "deliverables", "scope", "priority", "risk_level", "owner_agent_id",
+                  "task_type"):
             if ch.get(k):
                 op[k] = ch[k]
-        role = _text(_first(it, "owner_role", "role") or "")
+        if dep_ids:
+            op["depends_on"] = dep_ids
+        if dep_refs:
+            op["depends_on_refs"] = dep_refs
         if role and "owner_agent_id" not in op:
             op["owner_role"] = role
         ops.append(op)
@@ -274,14 +337,18 @@ def translate(data: dict[str, Any], state: dict[str, Any] | None = None) -> dict
     for k in DECISION_KEYS:
         if k in data:
             ops += _decision_ops(_items(data[k], "decision_id"), state, fixes, leftover)
-    for k in UPDATE_KEYS:
-        if k in data:
-            ops += _task_ops(_items(data[k], "task_id"), state, fixes, leftover, len(ops), allow_create=False)
     task_items: list[Any] = []
     for k in CREATE_KEYS:
         if k in data:
             task_items += _items(data[k], "task_id")
-    ops += _task_ops(task_items, state, fixes, leftover, len(ops))
+    new_refs = _new_refs(task_items)
+    deferred: list[dict[str, Any]] = []  # an edge to a new task is applied only after that task exists
+    for k in UPDATE_KEYS:
+        if k in data:
+            ops += _task_ops(_items(data[k], "task_id"), state, fixes, leftover, allow_create=False,
+                             new_refs=new_refs, deferred=deferred)
+    ops += _task_ops(task_items, state, fixes, leftover, new_refs=new_refs)
+    ops += deferred
     useful = bool(ops)
     for k in RISK_KEYS:
         if k in data and useful:
