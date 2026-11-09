@@ -97,7 +97,8 @@ def safe_path(path: str) -> str:
     for part in parts:
         if (part == ".." or part.endswith((".", " "))
                 or any(ord(c) < 32 or c in '<>:"|?*' for c in part)
-                or re.match(r"^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³]|CONIN|CONOUT)(?:\.|$)", part, re.I)):
+                or re.match(r"^(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\.|$)", part, re.I)
+                or re.match(r"^(CONIN|CONOUT)", part, re.I)):
             return ""
     return "/".join(parts)
 
