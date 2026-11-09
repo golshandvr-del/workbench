@@ -123,6 +123,24 @@ class WorkspaceDashboardTests(unittest.TestCase):
         self.assertTrue(any("پاسخ" in i["rank_text"] or "تصمیم" in i["rank_text"] for i in q))
         self.wc.set_language("en")
 
+    def test_dashboard_fa_why_translates_fixed_phrases(self):
+        """BF-060: in Persian, no fixed English 'why' phrase survives in the queue."""
+        self.wc.set_language("fa")
+        q = self.wc.attention(collapse=False)
+        fixed_english = {
+            "task status done", "task waits for test", "delivery accepted", "task waits for review",
+            "a decision is open", "prerequisites", "no active attempt", "previous prompt closed",
+            "the answer asks for context", "context pack prepared", "answer based on an older",
+            "repair prompt prepared", "answer stored but not readable", "answer parsed",
+            "answer stored", "copied to clipboard", "prompt built, not copied", "attempt rejected",
+            "attempt abandoned",
+        }
+        for i in q:
+            why_lower = i["why"].lower()
+            self.assertFalse(any(p in why_lower for p in fixed_english),
+                               f"untranslated English why phrase survives: {i['why']!r}")
+        self.wc.set_language("en")
+
 
 class ChangeRouteTests(unittest.TestCase):
     def setUp(self):

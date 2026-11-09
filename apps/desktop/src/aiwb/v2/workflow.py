@@ -132,6 +132,36 @@ def stage_label(stage: str, lang: str = "en") -> str:
     pair = STAGES.get(stage, (stage, stage))
     return pair[1] if lang == "fa" else pair[0]
 
+# Fixed English "why" phrases from task_stage() and their Persian equivalents.
+WHY_LABELS = {
+    "task status done (acceptance policy)": "وضعیت وظیفه انجام‌شده (سیاست پذیرش)",
+    "task waits for test/build evidence": "وظیفه منتظر است برای تست/ساخت",
+    "delivery accepted, task waits for review": "تحویل پذیرفته شده، وظیفه منتظر است برای بازبینی",
+    "a decision is open": "یک تصمیم در دست باز است",
+    "prerequisites": "پیش‌نیازها",
+    "no active attempt": "هیچ تلاش فعال نیست",
+    "previous prompt closed; prepare a new attempt": "پرامپت قبلی بسته شده؛ تلاش جدیدی بسازید",
+    "the answer asks for context": "پاسخ زمینه درخواست می‌کند",
+    "context pack prepared, not marked as sent": "بسته زمینه آماده شده، ارسال نشده علامت‌گذاری نشده",
+    "answer based on an older attempt/revision": "پاسخ بر پایه تلاش/ویرایش قبلی است",
+    "repair prompt prepared": "پرامپت اصلاح آماده شده",
+    "answer stored but not readable": "پاسخ ذخیره شده است اما خوانده نشده",
+    "answer parsed; your review decides": "پاسخ پارس شده است؛ بازبینی شما تصمیم می‌گیرد",
+    "answer stored": "پاسخ ذخیره شده است",
+    "copied to clipboard; sending not confirmed": "در کلیپ‌بورد کپی شده؛ ارسال تأیید نشده",
+    "prompt built, not copied": "پرامپت ساخته شده، کپی نشده",
+    "attempt rejected": "تلاش رد شده",
+    "attempt abandoned": "تلاش کنار گذاشته شده",
+    "delivery accepted": "تحویل پذیرفته شده",
+}
+
+
+def why_label(why: str, lang: str = "en") -> str:
+    """Translate the fixed English ``why`` phrase from task_stage(); dynamic parts stay as-is."""
+    if lang != "fa":
+        return why
+    return WHY_LABELS.get(why, why)
+
 
 class WorkflowService:
     """User facts on attempts (copied / sent / context) — every one an explicit action."""

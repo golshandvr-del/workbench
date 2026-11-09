@@ -21,7 +21,7 @@ from __future__ import annotations
 from typing import Any
 
 from .resources import binding_readiness, current_binding
-from .workflow import stage_label, task_stage
+from .workflow import stage_label, task_stage, why_label
 
 RANKS = {
     1: ("Blocking or needs your decision", "مسدودکننده یا نیازمند تصمیم شما"),
@@ -106,7 +106,7 @@ def attention_queue(state: dict[str, Any], *, lang: str = "en", publish_paused: 
         if rank is None or (rank == 7 and not include_info):
             continue
         agent = ts["agent_id"]
-        why = f"{stage_label(stage, 'en')} — {ts['why']}"
+        why = f"{stage_label(stage, lang)} — {why_label(ts['why'], lang)}"
         if stage == "ready_to_prepare":
             if not t.get("owner_agent_id"):
                 why += "; no owner yet"
