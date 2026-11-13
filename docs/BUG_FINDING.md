@@ -188,7 +188,7 @@ backup folder (unique id, refuse if the folder exists).
 
 ### BF-008 · S2 · OPEN — paths that are fine on Linux but break or misbehave on Windows are accepted
 
-**Partial repair — session 30 (still OPEN):** canonical Desktop intake/staging/diagnosis rejects Windows devices, ADS, invalid/control characters, trailing-dot/space aliases and case-insensitive protected roots (2a408c58, e55b500e, 02f020bf). The shared fixture was extended (5ce45730) and the Mobile Files.safePath port aligned (7eb0da98). Desktop fixture tests pass; no Kotlin compiler/Android SDK is available in this sandbox and no Android or actual Windows validation is claimed. Keep OPEN pending those cross-platform gates.
+**Partial repair — session 30 (still OPEN):** canonical Desktop intake/staging/diagnosis rejects Windows devices, ADS, invalid/control characters, trailing-dot/space aliases and case-insensitive protected roots (2a408c58, e55b500e, 02f020bf). The shared fixture was extended (5ce45730) and the Mobile Files.safePath port aligned (7eb0da98). Desktop fixture tests pass; no Kotlin compiler/Android SDK is available in this sandbox and no Android or actual Windows validation is claimed. Keep OPEN pending those cross-platform gates. **Session 41:** the shared fixture now runs on both sides in this sandbox (Desktop `test_files.py` inside the 1102-test suite; Kotlin `FilesTest` inside the 128-test JVM run built with standalone kotlinc), all green. Still OPEN: no real Windows (NTFS) or Android device run exists.
 
 **Where:** `aiwb/intake/answer_files.py` `safe_path()` and its copy `aiwb/v2/files.py` `safe_path()` (same rule,
 shared fixture `packages/contracts/fixtures/files/safe-paths.v1.json`). Only `/`, drive letter, `..`, NUL,
