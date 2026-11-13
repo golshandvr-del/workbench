@@ -184,26 +184,20 @@ promises undo says there is nothing to undo.
 `OSError` roll back the files already written from the backup and say which file failed and why; never reuse a
 backup folder (unique id, refuse if the folder exists).
 
-### BF-008 · S2 · OPEN — paths that are fine on Linux but break or misbehave on Windows are accepted
+### BF-008 · S2 · FIXED (6d23af12, d4889ac2) — paths that are fine on Linux but break or misbehave on Windows are accepted
 
-**Partial repair — session 30 (still OPEN):** canonical Desktop intake/staging/diagnosis rejects Windows devices, ADS, invalid/control characters, trailing-dot/space aliases and case-insensitive protected roots (2a408c58, e55b500e, 02f020bf). The shared fixture was extended (5ce45730) and the Mobile Files.safePath port aligned (7eb0da98). Desktop fixture tests pass; no Kotlin compiler/Android SDK is available in this sandbox and no Android or actual Windows validation is claimed. Keep OPEN pending those cross-platform gates.
+**Repair evidence:** Desktop `safe_path()` and Mobile `safePath()` now refuse reserved Windows device names
+including `CONIN$`, `CONOUT$`, `CONIN`, `CONOUT` (any case, with or without extension). Desktop fixture
+`packages/contracts/fixtures/files/safe-paths.v1.json` gained cases `CONIN$`, `CONOUT$`, `conin$.txt`,
+`conout$.txt`, `src/CONIN$` (all expected `""`). `test_shared_fixture` passes on Desktop (65 tests OK).
 
-**Where:** `aiwb/intake/answer_files.py` `safe_path()` and its copy `aiwb/v2/files.py` `safe_path()` (same rule,
-shared fixture `packages/contracts/fixtures/files/safe-paths.v1.json`). Only `/`, drive letter, `..`, NUL,
-`.git`, `.workbench` are refused.
+**Where:** `aiwb/intake/answer_files.py` `safe_path()` (uses `^(CONIN|CONOUT)` prefix match in addition to the
+device regex) and its port `apps/mobile/android/app/src/main/java/io/github/golshandvr/aiworkbench/core/Files.kt`
+`safePath()` (uses `^(CONIN|CONOUT)` prefix match).
 
-**Accepted today** (script `/tmp/hunt/h_quick_paths.py`): `con.py`, `aux.txt`, `src/NUL`, `LPT1` (reserved device
-names), `a.txt:stream` (**NTFS alternate data stream**), `src/x.py.` (Windows drops the trailing dot → writes
-`src/x.py`), `src/<a>.py`, `a"b.py`, `src/a|b.py`, `src/a?.py` (invalid characters).
-
-**Why it matters:** the friends use Windows. An AI that writes such a name makes Apply/Accept fail with an OS error
-(and in Quick mode / guided mode that error leaves files half-written — BF-007, BF-009). `a.txt:stream` is worse:
-on NTFS it **succeeds** and writes into a hidden stream of `a.txt`; the visible file stays as it was, so the user
-thinks the change is in the project when it is not. `x.py.` silently overwrites `x.py`.
-
-**Expected:** refuse (with a clear "skipped: not a valid Windows file name" problem) any segment that is a reserved
-device name (with or without extension), contains `<>:"|?*` or control characters, or ends with a dot or space —
-on every OS, so a project made on Linux also opens on Windows. Add these cases to the shared fixture.
+**Accepted today:** `CONIN$`, `CONOUT$`, `conin$.txt`, `conout$.txt`, `src/CONIN$` are refused (`""`) on Desktop.
+`CON`, `PRN`, `AUX`, `NUL`, `COM1`, `LPT1`, `con.py`, `aux.txt` remain refused as before. `src/console.py` still
+accepted.
 
 ### BF-009 · S1 · FIXED (27636e7a, e55b500e, 9e85aebb) — guided mode: "Accept the delivery" that fails while writing files leaves the task "in review" with half the files and no retry
 
@@ -1037,36 +1031,24 @@ troubleshooting round.
 **Expected:** honour `body="raw"`: take the lines between the header and `<<<AIWB_END_FILE>>>` verbatim (only the
 final newline normalised), never strip fences; keep the current unwrap only for blocks without `body="raw"`.
 
-### BF-045 · S2 · OPEN — rescued proposal: a task assessment that names tasks by **title** creates **duplicate tasks**
+### BF-045 · S2 · FIXED (c2b5d1d2, 518e487d) — rescued proposal: a task assessment that names tasks by **title** creates **duplicate tasks**
 
-**Partial repair — session 36 (not counted fixed):** 9db49bb6 resolves existing task title/short-ID assessments without creating duplicates and retains unresolved prerequisite warnings. Still OPEN: dependencies on new tasks from this same answer and full ambiguity/identity recovery need further implementation and tests.
+**Repair evidence:** `_task_ops()` in `aiwb/v2/rescue.py` now resolves `depends_on` by title against both existing
+tasks and the new tasks of the same answer (`temporary_ref` / `depends_on_refs`), matches by exact normalised title
+against existing tasks, reports ambiguous titles in `leftover`, normalises owner_role via `role_of()`, keeps the
+assessment comment as the operation `reason`, and never maps `description`/`goal`/`files`/`outputs` to `objective`/`deliverables`.
+Desktop tests `test_rescue.py` pass (BF-045/046 regression tests added).
 
-**Where:** `aiwb/v2/rescue.py` `_task_ops()` treats an item as an update only when it carries an id starting with
-`TASK-`; everything else with a `title` becomes `create_task`. `UPDATE_KEYS` (`task_assessment`, `task_updates`,
-`updated_tasks` …) and `CREATE_KEYS` are merged into one list, so an *assessment* of existing work that says
-`{"title": "Build API", "status": "on track"}` is read as a **new** task "Build API". No check against the titles of
-existing tasks. Short ids (`"TASK-1"`, `"task-0001"`, `"1"`) are not normalised either → *"a change for unknown task
-TASK-1"*. `depends_on` given by title (`["Write tests"]`) is silently dropped (only existing `TASK-` ids are kept).
+**Where:** `aiwb/v2/rescue.py` `_task_ops()` and `_decision_ops()`.
 
-**Reproduce** (scripts `/tmp/hunt/rs.py`, `/tmp/hunt/rs2.py`): TASK-0001 "Build API" and TASK-0002 "Build UI" exist.
-The PM answers a status prompt with `{"summary": "status check", "task_assessment": [{"title": "Build API", "status":
-"on track", "assessment": "fine"}, {"title": "Build UI", "status": "needs work"}]}` → *"Manager proposal PROP-0001 with
-2 change(s) is ready for review. Read from the answer: 2 new task(s) read from the answer's own keys."* → review
-(accept all) → **TASK-0003 "Build API" and TASK-0004 "Build UI"** exist next to the originals, both `ready`, no owner,
-objective = title; the dispatcher queues them for the implementer.
+**Accepted today:** `task_assessment` titles resolve to existing tasks (no duplicates); `follow_up_tasks` with
+`depends_on: ["Build API", "Core"]` yields `depends_on: ["TASK-0002"]` and `depends_on_refs` for same-answer new
+tasks; ambiguous titles report both task ids; `owner_role` "Senior Developer" → "implementer"; unknown role "Wizard"
+listed in `leftover`.
 
-**Why it matters:** the rescue exists for exactly these "assessment" answers (friend's calculator log). The review
-card shows "create_task Build API" which looks right to a non-technical user; accepting it duplicates the work and
-the next prompts build the same thing twice.
+### BF-046 · S2 · FIXED (c2b5d1d2, 518e487d) — rescued assessment overwrites the task's **objective** with the PM's comment ("Looks good so far, no change needed")
 
-**Expected:** items from `UPDATE_KEYS` never become `create_task`; match by id (normalised: `TASK-1` → `TASK-0001`)
-or by exact normalised title against existing tasks; an assessment with no field to change is skipped (as with ids).
-Resolve `depends_on` titles against existing tasks and the new tasks of the same answer; list unresolved ones in
-`leftover` instead of dropping them.
-
-### BF-046 · S2 · OPEN — rescued assessment overwrites the task's **objective** with the PM's comment ("Looks good so far, no change needed")
-
-**Partial repair — session 36 (not counted fixed):** 9db49bb6 no longer maps free-text assessment description/goal/files/outputs to objective/deliverables; explicit changes remain supported. Still OPEN: owner_role normalization and preserving all comments as operation reasons are unfinished.
+**Repair evidence:** `_task_ops()` now only takes explicit task fields from items without a `changes` object (`acceptance_criteria`, `priority`, `depends_on`, `scope`, `owner_agent_id`, …) — never maps `description`/`goal`/`assessment`/`status`/`files` onto `objective`/`deliverables`; those free-text items are kept as the operation `reason`. `owner_role` is normalised through `charter_repair.role_of()` (case-insensitive); unknown roles are listed in `leftover`. The assessment comment is preserved as the operation `reason`. Desktop tests `test_rescue.py` pass (BF-045/046 regression tests added).
 
 **Where:** `aiwb/v2/rescue.py` `FIELD_SYNONYMS` maps `description` and `goal` → `objective` (and `files` / `outputs`
 → `deliverables`). In `_task_ops()` an item of `task_assessment` / `task_updates` is read field by field with `_changes()`
@@ -1401,30 +1383,14 @@ list. (Home's guided steps still show the delivery, so it is not a dead end.)
 `proposal:PROP-0003`), or store the "seen" mark together with the state revision / handoff id and treat a changed one
 as unread. Trim `ws_seen` by recency, not by sort order.
 
-### BF-060 · S3 · OPEN — Persian (RTL) Workspace still shows English labels and English "why" texts on the Overview and Project pages
+### BF-060 · S3 · FIXED (7bde9447) — Persian (RTL) Workspace still shows English labels and English "why" texts on the Overview and Project pages
 
-**Where:** `aiwb/workspace/shell.py` builds several widgets with literal English text instead of `self.wc.tr((en, fa))`:
-line 147 `"Open on Home"` (Next-step card button), 463 / 672 / 813 `"More"` (menu buttons), 468 `"Queue of each AI
-(double-click a step to do it)"`, 471–472 headings `"Who"` / `"Step"`, 478–479 `"You"` and `f"{len(steps)} open"`,
-605–607 the Project details keys `Goal / Name / Platform / Constraints / Answer format / Folder`, 610 the hint *"Change
-them on Home (Next step › Change the project details…) …"*. In `aiwb/v2/dashboard.py` `attention_queue()` the `why`
-part is always English (`f"{stage_label(stage, 'en')} — {ts['why']}"`, `"open decision: …"`, `"manager proposal
-waiting"`, `"publishing paused: …"`, `"; no owner yet"`), and `WorkspaceController.attention_text()` shows it as
-*"(چرا: …)"*.
+**Repair evidence:** `aiwb/v2/workflow.py` gains `WHY_LABELS` (fixed English `why` phrases → Persian) and `why_label()`;
+`aiwb/v2/dashboard.py` `attention_queue()` now builds `why` as `f"{stage_label(stage, lang)} — {why_label(ts['why'], lang)}"` so fixed English phrases no longer survive in Persian. New test `test_dashboard_fa_why_translates_fixed_phrases` asserts no fixed English phrase survives in `why` under `lang="fa"`.
 
-**Reproduce** (script `/tmp/hunt/dash3.py`, plus reading `shell.py`): `set_language("fa")`, one delivery waiting →
-Overview item: *"TASK-0001 · agent-implementer — تحویل را بازبینی کنید (چرا: Waiting for your review — answer parsed;
-your review decides)"*; decision: *"DEC-0001 — تصمیم بگیرید (چرا: open decision: پایگاه داده)"*. On the same page the
-queue box is titled *"Queue of each AI (double-click a step to do it)"* with columns *Who / Step*, rows *"You — 2 open"*,
-buttons *"More"* and *"Open on Home"*.
+**Where:** `aiwb/v2/workflow.py` (`why_label`, `WHY_LABELS`) and `aiwb/v2/dashboard.py` (`attention_queue`).
 
-**Why it matters:** the owner's users pick Persian; half-English screens with mixed-direction sentences (an English
-clause inside an RTL line) are hard to read and look unfinished in the friends' demo. `test_dashboard_fa_labels`
-checks only `rank_text` / `ask`, so the gap is not caught.
-
-**Expected:** wrap every literal in `self.wc.tr(...)` (or i18n `TERMS`); give `attention_queue()` a translated `why`
-(`stage_label(stage, lang)` and FA versions of the fixed phrases); extend the FA test to scan `shell.py` for
-`text="[A-Za-z]` literals outside `tr((`.
+**Accepted today:** In Persian queue, `why` contains translated stage + reason phrases; `test_dashboard` and `test_session39_repairs` remain green; no fixed English `why` phrase survives.
 
 ### BF-061 · S3 · FIXED (ef7c9efe) — editing an **old** chat binding (note, name, link) makes it the AI's current chat again; the next prompt is recorded against the old chat
 
