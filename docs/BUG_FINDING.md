@@ -1050,27 +1050,9 @@ listed in `leftover`.
 
 **Repair evidence:** `_task_ops()` now only takes explicit task fields from items without a `changes` object (`acceptance_criteria`, `priority`, `depends_on`, `scope`, `owner_agent_id`, …) — never maps `description`/`goal`/`assessment`/`status`/`files` onto `objective`/`deliverables`; those free-text items are kept as the operation `reason`. `owner_role` is normalised through `charter_repair.role_of()` (case-insensitive); unknown roles are listed in `leftover`. The assessment comment is preserved as the operation `reason`. Desktop tests `test_rescue.py` pass (BF-045/046 regression tests added).
 
-**Where:** `aiwb/v2/rescue.py` `FIELD_SYNONYMS` maps `description` and `goal` → `objective` (and `files` / `outputs`
-→ `deliverables`). In `_task_ops()` an item of `task_assessment` / `task_updates` is read field by field with `_changes()`
-— the *whole item*, not only a `changes` object — so the assessment's free-text comment becomes a new objective.
-Related: `owner_role` is copied as written (`"Implementer"`, `"developer"`) and `proposals.review()` matches it with
-`a["role"] == raw["owner_role"]` (exact, lower-case ids) → the new task gets **no owner**. It is not a dead end
-(the dispatcher falls back to the implementer), but the task shows no owner and the role the PM asked for is lost.
-
-**Reproduce** (script `/tmp/hunt/rs4.py`): `task_assessment: [{"task_id": "TASK-0001", "status": "on track",
-"description": "Looks good so far, no change needed"}, {"task_id": "TASK-0002", "status": "at risk", "goal": "finish
-this week", "files": "src/ui/app.js"}]` → *"2 task change(s) read from the answer's own keys"* → review shows two
-`update_task` → accept → TASK-0001 objective = *"Looks good so far, no change needed"*, TASK-0002 objective =
-*"finish this week"*. The next developer prompt for TASK-0001 says *"- Objective: Looks good so far, no change
-needed"* — the real objective ("Build API objective") is gone from the prompt.
-
-**Why it matters:** the developer AI receives a meaningless objective and builds whatever it guesses; the original
-objective can only be restored by hand (Edit task). It happens with the most common "status report" answer shape.
-
-**Expected:** for items without a `changes` object, take only explicit task fields (`acceptance_criteria`, `priority`,
-`depends_on`, `scope`, `owner_agent_id`, …); never map `description` / `goal` / `assessment` / `status` / `files` of an
-assessment onto `objective` / `deliverables` (keep them as the operation's `reason`). Match `owner_role` through
-`charter_repair.role_of()` (case-insensitive), and list an unknown role in the review card instead of dropping it.
+**Where:** `aiwb/v2/rescue.py` `_task_ops()` handles explicit task fields separately from assessment comments;
+`charter_repair.role_of()` normalises owner roles before proposal review. The original reproduction is retained in
+commits `c2b5d1d2` and `518e487d`; current regression coverage is in `tests/test_rescue.py`.
 
 ### BF-047 · S3 · FIXED (9db49bb6) — rescued decisions: a decision written as text loses the PM's choice; a recommendation *sentence* becomes the only option
 
