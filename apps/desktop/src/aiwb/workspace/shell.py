@@ -144,7 +144,7 @@ class WorkspaceWindow:
         self.flow_var = tk.StringVar()
         ttk.Label(self.next_frame, textvariable=self.flow_var, style="WS.Muted.TLabel").grid(row=2, column=0, sticky="w")
         # 5.11.0 (A7): one home per command — the step's buttons and the paste box live on Home's Next-step card
-        self.next_btn = ttk.Button(self.next_frame, text="Open on Home", style="WS.Primary.TButton", command=self.go_home)
+        self.next_btn = ttk.Button(self.next_frame, text=self.wc.tr(("Open on Home", "باز کردن در خانه")), style="WS.Primary.TButton", command=self.go_home)
         self.next_btn._aiwb_link = "home"  # type: ignore[attr-defined]  # App Map: a link, not a second command
         self.next_btn.grid(row=0, column=1, rowspan=2, sticky="e", padx=(8, 0))
         self.guide_step: dict[str, Any] = {}
@@ -460,23 +460,23 @@ class WorkspaceWindow:
             am.add_command(label=self.wc.tr(("Mark as read", "خوانده شد")), command=self.mark_attention_seen)
             am.add_command(label=self.wc.tr(("Show read items", "نمایش خوانده‌شده‌ها")),
                            command=lambda: (self.wc.clear_seen(), self.show("plan")))
-            ttk.Menubutton(ab, text="More", menu=am).pack(side=side, padx=4)
+            ttk.Menubutton(ab, text=self.wc.tr(("More", "بیشتر")), menu=am).pack(side=side, padx=4)
         self._proposal_review(f, 6)
         tb = ttk.LabelFrame(f, text=self.wc.tr(("Tasks", "وظایف")), padding=6)
         tb.grid(row=7, column=0, sticky="nsew", pady=6)
         self._tasks_box(tb)
-        qf = ttk.LabelFrame(f, text="Queue of each AI (double-click a step to do it)", padding=6)
+        qf = ttk.LabelFrame(f, text=self.wc.tr(("Queue of each AI (double-click a step to do it)", "صف هر AI (برای انجام یک گام، دوبار کلیک کنید)")), padding=6)
         qf.grid(row=8, column=0, sticky="ew", pady=(0, 6))
         self.queue_tree = ttk.Treeview(qf, columns=("step",), show="tree headings", style="WS.Treeview", height=6)
-        self.queue_tree.heading("#0", text="Who")
-        self.queue_tree.heading("step", text="Step")
+        self.queue_tree.heading("#0", text=self.wc.tr(("Who", "چه کسی")))
+        self.queue_tree.heading("step", text=self.wc.tr(("Step", "گام")))
         self.queue_tree.column("#0", width=200, stretch=False)
         self.queue_tree.column("step", width=540, stretch=True)
         self.queues = self.wc.guide_queues()
         names = {aid: (a.get("name") or aid) for aid, a in (self.wc.ctl.state().get("agents") or {}).items()}
         for agent, steps in sorted(self.queues.items(), key=lambda kv: (kv[0] != "you", kv[0])):
-            node = self.queue_tree.insert("", "end", iid="q:" + agent, text="You" if agent == "you" else names.get(agent, agent),
-                                          values=(f"{len(steps)} open",), open=True)
+            node = self.queue_tree.insert("", "end", iid="q:" + agent, text=self.wc.tr(("You", "شما")) if agent == "you" else names.get(agent, agent),
+                                          values=(self.wc.tr((f"{len(steps)} open", f"{len(steps)} مورد باز")),), open=True)
             for st in steps:
                 self.queue_tree.insert(node, "end", iid=st["key"], text="", values=(st["title"],))
         self.queue_tree.pack(fill="x")
@@ -602,13 +602,18 @@ class WorkspaceWindow:
         brief = settings.get("brief") or {}
         det = ttk.LabelFrame(f, text=self.wc.tr(("Project details", "مشخصات پروژه")), padding=6)
         det.grid(row=1, column=0, sticky="ew", pady=(0, 6))
-        facts = [("Goal", settings.get("goal", "")), ("Name", brief.get("name", "") or self.wc.ctl.root.name),
-                 ("Platform", brief.get("platform", "")), ("Constraints", brief.get("constraints", "")),
-                 ("Answer format", settings.get("answer_format", "") or "aiwb"), ("Folder", str(self.wc.ctl.root))]
+        facts = [(self.wc.tr(("Goal", "هدف")), settings.get("goal", "")),
+                 (self.wc.tr(("Name", "نام")), brief.get("name", "") or self.wc.ctl.root.name),
+                 (self.wc.tr(("Platform", "پلتفرم")), brief.get("platform", "")),
+                 (self.wc.tr(("Constraints", "محدودیت‌ها")), brief.get("constraints", "")),
+                 (self.wc.tr(("Answer format", "قالب پاسخ")), settings.get("answer_format", "") or "aiwb"),
+                 (self.wc.tr(("Folder", "پوشه")), str(self.wc.ctl.root))]
         self.details_var = tk.StringVar(value="\n".join(f"{k}: {v or '—'}" for k, v in facts))
         ttk.Label(det, textvariable=self.details_var, wraplength=760, justify="left", anchor=anchor).pack(fill="x")
-        ttk.Label(det, text="Change them on Home (Next step › Change the project details…) until the plan is "
-                            "accepted. The AIs themselves: Agents › Edit team…", style="WS.Muted.TLabel",
+        ttk.Label(det, text=self.wc.tr(("Change them on Home (Next step › Change the project details…) until the plan is "
+                                  "accepted. The AIs themselves: Agents › Edit team…",
+                                  "تا زمانی که طرح پذیرفته نشده، آن‌ها را در خانه تغییر دهید (گام بعدی › تغییر مشخصات "
+                                  "پروژه…). خود AIها: عامل‌ها › ویرایش تیم…")), style="WS.Muted.TLabel",
                   wraplength=760, anchor=anchor).pack(fill="x", pady=(4, 0))
         team = ttk.LabelFrame(f, text=self.wc.tr(("AI team", "تیم AI")), padding=6)
         team.grid(row=2, column=0, sticky="nsew", pady=6)
@@ -652,7 +657,8 @@ class WorkspaceWindow:
                               state="readonly")
         pm_box.pack(side=side, padx=4)
         pm_box.bind("<<ComboboxSelected>>", lambda _e: self.save_team_settings())  # saved at once (no Save button)
-        ttk.Label(pm, text=f"Parallel chats: {ts['max_parallel_chats']} (Agents › Parallel chats…)",
+        ttk.Label(pm, text=self.wc.tr((f"Parallel chats: {ts['max_parallel_chats']} (Agents › Parallel chats…)",
+                                   f"چت‌های موازی: {ts['max_parallel_chats']} (عامل‌ها › چت‌های موازی…)")),
                   style="WS.Muted.TLabel").pack(side=side, padx=(12, 0))
         acc = ttk.LabelFrame(f, text=self.wc.tr(("Your account profiles (labels only — no passwords or keys)",
                                                    "پروفایل‌های اکانت شما (فقط برچسب — بدون رمز یا کلید)")), padding=6)
@@ -669,7 +675,7 @@ class WorkspaceWindow:
         am = tk.Menu(ab, tearoff=False)
         am.add_command(label=self.wc.tr(("Enable / disable selected", "فعال / غیرفعال کردن انتخاب‌شده")),
                        command=self.toggle_selected_account)
-        ttk.Menubutton(ab, text="More", menu=am).pack(side=side, padx=4)
+        ttk.Menubutton(ab, text=self.wc.tr(("More", "بیشتر")), menu=am).pack(side=side, padx=4)
         # 5.13.0 (owner audit C3): no "Charter start prompts" box here — it listed the charter's agent ids
         # ("agent-architect") and duplicated Agents › Selected AI › Copy briefing (the first message of a new chat with
         # that AI). copy_start_prompt() stays for scripts and tests.
@@ -757,7 +763,7 @@ class WorkspaceWindow:
         def ok() -> None:
             out.update({k: v.get().strip() for k, v in vars_.items() if v.get().strip()})
             dlg.destroy()
-        ttk.Button(dlg, text="OK", command=ok).grid(row=len(fields), column=1, sticky="e", padx=6, pady=6)
+        ttk.Button(dlg, text=self.wc.tr(("OK", "تأیید")), command=ok).grid(row=len(fields), column=1, sticky="e", padx=6, pady=6)
         dlg.grab_set()
         self.win.wait_window(dlg)
         return out
@@ -810,7 +816,7 @@ class WorkspaceWindow:
         rm.add_command(label=self.wc.tr(("Reject all", "رد همه")), command=lambda: self.review_reject())
         rm.add_command(label=self.wc.tr(("Request changes (prompt)", "درخواست اصلاح (پرامپت)")),
                        command=lambda: self.review_request_changes())
-        ttk.Menubutton(bb, text="More", menu=rm).pack(side=side, padx=4)
+        ttk.Menubutton(bb, text=self.wc.tr(("More", "بیشتر")), menu=rm).pack(side=side, padx=4)
 
     def _review_selection(self) -> list[int]:
         return sorted(int(i) for i in self.review_tree.selection()) if hasattr(self, "review_tree") else []

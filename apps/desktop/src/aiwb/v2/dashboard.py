@@ -18,10 +18,11 @@ Within a rank the order is: older first (by reference id), so nothing jumps arou
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from .resources import binding_readiness, current_binding
-from .workflow import stage_label, task_stage
+from .workflow import STAGES as STAGE_KEYS, stage_label, task_stage
 
 RANKS = {
     1: ("Blocking or needs your decision", "مسدودکننده یا نیازمند تصمیم شما"),
@@ -62,6 +63,81 @@ QUICK = {  # contextual quick actions that are valid for the stage
 }
 
 
+# BF-060: the "why" of a queue item is built from fixed English phrases (workflow.task_stage) plus a few values.
+WHY_FA = {
+    "task status done (acceptance policy)": "وضعیت وظیفه انجام‌شده است (سیاست پذیرش)",
+    "task waits for test/build evidence": "وظیفه منتظر شواهد تست/ساخت است",
+    "delivery accepted, task waits for review": "تحویل پذیرفته شد، وظیفه منتظر بازبینی است",
+    "a decision is open": "یک تصمیم باز است",
+    "prerequisites": "پیش‌نیازها",
+    "no active attempt": "تلاش فعالی وجود ندارد",
+    "previous prompt closed; prepare a new attempt": "پرامپت قبلی بسته شد؛ تلاش تازه بسازید",
+    "the answer asks for context": "پاسخ زمینهٔ بیشتری خواسته است",
+    "context pack prepared, not marked as sent": "بستهٔ زمینه آماده شد، ارسال‌شده علامت نخورده",
+    "answer based on an older attempt/revision": "پاسخ بر پایهٔ تلاش یا نسخهٔ قدیمی‌تر است",
+    "repair prompt prepared": "پرامپت اصلاح آماده است",
+    "answer stored but not readable": "پاسخ ذخیره شد اما خوانده نمی‌شود",
+    "answer parsed; your review decides": "پاسخ خوانده شد؛ بازبینی شما تصمیم می‌گیرد",
+    "answer stored": "پاسخ ذخیره شد",
+    "copied to clipboard; sending not confirmed": "در کلیپ‌بورد کپی شد؛ ارسال تأیید نشده",
+    "prompt built, not copied": "پرامپت ساخته شد، کپی نشده",
+    "attempt rejected": "تلاش رد شد",
+    "attempt abandoned": "تلاش کنار گذاشته شد",
+    "delivery accepted": "تحویل پذیرفته شد",
+    "manager proposal waiting": "پیشنهاد مدیر در انتظار است",
+    "proposal written for an older state": "پیشنهاد برای وضعیت قدیمی‌تر نوشته شده",
+    "no owner yet": "هنوز مسئولی ندارد",
+    "no account/chat chosen for the agent": "حساب/چت برای این AI انتخاب نشده",
+}
+_WHY_PATTERNS_FA = (
+    (re.compile(r"^task (\w+)$"), lambda m: f"وضعیت وظیفه: {m.group(1)}"),
+    (re.compile(r"^(\d+) item\(s\) still open$"), lambda m: f"{m.group(1)} مورد هنوز باز است"),
+    (re.compile(r"^you confirmed sending at (.+)$"), lambda m: f"ارسال را در {m.group(1)} تأیید کردید"),
+    (re.compile(r"^open decision: (.*)$", re.S), lambda m: f"تصمیم باز: {m.group(1)}"),
+    (re.compile(r"^publishing paused: (.*)$", re.S), lambda m: f"انتشار متوقف شد: {m.group(1)}"),
+    (re.compile(r"^\((\d+) change\(s\)\)$"), lambda m: f"({m.group(1)} تغییر)"),
+    (re.compile(r"^(\d+) more$"), lambda m: f"{m.group(1)} مورد دیگر"),
+)
+
+
+def _why_piece(piece: str) -> str | None:
+    piece = piece.strip()
+    fa = WHY_FA.get(piece)
+    if fa is not None:
+        return fa
+    for pat, fn in _WHY_PATTERNS_FA:
+        m = pat.match(piece)
+        if m:
+            return fn(m)
+    for key in STAGE_KEYS:
+        if piece == stage_label(key, "en"):
+            return stage_label(key, "fa")
+    if piece.endswith(")") and " (" in piece:  # "manager proposal waiting (3 change(s))"
+        base, _, rest = piece.rpartition(" (")
+        if base in WHY_FA:
+            return f"{WHY_FA[base]} ({rest[:-1].replace(' change(s)', ' تغییر')})"
+    return None
+
+
+def why_text(why: str, lang: str = "en") -> str:
+    """The explanation of a queue item in ``lang``; unknown pieces stay as they are (never lost)."""
+    if lang != "fa" or not why:
+        return why
+    head = ""
+    for key in sorted(STAGE_KEYS, key=lambda k: -len(stage_label(k, "en"))):  # labels may contain " — " themselves
+        en = stage_label(key, "en")
+        if why == en or why.startswith(en + " — "):
+            head, why = stage_label(key, "fa"), why[len(en):].removeprefix(" — ")
+            break
+    out = [head] if head else []
+    for piece in ([why] if why else []):
+        fa = _why_piece(piece)
+        if fa is None:  # "fixed phrase; no owner yet" — translate each clause on its own
+            fa = "؛ ".join(_why_piece(c) or c for c in piece.split("; "))
+        out.append(fa)
+    return " — ".join(out)
+
+
 def _tr(pair: tuple[str, str], lang: str) -> str:
     return pair[1] if lang == "fa" else pair[0]
 
@@ -80,7 +156,7 @@ def attention_queue(state: dict[str, Any], *, lang: str = "en", publish_paused: 
         if extra:
             key += ":" + extra
         items.append({"key": key, "rank": rank, "rank_text": _tr(RANKS[rank], lang), "kind": kind, "ref": ref,
-                      "task_id": task_id or (ref if kind == "task" else ""), "why": why, "ask": ask,
+                      "task_id": task_id or (ref if kind == "task" else ""), "why": why_text(why, lang), "ask": ask,
                       "agent_id": agent, "action": action, "seen": key in seen, "trace": trace or {}})
 
     if publish_paused:

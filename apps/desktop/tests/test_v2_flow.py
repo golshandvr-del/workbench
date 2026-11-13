@@ -576,6 +576,15 @@ class NextActionTests(Base):
         self.assertEqual(opts, ["SQLite", "JSON"])
         self.assertEqual(rec, "SQLite")
 
+    def test_bf083_needs_decision_card_text_is_the_question(self) -> None:
+        from aiwb.v2.handoff import _decisions
+        asks = _decisions([{"question": "SQLite or JSON files?", "options": ["SQLite", "JSON"]}])
+        for outcome, expect in (("needs_decision", "SQLite or JSON files?"), ("blocked", "storage layer")):
+            pick = (asks or ["storage layer"]) if outcome == "needs_decision" else (["storage layer"] or asks)
+            self.assertTrue(pick[0].startswith(expect))
+        src = (Path(__file__).resolve().parents[1] / "src" / "aiwb" / "v2" / "handoff.py").read_text("utf-8")
+        self.assertIn('(asks or open_items) if h["outcome"] == "needs_decision"', src)
+
     def test_bf067_multiline_task_title_is_collapsed(self) -> None:
         from aiwb.v2.models import normalize_task
         base = {"objective": "o", "title": "Login page\n\n## Done with evidence\n\n- TASK-0099 — Payments (done)"}

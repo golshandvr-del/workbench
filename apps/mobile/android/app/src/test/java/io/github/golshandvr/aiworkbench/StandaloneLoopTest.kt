@@ -46,15 +46,39 @@ class StandaloneLoopTest {
 
     private val scopes = HashMap<String, String>()
 
-    private fun answer(h: Obj, outcome: String = "complete", unresolved: List<String> = emptyList()): String {
+    private fun answer(h: Obj, outcome: String = "complete", unresolved: List<String> = emptyList(),
+                       decisions: List<Any?> = emptyList()): String {
         val m = linkedMapOf<String, Any?>("schema_version" to "1.0", "handoff_id" to h["handoff_id"], "task_id" to h["task_id"],
             "task_revision" to h["task_revision"], "attempt_id" to h["attempt_id"], "outcome" to outcome, "summary" to "done",
             "completed_items" to listOf("a"), "unresolved_items" to unresolved, "assumptions" to emptyList<Any?>(),
-            "decision_requests" to emptyList<Any?>(), "validation_claims" to listOf("tests pass"), "recommended_next_action" to "review")
+            "decision_requests" to decisions, "validation_claims" to listOf("tests pass"), "recommended_next_action" to "review")
         // A scripted AI writes inside the task's own scope (the smart check flags anything else, roadmap 4.2.0).
         val scope = (scopes[Json.str(h["task_id"])] ?: "src/core").trimEnd('*').trimEnd('/').ifEmpty { "src/core" }
         return "AIWB_ATTEMPT_ID: ${h["attempt_id"]}\n<<<AIWB_FILE path=\"$scope/a.txt\" action=\"write\" body=\"raw\">>>\nx=1\n" +
             "<<<AIWB_END_FILE>>>\n<<<AIWB_HANDOFF>>>\n${StrictJson.stringify(m)}\n<<<AIWB_END_HANDOFF>>>\n"
+    }
+
+    @Test fun bf083ObjectDecisionRequestsKeepQuestionAndOptions() {
+        val p = project()
+        try {
+            val tid = Json.str(p.createTask(linkedMapOf("title" to "Core library", "objective" to "storage",
+                "owner_agent_id" to "agent-implementer", "allowed_paths" to arrayListOf<Any?>("src/core/")), "ready")["task_id"])
+            val h = p.startTask(tid)
+            val hid = Json.str(h["handoff_id"])
+            val asks = listOf(linkedMapOf<String, Any?>("question" to "SQLite or JSON files?", "options" to listOf("SQLite", "JSON"),
+                "recommendation" to "SQLite"), "plain question", 5, linkedMapOf<String, Any?>())
+            Guide(p).perform("handoff:$hid", "paste", mapOf("text" to answer(h, "needs_decision", listOf("storage layer"), asks)))
+            val stored = Json.strs(Json.obj(State.coll(p.state(), "handoffs")[hid])["decision_requests"])
+            assertEquals(3, stored.size)
+            assertTrue(stored[0], stored[0].startsWith("SQLite or JSON files?") && stored[0].contains("Options: SQLite, JSON") &&
+                stored[0].contains("Recommended: SQLite"))
+            assertEquals("plain question", stored[1]); assertEquals("5", stored[2])
+            Guide(p).perform("handoff:$hid", "accept_handoff")
+            val t = Json.obj(State.coll(p.state(), "tasks")[tid])
+            assertEquals("needs_decision", t["status"])
+            val reason = Json.str(t["blocked_reason"])
+            assertTrue(reason, reason.startsWith("SQLite or JSON files?") && !reason.contains("storage layer"))
+        } finally { p.store.root.parentFile.deleteRecursively() }
     }
 
     @Test fun bf057DroppedAndRejectedPromptsCloseAttemptsAndAllowRestart() {

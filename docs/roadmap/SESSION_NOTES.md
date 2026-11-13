@@ -3,7 +3,18 @@
 Purpose: the sandbox resets often. Every finding and every step done is written here and pushed
 immediately, so a new session can continue without repeating work.
 
-## Current resume checkpoint — session 40 / 102/106 FIXED (2026-11-06)
+## Current resume checkpoint — session 41 / 105/106 FIXED (2026-11-13)
+
+- Recovery: HEAD=origin/main=40fecc27 verified; /home/user/kt toolchain was still present. Rule: ONE commit+push at session end; NEVER `git add -A` (use `git add apps docs ROADMAP.md README.md`).
+- Repaired with tests: BF-045/046 (`aiwb/v2/rescue.py`: candidates()/resolve() with ambiguity report, existing-title create skipped, title prerequisites resolved incl. same-answer new tasks via depends_on_refs, `_reason()` keeps status/comments as reason, owner_role via `charter_repair.role_of`; `proposals.py` review matches role_of(owner_role)), BF-060 (`workspace/shell.py` literals through `self.wc.tr`, `v2/dashboard.py` `why_text()`), BF-083 phone port (`core/Project.kt` `decisionList`, `blockedReason`; Desktop `handoff.py` needs_decision prefers the question).
+- Tests: test_rescue.py (2 new), test_dashboard.py (BF-060 scan), test_v2_flow.py (BF-083 card text), Kotlin StandaloneLoopTest.bf083….
+- Kotlin run recipe: compile main/java + /home/user/kt/rstub with kotlinc `-cp android.jar:junit:hamcrest:json:zxing`, compile test/java, run JUnitCore with classpath order `junit:hamcrest:json:zxing:kotlin-stdlib:outall:outt:android.jar` (android.jar LAST, otherwise org.json stubs throw "Stub!").
+- STILL OPEN: BF-008 only (needs real Windows/Android gates). Not run: GUI smoke scripts, Gradle lint/APK, Windows/device.
+- Resume: V5.30 final gate — reconcile counts in README/ROADMAP, optional extra hunting.
+
+## Previous checkpoint
+
+### (superseded) — session 40 / 102/106 FIXED (2026-11-06)
 
 - Recovery: read the session-39 transcript; restored main=origin/main=c97f5641 via the git credential store. Rule: ONE commit+push at session end (safety checkpoint pushes e6221cda, e1affdc5 were made because of resets). NEVER `git add -A` (untracked node_modules/ is in the work tree; use `git add apps docs`; node_modules/ is in .git/info/exclude).
 - Repaired with tests: BF-068 (draft wording), BF-069 (grace period for a late approval, pair_status still answered, late request dropped), BF-070 (envelope limit sized for 300k Persian chars, 413 too_large), BF-071 (clock_skew != wrong code, desktop + phone texts), BF-072 (selection loads device permissions), BF-073 (port in use handled, LAN address re-detected), BF-099/100/102 (ScrollPage with horizontal option, buttons outside scroll area), BF-082 (milestone_steps/version_steps shown before the announce card, Drop milestone for all-cancelled, expand closes them; Desktop + Kotlin), BF-077 (PendingPairing saved before request and resumed), BF-074 (export built from project id in onActivityResult, state saved, empty document deleted on failure), BF-075 (Files.importZip with desktop rules, backup, files_imported event).

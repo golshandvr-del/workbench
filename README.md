@@ -86,10 +86,8 @@ These are repair-stage targets, **not released application versions**; Desktop r
   Historical session 35 real Tk helper smoke passed under Xvfb with injected Save/Remove failures, unchanged
   disk state, successful retries and normal helper workflow against a local fake API. This is only
   the helper scenario, not the full frozen-source GUI release gate. Session 36 ran no new GUI gate. Native Windows was not tested.
-- **52 independent findings remain OPEN** (0 S1 / 18 S2 / 34 S3). Zero catalogued open S1 does not
-  guarantee no undiscovered data-loss defects or platform issues. BF-008 actual Windows/Android validation,
-  full frozen-source GUI, remaining lifecycle/intake/persistence/UI repairs and integrated release gates
-  remain. The roadmap is not complete and the program is not claimed bug-free.
+- **Session 41 status: 105 of 106 catalogued findings FIXED, 1 OPEN (BF-008).** Latest suites: **1101 Desktop tests OK**, **128 Mobile Kotlin/JVM tests OK**, 0 undefined names. BF-008 (Windows-invalid path names) needs real Windows/Android validation; Gradle lint/APK, instrumentation, full frozen-source GUI and native Windows gates have NOT been run. Zero catalogued open S1 does not
+  guarantee no undiscovered defects. The program is not claimed bug-free.
 - No tag, release or deployment was performed. Existing installed releases do not receive these
   source repairs until a later release passes its gates. Use the local test commands below;
   real GitHub dispatch/create/release endpoints were not used for reproductions.

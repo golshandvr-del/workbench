@@ -346,7 +346,9 @@ class HandoffService:
                  why=f"handoff {handoff_id} accepted ({h['outcome']})")
         if accept and h["outcome"] in ("blocked", "needs_decision") and t["status"] == "in_progress":
             t["status"] = "blocked" if h["outcome"] == "blocked" else "needs_decision"
-            t["blocked_reason"] = "; ".join(h["unresolved_items"] or h["decision_requests"])[:500]
+            asks, open_items = h["decision_requests"], h["unresolved_items"]
+            pick = (asks or open_items) if h["outcome"] == "needs_decision" else (open_items or asks)
+            t["blocked_reason"] = "; ".join(pick)[:500]
             emit(s, "task_status", task_id=t["task_id"], old="in_progress", new=t["status"], why="handoff outcome")
         emit(s, "handoff_" + target, handoff_id=handoff_id)
         return h

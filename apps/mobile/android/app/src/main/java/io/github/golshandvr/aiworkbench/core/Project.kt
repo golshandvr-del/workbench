@@ -660,7 +660,8 @@ class Project(val store: ProjectStore) {
                 .map { it.toString().take(1000) }.take(50))
             h["source_response_id"] = responseId; h["outcome"] = outcome.ifEmpty { Json.str(h["outcome"]) }
             h["summary"] = Json.str(manifest["summary"]).take(4000)
-            for (k in listOf("completed_items", "unresolved_items", "assumptions", "decision_requests", "validation_claims")) h[k] = lst(k)
+            for (k in listOf("completed_items", "unresolved_items", "assumptions", "validation_claims")) h[k] = lst(k)
+            h["decision_requests"] = decisionList(manifest["decision_requests"])
             h["recommended_next_action"] = Json.str(manifest["recommended_next_action"]).take(1000); h["updated_at"] = State.nowUtc()
             val arts = ArrayList<Any?>()
             for ((path, sha) in fileHashes.toSortedMap()) {
@@ -735,7 +736,7 @@ class Project(val store: ProjectStore) {
         }
         if (accept && h["outcome"] in setOf("blocked", "needs_decision") && t["status"] == "in_progress") {
             t["status"] = if (h["outcome"] == "blocked") "blocked" else "needs_decision"
-            t["blocked_reason"] = (Json.strs(h["unresolved_items"]).ifEmpty { Json.strs(h["decision_requests"]) }).joinToString("; ").take(500)
+            t["blocked_reason"] = blockedReason(h)
             State.emit(s, "task_status", "task_id" to t["task_id"], "old" to "in_progress", "new" to t["status"], "why" to "handoff outcome")
         }
         State.emit(s, "handoff_$target", "handoff_id" to handoffId)
@@ -907,6 +908,32 @@ class Project(val store: ProjectStore) {
         }
 
     fun managerUpdate(): String = state().let { Prompts.continueProject(Prompts.managerUpdate(it), it) }
+
+    /** BF-083: a decision request may be text or an object (question/title/text + options/recommendation). */
+    private fun decisionList(v: Any?): ArrayList<Any?> {
+        val out = ArrayList<Any?>()
+        fun scalar(x: Any?) = (x is String || x is Number) && x.toString().isNotBlank()
+        for (x in (v as? List<*>).orEmpty()) {
+            if (x is Map<*, *>) {
+                var q = listOf("question", "title", "text", "decision").map { x[it] }.firstOrNull { scalar(it) }?.toString()?.trim().orEmpty()
+                if (q.isEmpty()) continue
+                val opts = (x["options"] as? List<*>).orEmpty().filter { scalar(it) }.map { it.toString().trim() }
+                val rec = listOf(x["recommendation"], x["recommended"]).firstOrNull { scalar(it) }?.toString()?.trim().orEmpty()
+                if (opts.isNotEmpty()) q += "\nOptions: " + opts.joinToString(", ")
+                if (rec.isNotEmpty()) q += "\nRecommended: $rec"
+                out.add(q.take(1000))
+            } else if (scalar(x)) out.add(x.toString().take(1000))
+            if (out.size >= 50) break
+        }
+        return out
+    }
+
+    /** The card text of a blocked / waiting task: a decision waits on its question, not on a vague unresolved label. */
+    private fun blockedReason(h: Obj): String {
+        val asks = Json.strs(h["decision_requests"]); val open = Json.strs(h["unresolved_items"])
+        val pick = if (h["outcome"] == "needs_decision") asks.ifEmpty { open } else open.ifEmpty { asks }
+        return pick.joinToString("; ").take(500)
+    }
 
     companion object {
         const val MAX_PARALLEL_CHATS = 12

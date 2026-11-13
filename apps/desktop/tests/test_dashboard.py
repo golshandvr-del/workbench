@@ -123,6 +123,32 @@ class WorkspaceDashboardTests(unittest.TestCase):
         self.assertTrue(any("پاسخ" in i["rank_text"] or "تصمیم" in i["rank_text"] for i in q))
         self.wc.set_language("en")
 
+    def test_bf060_why_texts_are_persian_and_shell_has_no_bare_english_literals(self):
+        import re
+        from aiwb.v2.dashboard import why_text
+        self.assertEqual(why_text("Waiting for your review — answer parsed; your review decides", "en"),
+                         "Waiting for your review — answer parsed; your review decides")
+        fa = why_text("Waiting for your review — answer parsed; your review decides", "fa")
+        self.assertNotRegex(fa, r"[A-Za-z]")
+        self.assertIn("بازبینی", fa)
+        self.assertNotRegex(why_text("Ready — prepare the prompt — no active attempt; no owner yet", "fa"), r"[A-Za-z]")
+        self.assertEqual(why_text("open decision: پایگاه داده", "fa"), "تصمیم باز: پایگاه داده")
+        self.assertIn("SQLite", why_text("open decision: SQLite", "fa"))  # user text is never lost
+        self.assertIn("3", why_text("manager proposal waiting (3 change(s))", "fa"))
+        self.assertNotRegex(why_text("manager proposal waiting (3 change(s))", "fa"), r"[A-Za-z]")
+        self.wc.set_language("fa")
+        try:
+            for item in self.wc.attention(collapse=False):
+                if item["kind"] in ("task", "proposal", "decision"):
+                    self.assertNotRegex(re.sub(r"TASK-\d+|DEC-\d+|PROP-\d+|agent-[\w-]+", "", item["why"]).split(":")[0],
+                                        r"[A-Za-z]{3,}", item["why"])
+        finally:
+            self.wc.set_language("en")
+        src = (Path(__file__).resolve().parents[1] / "src" / "aiwb" / "workspace" / "shell.py").read_text("utf-8")
+        bare = [ln for ln in src.splitlines()
+                if re.search(r"""\b(?:text|label)=f?["'][A-Za-z]""", ln) and "tr((" not in ln]
+        self.assertEqual(bare, [])
+
 
 class ChangeRouteTests(unittest.TestCase):
     def setUp(self):

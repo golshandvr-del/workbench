@@ -27,9 +27,11 @@ Goal: find problems **before** the owner shows the app to friends — especially
 | Severity | Open | Fixed |
 |---|---|---|
 | S1 | 0 | 11 (BF-002, BF-003, BF-004, BF-007, BF-009, BF-010, BF-016, BF-043, BF-076, BF-078, BF-079) |
-| S2 | 6 (BF-008, BF-045, BF-046, BF-072, BF-074, BF-077) | 35 (BF-001, BF-005, BF-011, BF-013, BF-014, BF-017, BF-019, BF-021, BF-023, BF-025, BF-026, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-048, BF-051, BF-053, BF-054, BF-055, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103, BF-105, BF-106, BF-108, BF-109) |
-| S3 | 11 (BF-060, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-099, BF-100, BF-102) | 43 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-028, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-095, BF-097, BF-098, BF-104, BF-107) |
+| S2 | 1 (BF-008) | 40 (BF-001, BF-005, BF-011, BF-013, BF-014, BF-017, BF-019, BF-021, BF-023, BF-025, BF-026, BF-029, BF-030, BF-032, BF-033, BF-035, BF-039, BF-041, BF-042, BF-045, BF-046, BF-048, BF-051, BF-053, BF-054, BF-055, BF-072, BF-074, BF-077, BF-080, BF-081, BF-091, BF-092, BF-096, BF-101, BF-103, BF-105, BF-106, BF-108, BF-109) |
+| S3 | 0 | 54 (BF-006, BF-012, BF-015, BF-018, BF-020, BF-022, BF-024, BF-027, BF-028, BF-031, BF-034, BF-036, BF-037, BF-038, BF-040, BF-044, BF-047, BF-052, BF-056, BF-057, BF-058, BF-059, BF-060, BF-061, BF-062, BF-063, BF-064, BF-065, BF-066, BF-067, BF-068, BF-069, BF-070, BF-071, BF-073, BF-075, BF-082, BF-083, BF-084, BF-085, BF-086, BF-087, BF-088, BF-089, BF-093, BF-094, BF-095, BF-097, BF-098, BF-099, BF-100, BF-102, BF-104, BF-107) |
 | — | Duplicates (not counted): BF-049 → BF-023, BF-050 → BF-021, BF-090 → BF-069 | |
+
+**Session 41 checkpoint:** 105/106 FIXED (99.06% count-based), 1 OPEN (BF-008: Windows-invalid path names, needs a real Windows/Android gate). Session 41 repaired BF-045 (title/short-id assessments never create duplicates, title prerequisites resolve against existing and same-answer tasks, ambiguity is reported), BF-046 (assessment comments become the operation reason, never the objective; owner_role normalised through role_of in rescue and review), BF-060 (Persian Overview/Project labels via tr(), `why_text()` for queue explanations, regression scan of shell.py literals) and the BF-083 phone port (`decisionList`/`blockedReason` in core/Project.kt; needs_decision card text is the question on Desktop and phone). Desktop suite 1101 tests OK, 0 undefined names; Kotlin JVM suite 128 tests OK (standalone kotlinc). No GUI-on-real-Windows/APK/lint/device gate.
 
 **Session 40 checkpoint:** 102/106 FIXED (96.23% count-based), 4 OPEN (BF-008, BF-045, BF-046, BF-060). Session 40 repaired BF-068/069/070/071/072/073/074/075/077/082/099/100/102 (Desktop + Mobile Kotlin where applicable). BF-083 Mobile port (core/Project.kt) still missing. Desktop suite 1097 tests OK; Kotlin JVM suite 125 tests OK (+3 new) compiled with standalone kotlinc and the whole Android tree type-checks against android.jar. No GUI-on-real-Windows/APK/lint/device gate.
 
@@ -1037,7 +1039,7 @@ troubleshooting round.
 **Expected:** honour `body="raw"`: take the lines between the header and `<<<AIWB_END_FILE>>>` verbatim (only the
 final newline normalised), never strip fences; keep the current unwrap only for blocks without `body="raw"`.
 
-### BF-045 · S2 · OPEN — rescued proposal: a task assessment that names tasks by **title** creates **duplicate tasks**
+### BF-045 · S2 · FIXED (session 41) — rescued proposal: a task assessment that names tasks by **title** creates **duplicate tasks**
 
 **Partial repair — session 36 (not counted fixed):** 9db49bb6 resolves existing task title/short-ID assessments without creating duplicates and retains unresolved prerequisite warnings. Still OPEN: dependencies on new tasks from this same answer and full ambiguity/identity recovery need further implementation and tests.
 
@@ -1064,7 +1066,7 @@ or by exact normalised title against existing tasks; an assessment with no field
 Resolve `depends_on` titles against existing tasks and the new tasks of the same answer; list unresolved ones in
 `leftover` instead of dropping them.
 
-### BF-046 · S2 · OPEN — rescued assessment overwrites the task's **objective** with the PM's comment ("Looks good so far, no change needed")
+### BF-046 · S2 · FIXED (session 41) — rescued assessment overwrites the task's **objective** with the PM's comment ("Looks good so far, no change needed")
 
 **Partial repair — session 36 (not counted fixed):** 9db49bb6 no longer maps free-text assessment description/goal/files/outputs to objective/deliverables; explicit changes remain supported. Still OPEN: owner_role normalization and preserving all comments as operation reasons are unfinished.
 
@@ -1401,7 +1403,7 @@ list. (Home's guided steps still show the delivery, so it is not a dead end.)
 `proposal:PROP-0003`), or store the "seen" mark together with the state revision / handoff id and treat a changed one
 as unread. Trim `ws_seen` by recency, not by sort order.
 
-### BF-060 · S3 · OPEN — Persian (RTL) Workspace still shows English labels and English "why" texts on the Overview and Project pages
+### BF-060 · S3 · FIXED (session 41) — Persian (RTL) Workspace still shows English labels and English "why" texts on the Overview and Project pages
 
 **Where:** `aiwb/workspace/shell.py` builds several widgets with literal English text instead of `self.wc.tr((en, fa))`:
 line 147 `"Open on Home"` (Next-step card button), 463 / 672 / 813 `"More"` (menu buttons), 468 `"Queue of each AI
@@ -1978,7 +1980,7 @@ not as *"All its tasks are done"*.
 **Phone:** the same (`core/Guide.kt` line 48 `closeoutSteps(st)…?.let { return it }`; `core/Closeout.kt`
 `canAnnounce` checks only tasks) — fix both.
 
-### BF-083 · S3 · FIXED (session 37) — an AI decision request written as an object (`{"question": …, "options": […]}`) is silently dropped: the *waits for a decision* card shows only the unresolved item, without the question or its options
+### BF-083 · S3 · FIXED (session 37; phone port + card text session 41) — an AI decision request written as an object (`{"question": …, "options": […]}`) is silently dropped: the *waits for a decision* card shows only the unresolved item, without the question or its options
 
 **Where:** `aiwb/v2/handoff.py` `ingest()` stores `decision_requests=_list(manifest.get("decision_requests"))`;
 `_list()` keeps only `str` / `int` / `float` items, so object items vanish with no `fixes` / issue entry. After

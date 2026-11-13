@@ -17,6 +17,7 @@ import json
 import re
 from typing import Any
 
+from .charter_repair import role_of
 from .models import SCHEMA_VERSION, ModelError, check_transition, normalize_task, now_utc
 from .store import ProjectStore, emit, next_id, require
 from .team import check_team
@@ -264,7 +265,8 @@ class ProposalService:
                     owner = raw.get("owner_agent_id", "")
                     if not owner and raw.get("owner_role"):
                         owner = next((a["agent_id"] for a in sorted(s["agents"].values(), key=lambda a: a["agent_id"])
-                                      if a["role"] == raw["owner_role"] and a.get("enabled", True)), "")
+                                      if (a["role"] == raw["owner_role"] or a["role"] == role_of(raw["owner_role"]))
+                                      and a.get("enabled", True)), "")
                     data = {"title": raw.get("title"), "objective": raw.get("objective") or raw.get("title"),
                             "acceptance_criteria": raw.get("acceptance_criteria"), "depends_on": deps,
                             "scope": raw.get("scope") or {}, "deliverables": raw.get("deliverables"),
